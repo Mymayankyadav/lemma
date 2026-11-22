@@ -1,0 +1,6765 @@
+{
+  "schemaVersion": 1,
+  "suite": "n219-fresh-development-replay-v1",
+  "provenance": "Fresh, hand-authored development fixtures created on 2026-11-22. The earlier chat's 42-case/17-completion replay was not committed and has not been recovered. These cases are not that replay, a held-out test set, personal typing records, or evidence of human/device performance.",
+  "comparison": "Existing predictWritingAidPool(request), versus the same policy with verified lexicon prefix candidates as argument 3. Both omit personalization. Top3 arrays are ranked selection order; oraclePoolHits counts eligible pool presence, not a learned oracle ranker.",
+  "execution": "Deterministic Node/Vite source replay in process, without a browser or network. No latency, memory, physical-device, human typing, or autocorrection certification claims.",
+  "retrievalLimit": 64,
+  "summary": {
+    "completionCases": 24,
+    "safetyCases": 108,
+    "baseline": {
+      "oraclePoolHits": 16,
+      "top1Hits": 16,
+      "top3Hits": 16
+    },
+    "candidate": {
+      "oraclePoolHits": 17,
+      "top1Hits": 16,
+      "top3Hits": 17
+    },
+    "top3Gains": [
+      "explanation/balanced"
+    ],
+    "top3Regressions": [],
+    "baselineSafetyFailures": [
+      {
+        "id": "weak-continuity/fast",
+        "errors": [
+          "weak evidence offered continuity"
+        ]
+      }
+    ],
+    "safetyFailures": [],
+    "contractFailures": [],
+    "explicitApplications": 61,
+    "staleApplicationsRejected": 549,
+    "gatesPassed": true
+  },
+  "sourceSha256": {
+    "docs/implementation/2026-11-22/ngram-spatial-decoder/replay/fixtures.json": "c4ac2a64d1effeaa108e17472cb9c63455b0baf1fa24d1b3b5457df50bd36d47",
+    "public/models/writing-decoder/unigram-v1/AOSP-NOTICE.txt": "d04394c729fc9fda050d5733d8ee11663fb54fe54d94532de968cf85c1cc42fb",
+    "public/models/writing-decoder/unigram-v1/ATTRIBUTION.md": "bec2ded51c9aea451781666366a1bd817abc56c9ab0836e8223fdec50e55227b",
+    "public/models/writing-decoder/unigram-v1/SCOWL-NOTICE.txt": "1d7c0128f6c72d2270bf1b271b37a3a21267f759161b68c4dc6c501574c0892e",
+    "public/models/writing-decoder/unigram-v1/lexicon.json": "3c60a7226fcabd574caaf0f152fc8451c9d7173af8e2470a96052f3bd5ed2594",
+    "public/models/writing-decoder/unigram-v1/manifest.json": "0acee7dcd7f191495cc0196545b0f52b15f1255e9f48f475a2145bf996aec4e4",
+    "public/models/writing-decoder/unigram-v1/mathlib4-LICENSE.txt": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "scripts/writing-decoder/replay.ts": "3503f7df59efebda2690b5ff2d4a1c78814d75dbab710c9d68dc705b2ac2d623",
+    "src/features/pad/padEdit.ts": "931c57d89585302e170de63a5efc667c579e11288aa7f6e03fde7093c82f303f",
+    "src/features/tutor/input/completionPolicy.ts": "9e9e97d02314e9d72ebfa860f6ea6c1ccafa57eab1d5c55a5a481c3a2406a521",
+    "src/features/tutor/input/symbolEdit.ts": "73891c027763d70dc62098df38506178f9b340244921950978047cc975ecfea6",
+    "src/features/tutor/writingAid/decoder/assets.ts": "e00754357d8afc8cb28e99021024414e94e0f5f0144a8bc9eb60a0f655017e37",
+    "src/features/tutor/writingAid/decoder/client.ts": "fc493745aa24b76d8bf5556f6b94f83676dbf58d55459f1e8482e7be1f30b8df",
+    "src/features/tutor/writingAid/decoder/lexicon.ts": "e577103d01a3fb0e9025e1fa86d9a132947ccd32fbe84661f789c290b4ffd4a6",
+    "src/features/tutor/writingAid/decoder/protocol.ts": "655212a7d58bf3ee90d92f5f528e37a29d2102ff02a6492e31faa7fb9c895a83",
+    "src/features/tutor/writingAid/decoder/writingDecoder.worker.ts": "33481161583e2684ba1ba38c82ece1b1f2d6efd3a8ce0482c906cc4cdc16c389",
+    "src/features/tutor/writingAid/engine.ts": "b2bd33fde6930342dff533a420e56f3f0f7363390c0cc01773d11c892f82f55a",
+    "src/features/tutor/writingAid/learning.ts": "d33f44051a944ee7a3274c7b4eaed1e4103326db956a72ec05dbcb8f0934be71",
+    "src/features/tutor/writingAid/policy.ts": "5ecd8edc304e79c21f01f50ce81a5724acc47b45396af0fff61925307108be48",
+    "src/features/tutor/writingAid/vendor/accelerator.d.mts": "fefc6385acee3980cf75928f5f7bbc77e8dd3c81213a1fe0b59eb358707a74b1",
+    "src/features/tutor/writingAid/vendor/accelerator.mjs": "bacb3d8b178aba07383b99f20e6e4c1721b1b90b10afe8fa41c93403b2676564",
+    "src/features/tutor/writingAid/vendor/commitment.mjs": "a6428f8dda79a141de97858f12fe7889779e5c1920f810c0c9ab00e8a7be2710",
+    "src/features/tutor/writingAid/vendor/compact-ranks.json": "8e22aa214182878e8182dc0d6231801cb83b7a60555a7739e02f3128fc48de81",
+    "src/features/tutor/writingAid/vendor/facade.mjs": "75dc0bda49c957c576fa1e78cf8204768896a93f0aa0101f141738a76b20254f",
+    "src/features/tutor/writingAid/vendor/legacy/cohort.mjs": "11a5b73a81a569e2f13bac54ee54946acf69c5348b17008a7f0b65d4201ce9cc",
+    "src/features/tutor/writingAid/vendor/legacy/complete.mjs": "a577f66b0c22036dfecd3877e45e37c575c6b44f787070f0fbb28dd9faf08df5",
+    "src/features/tutor/writingAid/vendor/legacy/edits.mjs": "60fa98dc76738ad1cc842d83fbac3518510e4fafe8fd33f4861a1c75aed4f019",
+    "src/features/tutor/writingAid/vendor/legacy/linear_guard.mjs": "42dc14fbf2eb294ebb2ac86dfdecdd56fd30a84da7e1b041ba7ee2df824184d9",
+    "src/features/tutor/writingAid/vendor/legacy/policy.json": "07a3548a086330277a03cc5c56199fe08bbbf6129d7c1c5303a2752e159ec4a6",
+    "src/features/tutor/writingAid/vendor/legacy/revision.d.mts": "6fd17b44feda2357858048e7498d76d96d8f8fe0b0a199d3a09d09571aca0695",
+    "src/features/tutor/writingAid/vendor/legacy/revision.mjs": "1254869d1b4481365a9f295d2d5a4a356bc73dbafb9f8df7e5dd297ff573f1e1",
+    "src/features/tutor/writingAid/vendor/legacy/runtime-phrases.json": "c948e06654a955d18528fc0a9a53d8710b252ad67bf32af21815e890909d9b2c",
+    "src/features/tutor/writingAid/vendor/legacy/runtime-veto.json": "7762afd8ec1da164567b8cc427df84601590a3e41f870443aa3bead8f88471c1",
+    "src/features/tutor/writingAid/vendor/math-ranks-LICENSE.txt": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "src/features/tutor/writingAid/vendor/phrases.mjs": "27a030e36fd896a8c9884d2c65ff7dbcb455b4af1fa6652b9aa2fe6f1b4a7eb2",
+    "src/features/tutor/writingAid/vendor/shortcuts.mjs": "a98c89cb8ca322e483efe0e34bfab7eec345421f3cad2e499a62df076ef49a0a",
+    "src/features/tutor/writingAid/vendor/speed-policy.json": "edf6322165fab30ad811a1dfa24389b9f146f88cc732153388669a508326eacb",
+    "src/features/tutor/writingAid/vendor/study_input.d.mts": "3a8358fef5f0c495d009ace9c851df41e2d949cc2294ca42b00270b8df781c74",
+    "src/features/tutor/writingAid/vendor/study_input.mjs": "3538d578f3c11f33b49e2b9f1f2c93db9d53bff29616ba0dacc7664fddda9da5",
+    "src/features/tutor/writingAid/vendor/word-assets.json": "05d59054ecdc6983531f9b2a1cae5c5b212c262078ee066f759f1ca96ddbeb92",
+    "src/features/tutor/writingAid/vendor/wordlist-LICENSE.txt": "1d7c0128f6c72d2270bf1b271b37a3a21267f759161b68c4dc6c501574c0892e",
+    "src/features/tutor/writingAid/vendor/wordlist.txt": "67689f3f4ea057f0b57a07b1e3d54fc28257c47691eb8acfab681b7e38b37755",
+    "src/features/tutor/writingAid/vendor/words.mjs": "1c584932ca2f69dbc0d6af8f0c4aba73b5e9d8c764731a951f00d86ee52f37ba"
+  },
+  "rows": [
+    {
+      "id": "notation/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "We discuss the nota",
+      "intended": "notation",
+      "prefix": "nota",
+      "decoderPrefix": "nota",
+      "retrieved": [
+        {
+          "word": "notation",
+          "frequency": 156,
+          "riskTags": []
+        },
+        {
+          "word": "notable",
+          "frequency": 141,
+          "riskTags": []
+        },
+        {
+          "word": "notably",
+          "frequency": 135,
+          "riskTags": []
+        },
+        {
+          "word": "notables",
+          "frequency": 93,
+          "riskTags": []
+        },
+        {
+          "word": "notary",
+          "frequency": 89,
+          "riskTags": []
+        },
+        {
+          "word": "notarial",
+          "frequency": 64,
+          "riskTags": []
+        },
+        {
+          "word": "notate",
+          "frequency": 57,
+          "riskTags": []
+        },
+        {
+          "word": "notarize",
+          "frequency": 38,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "notation",
+          "notary"
+        ],
+        "top3": [
+          "notation",
+          "notary"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "notation",
+          "notary"
+        ],
+        "top3": [
+          "notation",
+          "notary"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 2,
+      "checkedStaleApplications": 18
+    },
+    {
+      "id": "preimage/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The preima",
+      "intended": "preimage",
+      "prefix": "preima",
+      "decoderPrefix": "preima",
+      "retrieved": [
+        {
+          "word": "preimage",
+          "frequency": 155,
+          "riskTags": []
+        },
+        {
+          "word": "preimages",
+          "frequency": 1,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "preimage",
+          "preimages"
+        ],
+        "top3": [
+          "preimage",
+          "preimages"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "preimage",
+          "preimages"
+        ],
+        "top3": [
+          "preimage",
+          "preimages"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 2,
+      "checkedStaleApplications": 18
+    },
+    {
+      "id": "denominator/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The denomina",
+      "intended": "denominator",
+      "prefix": "denomina",
+      "decoderPrefix": "denomina",
+      "retrieved": [
+        {
+          "word": "denominations",
+          "frequency": 112,
+          "riskTags": []
+        },
+        {
+          "word": "denomination",
+          "frequency": 108,
+          "riskTags": []
+        },
+        {
+          "word": "denominational",
+          "frequency": 99,
+          "riskTags": []
+        },
+        {
+          "word": "denominator",
+          "frequency": 89,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "denominator"
+        ],
+        "top3": [
+          "denominator"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "denominator"
+        ],
+        "top3": [
+          "denominator"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "numerator/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The numera",
+      "intended": "numerator",
+      "prefix": "numera",
+      "decoderPrefix": "numera",
+      "retrieved": [
+        {
+          "word": "numerals",
+          "frequency": 99,
+          "riskTags": []
+        },
+        {
+          "word": "numeral",
+          "frequency": 94,
+          "riskTags": []
+        },
+        {
+          "word": "numerator",
+          "frequency": 78,
+          "riskTags": []
+        },
+        {
+          "word": "numeracy",
+          "frequency": 68,
+          "riskTags": []
+        },
+        {
+          "word": "numerate",
+          "frequency": 35,
+          "riskTags": []
+        },
+        {
+          "word": "numerable",
+          "frequency": 30,
+          "riskTags": []
+        },
+        {
+          "word": "numerary",
+          "frequency": 1,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "numerator",
+          "numerable",
+          "numeracy",
+          "numeral",
+          "numerary",
+          "numerate"
+        ],
+        "top3": [
+          "numerator",
+          "numerable",
+          "numeracy"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "numerator",
+          "numeral",
+          "numeracy",
+          "numerate",
+          "numerable",
+          "numerary"
+        ],
+        "top3": [
+          "numerator",
+          "numeral",
+          "numeracy"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 3,
+      "checkedStaleApplications": 27
+    },
+    {
+      "id": "sequence/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "This sequ",
+      "intended": "sequence",
+      "prefix": "sequ",
+      "decoderPrefix": "sequ",
+      "retrieved": [
+        {
+          "word": "sequence",
+          "frequency": 162,
+          "riskTags": []
+        },
+        {
+          "word": "sequences",
+          "frequency": 128,
+          "riskTags": []
+        },
+        {
+          "word": "sequel",
+          "frequency": 123,
+          "riskTags": []
+        },
+        {
+          "word": "sequels",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "sequential",
+          "frequency": 100,
+          "riskTags": []
+        },
+        {
+          "word": "sequencing",
+          "frequency": 95,
+          "riskTags": []
+        },
+        {
+          "word": "sequent",
+          "frequency": 66,
+          "riskTags": []
+        },
+        {
+          "word": "sequester",
+          "frequency": 66,
+          "riskTags": []
+        },
+        {
+          "word": "sequitur",
+          "frequency": 66,
+          "riskTags": []
+        },
+        {
+          "word": "sequoia",
+          "frequency": 61,
+          "riskTags": []
+        },
+        {
+          "word": "sequin",
+          "frequency": 41,
+          "riskTags": []
+        },
+        {
+          "word": "sequacity",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "sequela",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "sequelae",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "sequinned",
+          "frequency": 1,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "sequel"
+        ],
+        "top3": [
+          "sequel"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "sequel"
+        ],
+        "top3": [
+          "sequel"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "function/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "This func",
+      "intended": "function",
+      "prefix": "func",
+      "decoderPrefix": "func",
+      "retrieved": [
+        {
+          "word": "function",
+          "frequency": 201,
+          "riskTags": []
+        },
+        {
+          "word": "functor",
+          "frequency": 186,
+          "riskTags": []
+        },
+        {
+          "word": "functions",
+          "frequency": 185,
+          "riskTags": []
+        },
+        {
+          "word": "functional",
+          "frequency": 122,
+          "riskTags": []
+        },
+        {
+          "word": "functioning",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "functionality",
+          "frequency": 112,
+          "riskTags": []
+        },
+        {
+          "word": "functioned",
+          "frequency": 103,
+          "riskTags": []
+        },
+        {
+          "word": "functionally",
+          "frequency": 92,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "equation/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The equa",
+      "intended": "equation",
+      "prefix": "equa",
+      "decoderPrefix": "equa",
+      "retrieved": [
+        {
+          "word": "equal",
+          "frequency": 181,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "equality",
+          "frequency": 146,
+          "riskTags": []
+        },
+        {
+          "word": "equals",
+          "frequency": 141,
+          "riskTags": []
+        },
+        {
+          "word": "equation",
+          "frequency": 124,
+          "riskTags": []
+        },
+        {
+          "word": "equally",
+          "frequency": 121,
+          "riskTags": []
+        },
+        {
+          "word": "equations",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "equalizer",
+          "frequency": 110,
+          "riskTags": []
+        },
+        {
+          "word": "equator",
+          "frequency": 100,
+          "riskTags": []
+        },
+        {
+          "word": "equatorial",
+          "frequency": 94,
+          "riskTags": []
+        },
+        {
+          "word": "equated",
+          "frequency": 92,
+          "riskTags": []
+        },
+        {
+          "word": "equate",
+          "frequency": 83,
+          "riskTags": []
+        },
+        {
+          "word": "equalize",
+          "frequency": 74,
+          "riskTags": []
+        },
+        {
+          "word": "equable",
+          "frequency": 54,
+          "riskTags": []
+        },
+        {
+          "word": "equably",
+          "frequency": 15,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "equation"
+        ],
+        "top3": [
+          "equation"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "equation",
+          "equations"
+        ],
+        "top3": [
+          "equation",
+          "equations"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 2,
+      "checkedStaleApplications": 18
+    },
+    {
+      "id": "polynomial/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The polyn",
+      "intended": "polynomial",
+      "prefix": "polyn",
+      "decoderPrefix": "polyn",
+      "retrieved": [
+        {
+          "word": "polynomial",
+          "frequency": 163,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "arithmetic/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The arith",
+      "intended": "arithmetic",
+      "prefix": "arith",
+      "decoderPrefix": "arith",
+      "retrieved": [
+        {
+          "word": "arithmetic",
+          "frequency": 109,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "topology/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "We study topol",
+      "intended": "topology",
+      "prefix": "topol",
+      "decoderPrefix": "topol",
+      "retrieved": [
+        {
+          "word": "topological",
+          "frequency": 170,
+          "riskTags": []
+        },
+        {
+          "word": "topology",
+          "frequency": 165,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "topology"
+        ],
+        "top3": [
+          "topology"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "topology"
+        ],
+        "top3": [
+          "topology"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "derivative/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The deriv",
+      "intended": "derivative",
+      "prefix": "deriv",
+      "decoderPrefix": "deriv",
+      "retrieved": [
+        {
+          "word": "derivative",
+          "frequency": 157,
+          "riskTags": []
+        },
+        {
+          "word": "derived",
+          "frequency": 136,
+          "riskTags": []
+        },
+        {
+          "word": "derivatives",
+          "frequency": 130,
+          "riskTags": []
+        },
+        {
+          "word": "derives",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "derive",
+          "frequency": 110,
+          "riskTags": []
+        },
+        {
+          "word": "derivation",
+          "frequency": 101,
+          "riskTags": []
+        },
+        {
+          "word": "deriving",
+          "frequency": 96,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "coefficient/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The coeff",
+      "intended": "coefficient",
+      "prefix": "coeff",
+      "decoderPrefix": "coeff",
+      "retrieved": [
+        {
+          "word": "coefficients",
+          "frequency": 145,
+          "riskTags": []
+        },
+        {
+          "word": "coefficient",
+          "frequency": 138,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "paragraph/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The paragr",
+      "intended": "paragraph",
+      "prefix": "paragr",
+      "decoderPrefix": "paragr",
+      "retrieved": [
+        {
+          "word": "paragraph",
+          "frequency": 101,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "paragraph"
+        ],
+        "top3": [
+          "paragraph"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "paragraph"
+        ],
+        "top3": [
+          "paragraph"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "example/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "Another exam",
+      "intended": "example",
+      "prefix": "exam",
+      "decoderPrefix": "exam",
+      "retrieved": [
+        {
+          "word": "example",
+          "frequency": 154,
+          "riskTags": []
+        },
+        {
+          "word": "examples",
+          "frequency": 133,
+          "riskTags": []
+        },
+        {
+          "word": "examination",
+          "frequency": 122,
+          "riskTags": []
+        },
+        {
+          "word": "examined",
+          "frequency": 115,
+          "riskTags": []
+        },
+        {
+          "word": "examine",
+          "frequency": 111,
+          "riskTags": []
+        },
+        {
+          "word": "examinations",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "exams",
+          "frequency": 108,
+          "riskTags": []
+        },
+        {
+          "word": "examining",
+          "frequency": 107,
+          "riskTags": []
+        },
+        {
+          "word": "examines",
+          "frequency": 102,
+          "riskTags": []
+        },
+        {
+          "word": "examiner",
+          "frequency": 92,
+          "riskTags": []
+        },
+        {
+          "word": "examinee",
+          "frequency": 61,
+          "riskTags": []
+        },
+        {
+          "word": "exampled",
+          "frequency": 47,
+          "riskTags": []
+        },
+        {
+          "word": "examinant",
+          "frequency": 1,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "example"
+        ],
+        "top3": [
+          "example"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "example",
+          "examples"
+        ],
+        "top3": [
+          "example",
+          "examples"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 2,
+      "checkedStaleApplications": 18
+    },
+    {
+      "id": "explanation/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "This expla",
+      "intended": "explanation",
+      "prefix": "expla",
+      "decoderPrefix": "expla",
+      "retrieved": [
+        {
+          "word": "explained",
+          "frequency": 128,
+          "riskTags": []
+        },
+        {
+          "word": "explain",
+          "frequency": 124,
+          "riskTags": []
+        },
+        {
+          "word": "explains",
+          "frequency": 124,
+          "riskTags": []
+        },
+        {
+          "word": "explanation",
+          "frequency": 121,
+          "riskTags": []
+        },
+        {
+          "word": "explaining",
+          "frequency": 114,
+          "riskTags": []
+        },
+        {
+          "word": "explanations",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "explanatory",
+          "frequency": 91,
+          "riskTags": []
+        },
+        {
+          "word": "explant",
+          "frequency": 37,
+          "riskTags": []
+        },
+        {
+          "word": "explainer",
+          "frequency": 28,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "explain",
+          "explained",
+          "explant"
+        ],
+        "top3": [
+          "explain",
+          "explained",
+          "explant"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "explained",
+          "explain",
+          "explanation",
+          "explaining",
+          "explant"
+        ],
+        "top3": [
+          "explained",
+          "explain",
+          "explanation"
+        ],
+        "intendedPoolRank": 3,
+        "intendedTop3Rank": 3,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 3,
+      "checkedStaleApplications": 27
+    },
+    {
+      "id": "question/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "Another ques",
+      "intended": "question",
+      "prefix": "ques",
+      "decoderPrefix": "ques",
+      "retrieved": [
+        {
+          "word": "question",
+          "frequency": 136,
+          "riskTags": []
+        },
+        {
+          "word": "questions",
+          "frequency": 130,
+          "riskTags": []
+        },
+        {
+          "word": "questioned",
+          "frequency": 117,
+          "riskTags": []
+        },
+        {
+          "word": "quest",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "questioning",
+          "frequency": 108,
+          "riskTags": []
+        },
+        {
+          "word": "questionable",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "quests",
+          "frequency": 91,
+          "riskTags": []
+        },
+        {
+          "word": "questing",
+          "frequency": 56,
+          "riskTags": []
+        },
+        {
+          "word": "quested",
+          "frequency": 34,
+          "riskTags": []
+        },
+        {
+          "word": "quester",
+          "frequency": 18,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "question"
+        ],
+        "top3": [
+          "question"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "question",
+          "questions"
+        ],
+        "top3": [
+          "question",
+          "questions"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 2,
+      "checkedStaleApplications": 18
+    },
+    {
+      "id": "sentence/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The sente",
+      "intended": "sentence",
+      "prefix": "sente",
+      "decoderPrefix": "sente",
+      "retrieved": [
+        {
+          "word": "sentence",
+          "frequency": 126,
+          "riskTags": []
+        },
+        {
+          "word": "sentenced",
+          "frequency": 125,
+          "riskTags": []
+        },
+        {
+          "word": "sentences",
+          "frequency": 114,
+          "riskTags": []
+        },
+        {
+          "word": "sentencing",
+          "frequency": 99,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "sentence"
+        ],
+        "top3": [
+          "sentence"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "sentence",
+          "sentences"
+        ],
+        "top3": [
+          "sentence",
+          "sentences"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 2,
+      "checkedStaleApplications": 18
+    },
+    {
+      "id": "definition/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The defini",
+      "intended": "definition",
+      "prefix": "defini",
+      "decoderPrefix": "defini",
+      "retrieved": [
+        {
+          "word": "definition",
+          "frequency": 174,
+          "riskTags": []
+        },
+        {
+          "word": "definitions",
+          "frequency": 153,
+          "riskTags": []
+        },
+        {
+          "word": "defining",
+          "frequency": 131,
+          "riskTags": []
+        },
+        {
+          "word": "definite",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "definitive",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "definitely",
+          "frequency": 107,
+          "riskTags": []
+        },
+        {
+          "word": "definitively",
+          "frequency": 93,
+          "riskTags": []
+        },
+        {
+          "word": "definiens",
+          "frequency": 1,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "definition",
+          "definiens",
+          "definite"
+        ],
+        "top3": [
+          "definition",
+          "definiens",
+          "definite"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "definition",
+          "definite",
+          "definiens"
+        ],
+        "top3": [
+          "definition",
+          "definite",
+          "definiens"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 3,
+      "checkedStaleApplications": 27
+    },
+    {
+      "id": "continuous-strong-evidence/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The function is continuo",
+      "intended": "continuous",
+      "prefix": "continuo",
+      "decoderPrefix": "continuo",
+      "retrieved": [
+        {
+          "word": "continuous",
+          "frequency": 185,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "continuously",
+          "frequency": 118,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "necessary-strong-evidence/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "The condition is necessar",
+      "intended": "necessary",
+      "prefix": "necessar",
+      "decoderPrefix": "necessar",
+      "retrieved": [
+        {
+          "word": "necessary",
+          "frequency": 137,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "necessarily",
+          "frequency": 121,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "necessary"
+        ],
+        "top3": [
+          "necessary"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "necessary"
+        ],
+        "top3": [
+          "necessary"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "title-case/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "Nota",
+      "intended": "Notation",
+      "prefix": "Nota",
+      "decoderPrefix": "nota",
+      "retrieved": [
+        {
+          "word": "notation",
+          "frequency": 156,
+          "riskTags": []
+        },
+        {
+          "word": "notable",
+          "frequency": 141,
+          "riskTags": []
+        },
+        {
+          "word": "notably",
+          "frequency": 135,
+          "riskTags": []
+        },
+        {
+          "word": "notables",
+          "frequency": 93,
+          "riskTags": []
+        },
+        {
+          "word": "notary",
+          "frequency": 89,
+          "riskTags": []
+        },
+        {
+          "word": "notarial",
+          "frequency": 64,
+          "riskTags": []
+        },
+        {
+          "word": "notate",
+          "frequency": 57,
+          "riskTags": []
+        },
+        {
+          "word": "notarize",
+          "frequency": 38,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "Notation",
+          "Notary"
+        ],
+        "top3": [
+          "Notation",
+          "Notary"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "Notation",
+          "Notary"
+        ],
+        "top3": [
+          "Notation",
+          "Notary"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 2,
+      "checkedStaleApplications": 18
+    },
+    {
+      "id": "all-caps/balanced",
+      "category": "completion",
+      "mode": "balanced",
+      "text": "NOTA",
+      "intended": "NOTATION",
+      "prefix": "NOTA",
+      "decoderPrefix": "nota",
+      "retrieved": [
+        {
+          "word": "notation",
+          "frequency": 156,
+          "riskTags": []
+        },
+        {
+          "word": "notable",
+          "frequency": 141,
+          "riskTags": []
+        },
+        {
+          "word": "notably",
+          "frequency": 135,
+          "riskTags": []
+        },
+        {
+          "word": "notables",
+          "frequency": 93,
+          "riskTags": []
+        },
+        {
+          "word": "notary",
+          "frequency": 89,
+          "riskTags": []
+        },
+        {
+          "word": "notarial",
+          "frequency": 64,
+          "riskTags": []
+        },
+        {
+          "word": "notate",
+          "frequency": 57,
+          "riskTags": []
+        },
+        {
+          "word": "notarize",
+          "frequency": 38,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "NOTATION",
+          "NOTARY"
+        ],
+        "top3": [
+          "NOTATION",
+          "NOTARY"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "NOTATION",
+          "NOTARY"
+        ],
+        "top3": [
+          "NOTATION",
+          "NOTARY"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 2,
+      "checkedStaleApplications": 18
+    },
+    {
+      "id": "fast-short-prefix/fast",
+      "category": "completion",
+      "mode": "fast",
+      "text": "I think the re",
+      "intended": "result",
+      "prefix": "re",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [
+          "result",
+          "relation",
+          "respectively",
+          "represented"
+        ],
+        "top3": [
+          "result",
+          "relation",
+          "respectively"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "result",
+          "relation",
+          "respectively",
+          "represented"
+        ],
+        "top3": [
+          "result",
+          "relation",
+          "respectively"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 3,
+      "checkedStaleApplications": 27
+    },
+    {
+      "id": "strict-denominator/strict",
+      "category": "completion",
+      "mode": "strict",
+      "text": "The denomina",
+      "intended": "denominator",
+      "prefix": "denomina",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [
+          "denominator"
+        ],
+        "top3": [
+          "denominator"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "denominator"
+        ],
+        "top3": [
+          "denominator"
+        ],
+        "intendedPoolRank": 1,
+        "intendedTop3Rank": 1,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "proof-method-gap/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "by ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "proof-method-gap/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "by ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "proof-method-gap/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "by ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "proof-method-weak-stem/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "We prove this by ind",
+      "prefix": "ind",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "proof-method-weak-stem/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "We prove this by ind",
+      "prefix": "ind",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "proof-method-weak-stem/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "We prove this by ind",
+      "prefix": "ind",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "conditional-gap/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "if ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "conditional-gap/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "if ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "conditional-gap/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "if ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "complete-if/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "if",
+      "prefix": "if",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "complete-if/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "if",
+      "prefix": "if",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "complete-if/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "if",
+      "prefix": "if",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "complete-not/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The number is not",
+      "prefix": "not",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "complete-not/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The number is not",
+      "prefix": "not",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "complete-not/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The number is not",
+      "prefix": "not",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "quantifier-gap/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "∀ ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "quantifier-gap/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "∀ ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "quantifier-gap/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "∀ ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "membership-gap/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "x ∈ ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "membership-gap/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "x ∈ ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "membership-gap/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "x ∈ ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "learner-operand-choice/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "Let X and Y be sets. Take a in ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "learner-operand-choice/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "Let X and Y be sets. Take a in ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "learner-operand-choice/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "Let X and Y be sets. Take a in ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "verbalize-relation/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "p ≥ q. In words, ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "verbalize-relation/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "p ≥ q. In words, ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "verbalize-relation/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "p ≥ q. In words, ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "incorrect-mathematics/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "Every integer is positive.",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "incorrect-mathematics/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "Every integer is positive.",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "incorrect-mathematics/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "Every integer is positive.",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "unresolved-reason/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The matrix is invertible because ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "unresolved-reason/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The matrix is invertible because ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "unresolved-reason/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The matrix is invertible because ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "weak-continuity/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The function is cont",
+      "prefix": "cont",
+      "decoderPrefix": "cont",
+      "retrieved": [
+        {
+          "word": "continuous",
+          "frequency": 185,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "contains",
+          "frequency": 161,
+          "riskTags": []
+        },
+        {
+          "word": "continued",
+          "frequency": 153,
+          "riskTags": []
+        },
+        {
+          "word": "control",
+          "frequency": 152,
+          "riskTags": []
+        },
+        {
+          "word": "contained",
+          "frequency": 144,
+          "riskTags": []
+        },
+        {
+          "word": "contract",
+          "frequency": 144,
+          "riskTags": []
+        },
+        {
+          "word": "continue",
+          "frequency": 140,
+          "riskTags": []
+        },
+        {
+          "word": "continues",
+          "frequency": 139,
+          "riskTags": []
+        },
+        {
+          "word": "containing",
+          "frequency": 138,
+          "riskTags": []
+        },
+        {
+          "word": "contemporary",
+          "frequency": 136,
+          "riskTags": []
+        },
+        {
+          "word": "content",
+          "frequency": 136,
+          "riskTags": []
+        },
+        {
+          "word": "continuity",
+          "frequency": 136,
+          "riskTags": []
+        },
+        {
+          "word": "contact",
+          "frequency": 135,
+          "riskTags": []
+        },
+        {
+          "word": "contain",
+          "frequency": 134,
+          "riskTags": []
+        },
+        {
+          "word": "contributed",
+          "frequency": 134,
+          "riskTags": []
+        },
+        {
+          "word": "contrast",
+          "frequency": 132,
+          "riskTags": []
+        },
+        {
+          "word": "controversy",
+          "frequency": 132,
+          "riskTags": []
+        },
+        {
+          "word": "controversial",
+          "frequency": 131,
+          "riskTags": []
+        },
+        {
+          "word": "context",
+          "frequency": 130,
+          "riskTags": []
+        },
+        {
+          "word": "continuing",
+          "frequency": 129,
+          "riskTags": []
+        },
+        {
+          "word": "contributions",
+          "frequency": 129,
+          "riskTags": []
+        },
+        {
+          "word": "contest",
+          "frequency": 128,
+          "riskTags": []
+        },
+        {
+          "word": "contribution",
+          "frequency": 126,
+          "riskTags": []
+        },
+        {
+          "word": "controls",
+          "frequency": 124,
+          "riskTags": []
+        },
+        {
+          "word": "controlled",
+          "frequency": 123,
+          "riskTags": []
+        },
+        {
+          "word": "contested",
+          "frequency": 122,
+          "riskTags": []
+        },
+        {
+          "word": "contracts",
+          "frequency": 122,
+          "riskTags": []
+        },
+        {
+          "word": "contribute",
+          "frequency": 120,
+          "riskTags": []
+        },
+        {
+          "word": "contributing",
+          "frequency": 119,
+          "riskTags": []
+        },
+        {
+          "word": "continent",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "continental",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "continuously",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "controlling",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "contacts",
+          "frequency": 117,
+          "riskTags": []
+        },
+        {
+          "word": "contents",
+          "frequency": 117,
+          "riskTags": []
+        },
+        {
+          "word": "contracted",
+          "frequency": 117,
+          "riskTags": []
+        },
+        {
+          "word": "contrary",
+          "frequency": 115,
+          "riskTags": []
+        },
+        {
+          "word": "contestants",
+          "frequency": 114,
+          "riskTags": []
+        },
+        {
+          "word": "contacted",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "contestant",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "continuation",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "contributor",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "controller",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "container",
+          "frequency": 112,
+          "riskTags": []
+        },
+        {
+          "word": "continually",
+          "frequency": 112,
+          "riskTags": []
+        },
+        {
+          "word": "contemporaries",
+          "frequency": 111,
+          "riskTags": []
+        },
+        {
+          "word": "contests",
+          "frequency": 110,
+          "riskTags": []
+        },
+        {
+          "word": "contexts",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "contingent",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "contributes",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "contractor",
+          "frequency": 108,
+          "riskTags": []
+        },
+        {
+          "word": "contributors",
+          "frequency": 107,
+          "riskTags": []
+        },
+        {
+          "word": "containers",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "contamination",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "contention",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "continents",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "contractors",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "contaminated",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "contender",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "contraction",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "contrasted",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "controllers",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "contempt",
+          "frequency": 103,
+          "riskTags": []
+        },
+        {
+          "word": "contrasts",
+          "frequency": 103,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "weak-continuity/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The function is cont",
+      "prefix": "cont",
+      "decoderPrefix": "cont",
+      "retrieved": [
+        {
+          "word": "continuous",
+          "frequency": 185,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "contains",
+          "frequency": 161,
+          "riskTags": []
+        },
+        {
+          "word": "continued",
+          "frequency": 153,
+          "riskTags": []
+        },
+        {
+          "word": "control",
+          "frequency": 152,
+          "riskTags": []
+        },
+        {
+          "word": "contained",
+          "frequency": 144,
+          "riskTags": []
+        },
+        {
+          "word": "contract",
+          "frequency": 144,
+          "riskTags": []
+        },
+        {
+          "word": "continue",
+          "frequency": 140,
+          "riskTags": []
+        },
+        {
+          "word": "continues",
+          "frequency": 139,
+          "riskTags": []
+        },
+        {
+          "word": "containing",
+          "frequency": 138,
+          "riskTags": []
+        },
+        {
+          "word": "contemporary",
+          "frequency": 136,
+          "riskTags": []
+        },
+        {
+          "word": "content",
+          "frequency": 136,
+          "riskTags": []
+        },
+        {
+          "word": "continuity",
+          "frequency": 136,
+          "riskTags": []
+        },
+        {
+          "word": "contact",
+          "frequency": 135,
+          "riskTags": []
+        },
+        {
+          "word": "contain",
+          "frequency": 134,
+          "riskTags": []
+        },
+        {
+          "word": "contributed",
+          "frequency": 134,
+          "riskTags": []
+        },
+        {
+          "word": "contrast",
+          "frequency": 132,
+          "riskTags": []
+        },
+        {
+          "word": "controversy",
+          "frequency": 132,
+          "riskTags": []
+        },
+        {
+          "word": "controversial",
+          "frequency": 131,
+          "riskTags": []
+        },
+        {
+          "word": "context",
+          "frequency": 130,
+          "riskTags": []
+        },
+        {
+          "word": "continuing",
+          "frequency": 129,
+          "riskTags": []
+        },
+        {
+          "word": "contributions",
+          "frequency": 129,
+          "riskTags": []
+        },
+        {
+          "word": "contest",
+          "frequency": 128,
+          "riskTags": []
+        },
+        {
+          "word": "contribution",
+          "frequency": 126,
+          "riskTags": []
+        },
+        {
+          "word": "controls",
+          "frequency": 124,
+          "riskTags": []
+        },
+        {
+          "word": "controlled",
+          "frequency": 123,
+          "riskTags": []
+        },
+        {
+          "word": "contested",
+          "frequency": 122,
+          "riskTags": []
+        },
+        {
+          "word": "contracts",
+          "frequency": 122,
+          "riskTags": []
+        },
+        {
+          "word": "contribute",
+          "frequency": 120,
+          "riskTags": []
+        },
+        {
+          "word": "contributing",
+          "frequency": 119,
+          "riskTags": []
+        },
+        {
+          "word": "continent",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "continental",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "continuously",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "controlling",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "contacts",
+          "frequency": 117,
+          "riskTags": []
+        },
+        {
+          "word": "contents",
+          "frequency": 117,
+          "riskTags": []
+        },
+        {
+          "word": "contracted",
+          "frequency": 117,
+          "riskTags": []
+        },
+        {
+          "word": "contrary",
+          "frequency": 115,
+          "riskTags": []
+        },
+        {
+          "word": "contestants",
+          "frequency": 114,
+          "riskTags": []
+        },
+        {
+          "word": "contacted",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "contestant",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "continuation",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "contributor",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "controller",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "container",
+          "frequency": 112,
+          "riskTags": []
+        },
+        {
+          "word": "continually",
+          "frequency": 112,
+          "riskTags": []
+        },
+        {
+          "word": "contemporaries",
+          "frequency": 111,
+          "riskTags": []
+        },
+        {
+          "word": "contests",
+          "frequency": 110,
+          "riskTags": []
+        },
+        {
+          "word": "contexts",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "contingent",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "contributes",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "contractor",
+          "frequency": 108,
+          "riskTags": []
+        },
+        {
+          "word": "contributors",
+          "frequency": 107,
+          "riskTags": []
+        },
+        {
+          "word": "containers",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "contamination",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "contention",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "continents",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "contractors",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "contaminated",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "contender",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "contraction",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "contrasted",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "controllers",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "contempt",
+          "frequency": 103,
+          "riskTags": []
+        },
+        {
+          "word": "contrasts",
+          "frequency": 103,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "continuity",
+          "contain",
+          "contact",
+          "contactor",
+          "contagion",
+          "contagium"
+        ],
+        "top3": [
+          "continuity",
+          "contain",
+          "contact"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "contact",
+          "contain",
+          "contactor",
+          "contagion",
+          "contagium"
+        ],
+        "top3": [
+          "contact",
+          "contain",
+          "contactor"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [
+        "weak evidence offered continuity"
+      ],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 3,
+      "checkedStaleApplications": 27
+    },
+    {
+      "id": "weak-continuity/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The function is cont",
+      "prefix": "cont",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "weak-injectivity/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The function is inj",
+      "prefix": "inj",
+      "decoderPrefix": "inj",
+      "retrieved": [
+        {
+          "word": "injective",
+          "frequency": 164,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "injury",
+          "frequency": 134,
+          "riskTags": []
+        },
+        {
+          "word": "injured",
+          "frequency": 130,
+          "riskTags": []
+        },
+        {
+          "word": "injuries",
+          "frequency": 126,
+          "riskTags": []
+        },
+        {
+          "word": "injection",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "injected",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "injunction",
+          "frequency": 101,
+          "riskTags": []
+        },
+        {
+          "word": "injuring",
+          "frequency": 101,
+          "riskTags": []
+        },
+        {
+          "word": "injustice",
+          "frequency": 98,
+          "riskTags": []
+        },
+        {
+          "word": "injections",
+          "frequency": 91,
+          "riskTags": []
+        },
+        {
+          "word": "injure",
+          "frequency": 89,
+          "riskTags": []
+        },
+        {
+          "word": "inject",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "injector",
+          "frequency": 77,
+          "riskTags": []
+        },
+        {
+          "word": "injurious",
+          "frequency": 75,
+          "riskTags": []
+        },
+        {
+          "word": "injurer",
+          "frequency": 28,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "weak-injectivity/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The function is inj",
+      "prefix": "inj",
+      "decoderPrefix": "inj",
+      "retrieved": [
+        {
+          "word": "injective",
+          "frequency": 164,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "injury",
+          "frequency": 134,
+          "riskTags": []
+        },
+        {
+          "word": "injured",
+          "frequency": 130,
+          "riskTags": []
+        },
+        {
+          "word": "injuries",
+          "frequency": 126,
+          "riskTags": []
+        },
+        {
+          "word": "injection",
+          "frequency": 113,
+          "riskTags": []
+        },
+        {
+          "word": "injected",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "injunction",
+          "frequency": 101,
+          "riskTags": []
+        },
+        {
+          "word": "injuring",
+          "frequency": 101,
+          "riskTags": []
+        },
+        {
+          "word": "injustice",
+          "frequency": 98,
+          "riskTags": []
+        },
+        {
+          "word": "injections",
+          "frequency": 91,
+          "riskTags": []
+        },
+        {
+          "word": "injure",
+          "frequency": 89,
+          "riskTags": []
+        },
+        {
+          "word": "inject",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "injector",
+          "frequency": 77,
+          "riskTags": []
+        },
+        {
+          "word": "injurious",
+          "frequency": 75,
+          "riskTags": []
+        },
+        {
+          "word": "injurer",
+          "frequency": 28,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "injection"
+        ],
+        "top3": [
+          "injection"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "weak-injectivity/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The function is inj",
+      "prefix": "inj",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "weak-divergence/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The sequence is div",
+      "prefix": "div",
+      "decoderPrefix": "div",
+      "retrieved": [
+        {
+          "word": "division",
+          "frequency": 144,
+          "riskTags": []
+        },
+        {
+          "word": "divided",
+          "frequency": 140,
+          "riskTags": []
+        },
+        {
+          "word": "divisions",
+          "frequency": 130,
+          "riskTags": []
+        },
+        {
+          "word": "diverse",
+          "frequency": 126,
+          "riskTags": []
+        },
+        {
+          "word": "divorce",
+          "frequency": 121,
+          "riskTags": []
+        },
+        {
+          "word": "divorced",
+          "frequency": 121,
+          "riskTags": []
+        },
+        {
+          "word": "diversity",
+          "frequency": 120,
+          "riskTags": []
+        },
+        {
+          "word": "divine",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "divides",
+          "frequency": 116,
+          "riskTags": []
+        },
+        {
+          "word": "diving",
+          "frequency": 116,
+          "riskTags": []
+        },
+        {
+          "word": "divide",
+          "frequency": 114,
+          "riskTags": []
+        },
+        {
+          "word": "dive",
+          "frequency": 111,
+          "riskTags": []
+        },
+        {
+          "word": "dividing",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "diverted",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "divers",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "divisional",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "diversified",
+          "frequency": 101,
+          "riskTags": []
+        },
+        {
+          "word": "diversion",
+          "frequency": 101,
+          "riskTags": []
+        },
+        {
+          "word": "diver",
+          "frequency": 99,
+          "riskTags": []
+        },
+        {
+          "word": "divergence",
+          "frequency": 98,
+          "riskTags": []
+        },
+        {
+          "word": "divinity",
+          "frequency": 98,
+          "riskTags": []
+        },
+        {
+          "word": "divert",
+          "frequency": 97,
+          "riskTags": []
+        },
+        {
+          "word": "diverged",
+          "frequency": 94,
+          "riskTags": []
+        },
+        {
+          "word": "divergent",
+          "frequency": 94,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "dividends",
+          "frequency": 94,
+          "riskTags": []
+        },
+        {
+          "word": "dives",
+          "frequency": 93,
+          "riskTags": []
+        },
+        {
+          "word": "dividend",
+          "frequency": 93,
+          "riskTags": []
+        },
+        {
+          "word": "diversification",
+          "frequency": 91,
+          "riskTags": []
+        },
+        {
+          "word": "diversify",
+          "frequency": 89,
+          "riskTags": []
+        },
+        {
+          "word": "diverge",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "diverting",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "divisible",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "divisive",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "divisor",
+          "frequency": 87,
+          "riskTags": []
+        },
+        {
+          "word": "diva",
+          "frequency": 83,
+          "riskTags": []
+        },
+        {
+          "word": "divest",
+          "frequency": 81,
+          "riskTags": []
+        },
+        {
+          "word": "divider",
+          "frequency": 81,
+          "riskTags": []
+        },
+        {
+          "word": "divulge",
+          "frequency": 77,
+          "riskTags": []
+        },
+        {
+          "word": "divorcee",
+          "frequency": 70,
+          "riskTags": []
+        },
+        {
+          "word": "divisibility",
+          "frequency": 66,
+          "riskTags": []
+        },
+        {
+          "word": "divan",
+          "frequency": 62,
+          "riskTags": []
+        },
+        {
+          "word": "diviner",
+          "frequency": 60,
+          "riskTags": []
+        },
+        {
+          "word": "divot",
+          "frequency": 43,
+          "riskTags": []
+        },
+        {
+          "word": "divvy",
+          "frequency": 38,
+          "riskTags": []
+        },
+        {
+          "word": "divalent",
+          "frequency": 37,
+          "riskTags": []
+        },
+        {
+          "word": "divagate",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "divalence",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "divinize",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "divulgate",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "divulsion",
+          "frequency": 1,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "weak-divergence/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The sequence is div",
+      "prefix": "div",
+      "decoderPrefix": "div",
+      "retrieved": [
+        {
+          "word": "division",
+          "frequency": 144,
+          "riskTags": []
+        },
+        {
+          "word": "divided",
+          "frequency": 140,
+          "riskTags": []
+        },
+        {
+          "word": "divisions",
+          "frequency": 130,
+          "riskTags": []
+        },
+        {
+          "word": "diverse",
+          "frequency": 126,
+          "riskTags": []
+        },
+        {
+          "word": "divorce",
+          "frequency": 121,
+          "riskTags": []
+        },
+        {
+          "word": "divorced",
+          "frequency": 121,
+          "riskTags": []
+        },
+        {
+          "word": "diversity",
+          "frequency": 120,
+          "riskTags": []
+        },
+        {
+          "word": "divine",
+          "frequency": 118,
+          "riskTags": []
+        },
+        {
+          "word": "divides",
+          "frequency": 116,
+          "riskTags": []
+        },
+        {
+          "word": "diving",
+          "frequency": 116,
+          "riskTags": []
+        },
+        {
+          "word": "divide",
+          "frequency": 114,
+          "riskTags": []
+        },
+        {
+          "word": "dive",
+          "frequency": 111,
+          "riskTags": []
+        },
+        {
+          "word": "dividing",
+          "frequency": 109,
+          "riskTags": []
+        },
+        {
+          "word": "diverted",
+          "frequency": 106,
+          "riskTags": []
+        },
+        {
+          "word": "divers",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "divisional",
+          "frequency": 104,
+          "riskTags": []
+        },
+        {
+          "word": "diversified",
+          "frequency": 101,
+          "riskTags": []
+        },
+        {
+          "word": "diversion",
+          "frequency": 101,
+          "riskTags": []
+        },
+        {
+          "word": "diver",
+          "frequency": 99,
+          "riskTags": []
+        },
+        {
+          "word": "divergence",
+          "frequency": 98,
+          "riskTags": []
+        },
+        {
+          "word": "divinity",
+          "frequency": 98,
+          "riskTags": []
+        },
+        {
+          "word": "divert",
+          "frequency": 97,
+          "riskTags": []
+        },
+        {
+          "word": "diverged",
+          "frequency": 94,
+          "riskTags": []
+        },
+        {
+          "word": "divergent",
+          "frequency": 94,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "dividends",
+          "frequency": 94,
+          "riskTags": []
+        },
+        {
+          "word": "dives",
+          "frequency": 93,
+          "riskTags": []
+        },
+        {
+          "word": "dividend",
+          "frequency": 93,
+          "riskTags": []
+        },
+        {
+          "word": "diversification",
+          "frequency": 91,
+          "riskTags": []
+        },
+        {
+          "word": "diversify",
+          "frequency": 89,
+          "riskTags": []
+        },
+        {
+          "word": "diverge",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "diverting",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "divisible",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "divisive",
+          "frequency": 88,
+          "riskTags": []
+        },
+        {
+          "word": "divisor",
+          "frequency": 87,
+          "riskTags": []
+        },
+        {
+          "word": "diva",
+          "frequency": 83,
+          "riskTags": []
+        },
+        {
+          "word": "divest",
+          "frequency": 81,
+          "riskTags": []
+        },
+        {
+          "word": "divider",
+          "frequency": 81,
+          "riskTags": []
+        },
+        {
+          "word": "divulge",
+          "frequency": 77,
+          "riskTags": []
+        },
+        {
+          "word": "divorcee",
+          "frequency": 70,
+          "riskTags": []
+        },
+        {
+          "word": "divisibility",
+          "frequency": 66,
+          "riskTags": []
+        },
+        {
+          "word": "divan",
+          "frequency": 62,
+          "riskTags": []
+        },
+        {
+          "word": "diviner",
+          "frequency": 60,
+          "riskTags": []
+        },
+        {
+          "word": "divot",
+          "frequency": 43,
+          "riskTags": []
+        },
+        {
+          "word": "divvy",
+          "frequency": 38,
+          "riskTags": []
+        },
+        {
+          "word": "divalent",
+          "frequency": 37,
+          "riskTags": []
+        },
+        {
+          "word": "divagate",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "divalence",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "divinize",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "divulgate",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "divulsion",
+          "frequency": 1,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "division",
+          "divisibility",
+          "divisible"
+        ],
+        "top3": [
+          "division",
+          "divisibility",
+          "divisible"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "division",
+          "divisible",
+          "divisibility"
+        ],
+        "top3": [
+          "division",
+          "divisible",
+          "divisibility"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 3,
+      "checkedStaleApplications": 27
+    },
+    {
+      "id": "weak-divergence/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The sequence is div",
+      "prefix": "div",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "nonnegative-risk-tag/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The value is nonneg",
+      "prefix": "nonneg",
+      "decoderPrefix": "nonneg",
+      "retrieved": [
+        {
+          "word": "nonnegative",
+          "frequency": 141,
+          "riskTags": [
+            "logic"
+          ]
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "nonnegative-risk-tag/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The value is nonneg",
+      "prefix": "nonneg",
+      "decoderPrefix": "nonneg",
+      "retrieved": [
+        {
+          "word": "nonnegative",
+          "frequency": 141,
+          "riskTags": [
+            "logic"
+          ]
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "nonnegative-risk-tag/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The value is nonneg",
+      "prefix": "nonneg",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "nonpositive-risk-tag/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The value is nonpos",
+      "prefix": "nonpos",
+      "decoderPrefix": "nonpos",
+      "retrieved": [
+        {
+          "word": "nonpositive",
+          "frequency": 1,
+          "riskTags": [
+            "logic"
+          ]
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "nonpositive-risk-tag/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The value is nonpos",
+      "prefix": "nonpos",
+      "decoderPrefix": "nonpos",
+      "retrieved": [
+        {
+          "word": "nonpositive",
+          "frequency": 1,
+          "riskTags": [
+            "logic"
+          ]
+        }
+      ],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "nonpositive-risk-tag/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The value is nonpos",
+      "prefix": "nonpos",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "weak-sufficiency/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The condition is suff",
+      "prefix": "suff",
+      "decoderPrefix": "suff",
+      "retrieved": [
+        {
+          "word": "suffered",
+          "frequency": 138,
+          "riskTags": []
+        },
+        {
+          "word": "suffering",
+          "frequency": 127,
+          "riskTags": []
+        },
+        {
+          "word": "sufficient",
+          "frequency": 126,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "suffer",
+          "frequency": 117,
+          "riskTags": []
+        },
+        {
+          "word": "sufficiently",
+          "frequency": 114,
+          "riskTags": []
+        },
+        {
+          "word": "suffix",
+          "frequency": 110,
+          "riskTags": []
+        },
+        {
+          "word": "suffers",
+          "frequency": 108,
+          "riskTags": []
+        },
+        {
+          "word": "suffrage",
+          "frequency": 105,
+          "riskTags": []
+        },
+        {
+          "word": "suffixes",
+          "frequency": 97,
+          "riskTags": []
+        },
+        {
+          "word": "suffice",
+          "frequency": 84,
+          "riskTags": []
+        },
+        {
+          "word": "sufferer",
+          "frequency": 78,
+          "riskTags": []
+        },
+        {
+          "word": "suffocate",
+          "frequency": 70,
+          "riskTags": []
+        },
+        {
+          "word": "suffusion",
+          "frequency": 46,
+          "riskTags": []
+        },
+        {
+          "word": "suffragan",
+          "frequency": 38,
+          "riskTags": []
+        },
+        {
+          "word": "suffuse",
+          "frequency": 35,
+          "riskTags": []
+        },
+        {
+          "word": "suffixion",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "sufflate",
+          "frequency": 1,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "suffer",
+          "suffix"
+        ],
+        "top3": [
+          "suffer",
+          "suffix"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "suffer",
+          "suffix"
+        ],
+        "top3": [
+          "suffer",
+          "suffix"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 2,
+      "checkedStaleApplications": 18
+    },
+    {
+      "id": "weak-sufficiency/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The condition is suff",
+      "prefix": "suff",
+      "decoderPrefix": "suff",
+      "retrieved": [
+        {
+          "word": "suffered",
+          "frequency": 138,
+          "riskTags": []
+        },
+        {
+          "word": "suffering",
+          "frequency": 127,
+          "riskTags": []
+        },
+        {
+          "word": "sufficient",
+          "frequency": 126,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "suffer",
+          "frequency": 117,
+          "riskTags": []
+        },
+        {
+          "word": "sufficiently",
+          "frequency": 114,
+          "riskTags": []
+        },
+        {
+          "word": "suffix",
+          "frequency": 110,
+          "riskTags": []
+        },
+        {
+          "word": "suffers",
+          "frequency": 108,
+          "riskTags": []
+        },
+        {
+          "word": "suffrage",
+          "frequency": 105,
+          "riskTags": []
+        },
+        {
+          "word": "suffixes",
+          "frequency": 97,
+          "riskTags": []
+        },
+        {
+          "word": "suffice",
+          "frequency": 84,
+          "riskTags": []
+        },
+        {
+          "word": "sufferer",
+          "frequency": 78,
+          "riskTags": []
+        },
+        {
+          "word": "suffocate",
+          "frequency": 70,
+          "riskTags": []
+        },
+        {
+          "word": "suffusion",
+          "frequency": 46,
+          "riskTags": []
+        },
+        {
+          "word": "suffragan",
+          "frequency": 38,
+          "riskTags": []
+        },
+        {
+          "word": "suffuse",
+          "frequency": 35,
+          "riskTags": []
+        },
+        {
+          "word": "suffixion",
+          "frequency": 1,
+          "riskTags": []
+        },
+        {
+          "word": "sufflate",
+          "frequency": 1,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "suffer",
+          "sufferer",
+          "suffering",
+          "suffice",
+          "suffix",
+          "suffixion"
+        ],
+        "top3": [
+          "suffer",
+          "sufferer",
+          "suffice"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "suffering",
+          "suffer",
+          "suffix",
+          "suffice",
+          "sufferer",
+          "suffixion"
+        ],
+        "top3": [
+          "suffering",
+          "suffer",
+          "suffix"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 3,
+      "checkedStaleApplications": 27
+    },
+    {
+      "id": "weak-sufficiency/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The condition is suff",
+      "prefix": "suff",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "weak-necessity/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The condition is necess",
+      "prefix": "necess",
+      "decoderPrefix": "necess",
+      "retrieved": [
+        {
+          "word": "necessary",
+          "frequency": 137,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "necessarily",
+          "frequency": 121,
+          "riskTags": []
+        },
+        {
+          "word": "necessity",
+          "frequency": 112,
+          "riskTags": []
+        },
+        {
+          "word": "necessitated",
+          "frequency": 98,
+          "riskTags": []
+        },
+        {
+          "word": "necessities",
+          "frequency": 91,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "necessity"
+        ],
+        "top3": [
+          "necessity"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "necessity"
+        ],
+        "top3": [
+          "necessity"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "weak-necessity/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The condition is necess",
+      "prefix": "necess",
+      "decoderPrefix": "necess",
+      "retrieved": [
+        {
+          "word": "necessary",
+          "frequency": 137,
+          "riskTags": [
+            "logic"
+          ]
+        },
+        {
+          "word": "necessarily",
+          "frequency": 121,
+          "riskTags": []
+        },
+        {
+          "word": "necessity",
+          "frequency": 112,
+          "riskTags": []
+        },
+        {
+          "word": "necessitated",
+          "frequency": 98,
+          "riskTags": []
+        },
+        {
+          "word": "necessities",
+          "frequency": 91,
+          "riskTags": []
+        }
+      ],
+      "baseline": {
+        "pool": [
+          "necessity"
+        ],
+        "top3": [
+          "necessity"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "necessity"
+        ],
+        "top3": [
+          "necessity"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "weak-necessity/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The condition is necess",
+      "prefix": "necess",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "tutor-line/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "Tutor: nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "tutor-line/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "Tutor: nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "tutor-line/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "Tutor: nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "attributed-tutor/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "The tutor said nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "attributed-tutor/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "The tutor said nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "attributed-tutor/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The tutor said nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "quoted-text/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "\"nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "quoted-text/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "\"nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "quoted-text/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "\"nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "backtick-code/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "`nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "backtick-code/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "`nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "backtick-code/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "`nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "fenced-code/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "```\nnota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "fenced-code/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "```\nnota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "fenced-code/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "```\nnota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "literal-identifier/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "identifier nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "literal-identifier/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "identifier nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "literal-identifier/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "identifier nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "inline-math/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "$nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "inline-math/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "$nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "inline-math/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "$nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "pasted-text/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "pasted-text/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "pasted-text/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "restored-prefix-boundary/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "restored-prefix-boundary/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "restored-prefix-boundary/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "composing/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "composing/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "composing/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "read-only/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "read-only/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "read-only/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "selection-moved/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "nota",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "selection-moved/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "nota",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "selection-moved/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "nota",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "disabled-surfaces/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "disabled-surfaces/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "disabled-surfaces/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "disabled-mode/off",
+      "category": "safety",
+      "mode": "off",
+      "text": "nota",
+      "prefix": "nota",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "balanced-short-stem/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "I think the re",
+      "prefix": "re",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "strict-short-stem/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "The equ",
+      "prefix": "equ",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "neutral-next-word/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "constructor ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [
+          "the",
+          "a",
+          "an"
+        ],
+        "top3": [
+          "the",
+          "a",
+          "an"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "the",
+          "a",
+          "an"
+        ],
+        "top3": [
+          "the",
+          "a",
+          "an"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 3,
+      "checkedStaleApplications": 27
+    },
+    {
+      "id": "neutral-next-word/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "constructor ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [
+          "the",
+          "a",
+          "an"
+        ],
+        "top3": [
+          "the",
+          "a",
+          "an"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [
+          "the",
+          "a",
+          "an"
+        ],
+        "top3": [
+          "the",
+          "a",
+          "an"
+        ],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 3,
+      "checkedStaleApplications": 27
+    },
+    {
+      "id": "neutral-next-word/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "constructor ",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    },
+    {
+      "id": "preserve-notation-edit/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "x <= y",
+      "prefix": "y",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "replace",
+            "before": "<=",
+            "insert": "≤"
+          }
+        ],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "replace",
+            "before": "<=",
+            "insert": "≤"
+          }
+        ],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "preserve-notation-edit/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "x <= y",
+      "prefix": "y",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "replace",
+            "before": "<=",
+            "insert": "≤"
+          }
+        ],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "replace",
+            "before": "<=",
+            "insert": "≤"
+          }
+        ],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "preserve-notation-edit/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "x <= y",
+      "prefix": "y",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "replace",
+            "before": "<=",
+            "insert": "≤"
+          }
+        ],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "replace",
+            "before": "<=",
+            "insert": "≤"
+          }
+        ],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "preserve-explicit-correction/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "We wrote teh here.",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "correction",
+            "before": "teh",
+            "insert": "the"
+          }
+        ],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "correction",
+            "before": "teh",
+            "insert": "the"
+          }
+        ],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "preserve-explicit-correction/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "We wrote teh here.",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "correction",
+            "before": "teh",
+            "insert": "the"
+          }
+        ],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "correction",
+            "before": "teh",
+            "insert": "the"
+          }
+        ],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "preserve-explicit-correction/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "We wrote teh here.",
+      "prefix": "",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "correction",
+            "before": "teh",
+            "insert": "the"
+          }
+        ],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [
+          {
+            "kind": "correction",
+            "before": "teh",
+            "insert": "the"
+          }
+        ],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "preserve-reading-request/balanced",
+      "category": "safety",
+      "mode": "balanced",
+      "text": "could you restate",
+      "prefix": "restate",
+      "decoderPrefix": "restate",
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": [
+          " the question"
+        ]
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": [
+          " the question"
+        ]
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "preserve-reading-request/fast",
+      "category": "safety",
+      "mode": "fast",
+      "text": "could you restate",
+      "prefix": "restate",
+      "decoderPrefix": "restate",
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": [
+          " the question"
+        ]
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": [
+          " the question"
+        ]
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 1,
+      "checkedStaleApplications": 9
+    },
+    {
+      "id": "preserve-reading-request/strict",
+      "category": "safety",
+      "mode": "strict",
+      "text": "could you restate",
+      "prefix": "restate",
+      "decoderPrefix": null,
+      "retrieved": [],
+      "baseline": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "candidate": {
+        "pool": [],
+        "top3": [],
+        "intendedPoolRank": null,
+        "intendedTop3Rank": null,
+        "edit": [],
+        "ghost": []
+      },
+      "baselineSafetyErrors": [],
+      "candidateSafetyErrors": [],
+      "contractErrors": [],
+      "checkedApplications": 0,
+      "checkedStaleApplications": 0
+    }
+  ]
+}

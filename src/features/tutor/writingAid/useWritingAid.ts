@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {isFlagOn} from '../../../flags';
 import {
   ALL_WRITING_AID_SURFACES, NO_WRITING_AID, canSuggestWritingAid, sameWritingAidRequest, writingAidProposalKey,
   type WritingAidProposal, type WritingAidRefreshSurface, type WritingAidRequest, type WritingAidSuggestions,
@@ -6,6 +7,7 @@ import {
 import {recordWritingAidVocabulary, updateWritingAidModel, writingAidFeatures, type WritingAidFeedback} from './learning';
 import {saveWritingAidModel, useWritingAidPersonalization} from './personalization';
 import type {WritingAidPool} from './engine';
+import type {WritingDecoderClient} from './decoder/client';
 
 type Flags = Readonly<Record<WritingAidRefreshSurface, boolean>>;
 type Lists = Record<WritingAidRefreshSurface, readonly WritingAidProposal[]>;
@@ -92,6 +94,11 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   const exposures = useRef<Exposure[]>([]);
   const pending = useRef<PendingAcceptance | null>(null);
   const previous = useRef<WritingAidRequest | null>(null);
+  const decoder = useRef<WritingDecoderClient | null>(null);
+  const decoderEnabled = isFlagOn('writingDecoder');
+
+  useEffect(() => () => {decoder.current?.dispose(); decoder.current = null;},
+    [decoderEnabled, mode, words, scopeKey, mountId, learningScope]);
 
   const retireFeedback = useCallback(() => {
     exposures.current = [];
@@ -292,8 +299,9 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   useEffect(() => {
     if (mode === 'off' || !words && !replace && !correction && !ghost) return;
     let cancelled = false;
+    const abort = new AbortController();
     let frame: number | undefined;
-    void import('./engine').then(({predictWritingAidPool, selectWritingAidPool}) => {
+    void import('./engine').then(({predictWritingAidPool, selectWritingAidPool, writingDecoderPrefix}) => {
       if (cancelled || !canSuggestWritingAid(snapshot)) return;
       frame = window.requestAnimationFrame(() => {
         if (cancelled || learningScope !== live.current.learningScope) return;
@@ -303,13 +311,26 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
           const pool = predictWritingAidPool(snapshot, model);
           const suggestions = selectWritingAidPool(pool, model, cycle.current.excluded);
           setResult({snapshot, sequence, learningScope, pool, suggestions});
+          const prefix = decoderEnabled ? writingDecoderPrefix(snapshot) : null;
+          if (prefix) void import('./decoder/client').then(async ({createWritingDecoderClient}) => {
+            if (cancelled) return;
+            decoder.current ??= createWritingDecoderClient();
+            const candidates = await decoder.current.query(prefix, abort.signal);
+            if (cancelled || !candidates || learningScope !== live.current.learningScope ||
+                !sameWritingAidRequest(snapshot, live.current.snapshot)) return;
+            const latest = live.current.personalization;
+            const model = latest.enabled ? latest.model : undefined;
+            const pool = predictWritingAidPool(snapshot, model, candidates);
+            const suggestions = selectWritingAidPool(pool, model, cycle.current.excluded);
+            setResult({snapshot, sequence, learningScope, pool, suggestions});
+          }).catch(() => {/* Keep the already displayed baseline when the optional decoder fails. */});
         } catch {
           setResult({snapshot, sequence, learningScope, suggestions: NO_WRITING_AID, pool: {words: [], edit: [], ghost: []}});
         }
       });
     }).catch(() => {/* A failed asset load leaves ordinary editing and math keys usable. */});
-    return () => {cancelled = true; if (frame !== undefined) window.cancelAnimationFrame(frame);};
-  }, [snapshot, sequence, learningScope, personalization.enabled, mode, words, replace, correction, ghost]);
+    return () => {cancelled = true; abort.abort(); if (frame !== undefined) window.cancelAnimationFrame(frame);};
+  }, [snapshot, sequence, learningScope, personalization.enabled, mode, words, replace, correction, ghost, decoderEnabled]);
 
   const suggestions = current?.suggestions ?? NO_WRITING_AID;
   const canRefresh: Flags = current ? Object.fromEntries((['words', 'edit', 'ghost'] as const).map(surface => {

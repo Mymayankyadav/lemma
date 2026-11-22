@@ -7,6 +7,9 @@ import {
 } from './policy';
 import {scoreWritingAidProposal, writingAidVocabularyStrength, type WritingAidModel} from './learning';
 import {makeStudyInput} from './vendor/study_input.mjs';
+import {isWritingWord, permitAcceleratedWord} from './vendor/accelerator.mjs';
+import type {DecoderCandidate} from './decoder/lexicon';
+import {readDecoderCandidates} from './decoder/protocol';
 import {makeRevision} from './vendor/legacy/revision.mjs';
 import phraseData from './vendor/legacy/runtime-phrases.json';
 import veto from './vendor/legacy/runtime-veto.json';
@@ -44,6 +47,10 @@ const LITERAL_LINE = /(?:search|identifier|code|literal|verbatim|product|brand|n
 const TOKEN = /\\[A-Za-z]+|[<=>!\-]+|_[0-9]|\bthe the\b|[\p{L}\p{M}]+/gu;
 const RISKY_PERSONAL_WORD = /^(?:not|no|or|if|only|all|some|any|neither|never|contradiction|contrapositive|induction|injective|surjective|bijective|infinite|finite|nonempty|empty|zero|nonzero|positive|negative|unique|uniqueness|compact|compactness|continuous|discontinuous|unbounded|bounded|converges?|convergent|convergence|diverges?|divergent|divergence|contradicts|witness|true|false|greater|less|every|exists|inverse|proof|prove|proves|proved|proving|prime|composite|property|properties|counterexample|theorem|lemma|sufficient|necessary|equivalent|implies|integer|rational|irrational|even|odd|commutative|associative|distributive|invertible|singular|nonsingular|symmetric|antisymmetric|reflexive|transitive|irreflexive|countable|uncountable|measurable|monotone|increasing|decreasing|differentiable|integrable|closed|open|dense|separable|complete|completeness|connected|disconnected|distinct|equal|unequal|idempotent|coprime|independent|dependent|linear|nonlinear|convex|concave)$/iu;
 const phraseEngines = new Map<string, ReturnType<typeof makeRevision>>();
+const commitmentDictionary = {words, common: wordAssets.common};
+// Expanded vocabulary brings inflections absent from the original exact-word risk list.
+// Apply this only to the enabled path so its flag-off baseline remains reproducible.
+const DECODER_PROOF_FAMILY = /^(?:contradic|contrapos|induct|inject|surject|biject|independen|dependen|nonnegativ|nonpositiv|negativ|positiv|nonempt|nonzero|uniqu|necessar|sufficien|equivalen|convergen|divergen|continu(?:ous|ity)|discontinu(?:ous|ity)|compact|bound(?:ed|edness)|unbound|countab|uncountab|measurab|differentia|integrab|commutativ|associativ|distributiv|invertib|singular|nonsingular|symmetr|antisymmetr|reflexiv|irreflexiv|transitiv|connect(?:ed|ivity)|disconnect|complet(?:e|eness)|finit|infinit|rational|irrational|monoton|increas|decreas|convex|concav|idempot|coprim|orthogon|counterexam|impli(?:es|ed|cation))/iu;
 
 function writtenWord(word: string): boolean {
   if (wordAssets.common.includes(word)) return true;
@@ -73,8 +80,62 @@ function hasOpenLiteral(text: string): boolean {
     /(?:^|\s)'[^']*$/u.test(line) || SOURCED_LINE.test(line) || LITERAL_LINE.test(line);
 }
 
+/** This first stage expands typed prose completions only; all other lanes keep their baseline path. */
+export function writingDecoderPrefix(request: WritingAidRequest): string | null {
+  const {cursor, anchor, mode, surfaces = ALL_WRITING_AID_SURFACES} = request;
+  if (mode === 'strict' || !surfaces.words || !anchor || anchor.continuation || !canSuggestWritingAid(request) ||
+      hasOpenLiteral(cursor.text) || tutorMathContext(cursor) !== 'prose') return null;
+  const prefix = wordAtCaret(cursor);
+  if (!prefix || !/^[a-z]{3,31}$/iu.test(prefix) || !plainProse(cursor, prefix) ||
+      COMPLETE_PROOF_WORDS.has(prefix.toLowerCase())) return null;
+  const from = cursor.end - prefix.length;
+  if (from < startOfWindow(request, anchor.text, anchor.start) ||
+      (LOGIC_GAP.test(cursor.text.slice(0, from)) && prefix.length < 5)) return null;
+  return prefix.toLowerCase();
+}
+
+type KeyCandidate = {word: string; kind?: string; risk?: string};
+function expandedKeys(request: WritingAidRequest, text: string, authoredText: string,
+  baseline: readonly KeyCandidate[], candidates?: readonly DecoderCandidate[]): readonly KeyCandidate[] {
+  const prefix = writingDecoderPrefix(request);
+  if (!prefix || !candidates?.length) return baseline;
+  // Validate again at the policy boundary, including risk metadata. A worker result cannot confer permission.
+  const decoded = readDecoderCandidates(candidates, prefix);
+  if (!decoded) return baseline;
+  const typed = wordAtCaret(request.cursor)!;
+  const caseLike = (word: string) => typed === typed.toUpperCase() ? word.toUpperCase() :
+    /^\p{Lu}/u.test(typed) ? word[0].toUpperCase() + word.slice(1) : word;
+  const frequency = new Map(decoded.map(item => [item.word, item.frequency]));
+  const union = new Map<string, KeyCandidate>();
+  const counts = compactRanks.unigram as Readonly<Record<string, number>>;
+  for (const candidate of baseline) union.set(candidate.word.toLowerCase(), candidate);
+  for (const {word, riskTags} of decoded) {
+    const key: KeyCandidate = {word: caseLike(word), kind: 'word', ...(riskTags?.includes('logic') ? {risk: 'logic'} : {})};
+    const existing = union.get(word);
+    const count = Object.hasOwn(counts, word) && Number.isFinite(counts[word]) ? counts[word] : 0;
+    // Preserve the original rare-vocabulary stem floor; a frequency asset cannot weaken it.
+    if (!wordAssets.common.includes(word) && prefix.length < (count >= 18 ? 3 : 4)) continue;
+    // The new general lexicon is not a semantic classifier. Unknown content words
+    // need strong visible spelling even when a proof-property spelling lacks a tag.
+    // Neutral writing vocabulary reuses the existing explicit allowlist.
+    if (!existing && !isWritingWord(word) && !FILLERS.has(word) &&
+        (prefix.length < 5 || prefix.length / word.length < .8)) continue;
+    // Balanced uses exactly the baseline's visible-spelling/writing-word permission, before ranking.
+    if (request.mode === 'balanced' && !permitAcceleratedWord(text, key, {authoredText}, commitmentDictionary)) continue;
+    // Preserve the stricter tag from either source, including when the baseline supplied the same spelling.
+    union.set(word, existing ? {...existing, ...(key.risk ? {risk: key.risk} : {})} : key);
+  }
+  return [...union.values()].map((candidate, index) => ({candidate, index,
+    // The pinned asset is a ranking prior, not a calibrated correction probability.
+    // Do not reintroduce unfiltered code-token counts for baseline-only entries.
+    score: frequency.get(candidate.word.toLowerCase()) ?? 0,
+    vetted: candidate.kind === 'vetted-word' ? 1 : 0,
+  })).sort((a, b) => b.vetted - a.vetted || b.score - a.score || a.index - b.index).map(item => item.candidate);
+}
+
 function keyProposals(
   request: WritingAidRequest, text: string, authoredText: string, start: number, model?: WritingAidModel,
+  decoderCandidates?: readonly DecoderCandidate[],
 ): WritingAidProposal[] {
   const {cursor, mode, anchor} = request;
   if (mode === 'off') return [];
@@ -91,12 +152,15 @@ function keyProposals(
   }
   const result = aid.predict(text, {mode, surface: 'keys', origin: 'learner', authoredText});
   const proposals: WritingAidProposal[] = [];
-  for (const {word, kind, risk} of result.keys) {
+  const decoderActive = decoderCandidates !== undefined && writingDecoderPrefix(request) !== null &&
+    readDecoderCandidates(decoderCandidates, prefix!.toLowerCase()) !== undefined;
+  for (const {word, kind, risk} of expandedKeys(request, text, authoredText, result.keys, decoderCandidates)) {
     if (word.length > MAX_WORD || !LETTERS.test(word) || kind === 'transcription' || proposals.some(item => item.label === word)) continue;
     if (prefix ? !word.startsWith(prefix) || word === prefix : !FILLERS.has(word.toLowerCase())) continue;
     // A wider pool must not promote a proof method, property, quantifier, or
     // polarity from a weak stem merely to fill an alternative slot.
-    if ((risk === 'logic' || RISKY_PERSONAL_WORD.test(word)) &&
+    if ((risk === 'logic' || RISKY_PERSONAL_WORD.test(word) || decoderActive &&
+        (DECODER_PROOF_FAMILY.test(word) || /^(?:none|unless)$/iu.test(word))) &&
         (!prefix || prefix.length < 5 || prefix.length / word.length < .8)) continue;
     if (protectedGap && prefix && prefix.length / word.length < .6) continue;
     if (mode === 'strict' && (!prefix || prefix.length < 4)) continue;
@@ -201,7 +265,8 @@ export interface WritingAidPool {
 const EMPTY_POOL: WritingAidPool = Object.freeze({words: [], ghost: [], edit: []});
 
 /** Deterministic eligibility runs before ranking; only learner input reaches this engine. */
-export function predictWritingAidPool(request: WritingAidRequest, model?: WritingAidModel): WritingAidPool {
+export function predictWritingAidPool(request: WritingAidRequest, model?: WritingAidModel,
+  decoderCandidates?: readonly DecoderCandidate[]): WritingAidPool {
   const {anchor, cursor, surfaces = ALL_WRITING_AID_SURFACES} = request;
   if (!anchor || !canSuggestWritingAid(request) || hasOpenLiteral(cursor.text) || tutorMathContext(cursor) !== 'prose') {
     return EMPTY_POOL;
@@ -211,7 +276,7 @@ export function predictWritingAidPool(request: WritingAidRequest, model?: Writin
   if (!authoredText.trim()) return EMPTY_POOL;
   const text = cursor.text.slice(start);
   return {
-    words: surfaces.words ? keyProposals(request, text, authoredText, start, model) : [],
+    words: surfaces.words ? keyProposals(request, text, authoredText, start, model, decoderCandidates) : [],
     ghost: surfaces.ghost ? ghostProposals(request, text, authoredText) : [],
     edit: surfaces.replace || surfaces.correction ? editProposals(request, authoredText, start) : [],
   };

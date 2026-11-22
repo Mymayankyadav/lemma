@@ -22,6 +22,8 @@ export const FLAG_DEFAULTS = {
   tutorThreads: true,
   todayNextStep: false,
   tutorScratch: false,
+  /** N219: CPU-only lexicon trial; keep off until replay and phone qualification. */
+  writingDecoder: false,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */

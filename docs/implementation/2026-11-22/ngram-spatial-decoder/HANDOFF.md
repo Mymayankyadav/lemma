@@ -34,23 +34,46 @@ node scripts/writing-decoder/build-lexicon.mjs --check
 npm test -- --run tests/unit/tutor/writing-decoder-lexicon.test.ts
 ```
 
-## In progress after this checkpoint
+## Checkpoint 2: worker integration and replay
 
-Default-off worker integration and its tests are being built. The worker must load and
-hash-verify the public asset lazily; baseline suggestions must remain usable on delay,
-failed assets, failed worker, or unavailable storage. Recheck candidate permissions on
-the editor side, preserve risk tags, and reject stale editor/selection/mode/owner results.
-Keep the existing explicit tap/Tab-ghost acceptance and Undo path. Do not add autocorrect.
+Implemented `writingDecoder: false`, lazy worker lookup and asset verification/cache,
+baseline suggestions during loading/failure, exact request checks and cancellation,
+one cold-load continuation, sticky failures and independent startup/network deadlines.
+The editor rechecks permissions and risk metadata. Off/mode/scope/generation changes
+dispose the worker. The existing explicit tap/Tab-ghost acceptance and Undo path remains.
+New automatic correction is not enabled. See [IMPLEMENTATION](IMPLEMENTATION.md).
 
-Initial fresh replay found ranking and safety defects in the first attempted integration:
-two-letter frequency ranking displaced `result`; Balanced admitted short `re`→`record`;
-proof-family inflections such as `contradictory` and the existing Fast `cont`→`continuity`
-need stronger visible spelling on the enabled path. Fix these generally and record the
-paired results before calling the first milestone complete. No fixture was weakened.
+The first attempted integration's ranking and permission regressions are fixed: preserve
+short-prefix baseline behavior and original rare-word floors; share neutral-writing
+permissions; require five letters/80% spelling for newly admitted non-neutral vocabulary;
+guard proof inflections and known logic even if their tags are missing. This avoids treating
+a large dictionary as a semantic safety classifier. Original baseline behavior remains
+available for comparison, including its known weak `cont`→`continuity` gap.
+
+The frozen fresh replay now passes at the actual worker retrieval limit of 64. Among
+24 completion probes, baseline pool/top-one/top-three hits are 16/16/16; enabled results
+are 17/16/17. There is one displayed gain (`explanation`) and no lost baseline success.
+All 108 listed safety requests pass on the enabled path; 61 explicit applications and
+549 stale applications pass their contracts. [Replay report](replay/REPORT.md).
+The fixture was not expanded to inflate this result; extra diagnostic regressions stay
+in separate unit tests. See [VALIDATION](VALIDATION.md) for the final test counts.
 
 Local Playwright's expected browser download was blocked. Installed Chromium also could
-not start because the execution sandbox rejects its process-singleton socket. This is a
-browser execution limitation, not a passing browser gate. Do not claim those cases ran.
+not start because the execution sandbox rejects its process-singleton socket, even with
+a writable workspace temporary directory. Eleven focused browser cases are committed and
+discovered, but their actual browser assertions remain unexecuted locally. This is not a
+passing browser gate. Do not loosen tests or call this a phone trial.
+
+## Exact next action
+
+1. Fetch the latest PR branch and read the CI comment/status for its current commit.
+2. In an environment where Chromium can run, execute
+   `npx playwright test tests/e2e/tutor-writing-decoder.spec.ts tests/e2e/tutor-writing-aid.spec.ts --workers=2`.
+   Keep existing test thresholds and configuration. Record the actual results here.
+3. Resolve any remaining failure in the same draft PR. The local unit/pure replay checks
+   do not substitute for loading/fallback, visible acceptance and Undo in a real browser.
+4. After the first stage is qualified, continue the staged plan with the companion
+   specifications and a separate data/evaluation protocol. Do not merge this PR.
 
 ## Later inputs and stages
 
