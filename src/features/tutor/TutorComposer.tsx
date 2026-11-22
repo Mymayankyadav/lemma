@@ -1,5 +1,5 @@
 import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
-import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, MoveRight, Paperclip, Camera, Pencil, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
+import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, MoveRight, NotebookPen, Paperclip, Camera, Pencil, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
 import {TutorInkTray,type TutorInkState} from './TutorInk';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {authGeneration,authOwner} from '../../data/authBoundary';
@@ -19,7 +19,7 @@ import {TutorKeyboard} from './TutorKeyboard';
 import {TutorInkPad} from './input/TutorInkPad';
 import {TutorSymbolPicker} from './input/TutorSymbolPicker';
 import {insertTutorSymbol, tutorMathContext} from './input/symbolEdit';
-import {symbolByGlyph} from './input/symbolCatalog';
+import {symbolByGlyph, symbolById} from './input/symbolCatalog';
 import {useTutorInputAssist} from './input/useTutorInputAssist';
 import {useTutorInputPreferences} from './input/inputPreferences';
 import {sameEditTarget} from './input/recognitionPolicy';
@@ -98,6 +98,12 @@ export function TutorComposer(props: Props) {
   const [equationEdit, setEquationEdit] = useState<{source: string; offset: number; tex: string} | null>(null);
   /** N221 (Owner): equation mode, where the keys give way to paper; `writeReplace` is the equation it will replace, if any. */
   const [equationMode, setEquationMode] = useState(false);
+  /** N223 (Owner): what the learner has written in the equation composer, for autoeq to read (x1 + y1 = 1). */
+  const [composed, setComposed] = useState('');
+  /** The composer's keys are hidden, for writing the whole equation by hand. */
+  const [equationKeysHidden, setEquationKeysHidden] = useState(false);
+  /** Where a symbol chosen in Draw symbol goes: the answer, or the equation composer that asked for it. */
+  const symbolTarget = useRef<'composition' | null>(null);
   const [writeReplace, setWriteReplace] = useState<{source: string; offset: number} | null>(null);
   /** The pencil's last tap: a second within DOUBLE_TAP opens the scratch pad instead. */
   const pencilTap = useRef(-Infinity);
@@ -131,6 +137,16 @@ export function TutorComposer(props: Props) {
   const editTarget = ():EditTarget => ({scopeKey:scopeKey+'|'+authGeneration(),mountId,...revision.current});
   const assist = useTutorInputAssist({scopeKey,enabled:inputPrefs.recognition,automatic:inputPrefs.automatic,readOnly,composing,
     target:editTarget,insert:(id,target)=>{
+      // N223 (Owner): a symbol searched for from the equation composer joins its composition, and the composer returns.
+      if (symbolTarget.current === 'composition') {
+        const glyph = symbolById(id)?.glyph;
+        if (!glyph || readOnly || composition.current) return false;
+        symbolTarget.current = null;
+        setComposed(current => current + (current && !/\s$/.test(current) && /^[A-Za-z0-9]/.test(glyph) ? ' ' : '') + glyph);
+        setEquationMode(true);
+        haptic('snap');
+        return true;
+      }
       remember();
       const live = editTarget(), owner=authOwner();
       if (readOnly || owner&&tutorOwnerDeleted(owner) || composition.current || !sameEditTarget(target,live)) return false;
@@ -508,6 +524,7 @@ export function TutorComposer(props: Props) {
    */
   function selectSurface(next: Surface) {
     if (editingDisabled && next !== 'keys') return;
+    symbolTarget.current = null;
     if (next !== 'equation') {setEquationMode(false); setWriteReplace(null);}
     if (next !== 'symbol' && assist.drawing) assist.stop();
     if (next === 'scratch') {openDrawing(); return;}
@@ -523,6 +540,26 @@ export function TutorComposer(props: Props) {
       if (saved?.text === history.current.present.text) {selectField(saved); history.current = {...history.current, present: saved}; setCursor(saved);}
     }
   }
+  /**
+   * N223 (Owner: "Keep detexify for symbol search as is, more accurate, and an option to switch ink on to detexify"):
+   * the composer's ink moves to Draw symbol, which reads it with its own paper and choices; what is chosen there joins
+   * the composition. The ink is already in Draw symbol's session when Draw single symbols is on.
+   */
+  function searchSymbol(strokes: PadStrokes, size: {width: number; height: number}) {
+    if (editingDisabled) return;
+    remember();
+    surfaceSelection.current ??= history.current.present;
+    setEquationMode(false);
+    if (!assist.drawing) {assist.openDraw(); replayInk(strokes, size);}
+    symbolTarget.current = 'composition';
+    haptic('snap');
+  }
+  /** The answer just before where an equation goes: autoeq ranks its readings by it. */
+  function equationContext() {
+    const saved = surfaceSelection.current;
+    const edit = saved && saved.text === history.current.present.text ? saved : history.current.present;
+    return edit.text.slice(Math.max(0, edit.start - 160), edit.start).split(/\n/).at(-1) ?? '';
+  }
   /** N221 (Owner): the composer's pencil. A tap opens equation mode (or closes it); a double tap opens the scratch pad. */
   function pencil() {
     const now = performance.now();
@@ -532,10 +569,9 @@ export function TutorComposer(props: Props) {
     haptic('snap');
     if (double) {if (!scratch) selectSurface('scratch'); return;}
     const single = () => selectSurface(equationMode && !scratch ? 'keys' : 'equation');
-    // With the keyboard up, equation mode takes the keys' place at once. Otherwise opening it moves the composer, so
-    // wait out a second tap that would land where the pencil was.
-    if (shown && !scratch) single();
-    else pencilTimer.current = setTimeout(single, DOUBLE_TAP);
+    // Equation mode is not the keys' height, so opening or closing it moves the composer: wait out a second tap that
+    // would land where the pencil was.
+    pencilTimer.current = setTimeout(single, DOUBLE_TAP);
   }
   /**
    * The equation paper's ink also goes to the Draw single symbols reader: scaled into its small paper, as if drawn
@@ -543,6 +579,10 @@ export function TutorComposer(props: Props) {
    */
   function readSymbol(strokes: PadStrokes, size: {width: number; height: number}) {
     if (!equationMode || !inputPrefs.recognition) return;
+    replayInk(strokes, size);
+    assist.lockAutomatic();
+  }
+  function replayInk(strokes: PadStrokes, size: {width: number; height: number}) {
     assist.onClear();
     if (!strokes.length) return;
     const points = strokes.map(stroke => stroke.map(point => ({x: point.x / PAD_PAPER.width * size.width, y: point.y / PAD_PAPER.height * size.height})));
@@ -562,7 +602,6 @@ export function TutorComposer(props: Props) {
       assist.onEnd(id, timed.at(-1)!);
       t += 120;
     });
-    assist.lockAutomatic();
   }
   function keyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.target !== event.currentTarget || composition.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
@@ -932,6 +971,7 @@ export function TutorComposer(props: Props) {
           <HelpCircle aria-hidden="true"/>Ask about notation
         </Button>}
         {props.ink&&<Button disabled={editingDisabled || props.ink.draft.queuedText!==undefined} onClick={()=>{assist.stop();drawingSelection.current=history.current.present;setEditMenu(false);setPhoto(true);}}><Camera aria-hidden="true"/>Photo</Button>}
+        {props.ink&&<Button disabled={editingDisabled || props.ink.draft.queuedText!==undefined} onClick={()=>{setEditMenu(false);selectSurface('scratch');}}><NotebookPen aria-hidden="true"/>Scratch pad</Button>}
         <Button disabled={inkDraft?.queuedText!==undefined} onClick={()=>{setEditMenu(false);props.onContext();}}><Paperclip aria-hidden="true"/>Context</Button>
         <Button disabled={!history.current.past.length||editingDisabled} onClick={()=>{setEditMenu(false);undo();}}><Undo2 aria-hidden="true"/>Undo typing</Button>
         <Button disabled={!history.current.future.length||editingDisabled} onClick={()=>{setEditMenu(false);undo(true);}}><Redo2 aria-hidden="true"/>Redo typing</Button>
@@ -962,18 +1002,20 @@ export function TutorComposer(props: Props) {
       editingImageId={editingImageId} canMigrate={!readOnly} onInsertEquation={insertEquation}
       leading={<IconButton label="Keys" type="button" onPointerDown={keepSelection} onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></IconButton>} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
     {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}
-      data-surface={surface}>
+      data-surface={surface} data-equation-keys={surface === 'equation' && equationKeysHidden ? 'hidden' : undefined}>
       {surface === 'equation' ? <>
         <TutorEquationPanel disabled={editingDisabled} replacing={writeReplace?.source} leading={keysButton} trailing={equationButton}
           symbols={{enabled: inputPrefs.recognition, ids: [...new Set([...assist.recognized, ...assist.completions])], actionable: assist.actionable,
-            onAccept: id => assist.onAccept(id, false), onInk: readSymbol}}
-          onInsert={insertEquation} onKey={text => insert(text)} onDelete={deleteBackward}
-          onScratch={props.ink && props.ink.draft.queuedText === undefined ? () => selectSurface('scratch') : undefined}/>
+            onInk: readSymbol}}
+          composition={composed} context={equationContext()} onCompose={setComposed}
+          keysHidden={equationKeysHidden} onKeysHidden={setEquationKeysHidden} onSearchSymbol={searchSymbol}
+          onInsert={insertEquation} onDelete={deleteBackward}/>
         {hideButton('sbtn kb-band-hide')}</>
       : assist.drawing ? <><TutorInkPad enabled={inputPrefs.recognition} strokes={assist.snapshot?.strokes??[]}
         readiness={assist.readiness} recognized={assist.recognized} completions={assist.completions} actionable={assist.actionable}
         keepDrawing={assist.keepDrawing} overBudget={assist.snapshot?.overBudget??false} error={assist.error} onBegin={assist.onBegin} onMove={assist.onMove} onEnd={assist.onEnd}
         onInterrupt={assist.onInterrupt} onUndo={assist.onUndo} onClear={assist.onClear} onClose={()=>{
+          if (symbolTarget.current === 'composition') {selectSurface('equation'); return;}
           assist.stop();fieldElement()?.focus({preventScroll:true});selectField(history.current.present);
         }}
         onBrowse={assist.openPicker} onKeepDrawing={assist.onKeepDrawing} onLockAutomatic={assist.lockAutomatic} onPressCandidate={assist.pressCandidate} onReleaseCandidate={assist.releaseCandidate}

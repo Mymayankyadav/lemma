@@ -82,7 +82,9 @@ try {
   await expect(words.getByRole('button', {name: 'Insert notation', exact: true})).toBeVisible();
   const labels = () => words.locator('button:enabled').evaluateAll(nodes => nodes.map(node => node.getAttribute('aria-label')));
   const before = await labels();
-  await page.getByRole('button', {name: 'Refresh suggestions', exact: true}).tap();
+  // N223: Refresh suggestions is one of the Answer actions (the strip's right end is Equation mode).
+  await page.getByRole('button', {name: 'Edit answer', exact: true}).tap();
+  await page.getByRole('dialog', {name: 'Answer actions', exact: true}).getByRole('button', {name: 'Refresh suggestions', exact: true}).tap();
   await expect.poll(async () => (await labels()).join('|')).not.toBe(before.join('|'));
   await expect(answer).toHaveValue('nota');
 

@@ -47,7 +47,7 @@ test('a typed $…$ becomes a rendered equation that opens for editing and remov
   await expect(answer).toHaveJSProperty('textContent', 'The circle  ok has radius 1.');
 });
 
-test('Equation mode takes only the keys\' place: paper, the strip\'s frame and a row of equation keys', async ({page}) => {
+test('the equation composer frames its paper with keys, and autoeq reads what is written there', async ({page}) => {
   const {answer, keyboard} = await openAnswer(page);
   const height = (await keyboard.boundingBox())!.height;
   // Gboard's frame: the right end of the strip is Equation mode (Refresh moved to Answer actions).
@@ -58,20 +58,61 @@ test('Equation mode takes only the keys\' place: paper, the strip\'s frame and a
   const panel = page.getByRole('region', {name: 'Equation mode'});
   await expect(panel).toBeVisible();
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(panel.getByRole('group', {name: 'Equation suggestions'})).toContainText('Write a symbol or an equation');
-  expect((await keyboard.boundingBox())!.height).toBeCloseTo(height, 0);
-  // The paper is larger than the panel and scrolls both ways.
-  const scroll = await panel.locator('.tutor-equation-paper').evaluate(node =>
-    [node.scrollWidth > node.clientWidth, node.scrollHeight > node.clientHeight]);
-  expect(scroll).toEqual([true, true]);
-  const keys = panel.getByRole('group', {name: 'Equation keys'});
-  for (const name of ['x', '=', 'y']) await keys.getByRole('button', {name, exact: true}).click();
-  await expect(answer).toHaveJSProperty('textContent', 'x = y');
+  const suggestions = panel.getByRole('group', {name: 'Equation suggestions'});
+  await expect(suggestions).toContainText('Type or draw an equation');
+  // Only the keys' place changes, and the band under it gives its room back.
+  expect((await keyboard.boundingBox())!.height).toBeLessThanOrEqual(height + 1);
+  await expect(keyboard.getByRole('button', {name: 'Hide keyboard', exact: true})).toBeHidden();
+  // Operations along the top, variables down the left, digits on the right, symbols along the bottom.
+  const [operations, variables, digits, symbols, paper] = await Promise.all(['Operations', 'Variables', 'Digits', 'Symbols']
+    .map(name => panel.getByRole('group', {name, exact: true}).boundingBox())
+    .concat(panel.locator('.tutor-equation-paper').boundingBox()));
+  expect(operations!.y + operations!.height).toBeLessThanOrEqual(paper!.y);
+  expect(variables!.x + variables!.width).toBeLessThanOrEqual(paper!.x);
+  expect(digits!.x).toBeGreaterThanOrEqual(paper!.x + paper!.width);
+  expect(symbols!.y).toBeGreaterThanOrEqual(paper!.y + paper!.height);
+  // The paper is larger than its window and scrolls both ways.
+  expect(await panel.locator('.tutor-equation-paper').evaluate(node =>
+    [node.scrollWidth > node.clientWidth, node.scrollHeight > node.clientHeight])).toEqual([true, true]);
+
+  // Written as said, x1 + y1 = 1; autoeq offers its readings, subscripts first with no other context.
+  for (const name of ['x', '1', '+', 'y', '1', 'Equals', '1']) await panel.getByRole('button', {name, exact: true}).click();
+  const composition = panel.getByRole('status', {name: 'Composition'});
+  await expect(composition).toHaveText('x1 + y1 = 1');
+  const readings = suggestions.getByRole('button');
+  await expect(readings.first()).toHaveAccessibleName('Insert equation x_{1}+y_{1}=1');
+  await expect(suggestions.getByRole('button', {name: 'Insert equation x^{1}+y^{1}=1', exact: true})).toBeVisible();
+  await expect(suggestions.getByRole('button', {name: 'Insert equation 1x+1y=1', exact: true})).toBeVisible();
+  await expect(suggestions.getByRole('button', {name: 'Insert equation x1+y1=1', exact: true})).toBeVisible();
+  // Delete takes back one written token; with nothing composed it deletes in the answer.
   await panel.getByRole('button', {name: 'Delete', exact: true}).click();
-  await expect(answer).toHaveJSProperty('textContent', 'x = ');
+  await expect(composition).toHaveText('x1 + y1 =');
+  await panel.getByRole('button', {name: '1', exact: true}).click();
+  await panel.getByRole('button', {name: 'Insert equation', exact: true}).click();
+  await expect(answer.getByRole('button', {name: 'Edit equation x_{1}+y_{1}=1', exact: true})).toBeVisible();
+  await expect(composition).not.toContainText('x1');
+
+  // The keys can be hidden: the composition and paper then fill the composer.
+  const narrow = (await panel.locator('.tutor-equation-paper').boundingBox())!.width;
+  await panel.getByRole('button', {name: 'Hide equation keys', exact: true}).click();
+  for (const name of ['Operations', 'Variables', 'Digits', 'Symbols']) await expect(panel.getByRole('group', {name, exact: true})).toHaveCount(0);
+  expect((await panel.locator('.tutor-equation-paper').boundingBox())!.width).toBeGreaterThan(narrow * 1.5);
+  await panel.getByRole('button', {name: 'Show equation keys', exact: true}).click();
+  await expect(panel.getByRole('group', {name: 'Digits', exact: true})).toBeVisible();
+
   await panel.getByRole('button', {name: 'Keys', exact: true}).click();
   await expect(keyboard.getByRole('button', {name: 'q', exact: true})).toBeVisible();
   expect((await keyboard.boundingBox())!.height).toBeCloseTo(height, 0);
+});
+
+test('the words before the caret order autoeq\'s readings', async ({page}) => {
+  const {keyboard} = await openAnswer(page);
+  await page.keyboard.type('The circle ');
+  await keyboard.getByRole('button', {name: 'Equation mode', exact: true}).click();
+  const panel = page.getByRole('region', {name: 'Equation mode'});
+  for (const name of ['x', '2', '+', 'y', '2', 'Equals', '1']) await panel.getByRole('button', {name, exact: true}).click();
+  await expect(panel.getByRole('group', {name: 'Equation suggestions'}).getByRole('button').first())
+    .toHaveAccessibleName('Insert equation x^{2}+y^{2}=1');
 });
 
 test('the composer\'s pencil opens equation mode on a tap and the scratch pad on a double tap', async ({page}) => {
@@ -98,11 +139,13 @@ test('the composer\'s pencil opens equation mode on a tap and the scratch pad on
 });
 
 async function writeOnPaper(page: Page, strokes: number[][][]) {
+  // Strokes are given in a 200 × 100 frame, scaled into the paper's window.
   const box = (await page.locator('.tutor-equation-paper').boundingBox())!;
+  const at = ([x, y]: number[]) => [box.x + 8 + x / 200 * (box.width - 16), box.y + 6 + y / 100 * (box.height - 12)] as const;
   for (const [first, ...rest] of strokes) {
-    await page.mouse.move(box.x + first[0], box.y + first[1]);
+    await page.mouse.move(...at(first));
     await page.mouse.down();
-    for (const [x, y] of rest) await page.mouse.move(box.x + x, box.y + y, {steps: 6});
+    for (const point of rest) await page.mouse.move(...at(point), {steps: 6});
     await page.mouse.up();
   }
 }
@@ -115,7 +158,7 @@ test('Equation mode offers its one-time download in the strip and says so when i
   });
   const {keyboard} = await openAnswer(page);
   await keyboard.getByRole('button', {name: 'Equation mode', exact: true}).click();
-  await writeOnPaper(page, [[[30, 30], [30, 100]], [[60, 65], [110, 65]], [[85, 40], [85, 90]], [[140, 30], [140, 100]]]);
+  await writeOnPaper(page, [[[30, 10], [30, 90]], [[60, 50], [110, 50]], [[85, 25], [85, 75]], [[150, 10], [150, 90]]]);
   const download = page.getByRole('button', {name: 'Read equations on this device (one-time download, 118 MB)', exact: true});
   await expect(download).toBeVisible();
   expect(requests).toEqual([]);
@@ -126,7 +169,7 @@ test('Equation mode offers its one-time download in the strip and says so when i
   await expect(page.getByRole('img', {name: 'Write an equation'}).locator('path')).toHaveCount(4);
 });
 
-test('with Draw single symbols on, the same drawing is offered as a symbol too', async ({page}) => {
+test('with Draw single symbols on, a drawn symbol joins the composition, and Search symbol hands the ink to Draw symbol', async ({page}) => {
   test.setTimeout(60_000);
   await page.setViewportSize({width: 393, height: 873});
   await page.goto('/lemma/?demo=1&flags=v7Shell,tutorScratch#/settings?section=tutor');
@@ -137,12 +180,27 @@ test('with Draw single symbols on, the same drawing is offered as a symbol too',
   const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
   await answer.focus();
   await page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: 'Equation mode', exact: true}).click();
-  await writeOnPaper(page, [[[40, 30], [70, 100], [100, 30]], [[52, 62], [88, 62]]]);
-  const forAll = page.getByRole('group', {name: 'Equation suggestions'}).getByRole('button', {name: 'Insert symbol For all', exact: true});
-  await expect(forAll).toBeEnabled({timeout: 25_000});
-  await forAll.click();
-  await expect(answer).toHaveJSProperty('textContent', '∀');
-  // The paper is cleared for the next symbol, and equation mode stays open.
+  const panel = page.getByRole('region', {name: 'Equation mode'});
+  await panel.getByRole('button', {name: 'Hide equation keys', exact: true}).click();
+  const forAll = [[[20, 10], [50, 90], [80, 10]], [[32, 45], [68, 45]]];
+  await writeOnPaper(page, forAll);
+  const suggestions = panel.getByRole('group', {name: 'Equation suggestions'});
+  const add = suggestions.getByRole('button', {name: 'Add symbol For all', exact: true});
+  await expect(add).toBeEnabled({timeout: 25_000});
+  await add.click();
+  // The paper is cleared and the symbol is part of the composition, inserted as an equation.
   await expect(page.getByRole('img', {name: 'Write an equation'}).locator('path')).toHaveCount(0);
-  await expect(page.getByRole('region', {name: 'Equation mode'})).toBeVisible();
+  await expect(panel.getByRole('status', {name: 'Composition'})).toHaveText('∀');
+  await suggestions.getByRole('button', {name: 'Insert equation \\forall', exact: true}).click();
+  await expect(answer.getByRole('button', {name: 'Edit equation \\forall', exact: true})).toBeVisible();
+
+  // Search symbol: the same ink in Draw symbol, whose choice comes back to the composition.
+  await writeOnPaper(page, forAll);
+  await panel.getByRole('button', {name: 'Search symbol', exact: true}).click();
+  const recognition = page.getByRole('region', {name: 'Symbol recognition'});
+  await expect(recognition).toBeVisible();
+  const match = recognition.getByRole('button', {name: 'Matches For all', exact: true});
+  await expect(match).toBeEnabled({timeout: 25_000});
+  await match.click();
+  await expect(page.getByRole('region', {name: 'Equation mode'}).getByRole('status', {name: 'Composition'})).toHaveText('∀');
 });
