@@ -692,6 +692,15 @@
       }
     },
     {
+      "resource": "atlas_graph_edits",
+      "command_fn": "atlas_graph_edits_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": ["change_level","delete_empty","reclassify_link","link_batch"],
+        "fields": ["level","to_id","from_kind","to_kind","links"]
+      }
+    },
+    {
       "resource": "atlas_concepts",
       "command_fn": "atlas_command",
       "mcp_ok": true,

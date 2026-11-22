@@ -99,7 +99,7 @@ async function mcpPage(resource,id,userId=owner){
 }
 // N94 (#1231, #1237): command-only resources are verified on the rows their
 // operations change, so they have no table inventory of their own.
-const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','session_progress','account_controls']);
+const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','session_progress','account_controls','atlas_graph_edits']);
 const docsBase=new URL('../../../docs/v6/capability-registry/',import.meta.url);
 /** The legacy mcp_commit allowlist (`allowed` in tools/control.ts) is a real MCP write path. */
 async function legacyMcpFields(){
@@ -1950,6 +1950,88 @@ try{
   }
   mark('plan_conversions','create');
  }
+
+ // N226 end-to-end MCP graph operations and evidence-preserving merge guard.
+ {
+   await role(null);
+   const subject='aaaaaaaa-0000-4000-8000-000000000001';
+   const empty=(await q("insert into public.concepts(user_id,subject_id,name,slug) values($1,$2,'N226 empty','n226-empty') returning id,version",[owner,subject]))[0];
+   await role('service_role');
+   const level=command('atlas_graph_edits','change_level',{target:{id:empty.id},expectedVersion:empty.version,patch:{level:'system'}});
+   const setLevel=status(await mcp(level),'atlas_graph_edits','change_level');
+   assert.deepEqual(await mcp(level),setLevel,'N226 level retry must be identical');
+   await role(null);
+   assert.equal((await q('select level from public.concepts where id=$1',[empty.id]))[0].level,'system');
+   await as(owner);
+   assert.equal(Number((await undo(setLevel.actionNo)).undone),Number(setLevel.actionNo));
+   await role(null);
+   assert.equal((await q('select level from public.concepts where id=$1',[empty.id]))[0].level,'planet');
+   mark('atlas_graph_edits','change_level');
+
+   await role('service_role');
+   const beforeDelete=(await q('select version from public.concepts where id=$1',[empty.id]))[0].version;
+   const remove=command('atlas_graph_edits','delete_empty',{target:{id:empty.id},expectedVersion:beforeDelete,patch:{}});
+   const gone=status(await mcp(remove),'atlas_graph_edits','delete_empty');
+   await role(null);
+   assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[empty.id]))[0].n,0);
+   await as(owner);
+   assert.equal(Number((await undo(gone.actionNo)).undone),Number(gone.actionNo));
+   await role(null);
+   assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[empty.id]))[0].n,1);
+   mark('atlas_graph_edits','delete_empty');
+
+   const source='aaaaaaaa-0000-4000-8000-000000000003';
+   const target='aaaaaaaa-0000-4000-8000-000000000004';
+   await q("insert into public.concept_links(user_id,from_id,to_id,kind) values($1,$2,$3,'related')",[owner,source,target]);
+   const sourceVersion=(await q('select version from public.concepts where id=$1',[source]))[0].version;
+   await role('service_role');
+   const reclass=command('atlas_graph_edits','reclassify_link',{
+     target:{id:source},expectedVersion:sourceVersion,
+     patch:{to_id:target,from_kind:'related',to_kind:'prereq'}});
+   const changed=status(await mcp(reclass),'atlas_graph_edits','reclassify_link');
+   assert.deepEqual(await mcp(reclass),changed,'N226 reclassify retry');
+   await role(null);
+   assert.equal((await q('select kind from public.concept_links where from_id=$1 and to_id=$2',[source,target]))[0].kind,'prereq');
+   await as(owner);
+   assert.equal(Number((await undo(changed.actionNo)).undone),Number(changed.actionNo));
+   await role(null);
+   assert.equal((await q('select kind from public.concept_links where from_id=$1 and to_id=$2',[source,target]))[0].kind,'related');
+   mark('atlas_graph_edits','reclassify_link');
+
+   const third=(await q("insert into public.concepts(user_id,subject_id,name,slug) values($1,$2,'N226 destination','n226-destination') returning id,version",[owner,subject]))[0];
+   const srcV=(await q('select version from public.concepts where id=$1',[source]))[0].version;
+   const targetV=(await q('select version from public.concepts where id=$1',[target]))[0].version;
+   await role('service_role');
+   const edges=[{from_id:source,to_id:third.id,kind:'prereq',from_version:srcV,to_version:third.version},
+                {from_id:target,to_id:third.id,kind:'related',from_version:targetV,to_version:third.version}];
+   await assert.rejects(mcp(command('atlas_graph_edits','link_batch',{patch:{links:
+     [{...edges[0],from_version:edges[0].from_version+8}]}})),/version conflict/i);
+   const batch=command('atlas_graph_edits','link_batch',{patch:{links:edges}});
+   const added=status(await mcp(batch),'atlas_graph_edits','link_batch');
+   assert.deepEqual(await mcp(batch),added,'N226 batch idempotent retry');
+   await role(null);
+   assert.equal((await q('select count(*)::int n from public.concept_links where to_id=$1',[third.id]))[0].n,2);
+   await as(other);
+   assert.equal((await q('select count(*)::int n from public.concept_links where to_id=$1',[third.id]))[0].n,0,'N226 other owner sees links');
+   await as(owner);
+   assert.equal(Number((await undo(added.actionNo)).undone),Number(added.actionNo));
+   await role(null);
+   assert.equal((await q('select count(*)::int n from public.concept_links where to_id=$1',[third.id]))[0].n,0);
+   mark('atlas_graph_edits','link_batch');
+
+   // The legacy merge is denied when its source carries facts that it does not
+   // rewire. No existing fact is deleted or unlinked; owner may create an alias.
+   await q("insert into public.recheck_decisions(user_id,concept_id,level,action) values($1,$2,'use','rate_easy')",[owner,source]);
+   const sV=(await q('select version from public.concepts where id=$1',[source]))[0].version;
+   const tV=(await q('select version from public.concepts where id=$1',[target]))[0].version;
+   await role('service_role');
+   await assert.rejects(mcp(command('concepts','merge',{
+     target:{id:source},expectedVersion:sV,patch:{keep_id:target,keep_version:tV}})),/learning evidence or semantic links/i);
+   await role(null);
+   assert.equal((await q('select count(*)::int n from public.recheck_decisions where concept_id=$1',[source]))[0].n,1);
+   assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[source]))[0].n,1);
+ }
+
  await checkSessionProgressParity(db,{owner,other});
  mark('session_progress','save');
  await role('service_role');
