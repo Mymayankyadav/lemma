@@ -252,3 +252,9 @@
    Speak starts at the column edge with the field. */
 :where(html[data-v7]) .v7-capture-kinds .v7-segmented {display:flex;}
 :where(html[data-v7]) .v7-capture-kinds .v7-segmented button {flex:1 1 auto;min-width:0;padding-inline:var(--v7-space-2);overflow:hidden;text-overflow:ellipsis;}
+
+/* N220 · a page's large title (Settings sections, learning detail screens) in the shell, so it no longer depends on
+   whether the learning screens' styles happen to have loaded (a direct Settings visit showed it as body-size serif). */
+@layer v7-components {
+ :where(html[data-v7]) .v7-learn-title {margin:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;overflow-wrap:anywhere;}
+}

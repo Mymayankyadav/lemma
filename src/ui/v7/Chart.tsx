@@ -134,12 +134,13 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     <div className="v7-sr-only"><table><caption>{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div>
     {data.length ? <div className="v7-chart-plot">
       {selectedRow && selected !== null && <p className="v7-chart-tooltip" role="status" data-floating=""
-        style={{left: `${Math.max(14, Math.min(86, point(selected) / Math.max(1, width) * 100))}%`}}>
-        <strong>{selectedRow.label}</strong>{selectedRow.values.map((value, index) => {
-          // A subject series is marked by its glyph (a bare subject-coloured dot is not allowed); others by a swatch.
+        style={(share => ({left: share + '%', transform: `translateX(-${share}%)`}))(Math.round(Math.max(0, Math.min(1, point(selected) / Math.max(1, width))) * 100))}>
+        {/* The readout keeps its words in the order it always had ("2 h Analysis · 3 h Algebra · Mon"); subject series
+            carry their glyph (a bare subject-coloured dot is not allowed), other series a swatch. */}
+        {selectedRow.values.map((value, index) => {
           const mark = series[index]?.subject ?? subjectFor(series[index]?.label ?? '');
-          return <span key={index}><span className="v7-sr-only">{index ? ', ' : ': '}</span>{series.length > 1 && (mark ? <SubjectMark subject={mark}/> : <i style={{background: color(index)}} aria-hidden="true"/>)}{format(value)}{series.length > 1 ? ' ' + (series[index]?.label ?? '') : ''}</span>;
-        })}
+          return <span key={index}>{index ? ' · ' : ''}<span className="v7-chart-tip-value">{series.length > 1 && (mark ? <SubjectMark subject={mark}/> : <i style={{background: color(index)}} aria-hidden="true"/>)}{`${format(value)} ${series[index]?.label ?? ''}`}</span></span>;
+        })}{' · '}<strong>{selectedRow.label}</strong>
       </p>}
       <svg className="v7-plot" viewBox={`0 0 ${width} ${height}`} data-plot-width={width} role="group" aria-label={title}>
         {ticks.map(tick => tick / maximum).map(value => <g key={value}><line x1={left} x2={plotRight} y1={y(value * maximum)} y2={y(value * maximum)} className={value === 0 ? "v7-chart-axis" : "v7-chart-grid"} /><text x={left - 8} y={y(value * maximum) + 4} textAnchor="end" className="v7-chart-text">{format(value * maximum)}</text></g>)}
@@ -191,7 +192,7 @@ export function HorizontalBars({ title, data, format = String }: { title: string
         <span className="v7-subject-label">{(item.subject??subjectFor(item.label)) && <SubjectMark subject={(item.subject??subjectFor(item.label))!} />}{item.label}</span><span>{format(item.value)}</span>
         <span className="v7-horizontal-track"><span style={{ width: `${bounded(item.value / max) * 100}%`, background: item.color ?? "var(--v7-role-subject-analysis)" }} /></span>
       </button></li>)}</ul>}
-    {selected !== null && data[selected] && <p role="status" className="v7-chart-tooltip"><strong>{data[selected].label}</strong><span><span className="v7-sr-only">: </span>{format(data[selected].value)}</span></p>}
+    {selected !== null && data[selected] && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · <strong>{data[selected].label}</strong></p>}
   </section>;
 }
 function displayHeatmapDate(value: string): string { return /^\d{4}-\d{2}-\d{2}$/.test(value) ? formatDay(value) : value; }
@@ -261,6 +262,6 @@ export function Heatmap({ title, data: all, format = String }: { title: string; 
       <p className="v7-caption">Last {weeks} weeks, today ringed.</p>
       <div className="v7-heat-swatches" aria-label="Heatmap legend">{["0", "1–15", "16–30", "31–60", "60+ min"].map((label, index) => <span key={label}><i style={{ background: index === 0 ? "transparent" : `var(--v7-role-viz-heat${index})` }} aria-hidden="true" />{label}</span>)}</div>
     </>
-    {selected !== null && data[selected] && <p role="status" className="v7-chart-tooltip"><strong>{displayHeatmapDate(data[selected].date)}</strong><span><span className="v7-sr-only">: </span>{format(data[selected].value)}</span></p>}
+    {selected !== null && data[selected] && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · <strong>{displayHeatmapDate(data[selected].date)}</strong></p>}
   </section>;
 }

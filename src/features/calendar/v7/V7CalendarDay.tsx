@@ -209,7 +209,7 @@ export default function V7CalendarDay(){
    {wideControls?<Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={chooseView}/>
     :<ViewMenu value={viewLabel(view)} options={views} onChange={chooseView}/>}
    <span className="v7-cal-toolbar-gap" aria-hidden="true"/>
-   {view==='day'&&isFlagOn('v7Ruler')&&<IconButton label="Browse day" onClick={()=>setBrowse(true)}><Clock aria-hidden="true"/></IconButton>}
+   {view==='day'&&<IconButton label="Browse day" onClick={()=>setBrowse(true)}><Clock aria-hidden="true"/></IconButton>}
    <IconButton label={view==='month'?'Previous month':'Previous week'} onClick={()=>movePeriod(-1)}><ChevronLeft aria-hidden="true"/></IconButton>
    <IconButton label={view==='month'?'Next month':'Next week'} onClick={()=>movePeriod(1)}><ChevronRight aria-hidden="true"/></IconButton>
   </div>
