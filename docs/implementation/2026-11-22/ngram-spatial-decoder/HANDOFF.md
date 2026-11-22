@@ -64,22 +64,54 @@ a writable workspace temporary directory. Eleven focused browser cases are commi
 discovered, but their actual browser assertions remain unexecuted locally. This is not a
 passing browser gate. Do not loosen tests or call this a phone trial.
 
+## Checkpoint 3: companion contracts and temporal fixes
+
+Preserved the Owner's companion ZIP, corrected enabled loading/failure safety, and
+included the captured feature flag in prediction identity. Two tests reproduce the
+former fallback leak; two more reproduce stale offers across in-place dev/test flag
+changes. All four pass after the fixes. The existing module-download browser test
+now distinguishes the editor's dedicated Worker request from PWA precache requests.
+
+Added a separate [all-prefix measurement protocol](evaluation/protocol-v1.md) and
+an [offline corpus auditor](corpus/README.md). The combined suite has 262 passing tests,
+and build/typecheck and lint pass. The unchanged fixed-prefix replay still yields
+16/24 versus 17/24 displayed hits and zero listed enabled/fallback safety failures.
+
+The new measurement uses the same 24 synthetic targets over 214 prefixes, with
+random/degraded/oracle controls. It improves measurement validity without supplying
+held-out, human or device evidence. It exposes a top-one regression at prefix 3:
+`I think the res` ranks `respect` before intended `result`, because the new unigram
+sort discards the baseline's existing `the result` bigram signal. That regression
+is recorded explicitly in [evaluation/REPORT.md](evaluation/REPORT.md); it is the
+next general ranking mechanism to correct. Do not hard-code the example or retune
+the fixture. The old and new protocol denominators must remain separate.
+
+The corpus example is three synthetic records. The auditor enforces source/evidence
+hashes, reviewed declarations, role/provenance restrictions, one owner scope, bounded
+reads and whole-day/document/group/overlap checks. It imports no external corpus and
+does not approve fitting or certify semantic safety.
+
 ## Exact next action
 
 1. Fetch the latest PR branch and read the CI comment/status for its current commit.
-2. In an environment where Chromium can run, execute
+2. Correct the loss of established context during the unigram merge with a general,
+   independently tested rule; keep the committed pre-fix report as history. Then rerun
+   both development protocols unchanged and preserve all safety/fallback gates.
+3. In an environment where Chromium can run, execute
    `npx playwright test tests/e2e/tutor-writing-decoder.spec.ts tests/e2e/tutor-writing-aid.spec.ts --workers=2`.
    Keep existing test thresholds and configuration. Record the actual results here.
-3. Resolve any remaining failure in the same draft PR. The local unit/pure replay checks
+4. Resolve any remaining failure in the same draft PR. The local unit/pure replay checks
    do not substitute for loading/fallback, visible acceptance and Undo in a real browser.
-4. After the first stage is qualified, continue the staged plan with the companion
+5. After the first stage is qualified, continue the staged plan with the companion
    specifications and a separate data/evaluation protocol. Do not merge this PR.
 
 ## Later inputs and stages
 
-No additional Owner input was needed to build the lexicon or start integration. Before
-later stages, obtain the companion chapters referenced by PLAN.md (especially logging,
-evaluation, learner-choice safety, certification, Scribe, and tutor signals). A deliberately
+The Owner has now supplied `math-input-plan.zip`. Its chapters 01–14, README and
+REFERENCES are preserved byte-for-byte under [source-plan](source-plan/README.md), with
+the archive and per-file SHA-256 values in `source-plan/manifest.json`. Read
+[SPEC_RECONCILIATION](SPEC_RECONCILIATION.md) before continuing. Chapter 15 (tutor signals)
+was not in the archive; do not ask again for the chapters already supplied. A deliberately
 supplied Lemma export and consented tap logs are needed for personal fitting and realistic
 evaluation. A physical target-phone trial remains necessary for actual touch/latency claims.
 

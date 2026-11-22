@@ -288,7 +288,56 @@ describe('writing decoder editor lifecycle', () => {
     window.history.replaceState({}, '', '/?flags=-writingDecoder');
     await render(request('nota'));
     expect(view.words.map(item => item.label)).toContain('notation');
+    await render(request('The function is cont', {mode: 'fast'}));
+    expect(view.words.map(item => item.label)).toContain('continuity');
     expect(FakeWorker.instances).toHaveLength(0);
+  });
+
+  it.each(['loading', 'unavailable'] as const)('filters weak proof properties before display while the decoder is %s', async state => {
+    const input = request('The function is cont', {mode: 'fast'});
+    await render(input);
+    const worker = FakeWorker.instances[0], query = worker.requests.at(-1)!;
+    expect(query.prefix).toBe('cont');
+    if (state === 'unavailable') {
+      await act(async () => worker.respond({type: 'unavailable', id: query.id}));
+      expect(worker.terminate).toHaveBeenCalledTimes(1);
+    }
+    const labels = view.words.map(item => item.label);
+    expect(labels).toContain('contain');
+    for (const blocked of ['continuous', 'continuity', 'continuously']) expect(labels).not.toContain(blocked);
+    expect(input.cursor.text).toBe('The function is cont');
+    expect(view.ghost).toBeNull();
+  });
+
+  it.each(['off-to-on', 'on-to-off'] as const)('retires visible predictions before the next frame after an in-place %s flag change', async direction => {
+    const initiallyEnabled = direction === 'on-to-off';
+    window.history.replaceState({}, '', '/?flags=' + (initiallyEnabled ? '' : '-') + 'writingDecoder');
+    const input = initiallyEnabled ? request('I am reco') : request('The function is cont', {mode: 'fast'});
+    await render(input);
+    if (initiallyEnabled) {
+      const worker = FakeWorker.instances[0];
+      await act(async () => worker.result(worker.requests.at(-1)!, [{word: 'record', frequency: 160}]));
+    }
+    const old = view.words.find(item => item.label === (initiallyEnabled ? 'record' : 'continuity'))!;
+    expect(old).toBeDefined();
+    view.shown('words', view.words);
+    expect(view.isCurrent(old)).toBe(true);
+
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {frames.push(callback); return frames.length;});
+    window.history.replaceState({}, '', '/?flags=' + (initiallyEnabled ? '-' : '') + 'writingDecoder');
+    // Keep exactly the same request and pause the asynchronous replacement prediction.
+    await act(async () => root.render(createElement(Harness, {input})));
+    await act(async () => {await vi.dynamicImportSettled();});
+    expect(frames).toHaveLength(1);
+    expect(view.words).toEqual([]);
+    expect(view.isCurrent(old)).toBe(false);
+
+    await act(async () => frames.shift()!(performance.now()));
+    const labels = view.words.map(item => item.label);
+    expect(labels).toContain(initiallyEnabled ? 'recoin' : 'contain');
+    expect(labels).not.toContain(old.label);
+    expect(input.cursor.text).toBe(initiallyEnabled ? 'I am reco' : 'The function is cont');
   });
 
   it('rejects the former draft result while preserving the new baseline strip', async () => {

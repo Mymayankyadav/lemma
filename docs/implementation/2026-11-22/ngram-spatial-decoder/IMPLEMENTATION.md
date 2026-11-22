@@ -2,13 +2,15 @@
 
 Agent: chat-732640#d9k2 · Item: N219 · PR #1746
 
-The Owner supplied [section 16](PLAN.md) and authorized implementation inside a PR, with no merge. This draft starts from main `d1b3135f99ae54d52b312f4b728c4460abdabc06`, which already contains PR #1738. The existing writing-aid strip, typed-evidence guards and Undo are the integration path. PR #1743 (replay measurement) and #1744 (tutor trial) remain separate.
+The Owner supplied [section 16](PLAN.md), then the [companion chapters 01–14](source-plan/README.md), and authorized implementation inside a PR, with no merge. This draft starts from main `d1b3135f99ae54d52b312f4b728c4460abdabc06`, which already contains PR #1738. The existing writing-aid strip, typed-evidence guards and Undo are the integration path. PR #1743 (replay measurement) and #1744 (tutor trial) remain separate. [Contract reconciliation](SPEC_RECONCILIATION.md) records how the supplied chapters constrain this CPU-only task.
 
 ## First milestone: implemented, browser qualification pending
 
 The `writingDecoder` flag defaults to **false**. When enabled, an eligible typed prose
 prefix can supplement the existing word pool using a lazily created worker. The existing
-engine paints its suggestions while the optional path loads and remains the fallback.
+engine supplies a fallback pool while the optional path loads. When the flag is enabled,
+the same enabled admission guards filter that pool before its first display and after
+worker failure; flag-off behavior remains the original comparison path.
 Only the lowercase prefix reaches the worker; drafts, transcripts, account identifiers,
 and personalization records do not. Strict mode and zero-prefix suggestions retain the
 existing path. No new automatic correction is enabled.
@@ -46,6 +48,12 @@ public bytes enter CacheStorage; a corrupt cache entry is removed, and denied st
 falls back to a verified fetch. Android reads the packaged asset without this cache.
 The JSON asset is excluded from the existing PWA precache by its file-type pattern.
 
+An audit against supplied chapter 07 exposed that the first integration painted an
+unguarded baseline before the worker reply. Two hook regressions reproduced the weak
+`cont` → `continuity` display during pending and failed loads. The fallback now runs
+through the enabled policy with an empty decoded list, retaining safe baseline offers
+without waiting for the worker. The same property is checked in the browser scenarios.
+
 There is one cold-load continuation, coalescing typed prefixes to the latest query. A
 worker-startup deadline survives per-query cancellation, and the network load has an
 independent abort deadline. A malformed reply, failed module/asset, timeout or runtime
@@ -58,9 +66,9 @@ display. The existing acceptance and Undo path is retained.
 
 The [fresh development replay](replay/REPORT.md) compares the unchanged omitted-argument
 engine path with the actual 64-candidate expansion. In 24 fixed completion probes, pool
-recall rises from 16 to 17 and displayed top-three recall from 16 to 17, with no lost
+coverage at the selected prefix rises from 16 to 17 and displayed top-three hits from 16 to 17, with no lost
 baseline success. Top-one remains 16. All 108 listed safety requests pass on the enabled
-path; one pre-existing baseline failure is reported separately. This is development
+warm and guarded-fallback paths; one pre-existing baseline failure is reported separately. This is development
 regression evidence, not held-out accuracy, a recovered prior replay, or human performance.
 
 See [VALIDATION](VALIDATION.md) for exact commands and tests. Browser cases are written,
@@ -81,14 +89,14 @@ memory, touch accuracy and tap savings remain unmeasured.
 Each later stage remains default-off until its own specified gate passes. Large corpus
 training, spatial fitting and automatic-correction certification have not been performed.
 
-## Inputs to request after implementation
+## Inputs for the remaining stages
 
-The companion specifications referenced by section 16, especially chapters 02, 03, 05–07
-and 11–15; an optional deliberately supplied recent Lemma export and eventual consented
-typing logs for chronological evaluation and fitting; a physical-phone trial after a
-concrete test build is available. Those chapters were not present in this checkout or
-the attachment. Public source acquisition and license research are implementation work,
-not prerequisites to ask the Owner to do. No account credentials are needed for this checkpoint.
+Chapters 01–14 are now preserved with file hashes under `source-plan`; the Owner need
+not supply them again. The ZIP did not contain chapter 15 (tutor signals). Later personal
+evaluation and fitting need a deliberately supplied recent Lemma export and consented
+typing logs; physical-phone qualification needs a concrete test build and an actual
+device trial. Public source acquisition and license research are implementation work,
+not prerequisites to ask the Owner to do. No account credentials are needed.
 
 ## Release hold
 

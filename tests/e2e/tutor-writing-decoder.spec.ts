@@ -106,7 +106,7 @@ test('flag-off keeps baseline suggestions and never starts or fetches the decode
   expect((await probe(page)).created).toBe(0);
 });
 
-test('loading the lexicon keeps baseline offers and typing responsive', async ({page, context}) => {
+test('loading the lexicon keeps safe fallback offers and typing responsive', async ({page, context}) => {
   await probeWorker(page);
   let release!: () => void;
   let requested = 0;
@@ -117,9 +117,16 @@ test('loading the lexicon keeps baseline offers and typing responsive', async ({
     await route.continue();
   });
   const answer = await openAnswer(page);
+  await setMode(page, 'Faster typing');
   try {
-    await typeDraft(page, answer, 'nota');
+    await typeDraft(page, answer, 'The function is cont');
     await expect.poll(() => requested).toBe(1);
+    await expect(word(page, 'contain')).toBeEnabled();
+    for (const blocked of ['continuous', 'continuity', 'continuously']) {
+      await expect(word(page, blocked)).toHaveCount(0);
+    }
+    await expect(answer).toHaveJSProperty('textContent', 'The function is cont');
+    await typeDraft(page, answer, 'nota');
     await expect(word(page, 'notation')).toBeEnabled();
     await page.keyboard.type('t');
     await expect(answer).toHaveJSProperty('textContent', 'notat');
@@ -150,6 +157,7 @@ test('a same-size corrupt asset fails closed and preserves fallback acceptance a
     return route.fulfill({contentType: 'application/json', body: corrupted});
   });
   const answer = await openAnswer(page);
+  await setMode(page, 'Faster typing');
   await typeDraft(page, answer, 'nota');
   await expect.poll(async () => (await probe(page)).unavailable).toBeGreaterThan(0);
   await expect(word(page, 'notation')).toBeEnabled();
@@ -160,6 +168,12 @@ test('a same-size corrupt asset fails closed and preserves fallback acceptance a
   await expect(answer).toHaveJSProperty('textContent', 'nota');
   await page.keyboard.type('t');
   await expect(word(page, 'notation')).toBeEnabled();
+  await typeDraft(page, answer, 'The function is cont');
+  await expect(word(page, 'contain')).toBeEnabled();
+  for (const blocked of ['continuous', 'continuity', 'continuously']) {
+    await expect(word(page, blocked)).toHaveCount(0);
+  }
+  await expect(answer).toHaveJSProperty('textContent', 'The function is cont');
   expect(requests).toBe(1);
   expect(errors).toEqual([]);
 });
@@ -200,8 +214,11 @@ for (const failure of ['constructor', 'runtime'] as const) {
 }
 
 test('a failed worker module download preserves fallback without retrying on each key', async ({page, context}) => {
+  await probeWorker(page);
   let blocked = 0;
   await context.route(/\/writingDecoder\.worker[^/]*\.(?:js|ts)(?:\?.*)?$/u, route => {
+    // PWA precaching fetches the entry too; fail the editor's actual worker module request.
+    if (route.request().serviceWorker()) return route.continue();
     blocked++;
     return route.abort('failed');
   });
@@ -216,6 +233,7 @@ test('a failed worker module download preserves fallback without retrying on eac
   await undo(page).click();
   await expect(answer).toHaveJSProperty('textContent', 'notat');
   expect(blocked).toBe(1);
+  expect((await probe(page)).created).toBe(1);
 });
 
 test('out-of-order worker replies cannot restore candidates for an older draft', async ({page}) => {

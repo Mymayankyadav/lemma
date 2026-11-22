@@ -2,7 +2,7 @@
 
 Fresh, hand-authored development fixtures created on 2026-11-22. The earlier chat's 42-case/17-completion replay was not committed and has not been recovered. These cases are not that replay, a held-out test set, personal typing records, or evidence of human/device performance.
 
-Run `node --import tsx scripts/writing-decoder/replay.ts` from the repository root. The script exits nonzero if a baseline displayed intended completion is lost, a listed safety condition fails, another suggestion surface changes, or explicit/stale acceptance fails. `--baseline-only` diagnoses the existing path without replacing paired results.
+Run `node --import tsx scripts/writing-decoder/replay.ts` from the repository root. The script exits nonzero if a baseline displayed intended completion is lost, a listed safety condition fails in the warm or guarded-fallback path, another suggestion surface changes, or explicit/stale acceptance fails. `--baseline-only` diagnoses the existing path without replacing paired results.
 
 ## Result
 
@@ -14,7 +14,9 @@ Run `node --import tsx scripts/writing-decoder/replay.ts` from the repository ro
 | Intended word ranked first | 16/24 | 16/24 |
 | Intended word in displayed three | 16/24 | 17/24 |
 
-1 displayed-completion gains; 0 losses. 0 candidate safety failures; 1 baseline safety failures. 0 proposal-contract failures. 61 explicit proposal applications checked; 549 changed-request applications checked for rejection.
+1 displayed-completion gains; 0 losses. 0 candidate safety failures; 0 guarded-fallback safety failures; 1 baseline safety failures. 0 proposal-contract failures. 61 explicit proposal applications checked; 549 changed-request applications checked for rejection.
+
+These pool counts use one fixed prefix per fixture. The historical JSON field `oraclePoolHits` is not the plan's any-prefix oracle recall. The separately versioned [measurement protocol](../evaluation/protocol-v1.md) reports all-prefix and per-prefix metrics without changing these frozen inputs.
 
 ## Per-case intended-word ranks
 

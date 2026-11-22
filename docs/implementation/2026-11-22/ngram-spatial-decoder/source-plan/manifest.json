@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "source": "Owner attachment math-input-plan.zip, supplied 2026-11-22 in the N219 continuation",
+  "archiveSha256": "a33b93afea26767aea7fe7cbf83a29689991b64a3ecbce24e93670b0a8f96249",
+  "archiveBytes": 80712,
+  "preservation": "Markdown files copied byte-for-byte. The archive is not required to use this snapshot. External links and proposal language remain the supplied plan, not independent verification or implemented behavior.",
+  "presentChapters": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "absentReferencedChapter": "15-tutor-signals.md",
+  "separatelyPreservedChapter": "../PLAN.md (chapter 16 from the earlier Owner attachment)",
+  "files": [
+    {
+      "path": "01-diagnosis.md",
+      "bytes": 8300,
+      "sha256": "81a85a0b0b463f7e3d6353644b8739ce0dbfd4bc4afdc982e58f69db46a8fee6"
+    },
+    {
+      "path": "02-datasets.md",
+      "bytes": 12571,
+      "sha256": "6b44ab407afc40f7c72a3348d929c8def48ba33bc4724ef2dcdefea8decde616"
+    },
+    {
+      "path": "03-feedback-and-logging.md",
+      "bytes": 7976,
+      "sha256": "cfd19e5f4c8c5bbf6907e6682c8d7b863f1d8c4bcd263de46ef28434dbeaee6d"
+    },
+    {
+      "path": "04-models-and-methods.md",
+      "bytes": 21953,
+      "sha256": "af0dde478cf6edea9e75148cd19a620895f60a5e209deec181dc49ae0beee4f3"
+    },
+    {
+      "path": "05-training.md",
+      "bytes": 12573,
+      "sha256": "c60ad721ed6cec9fa50cb4eca72dae04e78dff9a0bff681f7e780a8f6f6f29d0"
+    },
+    {
+      "path": "06-evaluation.md",
+      "bytes": 8228,
+      "sha256": "6cc1464ab77c1d6bfc5aaa8c8fe3f1ade3663c1a8dbfbac759ba88362c9032c6"
+    },
+    {
+      "path": "07-learner-choice-safety.md",
+      "bytes": 5277,
+      "sha256": "c9274161445166d1974ab59101606d0c9a807658df26a6a7d159a6253c656200"
+    },
+    {
+      "path": "08-handwriting.md",
+      "bytes": 7116,
+      "sha256": "2d2b834efbcf3ce9813ad9ddfe47b4f7b7daf7a60189044b9607f88117edf447"
+    },
+    {
+      "path": "09-owner-suggestions.md",
+      "bytes": 9372,
+      "sha256": "4446ba2180deaa50fdc1949a416eeb33adc084d84851dac3590021e6599f1fcd"
+    },
+    {
+      "path": "10-roadmap.md",
+      "bytes": 7547,
+      "sha256": "fafd0e6f11fb33b776323a641db41c13f184ee57a24acfff5eea29b2675d549d"
+    },
+    {
+      "path": "11-scribe-architecture.md",
+      "bytes": 22759,
+      "sha256": "1d3c0bb3cc05e35a805c3c7d6e2d703a6a7bce5edc118b111079ba2ab6e17619"
+    },
+    {
+      "path": "12-scribe-dataset.md",
+      "bytes": 10821,
+      "sha256": "d8e05e878c8801e8060eea8545c9d72f6b054c5d4cb6d5a3a016eb86bd14eb4b"
+    },
+    {
+      "path": "13-scribe-rl-and-feedback.md",
+      "bytes": 7582,
+      "sha256": "e6c89838772d627e496a98ad627e95c8b3c6daa7a04b7fac28475037da290266"
+    },
+    {
+      "path": "14-scribe-free-compute.md",
+      "bytes": 6453,
+      "sha256": "32cf521d31b520c1b959e3a3aa094d5fd8ce44027b95b53c80e6b1bb4cd85006"
+    },
+    {
+      "path": "README.md",
+      "bytes": 9232,
+      "sha256": "6dec361fdea90fe6bd01eb1ec37f1faf081f56041152193052e471db1aac6fc0"
+    },
+    {
+      "path": "REFERENCES.md",
+      "bytes": 13669,
+      "sha256": "9332429a3da5517dc2587b17947f0d91c711fc996086f8d7850b5e78c88ffa4b"
+    }
+  ]
+}

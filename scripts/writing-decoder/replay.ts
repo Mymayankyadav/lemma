@@ -93,8 +93,11 @@ try {
       const retrieved = decoder && index && decoderPrefix
         ? decoder.searchDecoderLexicon(index, decoderPrefix, decoder.MAX_DECODER_CANDIDATES) : [];
       const after = baselineOnly ? before : predictWritingAidPool(request, undefined, retrieved);
+      // Enabled safety applies to the first paint and failure fallback, before any worker reply.
+      const fallback = baselineOnly ? before : predictWritingAidPool(request, undefined, []);
       const beforeSelected = selectWritingAidPool(before, undefined, undefined, 0);
       const afterSelected = selectWritingAidPool(after, undefined, undefined, 0);
+      const fallbackSelected = selectWritingAidPool(fallback, undefined, undefined, 0);
       type Pool = typeof before;
       const words = (pool: Pool) => pool.words.map(proposal => proposal.label);
       const summarize = (pool: Pool, selected: typeof beforeSelected) => ({
@@ -118,11 +121,14 @@ try {
       }
       const baseline = summarize(before, beforeSelected);
       const candidate = summarize(after, afterSelected);
+      const guardedFallback = summarize(fallback, fallbackSelected);
       const contractErrors: string[] = [];
       if (JSON.stringify(request) !== snapshot) contractErrors.push('prediction mutated the request');
       if (afterSelected.words.length > 3) contractErrors.push('more than three selected words');
       if (JSON.stringify(candidate.edit) !== JSON.stringify(baseline.edit) ||
           JSON.stringify(candidate.ghost) !== JSON.stringify(baseline.ghost)) contractErrors.push('prefix lookup changed another surface');
+      if (JSON.stringify(guardedFallback.edit) !== JSON.stringify(baseline.edit) ||
+          JSON.stringify(guardedFallback.ghost) !== JSON.stringify(baseline.ghost)) contractErrors.push('guarded fallback changed another surface');
       let checkedApplications = 0, checkedStaleApplications = 0;
       for (const proposal of [...afterSelected.words, ...after.edit, ...after.ghost]) {
         checkedApplications++;
@@ -150,7 +156,8 @@ try {
       return {id: `${row.id}/${row.mode}`, category: row.category, mode: row.mode, text: row.text,
         ...(row.intended ? {intended: row.intended} : {}), prefix, decoderPrefix,
         retrieved: retrieved.map(item => ({word: item.word, frequency: item.frequency, riskTags: item.riskTags ?? []})),
-        baseline, candidate, baselineSafetyErrors: safetyErrors(before), candidateSafetyErrors: safetyErrors(after),
+        baseline, candidate, guardedFallback, baselineSafetyErrors: safetyErrors(before),
+        candidateSafetyErrors: safetyErrors(after), fallbackSafetyErrors: safetyErrors(fallback),
         contractErrors, checkedApplications, checkedStaleApplications};
     });
   })();
@@ -165,15 +172,16 @@ try {
   const regressions = completions.filter(row => row.baseline.intendedTop3Rank !== null && row.candidate.intendedTop3Rank === null).map(row => row.id);
   const gains = completions.filter(row => row.baseline.intendedTop3Rank === null && row.candidate.intendedTop3Rank !== null).map(row => row.id);
   const safetyFailures = rows.filter(row => row.candidateSafetyErrors.length).map(row => ({id: row.id, errors: row.candidateSafetyErrors}));
+  const fallbackSafetyFailures = rows.filter(row => row.fallbackSafetyErrors.length).map(row => ({id: row.id, errors: row.fallbackSafetyErrors}));
   const baselineSafetyFailures = rows.filter(row => row.baselineSafetyErrors.length).map(row => ({id: row.id, errors: row.baselineSafetyErrors}));
   const contractFailures = rows.filter(row => row.contractErrors.length).map(row => ({id: row.id, errors: row.contractErrors}));
   const summary = {
     completionCases: completions.length, safetyCases: safety.length,
     baseline: metrics('baseline'), candidate: metrics('candidate'), top3Gains: gains, top3Regressions: regressions,
-    baselineSafetyFailures, safetyFailures, contractFailures,
+    baselineSafetyFailures, safetyFailures, fallbackSafetyFailures, contractFailures,
     explicitApplications: rows.reduce((sum, row) => sum + row.checkedApplications, 0),
     staleApplicationsRejected: rows.reduce((sum, row) => sum + row.checkedStaleApplications, 0),
-    gatesPassed: !regressions.length && !safetyFailures.length && !contractFailures.length,
+    gatesPassed: !regressions.length && !safetyFailures.length && !fallbackSafetyFailures.length && !contractFailures.length,
   };
   console.log(JSON.stringify({baselineOnly, retrievalLimit, ...summary}, null, 2));
   if (baselineOnly) {
@@ -199,7 +207,7 @@ try {
     const sourceSha256 = Object.fromEntries(await Promise.all(sources.sort().map(async path =>
       [path, createHash('sha256').update(await readFile(resolve(root, path))).digest('hex')])));
     const report = {schemaVersion: 1, suite: fixtures.suite, provenance: fixtures.provenance,
-      comparison: 'Existing predictWritingAidPool(request), versus the same policy with verified lexicon prefix candidates as argument 3. Both omit personalization. Top3 arrays are ranked selection order; oraclePoolHits counts eligible pool presence, not a learned oracle ranker.',
+      comparison: 'Existing predictWritingAidPool(request), versus the same policy with verified lexicon prefix candidates as argument 3. Both omit personalization. Guarded fallback passes an empty candidate list. Top3 arrays are ranked selection order; the historical oraclePoolHits field counts eligible pool presence at one selected prefix per fixture, not any-prefix oracle recall or a learned oracle ranker.',
       execution: 'Deterministic Node/Vite source replay in process, without a browser or network. No latency, memory, physical-device, human typing, or autocorrection certification claims.',
       retrievalLimit, summary, sourceSha256, rows};
     await mkdir(resolve(root, output), {recursive: true});
@@ -207,15 +215,17 @@ try {
     const table = completions.map(row => `| ${row.id} | ${row.intended} | ${row.baseline.intendedPoolRank ?? '—'} | ${row.candidate.intendedPoolRank ?? '—'} | ${row.baseline.intendedTop3Rank ?? '—'} | ${row.candidate.intendedTop3Rank ?? '—'} |`).join('\n');
     const failures = [...regressions.map(id => `${id}: intended completion fell out of the displayed three`),
       ...safetyFailures.map(row => `${row.id}: ${row.errors.join('; ')}`),
+      ...fallbackSafetyFailures.map(row => `${row.id}: guarded fallback: ${row.errors.join('; ')}`),
       ...contractFailures.map(row => `${row.id}: ${row.errors.join('; ')}`)];
     const markdown = `# Fresh decoder development replay\n\n${fixtures.provenance}\n\n` +
-      `Run \`node --import tsx scripts/writing-decoder/replay.ts\` from the repository root. The script exits nonzero if a baseline displayed intended completion is lost, a listed safety condition fails, another suggestion surface changes, or explicit/stale acceptance fails. \`--baseline-only\` diagnoses the existing path without replacing paired results.\n\n` +
+      `Run \`node --import tsx scripts/writing-decoder/replay.ts\` from the repository root. The script exits nonzero if a baseline displayed intended completion is lost, a listed safety condition fails in the warm or guarded-fallback path, another suggestion surface changes, or explicit/stale acceptance fails. \`--baseline-only\` diagnoses the existing path without replacing paired results.\n\n` +
       `## Result\n\n**Gate: ${summary.gatesPassed ? 'PASS' : 'FAIL'}.** ${completions.length} completion probes and ${safety.length} safety requests.\n\n` +
       `| Metric | Existing path | Lexicon path |\n| --- | ---: | ---: |\n` +
       `| Intended word in eligible pool | ${summary.baseline.oraclePoolHits}/${completions.length} | ${summary.candidate.oraclePoolHits}/${completions.length} |\n` +
       `| Intended word ranked first | ${summary.baseline.top1Hits}/${completions.length} | ${summary.candidate.top1Hits}/${completions.length} |\n` +
       `| Intended word in displayed three | ${summary.baseline.top3Hits}/${completions.length} | ${summary.candidate.top3Hits}/${completions.length} |\n\n` +
-      `${gains.length} displayed-completion gains; ${regressions.length} losses. ${safetyFailures.length} candidate safety failures; ${baselineSafetyFailures.length} baseline safety failures. ${contractFailures.length} proposal-contract failures. ${summary.explicitApplications} explicit proposal applications checked; ${summary.staleApplicationsRejected} changed-request applications checked for rejection.\n\n` +
+      `${gains.length} displayed-completion gains; ${regressions.length} losses. ${safetyFailures.length} candidate safety failures; ${fallbackSafetyFailures.length} guarded-fallback safety failures; ${baselineSafetyFailures.length} baseline safety failures. ${contractFailures.length} proposal-contract failures. ${summary.explicitApplications} explicit proposal applications checked; ${summary.staleApplicationsRejected} changed-request applications checked for rejection.\n\n` +
+      `These pool counts use one fixed prefix per fixture. The historical JSON field \`oraclePoolHits\` is not the plan's any-prefix oracle recall. The separately versioned [measurement protocol](../evaluation/protocol-v1.md) reports all-prefix and per-prefix metrics without changing these frozen inputs.\n\n` +
       `## Per-case intended-word ranks\n\nA dash means absent. Pool ranks are after eligibility guards; displayed ranks use the existing three-slot selector. All retrieved words, eligible pools, displayed lists, risk tags, and failures are in [results.json](results.json).\n\n` +
       `| Case / mode | Intended word | Existing pool | Lexicon pool | Existing top 3 | Lexicon top 3 |\n| --- | --- | ---: | ---: | ---: | ---: |\n${table}\n\n` +
       `## Failures\n\n${failures.length ? failures.map(failure => `- ${failure}`).join('\n') : 'None in the bounded gates above.'}\n\n` +

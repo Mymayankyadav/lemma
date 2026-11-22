@@ -21,6 +21,7 @@ interface LearningScope {scopeKey: string; generation: string}
 interface Prediction {
   snapshot: WritingAidRequest;
   sequence: number;
+  decoderEnabled: boolean;
   learningScope: LearningScope;
   suggestions: WritingAidSuggestions;
   pool: WritingAidPool;
@@ -86,8 +87,9 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   if (!sameWritingAidRequest(cycle.current.snapshot, snapshot)) cycle.current = advanceCycle(cycle.current, snapshot);
   const [sequence, setSequence] = useState(0);
   const [result, setResult] = useState<Prediction>();
+  const decoderEnabled = isFlagOn('writingDecoder');
   const current = result && result.sequence === sequence && result.learningScope === learningScope &&
-    sameWritingAidRequest(snapshot, result.snapshot) ? result : undefined;
+    result.decoderEnabled === decoderEnabled && sameWritingAidRequest(snapshot, result.snapshot) ? result : undefined;
   const live = useRef({snapshot, current, personalization, learningScope});
   live.current = {snapshot, current, personalization, learningScope};
   const displayed = useRef<Lists>(freshLists());
@@ -95,7 +97,6 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   const pending = useRef<PendingAcceptance | null>(null);
   const previous = useRef<WritingAidRequest | null>(null);
   const decoder = useRef<WritingDecoderClient | null>(null);
-  const decoderEnabled = isFlagOn('writingDecoder');
 
   useEffect(() => () => {decoder.current?.dispose(); decoder.current = null;},
     [decoderEnabled, mode, words, scopeKey, mountId, learningScope]);
@@ -308,9 +309,10 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         try {
           const {enabled, model: learned} = live.current.personalization;
           const model = enabled ? learned : undefined;
-          const pool = predictWritingAidPool(snapshot, model);
+          // Apply the enabled display guards before the optional worker can answer or fail.
+          const pool = predictWritingAidPool(snapshot, model, decoderEnabled ? [] : undefined);
           const suggestions = selectWritingAidPool(pool, model, cycle.current.excluded);
-          setResult({snapshot, sequence, learningScope, pool, suggestions});
+          setResult({snapshot, sequence, decoderEnabled, learningScope, pool, suggestions});
           const prefix = decoderEnabled ? writingDecoderPrefix(snapshot) : null;
           if (prefix) void import('./decoder/client').then(async ({createWritingDecoderClient}) => {
             if (cancelled) return;
@@ -322,10 +324,10 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
             const model = latest.enabled ? latest.model : undefined;
             const pool = predictWritingAidPool(snapshot, model, candidates);
             const suggestions = selectWritingAidPool(pool, model, cycle.current.excluded);
-            setResult({snapshot, sequence, learningScope, pool, suggestions});
-          }).catch(() => {/* Keep the already displayed baseline when the optional decoder fails. */});
+            setResult({snapshot, sequence, decoderEnabled, learningScope, pool, suggestions});
+          }).catch(() => {/* Keep the already guarded fallback when the optional decoder fails. */});
         } catch {
-          setResult({snapshot, sequence, learningScope, suggestions: NO_WRITING_AID, pool: {words: [], edit: [], ghost: []}});
+          setResult({snapshot, sequence, decoderEnabled, learningScope, suggestions: NO_WRITING_AID, pool: {words: [], edit: [], ghost: []}});
         }
       });
     }).catch(() => {/* A failed asset load leaves ordinary editing and math keys usable. */});

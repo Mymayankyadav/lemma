@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "protocol": "n219-corpus-audit-v1",
+  "status": "passed",
+  "inputs": {
+    "manifestSha256": "269f4044f019e1e970ba540d34d8c7b7c91bf7c92d985e87716db4f497fc9edc",
+    "corpusSha256": "85e5289c3f139378873b79e0038972b427ce564fe4ebda3d3a9c99f50b263dfc"
+  },
+  "counts": {
+    "documents": 3,
+    "targets": 3,
+    "context": 0,
+    "words": 24,
+    "bySplit": {
+      "train": 1,
+      "validation": 1,
+      "test": 1
+    },
+    "byRole": {
+      "learner": 0,
+      "tutor": 0,
+      "public": 0,
+      "synthetic": 3
+    }
+  },
+  "sourceCount": 1,
+  "ownerDays": 0,
+  "checks": [
+    "review-declared",
+    "pinned-local-files",
+    "nfc-and-text-hashes",
+    "single-owner-scope",
+    "roles-and-target-provenance",
+    "document-and-group-splits",
+    "owner-whole-day-60-20-20",
+    "exact-target-deduplication",
+    "all-role-cross-split-exact-and-13grams"
+  ],
+  "qualification": "Declaration and integrity checks only. Not a licence grant, semantic-safety certification, training approval, or model-quality result.",
+  "missing": [
+    "near-duplicate MinHash audit",
+    "topic holdout audit",
+    "public post-date split audit",
+    "math-span validation",
+    "source quality review",
+    "human/device evaluation"
+  ]
+}

@@ -1,0 +1,6566 @@
+{
+  "protocolId": "n219-development-measurement-v1",
+  "protocolSha256": "c9a5303ccd73dae64bd67c17e350b128f592d472022bac7fb43d3468e8674f2a",
+  "dataset": {
+    "kind": "synthetic development probes derived from the unchanged fresh replay",
+    "source": "docs/implementation/2026-11-22/ngram-spatial-decoder/replay/fixtures.json",
+    "sha256": "c4ac2a64d1effeaa108e17472cb9c63455b0baf1fa24d1b3b5457df50bd36d47",
+    "targetTasks": 24,
+    "targetCharacters": 214,
+    "trainingSplit": null,
+    "validationSplit": null,
+    "heldOutSplit": null
+  },
+  "retrievalLimit": 64,
+  "qualification": {
+    "humanQualification": "blocked",
+    "winnerSelection": "prohibited",
+    "heldOut": false,
+    "confidenceIntervals": "not estimated; these reused authored tasks are not independent learner observations",
+    "missingInputs": [
+      "deliberately supplied real learner text and a frozen chronological split manifest",
+      "independently labelled D13 blocked/allowed opportunities and a validated judge",
+      "opt-in impression/outcome logs for behavior estimates",
+      "a recorded release APK, device, WebView, latency and memory measurements",
+      "a preregistered human-trial protocol and consent"
+    ]
+  },
+  "notMeasured": [
+    "real learner accuracy",
+    "learner-choice certification",
+    "correction precision/recall",
+    "notation precision/recall",
+    "fitted behavior",
+    "full-passage effort",
+    "latency",
+    "memory",
+    "battery",
+    "human preference"
+  ],
+  "execution": "Node/Vite in-process; no browser, network, account, personal log, or live feature change",
+  "integrationSourcesRecordedButNotExecuted": [
+    "src/features/tutor/writingAid/useWritingAid.ts",
+    "src/flags.ts"
+  ],
+  "sourceSha256": {
+    "docs/implementation/2026-11-22/ngram-spatial-decoder/evaluation/protocol-v1.json": "c9a5303ccd73dae64bd67c17e350b128f592d472022bac7fb43d3468e8674f2a",
+    "docs/implementation/2026-11-22/ngram-spatial-decoder/evaluation/protocol-v1.md": "023bcf78c2723e58269438d85d9175b89689ed59b5aa8d68d7dece2358248fff",
+    "docs/implementation/2026-11-22/ngram-spatial-decoder/replay/fixtures.json": "c4ac2a64d1effeaa108e17472cb9c63455b0baf1fa24d1b3b5457df50bd36d47",
+    "package-lock.json": "0d4580b6b3ef314bab5d12fd0b8fcca8d364bb47aba4cc7ee4da8a72e4e62695",
+    "package.json": "a787533d75481e453f03b0c03131731e3d58ce94aa0c9a0b8e4c8923204bf47b",
+    "public/models/writing-decoder/unigram-v1/AOSP-NOTICE.txt": "d04394c729fc9fda050d5733d8ee11663fb54fe54d94532de968cf85c1cc42fb",
+    "public/models/writing-decoder/unigram-v1/ATTRIBUTION.md": "bec2ded51c9aea451781666366a1bd817abc56c9ab0836e8223fdec50e55227b",
+    "public/models/writing-decoder/unigram-v1/SCOWL-NOTICE.txt": "1d7c0128f6c72d2270bf1b271b37a3a21267f759161b68c4dc6c501574c0892e",
+    "public/models/writing-decoder/unigram-v1/lexicon.json": "3c60a7226fcabd574caaf0f152fc8451c9d7173af8e2470a96052f3bd5ed2594",
+    "public/models/writing-decoder/unigram-v1/manifest.json": "0acee7dcd7f191495cc0196545b0f52b15f1255e9f48f475a2145bf996aec4e4",
+    "public/models/writing-decoder/unigram-v1/mathlib4-LICENSE.txt": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "scripts/writing-decoder/measure.ts": "5d5d14012658592a286279b96c6f85727ac5830b165d7a955059b17ce407941d",
+    "scripts/writing-decoder/metrics.ts": "f49f85f63b1b5b577818cc77de6e907177721243d8e4c259eb62b04a6aeeb394",
+    "src/features/pad/padEdit.ts": "931c57d89585302e170de63a5efc667c579e11288aa7f6e03fde7093c82f303f",
+    "src/features/tutor/input/completionPolicy.ts": "9e9e97d02314e9d72ebfa860f6ea6c1ccafa57eab1d5c55a5a481c3a2406a521",
+    "src/features/tutor/input/symbolEdit.ts": "73891c027763d70dc62098df38506178f9b340244921950978047cc975ecfea6",
+    "src/features/tutor/writingAid/decoder/assets.ts": "e00754357d8afc8cb28e99021024414e94e0f5f0144a8bc9eb60a0f655017e37",
+    "src/features/tutor/writingAid/decoder/client.ts": "fc493745aa24b76d8bf5556f6b94f83676dbf58d55459f1e8482e7be1f30b8df",
+    "src/features/tutor/writingAid/decoder/lexicon.ts": "e577103d01a3fb0e9025e1fa86d9a132947ccd32fbe84661f789c290b4ffd4a6",
+    "src/features/tutor/writingAid/decoder/protocol.ts": "655212a7d58bf3ee90d92f5f528e37a29d2102ff02a6492e31faa7fb9c895a83",
+    "src/features/tutor/writingAid/decoder/writingDecoder.worker.ts": "33481161583e2684ba1ba38c82ece1b1f2d6efd3a8ce0482c906cc4cdc16c389",
+    "src/features/tutor/writingAid/engine.ts": "b2bd33fde6930342dff533a420e56f3f0f7363390c0cc01773d11c892f82f55a",
+    "src/features/tutor/writingAid/learning.ts": "d33f44051a944ee7a3274c7b4eaed1e4103326db956a72ec05dbcb8f0934be71",
+    "src/features/tutor/writingAid/policy.ts": "5ecd8edc304e79c21f01f50ce81a5724acc47b45396af0fff61925307108be48",
+    "src/features/tutor/writingAid/useWritingAid.ts": "ad3969e3125154ac0310afe675afc7f06d2cc966d57d950680bc5cc72718375c",
+    "src/features/tutor/writingAid/vendor/accelerator.d.mts": "fefc6385acee3980cf75928f5f7bbc77e8dd3c81213a1fe0b59eb358707a74b1",
+    "src/features/tutor/writingAid/vendor/accelerator.mjs": "bacb3d8b178aba07383b99f20e6e4c1721b1b90b10afe8fa41c93403b2676564",
+    "src/features/tutor/writingAid/vendor/commitment.mjs": "a6428f8dda79a141de97858f12fe7889779e5c1920f810c0c9ab00e8a7be2710",
+    "src/features/tutor/writingAid/vendor/compact-ranks.json": "8e22aa214182878e8182dc0d6231801cb83b7a60555a7739e02f3128fc48de81",
+    "src/features/tutor/writingAid/vendor/facade.mjs": "75dc0bda49c957c576fa1e78cf8204768896a93f0aa0101f141738a76b20254f",
+    "src/features/tutor/writingAid/vendor/legacy/cohort.mjs": "11a5b73a81a569e2f13bac54ee54946acf69c5348b17008a7f0b65d4201ce9cc",
+    "src/features/tutor/writingAid/vendor/legacy/complete.mjs": "a577f66b0c22036dfecd3877e45e37c575c6b44f787070f0fbb28dd9faf08df5",
+    "src/features/tutor/writingAid/vendor/legacy/edits.mjs": "60fa98dc76738ad1cc842d83fbac3518510e4fafe8fd33f4861a1c75aed4f019",
+    "src/features/tutor/writingAid/vendor/legacy/linear_guard.mjs": "42dc14fbf2eb294ebb2ac86dfdecdd56fd30a84da7e1b041ba7ee2df824184d9",
+    "src/features/tutor/writingAid/vendor/legacy/policy.json": "07a3548a086330277a03cc5c56199fe08bbbf6129d7c1c5303a2752e159ec4a6",
+    "src/features/tutor/writingAid/vendor/legacy/revision.d.mts": "6fd17b44feda2357858048e7498d76d96d8f8fe0b0a199d3a09d09571aca0695",
+    "src/features/tutor/writingAid/vendor/legacy/revision.mjs": "1254869d1b4481365a9f295d2d5a4a356bc73dbafb9f8df7e5dd297ff573f1e1",
+    "src/features/tutor/writingAid/vendor/legacy/runtime-phrases.json": "c948e06654a955d18528fc0a9a53d8710b252ad67bf32af21815e890909d9b2c",
+    "src/features/tutor/writingAid/vendor/legacy/runtime-veto.json": "7762afd8ec1da164567b8cc427df84601590a3e41f870443aa3bead8f88471c1",
+    "src/features/tutor/writingAid/vendor/math-ranks-LICENSE.txt": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "src/features/tutor/writingAid/vendor/phrases.mjs": "27a030e36fd896a8c9884d2c65ff7dbcb455b4af1fa6652b9aa2fe6f1b4a7eb2",
+    "src/features/tutor/writingAid/vendor/shortcuts.mjs": "a98c89cb8ca322e483efe0e34bfab7eec345421f3cad2e499a62df076ef49a0a",
+    "src/features/tutor/writingAid/vendor/speed-policy.json": "edf6322165fab30ad811a1dfa24389b9f146f88cc732153388669a508326eacb",
+    "src/features/tutor/writingAid/vendor/study_input.d.mts": "3a8358fef5f0c495d009ace9c851df41e2d949cc2294ca42b00270b8df781c74",
+    "src/features/tutor/writingAid/vendor/study_input.mjs": "3538d578f3c11f33b49e2b9f1f2c93db9d53bff29616ba0dacc7664fddda9da5",
+    "src/features/tutor/writingAid/vendor/word-assets.json": "05d59054ecdc6983531f9b2a1cae5c5b212c262078ee066f759f1ca96ddbeb92",
+    "src/features/tutor/writingAid/vendor/wordlist-LICENSE.txt": "1d7c0128f6c72d2270bf1b271b37a3a21267f759161b68c4dc6c501574c0892e",
+    "src/features/tutor/writingAid/vendor/wordlist.txt": "67689f3f4ea057f0b57a07b1e3d54fc28257c47691eb8acfab681b7e38b37755",
+    "src/features/tutor/writingAid/vendor/words.mjs": "1c584932ca2f69dbc0d6af8f0c4aba73b5e9d8c764731a951f00d86ee52f37ba",
+    "src/flags.ts": "889a5551a3b26fe236a66ce40ca6e29f9803c4e1583d4868c7fce59dbb5bab48"
+  },
+  "results": {
+    "baseline": {
+      "actual": {
+        "targetTasks": 24,
+        "prefixOpportunities": 214,
+        "anyPrefixPoolHits": 22,
+        "anyPrefixPoolRecall": 0.9166666666666666,
+        "overallMrrAt3": 0.35514018691588783,
+        "byPrefix": [
+          {
+            "prefixLength": 0,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 1,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 2,
+            "opportunities": 24,
+            "top1Hits": 1,
+            "top3Hits": 1,
+            "top1Accuracy": 0.041666666666666664,
+            "top3Accuracy": 0.041666666666666664,
+            "mrrAt3": 0.041666666666666664
+          },
+          {
+            "prefixLength": 3,
+            "opportunities": 24,
+            "top1Hits": 3,
+            "top3Hits": 3,
+            "top1Accuracy": 0.125,
+            "top3Accuracy": 0.125,
+            "mrrAt3": 0.125
+          }
+        ],
+        "idealSavings": [
+          {
+            "k": 1,
+            "targetCharacters": 214,
+            "charactersNotTyped": 76,
+            "acceptanceTaps": 22,
+            "netTapsSaved": 54,
+            "savingsFraction": 0.2523364485981308
+          },
+          {
+            "k": 3,
+            "targetCharacters": 214,
+            "charactersNotTyped": 77,
+            "acceptanceTaps": 22,
+            "netTapsSaved": 55,
+            "savingsFraction": 0.2570093457943925
+          }
+        ]
+      },
+      "degraded": {
+        "targetTasks": 24,
+        "prefixOpportunities": 214,
+        "anyPrefixPoolHits": 22,
+        "anyPrefixPoolRecall": 0.9166666666666666,
+        "overallMrrAt3": 0.29517133956386293,
+        "byPrefix": [
+          {
+            "prefixLength": 0,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 1,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 2,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 3,
+            "opportunities": 24,
+            "top1Hits": 2,
+            "top3Hits": 2,
+            "top1Accuracy": 0.08333333333333333,
+            "top3Accuracy": 0.08333333333333333,
+            "mrrAt3": 0.08333333333333333
+          }
+        ],
+        "idealSavings": [
+          {
+            "k": 1,
+            "targetCharacters": 214,
+            "charactersNotTyped": 60,
+            "acceptanceTaps": 21,
+            "netTapsSaved": 39,
+            "savingsFraction": 0.1822429906542056
+          },
+          {
+            "k": 3,
+            "targetCharacters": 214,
+            "charactersNotTyped": 72,
+            "acceptanceTaps": 22,
+            "netTapsSaved": 50,
+            "savingsFraction": 0.2336448598130841
+          }
+        ]
+      },
+      "oracle": {
+        "targetTasks": 24,
+        "prefixOpportunities": 214,
+        "anyPrefixPoolHits": 22,
+        "anyPrefixPoolRecall": 0.9166666666666666,
+        "overallMrrAt3": 0.3598130841121495,
+        "byPrefix": [
+          {
+            "prefixLength": 0,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 1,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 2,
+            "opportunities": 24,
+            "top1Hits": 1,
+            "top3Hits": 1,
+            "top1Accuracy": 0.041666666666666664,
+            "top3Accuracy": 0.041666666666666664,
+            "mrrAt3": 0.041666666666666664
+          },
+          {
+            "prefixLength": 3,
+            "opportunities": 24,
+            "top1Hits": 3,
+            "top3Hits": 3,
+            "top1Accuracy": 0.125,
+            "top3Accuracy": 0.125,
+            "mrrAt3": 0.125
+          }
+        ],
+        "idealSavings": [
+          {
+            "k": 1,
+            "targetCharacters": 214,
+            "charactersNotTyped": 77,
+            "acceptanceTaps": 22,
+            "netTapsSaved": 55,
+            "savingsFraction": 0.2570093457943925
+          },
+          {
+            "k": 3,
+            "targetCharacters": 214,
+            "charactersNotTyped": 77,
+            "acceptanceTaps": 22,
+            "netTapsSaved": 55,
+            "savingsFraction": 0.2570093457943925
+          }
+        ]
+      },
+      "random": {
+        "mean": {
+          "targetTasks": 24,
+          "prefixOpportunities": 214,
+          "anyPrefixPoolHits": 22,
+          "anyPrefixPoolRecall": 0.9166666666666664,
+          "overallMrrAt3": 0.3214563862928349,
+          "byPrefix": [
+            {
+              "prefixLength": 0,
+              "opportunities": 24,
+              "top1Hits": 0,
+              "top3Hits": 0,
+              "top1Accuracy": 0,
+              "top3Accuracy": 0,
+              "mrrAt3": 0
+            },
+            {
+              "prefixLength": 1,
+              "opportunities": 24,
+              "top1Hits": 0,
+              "top3Hits": 0,
+              "top1Accuracy": 0,
+              "top3Accuracy": 0,
+              "mrrAt3": 0
+            },
+            {
+              "prefixLength": 2,
+              "opportunities": 24,
+              "top1Hits": 0.4375,
+              "top3Hits": 0.8125,
+              "top1Accuracy": 0.018229166666666664,
+              "top3Accuracy": 0.033854166666666664,
+              "mrrAt3": 0.025173611111111115
+            },
+            {
+              "prefixLength": 3,
+              "opportunities": 24,
+              "top1Hits": 2.0625,
+              "top3Hits": 2.5,
+              "top1Accuracy": 0.08593749999999999,
+              "top3Accuracy": 0.10416666666666666,
+              "mrrAt3": 0.09461805555555555
+            }
+          ],
+          "idealSavings": [
+            {
+              "k": 1,
+              "targetCharacters": 214,
+              "charactersNotTyped": 68.1875,
+              "acceptanceTaps": 21.75,
+              "netTapsSaved": 46.4375,
+              "savingsFraction": 0.2169976635514019
+            },
+            {
+              "k": 3,
+              "targetCharacters": 214,
+              "charactersNotTyped": 75.375,
+              "acceptanceTaps": 22,
+              "netTapsSaved": 53.375,
+              "savingsFraction": 0.24941588785046725
+            }
+          ]
+        },
+        "runs": [
+          {
+            "seed": 17,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.31619937694704053,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.013888888888888888
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 63,
+                  "acceptanceTaps": 21,
+                  "netTapsSaved": 42,
+                  "savingsFraction": 0.19626168224299065
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 75,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 53,
+                  "savingsFraction": 0.24766355140186916
+                }
+              ]
+            }
+          },
+          {
+            "seed": 29,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.3255451713395639,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.013888888888888888
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 67,
+                  "acceptanceTaps": 21,
+                  "netTapsSaved": 46,
+                  "savingsFraction": 0.21495327102803738
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 76,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 54,
+                  "savingsFraction": 0.2523364485981308
+                }
+              ]
+            }
+          },
+          {
+            "seed": 43,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.32009345794392524,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 66,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 44,
+                  "savingsFraction": 0.205607476635514
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 74,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 52,
+                  "savingsFraction": 0.24299065420560748
+                }
+              ]
+            }
+          },
+          {
+            "seed": 71,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.31853582554517135,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.09722222222222222
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 70,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 48,
+                  "savingsFraction": 0.22429906542056074
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 75,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 53,
+                  "savingsFraction": 0.24766355140186916
+                }
+              ]
+            }
+          },
+          {
+            "seed": 101,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.3247663551401869,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.020833333333333332
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 67,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 45,
+                  "savingsFraction": 0.2102803738317757
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 75,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 53,
+                  "savingsFraction": 0.24766355140186916
+                }
+              ]
+            }
+          },
+          {
+            "seed": 137,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.31386292834890966,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 65,
+                  "acceptanceTaps": 21,
+                  "netTapsSaved": 44,
+                  "savingsFraction": 0.205607476635514
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 73,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 51,
+                  "savingsFraction": 0.2383177570093458
+                }
+              ]
+            }
+          },
+          {
+            "seed": 173,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.32398753894080995,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 71,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 49,
+                  "savingsFraction": 0.22897196261682243
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 75,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 53,
+                  "savingsFraction": 0.24766355140186916
+                }
+              ]
+            }
+          },
+          {
+            "seed": 211,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.3216510903426791,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.020833333333333332
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 70,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 48,
+                  "savingsFraction": 0.22429906542056074
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 76,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 54,
+                  "savingsFraction": 0.2523364485981308
+                }
+              ]
+            }
+          },
+          {
+            "seed": 257,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.32242990654205606,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.020833333333333332
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 67,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 45,
+                  "savingsFraction": 0.2102803738317757
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 75,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 53,
+                  "savingsFraction": 0.24766355140186916
+                }
+              ]
+            }
+          },
+          {
+            "seed": 313,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.31853582554517135,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 71,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 49,
+                  "savingsFraction": 0.22897196261682243
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 76,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 54,
+                  "savingsFraction": 0.2523364485981308
+                }
+              ]
+            }
+          },
+          {
+            "seed": 367,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.309190031152648,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.020833333333333332
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 63,
+                  "acceptanceTaps": 21,
+                  "netTapsSaved": 42,
+                  "savingsFraction": 0.19626168224299065
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 76,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 54,
+                  "savingsFraction": 0.2523364485981308
+                }
+              ]
+            }
+          },
+          {
+            "seed": 419,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.3263239875389409,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 73,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 51,
+                  "savingsFraction": 0.2383177570093458
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 76,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 54,
+                  "savingsFraction": 0.2523364485981308
+                }
+              ]
+            }
+          },
+          {
+            "seed": 467,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.3286604361370717,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 70,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 48,
+                  "savingsFraction": 0.22429906542056074
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 77,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 55,
+                  "savingsFraction": 0.2570093457943925
+                }
+              ]
+            }
+          },
+          {
+            "seed": 523,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.32710280373831774,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 69,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 47,
+                  "savingsFraction": 0.21962616822429906
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 76,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 54,
+                  "savingsFraction": 0.2523364485981308
+                }
+              ]
+            }
+          },
+          {
+            "seed": 577,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.3247663551401869,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 3,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.125,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.125
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 70,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 48,
+                  "savingsFraction": 0.22429906542056074
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 76,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 54,
+                  "savingsFraction": 0.2523364485981308
+                }
+              ]
+            }
+          },
+          {
+            "seed": 631,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 22,
+              "anyPrefixPoolRecall": 0.9166666666666666,
+              "overallMrrAt3": 0.3216510903426791,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 69,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 47,
+                  "savingsFraction": 0.21962616822429906
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 75,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 53,
+                  "savingsFraction": 0.24766355140186916
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "sanityChecks": {
+        "randomMrrBelowActual": true,
+        "actualMrrBelowOracle": true,
+        "reversedRankingChangesMrr": true,
+        "oracleAtLeastActual": true,
+        "controlsPreservePoolRecall": true
+      }
+    },
+    "decoder": {
+      "actual": {
+        "targetTasks": 24,
+        "prefixOpportunities": 214,
+        "anyPrefixPoolHits": 24,
+        "anyPrefixPoolRecall": 1,
+        "overallMrrAt3": 0.39797507788161995,
+        "byPrefix": [
+          {
+            "prefixLength": 0,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 1,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 2,
+            "opportunities": 24,
+            "top1Hits": 1,
+            "top3Hits": 1,
+            "top1Accuracy": 0.041666666666666664,
+            "top3Accuracy": 0.041666666666666664,
+            "mrrAt3": 0.041666666666666664
+          },
+          {
+            "prefixLength": 3,
+            "opportunities": 24,
+            "top1Hits": 2,
+            "top3Hits": 3,
+            "top1Accuracy": 0.08333333333333333,
+            "top3Accuracy": 0.125,
+            "mrrAt3": 0.10416666666666667
+          }
+        ],
+        "idealSavings": [
+          {
+            "k": 1,
+            "targetCharacters": 214,
+            "charactersNotTyped": 85,
+            "acceptanceTaps": 24,
+            "netTapsSaved": 61,
+            "savingsFraction": 0.2850467289719626
+          },
+          {
+            "k": 3,
+            "targetCharacters": 214,
+            "charactersNotTyped": 87,
+            "acceptanceTaps": 24,
+            "netTapsSaved": 63,
+            "savingsFraction": 0.29439252336448596
+          }
+        ]
+      },
+      "degraded": {
+        "targetTasks": 24,
+        "prefixOpportunities": 214,
+        "anyPrefixPoolHits": 24,
+        "anyPrefixPoolRecall": 1,
+        "overallMrrAt3": 0.2858255451713396,
+        "byPrefix": [
+          {
+            "prefixLength": 0,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 1,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 2,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 3,
+            "opportunities": 24,
+            "top1Hits": 2,
+            "top3Hits": 2,
+            "top1Accuracy": 0.08333333333333333,
+            "top3Accuracy": 0.08333333333333333,
+            "mrrAt3": 0.08333333333333333
+          }
+        ],
+        "idealSavings": [
+          {
+            "k": 1,
+            "targetCharacters": 214,
+            "charactersNotTyped": 57,
+            "acceptanceTaps": 20,
+            "netTapsSaved": 37,
+            "savingsFraction": 0.17289719626168223
+          },
+          {
+            "k": 3,
+            "targetCharacters": 214,
+            "charactersNotTyped": 82,
+            "acceptanceTaps": 24,
+            "netTapsSaved": 58,
+            "savingsFraction": 0.27102803738317754
+          }
+        ]
+      },
+      "oracle": {
+        "targetTasks": 24,
+        "prefixOpportunities": 214,
+        "anyPrefixPoolHits": 24,
+        "anyPrefixPoolRecall": 1,
+        "overallMrrAt3": 0.40654205607476634,
+        "byPrefix": [
+          {
+            "prefixLength": 0,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 1,
+            "opportunities": 24,
+            "top1Hits": 0,
+            "top3Hits": 0,
+            "top1Accuracy": 0,
+            "top3Accuracy": 0,
+            "mrrAt3": 0
+          },
+          {
+            "prefixLength": 2,
+            "opportunities": 24,
+            "top1Hits": 1,
+            "top3Hits": 1,
+            "top1Accuracy": 0.041666666666666664,
+            "top3Accuracy": 0.041666666666666664,
+            "mrrAt3": 0.041666666666666664
+          },
+          {
+            "prefixLength": 3,
+            "opportunities": 24,
+            "top1Hits": 3,
+            "top3Hits": 3,
+            "top1Accuracy": 0.125,
+            "top3Accuracy": 0.125,
+            "mrrAt3": 0.125
+          }
+        ],
+        "idealSavings": [
+          {
+            "k": 1,
+            "targetCharacters": 214,
+            "charactersNotTyped": 87,
+            "acceptanceTaps": 24,
+            "netTapsSaved": 63,
+            "savingsFraction": 0.29439252336448596
+          },
+          {
+            "k": 3,
+            "targetCharacters": 214,
+            "charactersNotTyped": 87,
+            "acceptanceTaps": 24,
+            "netTapsSaved": 63,
+            "savingsFraction": 0.29439252336448596
+          }
+        ]
+      },
+      "random": {
+        "mean": {
+          "targetTasks": 24,
+          "prefixOpportunities": 214,
+          "anyPrefixPoolHits": 24,
+          "anyPrefixPoolRecall": 1,
+          "overallMrrAt3": 0.34165693146417453,
+          "byPrefix": [
+            {
+              "prefixLength": 0,
+              "opportunities": 24,
+              "top1Hits": 0,
+              "top3Hits": 0,
+              "top1Accuracy": 0,
+              "top3Accuracy": 0,
+              "mrrAt3": 0
+            },
+            {
+              "prefixLength": 1,
+              "opportunities": 24,
+              "top1Hits": 0,
+              "top3Hits": 0,
+              "top1Accuracy": 0,
+              "top3Accuracy": 0,
+              "mrrAt3": 0
+            },
+            {
+              "prefixLength": 2,
+              "opportunities": 24,
+              "top1Hits": 0.4375,
+              "top3Hits": 0.8125,
+              "top1Accuracy": 0.018229166666666664,
+              "top3Accuracy": 0.033854166666666664,
+              "mrrAt3": 0.025173611111111115
+            },
+            {
+              "prefixLength": 3,
+              "opportunities": 24,
+              "top1Hits": 2.1875,
+              "top3Hits": 2.8125,
+              "top1Accuracy": 0.09114583333333331,
+              "top3Accuracy": 0.1171875,
+              "mrrAt3": 0.10112847222222224
+            }
+          ],
+          "idealSavings": [
+            {
+              "k": 1,
+              "targetCharacters": 214,
+              "charactersNotTyped": 75.1875,
+              "acceptanceTaps": 23.5,
+              "netTapsSaved": 51.6875,
+              "savingsFraction": 0.2415303738317757
+            },
+            {
+              "k": 3,
+              "targetCharacters": 214,
+              "charactersNotTyped": 85.0625,
+              "acceptanceTaps": 24,
+              "netTapsSaved": 61.0625,
+              "savingsFraction": 0.28533878504672894
+            }
+          ]
+        },
+        "runs": [
+          {
+            "seed": 17,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.33489096573208726,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.013888888888888888
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 3,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.125,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.125
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 73,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 49,
+                  "savingsFraction": 0.22897196261682243
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 84,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 60,
+                  "savingsFraction": 0.2803738317757009
+                }
+              ]
+            }
+          },
+          {
+            "seed": 29,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.3411214953271028,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.013888888888888888
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.09722222222222222
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 70,
+                  "acceptanceTaps": 21,
+                  "netTapsSaved": 49,
+                  "savingsFraction": 0.22897196261682243
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 86,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 62,
+                  "savingsFraction": 0.2897196261682243
+                }
+              ]
+            }
+          },
+          {
+            "seed": 43,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.3442367601246106,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.09722222222222222
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 75,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 51,
+                  "savingsFraction": 0.2383177570093458
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 85,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 61,
+                  "savingsFraction": 0.2850467289719626
+                }
+              ]
+            }
+          },
+          {
+            "seed": 71,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.34345794392523366,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.09722222222222222
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 79,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 55,
+                  "savingsFraction": 0.2570093457943925
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 85,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 61,
+                  "savingsFraction": 0.2850467289719626
+                }
+              ]
+            }
+          },
+          {
+            "seed": 101,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.3520249221183801,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.020833333333333332
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 3,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.125,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.125
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 77,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 53,
+                  "savingsFraction": 0.24766355140186916
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 85,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 61,
+                  "savingsFraction": 0.2850467289719626
+                }
+              ]
+            }
+          },
+          {
+            "seed": 137,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.34267912772585674,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 72,
+                  "acceptanceTaps": 23,
+                  "netTapsSaved": 49,
+                  "savingsFraction": 0.22897196261682243
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 84,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 60,
+                  "savingsFraction": 0.2803738317757009
+                }
+              ]
+            }
+          },
+          {
+            "seed": 173,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.34190031152647976,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 76,
+                  "acceptanceTaps": 23,
+                  "netTapsSaved": 53,
+                  "savingsFraction": 0.24766355140186916
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 85,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 61,
+                  "savingsFraction": 0.2850467289719626
+                }
+              ]
+            }
+          },
+          {
+            "seed": 211,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.33956386292834895,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.020833333333333332
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 80,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 56,
+                  "savingsFraction": 0.2616822429906542
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 86,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 62,
+                  "savingsFraction": 0.2897196261682243
+                }
+              ]
+            }
+          },
+          {
+            "seed": 257,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.3450155763239876,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.020833333333333332
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 71,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 47,
+                  "savingsFraction": 0.21962616822429906
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 84,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 60,
+                  "savingsFraction": 0.2803738317757009
+                }
+              ]
+            }
+          },
+          {
+            "seed": 313,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.35046728971962615,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.09722222222222222
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 78,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 54,
+                  "savingsFraction": 0.2523364485981308
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 86,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 62,
+                  "savingsFraction": 0.2897196261682243
+                }
+              ]
+            }
+          },
+          {
+            "seed": 367,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.32632398753894076,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.020833333333333332
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.09722222222222222
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 68,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 46,
+                  "savingsFraction": 0.21495327102803738
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 86,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 62,
+                  "savingsFraction": 0.2897196261682243
+                }
+              ]
+            }
+          },
+          {
+            "seed": 419,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.34267912772585674,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 81,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 57,
+                  "savingsFraction": 0.26635514018691586
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 84,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 60,
+                  "savingsFraction": 0.2803738317757009
+                }
+              ]
+            }
+          },
+          {
+            "seed": 467,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.33956386292834895,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 74,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 50,
+                  "savingsFraction": 0.2336448598130841
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 87,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 63,
+                  "savingsFraction": 0.29439252336448596
+                }
+              ]
+            }
+          },
+          {
+            "seed": 523,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.3450155763239875,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.09722222222222222
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 77,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 53,
+                  "savingsFraction": 0.24766355140186916
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 86,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 62,
+                  "savingsFraction": 0.2897196261682243
+                }
+              ]
+            }
+          },
+          {
+            "seed": 577,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.338006230529595,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.09722222222222222
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 79,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 55,
+                  "savingsFraction": 0.2570093457943925
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 84,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 60,
+                  "savingsFraction": 0.2803738317757009
+                }
+              ]
+            }
+          },
+          {
+            "seed": 631,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.33956386292834895,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 3,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.125,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.125
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 73,
+                  "acceptanceTaps": 23,
+                  "netTapsSaved": 50,
+                  "savingsFraction": 0.2336448598130841
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 84,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 60,
+                  "savingsFraction": 0.2803738317757009
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "sanityChecks": {
+        "randomMrrBelowActual": true,
+        "actualMrrBelowOracle": true,
+        "reversedRankingChangesMrr": true,
+        "oracleAtLeastActual": true,
+        "controlsPreservePoolRecall": true
+      }
+    }
+  },
+  "trajectoryRegressions": {
+    "top1Losses": [
+      {
+        "taskId": "fast-short-prefix",
+        "mode": "fast",
+        "target": "result",
+        "prefixLength": 3,
+        "typedPrefix": "res",
+        "baselineRank": 1,
+        "decoderRank": 2,
+        "baselineDisplayed": [
+          "result",
+          "respect",
+          "restrict"
+        ],
+        "decoderDisplayed": [
+          "respect",
+          "result",
+          "restrict"
+        ]
+      }
+    ],
+    "top3Losses": []
+  },
+  "actualTrajectories": {
+    "baseline": [
+      {
+        "id": "notation",
+        "target": "notation",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "notation",
+              "notary"
+            ],
+            "displayed": [
+              "notation",
+              "notary"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "notation",
+              "notate"
+            ],
+            "displayed": [
+              "notation",
+              "notate"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "notation"
+            ],
+            "displayed": [
+              "notation"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "notation"
+            ],
+            "displayed": [
+              "notation"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "preimage",
+        "target": "preimage",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "previous"
+            ],
+            "displayed": [
+              "previous"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "preimage"
+            ],
+            "displayed": [
+              "preimage"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "preimage",
+              "preimages"
+            ],
+            "displayed": [
+              "preimage",
+              "preimages"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "preimage",
+              "preimages"
+            ],
+            "displayed": [
+              "preimage",
+              "preimages"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "denominator",
+        "target": "denominator",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "denom"
+            ],
+            "displayed": [
+              "denom"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 10,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "numerator",
+        "target": "numerator",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "numen"
+            ],
+            "displayed": [
+              "numen"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "numeracy",
+              "numeral",
+              "numerary",
+              "numerate"
+            ],
+            "displayed": [
+              "numeracy",
+              "numeral",
+              "numerary"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "numerator",
+              "numerable",
+              "numeracy",
+              "numeral",
+              "numerary",
+              "numerate"
+            ],
+            "displayed": [
+              "numerator",
+              "numerable",
+              "numeracy"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "numerator",
+              "numerate"
+            ],
+            "displayed": [
+              "numerator",
+              "numerate"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "numerator"
+            ],
+            "displayed": [
+              "numerator"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sequence",
+        "target": "sequence",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "sequel"
+            ],
+            "displayed": [
+              "sequel"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "sequence",
+              "sequel",
+              "sequela",
+              "sequelae",
+              "sequent"
+            ],
+            "displayed": [
+              "sequence",
+              "sequel",
+              "sequela"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "sequence",
+              "sequent"
+            ],
+            "displayed": [
+              "sequence",
+              "sequent"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "sequence"
+            ],
+            "displayed": [
+              "sequence"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "function",
+        "target": "function",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [
+              "for"
+            ],
+            "displayed": [
+              "for"
+            ]
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "function",
+              "functor"
+            ],
+            "displayed": [
+              "function",
+              "functor"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "function"
+            ],
+            "displayed": [
+              "function"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "function"
+            ],
+            "displayed": [
+              "function"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "equation",
+        "target": "equation",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "equation"
+            ],
+            "displayed": [
+              "equation"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "equation"
+            ],
+            "displayed": [
+              "equation"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "equation",
+              "equate",
+              "equator"
+            ],
+            "displayed": [
+              "equation",
+              "equate",
+              "equator"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "equation"
+            ],
+            "displayed": [
+              "equation"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "equation"
+            ],
+            "displayed": [
+              "equation"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "polynomial",
+        "target": "polynomial",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "polynomial"
+            ],
+            "displayed": [
+              "polynomial"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "polynomial"
+            ],
+            "displayed": [
+              "polynomial"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "polynomial"
+            ],
+            "displayed": [
+              "polynomial"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "polynomial"
+            ],
+            "displayed": [
+              "polynomial"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "arithmetic",
+        "target": "arithmetic",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 7,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 8,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 9,
+            "pool": [],
+            "displayed": []
+          }
+        ]
+      },
+      {
+        "id": "topology",
+        "target": "topology",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [
+              "the",
+              "to"
+            ],
+            "displayed": [
+              "the",
+              "to"
+            ]
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "topog"
+            ],
+            "displayed": [
+              "topog"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "topology"
+            ],
+            "displayed": [
+              "topology"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "topology"
+            ],
+            "displayed": [
+              "topology"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "topology"
+            ],
+            "displayed": [
+              "topology"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "derivative",
+        "target": "derivative",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "deriv",
+              "deride"
+            ],
+            "displayed": [
+              "deriv",
+              "deride"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "derivative"
+            ],
+            "displayed": [
+              "derivative"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "derivative"
+            ],
+            "displayed": [
+              "derivative"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "derivative"
+            ],
+            "displayed": [
+              "derivative"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "derivative"
+            ],
+            "displayed": [
+              "derivative"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "coefficient",
+        "target": "coefficient",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "coefficient"
+            ],
+            "displayed": [
+              "coefficient"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "coefficient"
+            ],
+            "displayed": [
+              "coefficient"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "coefficient"
+            ],
+            "displayed": [
+              "coefficient"
+            ]
+          },
+          {
+            "prefixLength": 10,
+            "pool": [
+              "coefficient"
+            ],
+            "displayed": [
+              "coefficient"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph",
+        "target": "paragraph",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "part"
+            ],
+            "displayed": [
+              "part"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "paragon",
+              "paragraph"
+            ],
+            "displayed": [
+              "paragon",
+              "paragraph"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "paragraph"
+            ],
+            "displayed": [
+              "paragraph"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "paragraph"
+            ],
+            "displayed": [
+              "paragraph"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "paragraph"
+            ],
+            "displayed": [
+              "paragraph"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "example",
+        "target": "example",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "example"
+            ],
+            "displayed": [
+              "example"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "example"
+            ],
+            "displayed": [
+              "example"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "example",
+              "exampled"
+            ],
+            "displayed": [
+              "example",
+              "exampled"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "example",
+              "exampled"
+            ],
+            "displayed": [
+              "example",
+              "exampled"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "explanation",
+        "target": "explanation",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "explain",
+              "explained"
+            ],
+            "displayed": [
+              "explain",
+              "explained"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "explain",
+              "explained",
+              "explant"
+            ],
+            "displayed": [
+              "explain",
+              "explained",
+              "explant"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "explant"
+            ],
+            "displayed": [
+              "explant"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 8,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 9,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 10,
+            "pool": [],
+            "displayed": []
+          }
+        ]
+      },
+      {
+        "id": "question",
+        "target": "question",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "question"
+            ],
+            "displayed": [
+              "question"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "question"
+            ],
+            "displayed": [
+              "question"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "questing",
+              "question"
+            ],
+            "displayed": [
+              "questing",
+              "question"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "question"
+            ],
+            "displayed": [
+              "question"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sentence",
+        "target": "sentence",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "sentence"
+            ],
+            "displayed": [
+              "sentence"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "sentence"
+            ],
+            "displayed": [
+              "sentence"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "sentence"
+            ],
+            "displayed": [
+              "sentence"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "sentence"
+            ],
+            "displayed": [
+              "sentence"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "definition",
+        "target": "definition",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "define"
+            ],
+            "displayed": [
+              "define"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "define",
+              "defined",
+              "definer"
+            ],
+            "displayed": [
+              "define",
+              "defined",
+              "definer"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "definition",
+              "definiens",
+              "definite"
+            ],
+            "displayed": [
+              "definition",
+              "definiens",
+              "definite"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "definition",
+              "definite"
+            ],
+            "displayed": [
+              "definition",
+              "definite"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "definition"
+            ],
+            "displayed": [
+              "definition"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "definition"
+            ],
+            "displayed": [
+              "definition"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "continuous-strong-evidence",
+        "target": "continuous",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "continua",
+              "continue"
+            ],
+            "displayed": [
+              "continua",
+              "continue"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "continuity",
+              "continent",
+              "continua",
+              "continual",
+              "continue"
+            ],
+            "displayed": [
+              "continuity",
+              "continent",
+              "continua"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "continuity",
+              "continua",
+              "continual",
+              "continue",
+              "continuer"
+            ],
+            "displayed": [
+              "continuity",
+              "continua",
+              "continual"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "continuous"
+            ],
+            "displayed": [
+              "continuous"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "necessary-strong-evidence",
+        "target": "necessary",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "necessity"
+            ],
+            "displayed": [
+              "necessity"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "necessary"
+            ],
+            "displayed": [
+              "necessary"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "title-case",
+        "target": "Notation",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "Notation",
+              "Notary"
+            ],
+            "displayed": [
+              "Notation",
+              "Notary"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "Notation",
+              "Notate"
+            ],
+            "displayed": [
+              "Notation",
+              "Notate"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "Notation"
+            ],
+            "displayed": [
+              "Notation"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "Notation"
+            ],
+            "displayed": [
+              "Notation"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "all-caps",
+        "target": "NOTATION",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "NOTATION",
+              "NOTARY"
+            ],
+            "displayed": [
+              "NOTATION",
+              "NOTARY"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "NOTATION",
+              "NOTATE"
+            ],
+            "displayed": [
+              "NOTATION",
+              "NOTATE"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "NOTATION"
+            ],
+            "displayed": [
+              "NOTATION"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "NOTATION"
+            ],
+            "displayed": [
+              "NOTATION"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "fast-short-prefix",
+        "target": "result",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [
+              "result",
+              "relation",
+              "respectively",
+              "represented"
+            ],
+            "displayed": [
+              "result",
+              "relation",
+              "respectively"
+            ]
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "result",
+              "respect",
+              "restrict",
+              "respectively",
+              "residue"
+            ],
+            "displayed": [
+              "result",
+              "respect",
+              "restrict"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "result",
+              "resultant",
+              "resume",
+              "resummon",
+              "resupine",
+              "resupply"
+            ],
+            "displayed": [
+              "result",
+              "resume",
+              "resupine"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "result",
+              "resultant"
+            ],
+            "displayed": [
+              "result",
+              "resultant"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "strict-denominator",
+        "target": "denominator",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 7,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 10,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          }
+        ]
+      }
+    ],
+    "decoder": [
+      {
+        "id": "notation",
+        "target": "notation",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "notation",
+              "notary"
+            ],
+            "displayed": [
+              "notation",
+              "notary"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "notation",
+              "notate"
+            ],
+            "displayed": [
+              "notation",
+              "notate"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "notation"
+            ],
+            "displayed": [
+              "notation"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "notation"
+            ],
+            "displayed": [
+              "notation"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "preimage",
+        "target": "preimage",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "previous"
+            ],
+            "displayed": [
+              "previous"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "preimage"
+            ],
+            "displayed": [
+              "preimage"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "preimage",
+              "preimages"
+            ],
+            "displayed": [
+              "preimage",
+              "preimages"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "preimage",
+              "preimages"
+            ],
+            "displayed": [
+              "preimage",
+              "preimages"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "denominator",
+        "target": "denominator",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "denom"
+            ],
+            "displayed": [
+              "denom"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 10,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "numerator",
+        "target": "numerator",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "numen"
+            ],
+            "displayed": [
+              "numen"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "numeral",
+              "numeracy",
+              "numerate",
+              "numerary"
+            ],
+            "displayed": [
+              "numeral",
+              "numeracy",
+              "numerate"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "numerator",
+              "numeral",
+              "numeracy",
+              "numerate",
+              "numerable",
+              "numerary"
+            ],
+            "displayed": [
+              "numerator",
+              "numeral",
+              "numeracy"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "numerator",
+              "numerate"
+            ],
+            "displayed": [
+              "numerator",
+              "numerate"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "numerator"
+            ],
+            "displayed": [
+              "numerator"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sequence",
+        "target": "sequence",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "sequel"
+            ],
+            "displayed": [
+              "sequel"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "sequence",
+              "sequel",
+              "sequent",
+              "sequela",
+              "sequelae"
+            ],
+            "displayed": [
+              "sequence",
+              "sequel",
+              "sequent"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "sequence",
+              "sequent"
+            ],
+            "displayed": [
+              "sequence",
+              "sequent"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "sequence"
+            ],
+            "displayed": [
+              "sequence"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "function",
+        "target": "function",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [
+              "for"
+            ],
+            "displayed": [
+              "for"
+            ]
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "function",
+              "functor"
+            ],
+            "displayed": [
+              "function",
+              "functor"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "function"
+            ],
+            "displayed": [
+              "function"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "function"
+            ],
+            "displayed": [
+              "function"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "equation",
+        "target": "equation",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "equation"
+            ],
+            "displayed": [
+              "equation"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "equation",
+              "equations"
+            ],
+            "displayed": [
+              "equation",
+              "equations"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "equation",
+              "equations",
+              "equator",
+              "equate"
+            ],
+            "displayed": [
+              "equation",
+              "equations",
+              "equator"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "equation",
+              "equations"
+            ],
+            "displayed": [
+              "equation",
+              "equations"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "equation",
+              "equations"
+            ],
+            "displayed": [
+              "equation",
+              "equations"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "polynomial",
+        "target": "polynomial",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "polynomial"
+            ],
+            "displayed": [
+              "polynomial"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "polynomial"
+            ],
+            "displayed": [
+              "polynomial"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "polynomial"
+            ],
+            "displayed": [
+              "polynomial"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "polynomial"
+            ],
+            "displayed": [
+              "polynomial"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "arithmetic",
+        "target": "arithmetic",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 7,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "arithmetic"
+            ],
+            "displayed": [
+              "arithmetic"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "arithmetic"
+            ],
+            "displayed": [
+              "arithmetic"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "topology",
+        "target": "topology",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [
+              "the",
+              "to"
+            ],
+            "displayed": [
+              "the",
+              "to"
+            ]
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "topog"
+            ],
+            "displayed": [
+              "topog"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "topology"
+            ],
+            "displayed": [
+              "topology"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "topology"
+            ],
+            "displayed": [
+              "topology"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "topology"
+            ],
+            "displayed": [
+              "topology"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "derivative",
+        "target": "derivative",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "deride",
+              "deriv"
+            ],
+            "displayed": [
+              "deride",
+              "deriv"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "derivative"
+            ],
+            "displayed": [
+              "derivative"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "derivative"
+            ],
+            "displayed": [
+              "derivative"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "derivative",
+              "derivation"
+            ],
+            "displayed": [
+              "derivative",
+              "derivation"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "derivative",
+              "derivatives"
+            ],
+            "displayed": [
+              "derivative",
+              "derivatives"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "coefficient",
+        "target": "coefficient",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "coefficient"
+            ],
+            "displayed": [
+              "coefficient"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "coefficient"
+            ],
+            "displayed": [
+              "coefficient"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "coefficient"
+            ],
+            "displayed": [
+              "coefficient"
+            ]
+          },
+          {
+            "prefixLength": 10,
+            "pool": [
+              "coefficient",
+              "coefficients"
+            ],
+            "displayed": [
+              "coefficient",
+              "coefficients"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph",
+        "target": "paragraph",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "part",
+              "parts"
+            ],
+            "displayed": [
+              "part",
+              "parts"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "paragraph"
+            ],
+            "displayed": [
+              "paragraph"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "paragraph",
+              "paragon"
+            ],
+            "displayed": [
+              "paragraph",
+              "paragon"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "paragraph"
+            ],
+            "displayed": [
+              "paragraph"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "paragraph"
+            ],
+            "displayed": [
+              "paragraph"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "paragraph"
+            ],
+            "displayed": [
+              "paragraph"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "example",
+        "target": "example",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "example"
+            ],
+            "displayed": [
+              "example"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "example",
+              "examples"
+            ],
+            "displayed": [
+              "example",
+              "examples"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "example",
+              "examples",
+              "exampled"
+            ],
+            "displayed": [
+              "example",
+              "examples",
+              "exampled"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "example",
+              "examples",
+              "exampled"
+            ],
+            "displayed": [
+              "example",
+              "examples",
+              "exampled"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "explanation",
+        "target": "explanation",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "expression",
+              "expressions"
+            ],
+            "displayed": [
+              "expression",
+              "expressions"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "explained",
+              "explain",
+              "explanation",
+              "explaining"
+            ],
+            "displayed": [
+              "explained",
+              "explain",
+              "explanation"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "explained",
+              "explain",
+              "explanation",
+              "explaining",
+              "explant"
+            ],
+            "displayed": [
+              "explained",
+              "explain",
+              "explanation"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "explanation",
+              "explant"
+            ],
+            "displayed": [
+              "explanation",
+              "explant"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "explanation"
+            ],
+            "displayed": [
+              "explanation"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "explanation"
+            ],
+            "displayed": [
+              "explanation"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "explanation"
+            ],
+            "displayed": [
+              "explanation"
+            ]
+          },
+          {
+            "prefixLength": 10,
+            "pool": [
+              "explanation",
+              "explanations"
+            ],
+            "displayed": [
+              "explanation",
+              "explanations"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "question",
+        "target": "question",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "question",
+              "questions"
+            ],
+            "displayed": [
+              "question",
+              "questions"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "question",
+              "questions"
+            ],
+            "displayed": [
+              "question",
+              "questions"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "question",
+              "questions",
+              "questing"
+            ],
+            "displayed": [
+              "question",
+              "questions",
+              "questing"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "question",
+              "questions"
+            ],
+            "displayed": [
+              "question",
+              "questions"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sentence",
+        "target": "sentence",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "sentence",
+              "sentences"
+            ],
+            "displayed": [
+              "sentence",
+              "sentences"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "sentence",
+              "sentences"
+            ],
+            "displayed": [
+              "sentence",
+              "sentences"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "sentence",
+              "sentences"
+            ],
+            "displayed": [
+              "sentence",
+              "sentences"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "sentence",
+              "sentences"
+            ],
+            "displayed": [
+              "sentence",
+              "sentences"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "definition",
+        "target": "definition",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "define"
+            ],
+            "displayed": [
+              "define"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "define",
+              "defined",
+              "definer"
+            ],
+            "displayed": [
+              "define",
+              "defined",
+              "definer"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "definition",
+              "definite",
+              "definiens"
+            ],
+            "displayed": [
+              "definition",
+              "definite",
+              "definiens"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "definition",
+              "definite"
+            ],
+            "displayed": [
+              "definition",
+              "definite"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "definition",
+              "definitive"
+            ],
+            "displayed": [
+              "definition",
+              "definitive"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "definition",
+              "definitions"
+            ],
+            "displayed": [
+              "definition",
+              "definitions"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "continuous-strong-evidence",
+        "target": "continuous",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "continue",
+              "continua"
+            ],
+            "displayed": [
+              "continue",
+              "continua"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "continue",
+              "continent",
+              "continual",
+              "continua"
+            ],
+            "displayed": [
+              "continue",
+              "continent",
+              "continual"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "continue",
+              "continual",
+              "continua",
+              "continuer",
+              "continuo"
+            ],
+            "displayed": [
+              "continue",
+              "continual",
+              "continua"
+            ]
+          },
+          {
+            "prefixLength": 8,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "continuous"
+            ],
+            "displayed": [
+              "continuous"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "necessary-strong-evidence",
+        "target": "necessary",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "necessity"
+            ],
+            "displayed": [
+              "necessity"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "necessary"
+            ],
+            "displayed": [
+              "necessary"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "title-case",
+        "target": "Notation",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "Notation",
+              "Notary"
+            ],
+            "displayed": [
+              "Notation",
+              "Notary"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "Notation",
+              "Notate"
+            ],
+            "displayed": [
+              "Notation",
+              "Notate"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "Notation"
+            ],
+            "displayed": [
+              "Notation"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "Notation"
+            ],
+            "displayed": [
+              "Notation"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "all-caps",
+        "target": "NOTATION",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "NOTATION",
+              "NOTARY"
+            ],
+            "displayed": [
+              "NOTATION",
+              "NOTARY"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "NOTATION",
+              "NOTATE"
+            ],
+            "displayed": [
+              "NOTATION",
+              "NOTATE"
+            ]
+          },
+          {
+            "prefixLength": 6,
+            "pool": [
+              "NOTATION"
+            ],
+            "displayed": [
+              "NOTATION"
+            ]
+          },
+          {
+            "prefixLength": 7,
+            "pool": [
+              "NOTATION"
+            ],
+            "displayed": [
+              "NOTATION"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "fast-short-prefix",
+        "target": "result",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [
+              "the",
+              "a",
+              "an"
+            ],
+            "displayed": [
+              "the",
+              "a",
+              "an"
+            ]
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [
+              "result",
+              "relation",
+              "respectively",
+              "represented"
+            ],
+            "displayed": [
+              "result",
+              "relation",
+              "respectively"
+            ]
+          },
+          {
+            "prefixLength": 3,
+            "pool": [
+              "respect",
+              "result",
+              "restrict",
+              "respectively",
+              "residue"
+            ],
+            "displayed": [
+              "respect",
+              "result",
+              "restrict"
+            ]
+          },
+          {
+            "prefixLength": 4,
+            "pool": [
+              "result",
+              "resume",
+              "resultant",
+              "resupply",
+              "resummon",
+              "resupine"
+            ],
+            "displayed": [
+              "result",
+              "resume",
+              "resupply"
+            ]
+          },
+          {
+            "prefixLength": 5,
+            "pool": [
+              "result",
+              "resultant"
+            ],
+            "displayed": [
+              "result",
+              "resultant"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "strict-denominator",
+        "target": "denominator",
+        "opportunities": [
+          {
+            "prefixLength": 0,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 1,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 2,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 3,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 4,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 5,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 6,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 7,
+            "pool": [],
+            "displayed": []
+          },
+          {
+            "prefixLength": 8,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 9,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          },
+          {
+            "prefixLength": 10,
+            "pool": [
+              "denominator"
+            ],
+            "displayed": [
+              "denominator"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
