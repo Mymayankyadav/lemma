@@ -329,17 +329,20 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       ()=>session!.api.connectTurn!(pending.id,pending.version,connectorUrl!)
     )}>Send to tutor</Button>}
   </>
-  const contextControls=<>
-      {excerpt&&<label>
+  // N223 (Owner: "too many words"): one line per control, the kit's fields, no instructions the controls already say.
+  const contextControls=<div className="tutor-context">
+      {excerpt&&<label className="tutor-context-check">
         <input type="checkbox" checked={Boolean(context.text)} disabled={busy}
           onChange={e=>context.change(e.currentTarget.checked?'yes':'')}/> Include this checkpoint’s objective
       </label>}
       {Boolean(context.text)&&excerpt&&<p>{excerpt}</p>}
       {scope.sourceShort&&session?.api.previewSource&&<Disclosure label={'Add a page from '+scope.sourceShort}>
-        <label>Page number<input type="number" min={1} step={1} value={sourcePage} disabled={busy}
-          onChange={e=>{setSourcePage(e.currentTarget.value);setSourcePreview(undefined)}}/></label>
-        <Button disabled={busy||!Number.isInteger(Number(sourcePage))||Number(sourcePage)<1}
-          onClick={()=>void action(async()=>setSourcePreview(await session?.api.previewSource!(Number(sourcePage))))}>Preview linked source page</Button>
+        <div className="tutor-context-row">
+          <label className="tutor-context-field">Page<input className="v7-field" type="number" inputMode="numeric" min={1} step={1} value={sourcePage} disabled={busy}
+            onChange={e=>{setSourcePage(e.currentTarget.value);setSourcePreview(undefined)}}/></label>
+          <Button disabled={busy||!Number.isInteger(Number(sourcePage))||Number(sourcePage)<1}
+            onClick={()=>void action(async()=>setSourcePreview(await session?.api.previewSource!(Number(sourcePage))))}>Preview page</Button>
+        </div>
         {sourcePreview&&<section aria-label="Source excerpt preview"><p style={{whiteSpace:'pre-wrap'}}>{sourcePreview.excerpt}</p>
           <Button disabled={busy} onClick={()=>{sourceDraft.change(JSON.stringify(sourcePreview));setSourcePreview(undefined)}}>Add source excerpt</Button>
         </section>}
@@ -347,14 +350,12 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       {attachedSource&&<section aria-label="Attached source excerpt"><p>{scope.sourceShort}, page {attachedSource.page}</p>
         <p style={{whiteSpace:'pre-wrap'}}>{attachedSource.excerpt}</p><Button disabled={busy} onClick={()=>sourceDraft.change('')}>Remove source excerpt</Button>
       </section>}
-      <Disclosure open={showLocal} onOpen={setShowLocal} label="Add selected local text">
-        <p>{live?'Add the selected excerpt, then save your question to include it in the tutor thread.':'Paste only the text you selected. It stays local until you choose to copy the saved question.'}</p>
-        <label htmlFor={selectionId}>Paste selected local text</label>
-        <textarea id={selectionId} className="v7-field" rows={3} value={selectedLocal} disabled={busy}
+      <Disclosure open={showLocal} onOpen={setShowLocal} label="Add an excerpt">
+        <div className="tutor-context-label"><label htmlFor={selectionId}>Excerpt</label><small>{selectedLocal.length}/{LOCAL_TUTOR_EXCERPT_LIMIT}</small></div>
+        <textarea id={selectionId} className="v7-field" rows={3} value={selectedLocal} disabled={busy} placeholder="Paste the text you selected"
           onChange={e=>{setSelectedLocal(e.currentTarget.value);setPreview(undefined)}}/>
-        <p>{selectedLocal.length} / {LOCAL_TUTOR_EXCERPT_LIMIT} characters</p>
         <Button disabled={busy||!selectedLocal.trim()} onClick={()=>setPreview(previewLocalTutorExcerpt(selectedLocal))}>
-          Preview selected text
+          Preview excerpt
         </Button>
         {preview?.kind==='too-long'&&<p role="alert">Select a shorter excerpt before adding it.</p>}
         {preview?.kind==='preview'&&<section aria-label="Local excerpt preview">
@@ -371,7 +372,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{attachedLocal.text}</p>
         <Button disabled={busy} onClick={()=>attachedLocal.change('')}>Remove local excerpt</Button>
       </section>}
-  </>
+  </div>
   const statusControls=<>
     {readOnly&&<p role="status">Tutor changes are unavailable. You can read saved history and check pending submissions without sending anything new.</p>}
     {error&&<div role="alert"><p>{error}</p>{!session&&<Button onClick={()=>setConnectionVersion(v=>v+1)}>Try again</Button>}</div>}
@@ -529,10 +530,14 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
 
 function CardSuggestion({disabled,onPropose}:{disabled:boolean;onPropose:(front:string,back:string)=>Promise<boolean>}) {
   const [front,setFront]=useState(''),[back,setBack]=useState('')
-  return <Disclosure label="Draft a card">
-    <label>Front<textarea disabled={disabled} value={front} maxLength={1500} onChange={e=>setFront(e.target.value)}/></label>
-    <label>Back<textarea disabled={disabled} value={back} maxLength={3000} onChange={e=>setBack(e.target.value)}/></label>
-    <Button disabled={disabled||!front.trim()} onClick={()=>void onPropose(front,back).then(saved=>{if(saved){setFront('');setBack('')}})}>Send to proposal review</Button>
+  // N223 (Owner: "no idea where the draft card came from"): a flashcard from this reply, proposed for review like the
+  // tutor's own; the fields stack at full width.
+  return <Disclosure label="Make a card from this reply">
+    <div className="tutor-card-draft">
+      <label>Front<textarea className="v7-field" rows={2} disabled={disabled} value={front} maxLength={1500} onChange={e=>setFront(e.target.value)}/></label>
+      <label>Back<textarea className="v7-field" rows={3} disabled={disabled} value={back} maxLength={3000} onChange={e=>setBack(e.target.value)}/></label>
+      <Button disabled={disabled||!front.trim()} onClick={()=>void onPropose(front,back).then(saved=>{if(saved){setFront('');setBack('')}})}>Propose card</Button>
+    </div>
   </Disclosure>
 }
 

@@ -21,7 +21,9 @@ export const FLAG_DEFAULTS = {
   /** Owner-requested tutor page. Live writes also require the server release capability. */
   tutorThreads: true,
   todayNextStep: false,
-  tutorScratch: false,
+  /** N223 (Owner): the tutor's rich answer, with equations as rendered chips, the pencil's scratch pad and image
+   *  attachments, on by default; `?flags=-tutorScratch` shows the plain text answer in dev/test/e2e builds. */
+  tutorScratch: true,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */
@@ -49,6 +51,11 @@ export const FLAG_DEFAULTS = {
   padLocal: true,
   /** N222: explicit Equation Assist and notation slots in the local Pad. */
   equationAssist: false,
+  /** N223 (Owner): the tutor keyboard's suggestions are always on, with no settings; the old Writing assistance settings
+   *  (modes, surfaces, learning) stay behind this flag. */
+  writingAidSettings: false,
+  /** N223 (Owner): the writing aid's grey-text continuation is off; it returns later as a proof-assist option. */
+  proofAssistGhost: false,
   /** N157 · U4 S14 paper and sky: Plain, Graph, Dot or Ruled paper by day; Clear or Stars by night. */
   v7Paper: true,
   /** N157 · U4 S16 desk clock: Focus as large digits, the intention and a ring; the screen stays awake while it runs. */

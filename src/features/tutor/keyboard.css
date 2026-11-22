@@ -261,14 +261,10 @@
   background: radial-gradient(circle 18px at center, var(--v7-role-selection-subtle) 17.5px, transparent 18px);
 }
 
-/* Equation mode: only the keys' place changes, and it keeps their four rows of height. The strip keeps its frame (Keys
-   at the left, Equation mode at the right) and offers readings. N223 (Owner): the composer is framed by its keys,
-   operations along the top, variables down the left, digits on the right and symbols along the bottom, around the
-   composition line and the paper. */
-.lemma-tutor .tutor-equation {
-  display: grid; position: relative;
-  grid-template-rows: auto calc(var(--cell) * .85) calc(var(--cell) * 2.3) calc(var(--cell) * .85);
-}
+/* Equation mode: only the keys' place changes, and it keeps their four rows. The strip keeps its frame (Keys at the
+   left, Equation mode at the right) and offers readings. N223 (Owner: "keep the drawing by hand and remove all these
+   symbols so the scratch pad can become bigger"): under the strip, one slim row with Read, Undo and Clear, then paper. */
+.lemma-tutor .tutor-equation {display: grid; position: relative; grid-template-rows: auto 36px calc(var(--cell) * 4 - 36px);}
 .lemma-tutor .kb .strip.tutor-equation-strip {display: flex; align-items: center;}
 .lemma-tutor .kb .strip.tutor-equation-strip > .sbtn {flex: none; width: max(var(--v7-touch), 10.4vw);}
 .lemma-tutor .tutor-equation-candidates {
@@ -301,61 +297,36 @@
 .lemma-tutor :is(.tutor-equation-ask, .tutor-equation-retry) svg {width: 16px; height: 16px;}
 .lemma-tutor .tutor-equation-retry {display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 9999px; background: transparent; color: inherit;}
 .lemma-tutor .tutor-equation-reading.preferred {font-weight: 600; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v7-role-selection-fg) 35%, transparent);}
-/* The keys: the keyboard's own caps in compact rows. */
-.lemma-tutor .tutor-equation-keys {display: grid; min-width: 0; min-height: 0; padding: 0 .56vw;}
-.lemma-tutor .tutor-equation-keys button {
-  min-width: 0; min-height: 0; margin: calc(var(--cap-gap-y, 8px) / 2.6) calc(var(--cap-gap-x, 1.3vw) / 2); padding: 0;
-  border: 0; border-radius: 5px; background: var(--key); color: var(--v7-role-text-primary);
-  font: 400 clamp(16px, 5vw, 20px)/1 var(--v7-glyph); font-variant-emoji: text;
+/* The slim row: what the paper does on the left, Read (the whole equation, on request) and the ink tools on the right. */
+.lemma-tutor .tutor-equation-head {display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0;
+  padding: 0 calc(var(--cap-gap-x, 1.3vw) / 2 + .56vw);}
+.lemma-tutor .tutor-equation-note {min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--v7-role-text-tertiary); font: 400 var(--v7-type-caption)/1.2 var(--v7-sans);}
+.lemma-tutor .tutor-equation-tools {flex: none; display: flex; align-items: center; gap: 2px;}
+.lemma-tutor .tutor-equation-tools .sbtn {width: 34px; height: 34px; min-width: 0; min-height: 0; border-radius: 9999px; color: var(--v7-role-text-secondary);}
+.lemma-tutor .tutor-equation-tools .sbtn svg {width: 17px; height: 17px;}
+.lemma-tutor .tutor-equation-tools .sbtn:disabled {opacity: .4;}
+.lemma-tutor .tutor-equation-read {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px 0 10px; margin-inline-end: 4px; border: 0;
+  border-radius: 9999px; background: var(--v7-role-selection-subtle); color: var(--v7-role-selection-fg);
+  font: 600 var(--v7-type-caption)/1 var(--v7-sans);
 }
-.lemma-tutor .tutor-equation-keys button:active {background: var(--key-down);}
-.lemma-tutor .tutor-equation-keys button:disabled {opacity: .5;}
-.lemma-tutor :is(.tutor-equation-operations, .tutor-equation-symbols) {grid-template-columns: repeat(10, minmax(0, 1fr));}
-.lemma-tutor .tutor-equation-operations button {background: var(--key-fn, var(--key));}
-.lemma-tutor .tutor-equation-keys .tutor-equation-enter {display: grid; place-items: center; background: var(--key-fn, var(--key)); color: var(--v7-role-selection-fg);}
-.lemma-tutor .tutor-equation-keys :is(.tutor-equation-enter, .tutor-equation-delete) svg {width: 20px; height: 20px;}
-/* The middle: one column of variables (it scrolls), the composition over the paper, a block of digits with Delete. */
-.lemma-tutor .tutor-equation-middle {
-  display: grid; min-height: 0; padding: 0 .56vw;
-  grid-template-columns: 9.888vw minmax(0, 1fr) calc(9.888vw * 4);
+.lemma-tutor .tutor-equation-read svg {width: 16px; height: 16px;}
+.lemma-tutor .tutor-equation-read:disabled {background: transparent; color: var(--v7-role-text-disabled);}
+.lemma-tutor .tutor-equation-read:not(:disabled):active {background: var(--key-down);}
+/* The paper fills the rest, inside the keys' margins: a sheet wider and taller than its window with faint writing lines,
+   scrolled both ways. */
+.lemma-tutor .tutor-equation-paper {
+  position: relative; min-height: 0; margin: 0 calc(var(--cap-gap-x, 1.3vw) / 2 + .56vw) 4px; overflow: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; border: 1px solid var(--v7-role-border-subtle); border-radius: 8px; background: var(--v7-role-surface-raised);
 }
-.lemma-tutor .tutor-equation-middle > .tutor-equation-keys {padding: 0;}
-.lemma-tutor .tutor-equation-variables {grid-auto-rows: calc(var(--cell) * 2.3 / 3); overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain;}
-.lemma-tutor .tutor-equation-variables button {font-style: italic; font-family: var(--v7-serif, var(--v7-glyph));}
-.lemma-tutor .tutor-equation-digits {grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr));}
-.lemma-tutor .tutor-equation-keys .tutor-equation-delete {display: grid; place-items: center; background: var(--key-fn, var(--key));}
-.lemma-tutor .tutor-equation-centre {
-  position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; min-height: 0;
-  margin: calc(var(--cap-gap-y, 8px) / 2.6) calc(var(--cap-gap-x, 1.3vw) / 2); overflow: hidden;
-  border: 1px solid var(--v7-role-border-subtle); border-radius: 8px; background: var(--v7-role-surface-raised);
-}
-.lemma-tutor .tutor-equation-head {display: flex; align-items: center; min-width: 0; min-height: 30px; border-bottom: 1px solid var(--v7-role-border-subtle);}
-.lemma-tutor .tutor-equation-line {
-  flex: 1 1 auto; display: flex; align-items: center; gap: 1px; min-width: 0; align-self: stretch; padding: 0 8px 0 10px;
-  overflow-x: auto; scrollbar-width: none; white-space: pre; color: var(--v7-role-text-primary); font: 500 1.05rem/1 var(--v7-glyph);
-}
-/* The example is drawn, not written, so it is never read as the composition. */
-.lemma-tutor .tutor-equation-line[data-placeholder]::after {content: attr(data-placeholder); color: var(--v7-role-text-disabled); font-weight: 400;}
-.lemma-tutor .tutor-equation-caret {flex: none; width: 2px; height: 1.15em; border-radius: 1px; background: var(--v7-role-selection-fg); animation: tutor-equation-blink 1.1s steps(1) infinite;}
-@keyframes tutor-equation-blink {50% {opacity: 0;}}
-@media (prefers-reduced-motion: reduce) {.lemma-tutor .tutor-equation-caret {animation: none;}}
-/* The paper: a sheet wider and taller than its window with faint writing lines, scrolled both ways. */
-.lemma-tutor .tutor-equation-paper {position: relative; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;}
 .lemma-tutor .tutor-equation-sheet {
-  width: max(300%, 30rem); height: 220%;
-  background: repeating-linear-gradient(transparent 0 calc(var(--cell) * .9 - 1px),
-    color-mix(in srgb, var(--v7-role-border-default) 45%, transparent) calc(var(--cell) * .9 - 1px) calc(var(--cell) * .9));
+  width: max(250%, 40rem); height: 200%;
+  background: repeating-linear-gradient(transparent 0 calc(var(--cell) * 1.1 - 1px),
+    color-mix(in srgb, var(--v7-role-border-default) 45%, transparent) calc(var(--cell) * 1.1 - 1px) calc(var(--cell) * 1.1));
 }
 .lemma-tutor .tutor-equation-sheet svg {display: block; width: 100%; height: 100%; touch-action: none; color: var(--v7-role-text-primary); cursor: crosshair;}
-.lemma-tutor .tutor-equation-tools {flex: none; display: flex; align-items: center; padding-inline-end: 2px;}
-.lemma-tutor .tutor-equation-tools .sbtn {width: 30px; height: 30px; min-width: 0; min-height: 0; border-radius: 9999px; color: var(--v7-role-text-secondary);}
-.lemma-tutor .tutor-equation-tools .sbtn svg {width: 16px; height: 16px;}
-.lemma-tutor .tutor-equation-tools .sbtn:disabled {opacity: .45;}
 
-/* N223 (Owner: "hide these keys for full screen handwritten composition"): with the keys hidden, the composition and
-   the paper fill the composer's four rows. */
-.lemma-tutor .tutor-equation[data-keys="hidden"] {grid-template-rows: auto calc(var(--cell) * 4);}
-.lemma-tutor .tutor-equation[data-keys="hidden"] .tutor-equation-middle {grid-template-columns: minmax(0, 1fr);}
 /* N223 (Owner: "lower the footer just for the equation composer"): under the composer, only the gesture inset; Hide
    keyboard is a tap of the composer's pencil or Keys away, so the band and its ⌄ give their space back. */
 :root .lemma-tutor .kb[data-surface="equation"] {padding-bottom: max(6px, var(--v7-safe-bottom, env(safe-area-inset-bottom)));}
@@ -376,3 +347,15 @@
   .lemma-tutor .kb[data-surface="symbol"] .tutor-ink-candidates + .tutor-ink-candidates::before {display: none;}
   .lemma-tutor .kb[data-surface="symbol"] .tutor-ink-results .tutor-ink-feedback {white-space: normal;}
 }
+
+/* N223 (Owner: "integrate all this in one hood"; the pencil at the left edge; "the symbols suggested should live inside
+   the suggestion strip"): the strip always has Gboard's frame, an icon at each end and three equal slots between them.
+   The idle ∀ ∈ ⇒ and autoeq's readings of a typed equation are slots like the words, with the same thin dividers. */
+.lemma-tutor .kb .strip > .tutor-quick-math, .lemma-tutor .kb .strip[data-words] > .tutor-quick-math {
+  flex: 1 1 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; border: 0;
+}
+.lemma-tutor .kb .strip .tutor-quick-math button {font: 400 1.45rem/1 var(--v7-glyph); color: var(--v7-role-selection-fg); font-variant-emoji: text;}
+.lemma-tutor .kb .strip .equation-words button {min-width: 0; overflow: hidden; color: var(--v7-role-text-primary); font-size: 1.02rem;}
+.lemma-tutor .kb .strip .equation-words button p {margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.lemma-tutor .kb .strip .equation-words button .katex {font-size: 1em;}
+.lemma-tutor .kb .strip .equation-words button.preferred {font-weight: 400; color: var(--v7-role-selection-fg);}

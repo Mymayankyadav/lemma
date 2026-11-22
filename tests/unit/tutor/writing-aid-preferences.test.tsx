@@ -29,6 +29,8 @@ function Harness() {
 }
 
 beforeEach(async () => {
+  // N223: the stored modes and surfaces apply only with the old settings back behind their flag.
+  window.history.replaceState(null, '', '/?flags=writingAidSettings,proofAssistGhost');
   Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true});
   localStorage.clear();
   modes.mode = 'live';
@@ -153,4 +155,16 @@ it('rejects stale model saves across Forget and a batched pause and resume', asy
     expect(resumed.enabled).toBe(true);
     expect(Object.keys(resumed.model.vocabulary)).toEqual(['endomorphism']);
   });
+});
+
+it('N223: without the settings flag, suggestions are on for every account with no grey text, whatever was stored', async () => {
+  await act(async () => {expect(setWritingAidMode('off', prefs.scopeKey)).toBe(true);});
+  expect(prefs.mode).toBe('off');
+  window.history.replaceState(null, '', '/');
+  await act(async () => root.render(<Harness/>));
+  expect(prefs.mode).toBe('balanced');
+  expect(prefs.surfaces).toEqual({words: true, replace: true, correction: true, ghost: false});
+  window.history.replaceState(null, '', '/?flags=proofAssistGhost');
+  await act(async () => root.render(<Harness/>));
+  expect(prefs.surfaces.ghost).toBe(true);
 });

@@ -167,7 +167,8 @@ function Tutor({settings,released}:{settings:Settings;released:boolean}){
    <InfoRow label="ChatGPT plan on this phone" value="Unavailable" hint="Needs provider approval."/>
    <InfoRow label="Last connector activity" value={lastUsed&&Number.isFinite(lastUsed.getTime())?lastUsed.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'No activity recorded'}/>
   </Group>}
-  <WritingAidSettings/>
+  {/* N223 (Owner): keyboard suggestions are always on; their settings only return behind a flag. */}
+  {isFlagOn('writingAidSettings')&&<WritingAidSettings/>}
   <Group title="Math input beta">
    <li className="v7-set-switch"><Switch label="Draw single symbols" checked={input.recognition}
     onChange={enabled=>{if(!setTutorRecognition(enabled))notify('Could not save math input settings.',{tone:'danger'});}}/></li>

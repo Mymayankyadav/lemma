@@ -88,8 +88,7 @@ export default function ProgressV7(){
  const subjectIds=useMemo(()=>[...new Set(stacks.flatMap(column=>Object.keys(column.bySubject)))],[stacks]);
  const learn=useMemo(()=>{
   if(!insight.data)return null;
-  const days=range==='day'?1:insightDays(range);
-  return buildInsights(insight.data,days as 7,{timeZone:zone,rolloverHour:settings.data?.rolloverHour??4});
+  return buildInsights(insight.data,insightDays(range),{timeZone:zone,rolloverHour:settings.data?.rolloverHour??4});
  },[insight.data,range,zone,settings.data?.rolloverHour]);
  const checkpoints=useMemo(()=>{
   const events=insight.data?.checkpointEvents??[];

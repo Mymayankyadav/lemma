@@ -7,7 +7,7 @@ const transcript = (page:Page) => tutor(page).getByRole('log',{name:'Conversatio
 const answer = (page:Page) => tutor(page).getByRole('textbox',{name:'Your answer',exact:true})
 const send = (page:Page) => tutor(page).getByRole('button',{name:'Send',exact:true})
 const mainNavigation = (page:Page) => page.getByRole('navigation',{name:'Main navigation'})
-const path = (slug:string,demo:boolean,suffix='') => '/lemma/?demo=' + (demo?'1':'0') + '&flags=v7Shell,v6Shell#/p/' + slug + suffix
+const path = (slug:string,demo:boolean,suffix='') => '/lemma/?demo=' + (demo?'1':'0') + '&flags=v7Shell,v6Shell,-tutorScratch#/p/' + slug + suffix
 const firstAnswer = 'A set is compact if every open cover has a finite subcover.'
 const nextQuestion = 'How would you use this definition for a closed interval?'
 
@@ -163,9 +163,9 @@ test('demo chat warns when context or an excerpt cannot be saved with an already
  await expect(alert).toBeInViewport()
  await objective.uncheck()
  await expect(alert).toHaveCount(0)
- await context.getByText('Add selected local text',{exact:true}).click()
- await context.getByLabel('Paste selected local text').fill(excerpt)
- await context.getByRole('button',{name:'Preview selected text'}).click()
+ await context.getByText('Add an excerpt',{exact:true}).click()
+ await context.getByLabel('Excerpt',{exact:true}).fill(excerpt)
+ await context.getByRole('button',{name:'Preview excerpt'}).click()
  await context.getByRole('button',{name:'Add local excerpt'}).click()
  await expect(context.getByRole('region',{name:'Attached local excerpt'})).toContainText(excerpt)
  expect(await page.evaluate(key=>[sessionStorage.getItem(key+':question'),sessionStorage.getItem(key+':attached-local')],draftKey)).toEqual([text,null])

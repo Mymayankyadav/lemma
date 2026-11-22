@@ -22,7 +22,9 @@ export interface WritingAidBarProps {
 export function WritingAidWords({words, disabled, onAccept, hidden}: Pick<WritingAidBarProps, 'words' | 'disabled' | 'onAccept'> & {hidden?: boolean}) {
   const pressed = useRef<WritingAidProposal | null>(null);
   const slots = [words[1], words[0], words[2]];
-  return <div className="sugg writing-aid-words" role="group" aria-label="Word suggestions" hidden={hidden}>
+  // N223: when another kind of suggestion has the slots, the words are not there at all (nor counted as shown).
+  if (hidden) return null;
+  return <div className="sugg writing-aid-words" role="group" aria-label="Word suggestions">
     {slots.map((proposal, index) => <button type="button" key={index} data-writing-aid-word={index}
       disabled={disabled || !proposal} aria-label={proposal ? 'Insert ' + proposal.label : 'No suggestion'}
       onPointerDown={event => {holdCaret(event); pressed.current = proposal ?? null;}}
