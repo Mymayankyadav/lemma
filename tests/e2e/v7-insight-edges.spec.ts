@@ -44,7 +44,11 @@ test("§6.13 every chart carries its data table for screen readers without a Tab
  expect(heat.length).toBeLessThanOrEqual(1);
  const table=page.getByRole("region",{name:"Study almanac"}).or(page.locator("section.v7-chart",{hasText:"Study almanac"}));
  await expect(table.first().locator(".v7-sr-only table tbody tr")).toHaveCount(await table.first().locator(".v7-heatmap [data-chart-point]").count());
- await table.first().locator(".v7-heatmap [data-chart-point]").last().click();
+ // The almanac is one touch target (V36): a tap on a day's cell, which leaves the pointer to the grid, shows its tip.
+ const day=table.first().locator(".v7-heatmap [data-chart-point]").last();
+ await day.scrollIntoViewIfNeeded();
+ const cell=(await day.boundingBox())!;
+ await page.mouse.click(cell.x+cell.width/2,cell.y+cell.height/2);
  await expect(table.first().getByRole("status")).toBeVisible();
 });
 

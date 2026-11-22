@@ -95,7 +95,10 @@
 :where(html[data-v7]) .v7-capacity-presets {display:flex;flex-wrap:wrap;gap:var(--v7-space-1);}
 
 /* N220 (Owner report) · explanations behind (i) tips; the Inbox-only kinds as chips. */
-:where(html[data-v7]) .v7-set-label:has(> .v7-info) {display:flex;align-items:center;gap:var(--v7-space-1);}
+/* The (i) follows the label's last word, even when the label wraps. */
+:where(html[data-v7]) .v7-set-label > .v7-info {margin-inline-start:var(--v7-space-2);}
+/* With the explanations behind (i), a data row's label is short: it keeps its action beside it instead of above it. */
+:where(html[data-v7]) .v7-data-row > .v7-set-text {flex:1 1 8rem;min-width:0;}
 :where(html[data-v7]) .v7-set-group > .v7-eyebrow-row {padding-inline:var(--v7-space-1);}
 :where(html[data-v7]) .v7-set-group > .v7-eyebrow-row > .v7-eyebrow {margin:0;}
 :where(html[data-v7]) .v7-set-chips {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);padding:var(--v7-space-3) 0;}
@@ -116,5 +119,12 @@
  border-color:transparent;background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/1 var(--v7-sans);}
 :where(html[data-v7]) .v7-settings-legacy button.rounded-ctl[type="submit"] {background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
 :where(html[data-v7]) .v7-settings-legacy article .flex.items-end {align-items:center;}
-:where(html[data-v7]) .v7-settings-legacy article .flex.items-end > label {display:inline-flex;align-items:center;gap:var(--v7-space-2);margin-inline-start:auto;color:var(--v7-role-text-secondary);}
-:where(html[data-v7]) .v7-settings-legacy article .flex.items-end > label > input {width:4.5rem;margin:0;text-align:center;}
+/* A field's label sits above it, one way everywhere (the hosted forms mixed inline and stacked labels). */
+:where(html[data-v7]) .v7-settings-legacy label:not(.flex) {display:grid;gap:var(--v7-space-1);align-content:start;color:var(--v7-role-text-secondary);}
+:where(html[data-v7]) .v7-settings-legacy label:not(.flex) > :is(input:not([type="checkbox"]):not([type="radio"]),select) {width:100%;margin:0;color:var(--v7-role-text-primary);}
+:where(html[data-v7]) .v7-settings-legacy label.flex {gap:var(--v7-space-3);color:var(--v7-role-text-primary);}
+:where(html[data-v7]) .v7-settings-legacy :is(input[type="checkbox"],input[type="radio"]) {flex:none;width:20px;height:20px;margin:0;accent-color:var(--v7-role-action-bg);}
+:where(html[data-v7]) .v7-settings-legacy input[type="range"] {accent-color:var(--v7-role-action-bg);}
+:where(html[data-v7]) .v7-settings-legacy article {display:grid;gap:var(--v7-space-1);border-color:var(--v7-role-border-default);}
+:where(html[data-v7]) .v7-settings-legacy .activity-order {color:var(--v7-role-text-secondary);}
+:where(html[data-v7]) .v7-settings-legacy .activity-order input {width:4.5rem;margin:0;text-align:center;}

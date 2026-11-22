@@ -159,7 +159,12 @@
 :where(html[data-v7]) .v7-atlas-sheet {
  inset-inline:var(--v7-space-2);min-height:0;gap:var(--v7-space-1);z-index:var(--v7-z-sheet);
 }
-/* N220 (Owner report): the peek fits its title (two lines at most), chips and actions, and floats clear of the gesture bar. */
+/* N220 (Owner report): the peek fits its title (two lines at most), chips and actions, and floats clear of the gesture bar
+   (with the tab bar hidden the dock height is 0, which put the peek on the screen's edge); the rail stays above it. */
+:where(html[data-v7]) .v7-atlas-sheet {bottom:max(var(--v7-dock-height,0px),calc(var(--v7-safe-bottom) + var(--v7-space-2)));}
+:where(html[data-v7]) .v7-atlas:not([data-sheet="closed"])[data-sheet] .v7-atlas-option-rail {
+ inset-block-end:calc(var(--v7-atlas-sheet-h) + var(--v7-safe-bottom) + var(--v7-space-3));
+}
 :where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] {max-height:min(196px,var(--atlas-detail-max));padding-block-end:var(--v7-space-1);}
 :where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] .v7-atlas-sheet-title {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
 :where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] .v7-atlas-actions {flex-wrap:nowrap;}

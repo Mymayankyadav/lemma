@@ -280,10 +280,10 @@ export default function AtlasV7(){
       <IconButton label="Zoom in" onClick={()=>map.current?.zoomBy(1.5)}><Plus aria-hidden="true"/></IconButton>
       <IconButton label="Zoom out" onClick={()=>map.current?.zoomBy(1/1.5)}><Minus aria-hidden="true"/></IconButton>
      </div>
-     {/* N220 (Owner report): every subject has its button, the one in view marked, instead of two neighbours only. */}
+     {/* N220 (Owner report): a button for every other subject (all of them when zoomed out), instead of two only. */}
      {model.clusters.length>1&&<nav className="v7-atlas-compass" aria-label="Subjects">
-      {model.clusters.map(cluster=>
-       <IconButton key={cluster.id} label={'Go to '+cluster.name} title={cluster.name} aria-current={!allSky&&cluster.index===focusCluster?'true':undefined}
+      {model.clusters.filter(cluster=>allSky||cluster.index!==focusCluster).map(cluster=>
+       <IconButton key={cluster.id} label={'Go to '+cluster.name} title={cluster.name}
         onClick={()=>map.current?.flyToCluster(cluster.index)}>
         <SubjectMark subject={cluster.subject}/></IconButton>)}
      </nav>}

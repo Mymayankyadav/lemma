@@ -224,10 +224,10 @@ test('Atlas options form one vertical rail above the subject shortcuts and can c
  const hide=rail.getByRole('button',{name:'Hide options'});
  const search=rail.getByRole('button',{name:'Search concepts'});
  const recentre=rail.getByRole('button',{name:'Recentre map'});
- // N220 (Owner report): the rail has a button for every subject (the demo has three), the one in view marked.
+ // N220 (Owner report): the rail has a button for every other subject (no cap of two); the demo has three subjects.
  const subjects=rail.getByRole('navigation',{name:'Subjects'}).getByRole('button');
- await expect(subjects).toHaveCount(3);
- await expect(rail.getByRole('navigation',{name:'Subjects'}).locator('[aria-current="true"]')).toHaveCount(1);
+ await expect(subjects).toHaveCount(2);
+ for(const name of await subjects.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label'))))expect(name).toMatch(/^Go to /);
  const names=await rail.getByRole('button').evaluateAll(buttons=>buttons.map(button=>button.getAttribute('aria-label')));
  expect(names.slice(0,5)).toEqual(['Hide options','Search concepts','List','Layers','Recentre map']);
  const positions=await rail.getByRole('button').evaluateAll(buttons=>buttons.map(button=>{

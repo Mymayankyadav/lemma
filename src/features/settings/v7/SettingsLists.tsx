@@ -43,7 +43,7 @@ export function ValueRow({label,value,onOpen,hint}:{label:string;value:string;on
 /** A row that only states something (no action): a version, or a reminder kind this phone cannot deliver. */
 export function InfoRow({label,value,hint}:{label:string;value?:string;hint?:string}){
  return <li><div className="v7-set-row v7-set-info">
-  <span className="v7-set-text"><span className="v7-set-label">{label}{hint&&<InfoTip label={label}>{hint}</InfoTip>}</span></span>
+  <span className="v7-set-text"><span className="v7-set-label">{label}</span>{hint&&<small>{hint}</small>}</span>
   {value!==undefined&&<span className="v7-set-value">{value}</span>}</div></li>;
 }
 /** A row that opens a page outside Lemma (the release page), not a sheet. */
