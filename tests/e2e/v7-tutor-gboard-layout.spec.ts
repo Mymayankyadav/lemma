@@ -11,14 +11,19 @@ async function openKeyboard(page: Page, nativeApp: boolean) {
       if (native) document.documentElement.style.setProperty('--safe-area-inset-bottom', '16px');
     });
   }, nativeApp);
-  const lexicon = page.waitForResponse(response => response.url().endsWith('/lexicon.json') && response.ok());
+  const lexicon = page.waitForResponse(response => response.url().endsWith('/lexicon.tsv') && response.ok());
   await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch#/p/real-analysis/cp/CP4/tutor');
   await page.getByRole('button', {name: 'Write a question', exact: true}).click();
   const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
   await answer.focus();
   const keyboard = page.getByRole('group', {name: 'Answer keyboard', exact: true});
   await expect(keyboard).toBeVisible();
-  return {answer, keyboard, lexicon};
+  // The decoder is ready once the complete lexicon has loaded and been checked.
+  const decoderReady = async () => {
+    await lexicon;
+    await expect(keyboard).toHaveAttribute('data-decoder', 'ready', {timeout: 15_000});
+  };
+  return {answer, keyboard, decoderReady};
 }
 
 /** Each key's visible cap (its ::before) and its touch cell. */
@@ -77,8 +82,8 @@ test('in a browser the caps keep Gboard\'s shape and layout with shorter rows an
 
 test('the strip spreads its icons when idle and frames three word slots while typing, as Gboard', async ({page}) => {
   await page.setViewportSize({width: 393, height: 873});
-  const {keyboard, lexicon} = await openKeyboard(page, true);
-  await lexicon;
+  const {keyboard, decoderReady} = await openKeyboard(page, true);
+  await decoderReady();
   const strip = page.locator('.kb .strip');
   const icons = await strip.locator('.sbtn:visible').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().width));
   expect(icons).toHaveLength(4);
@@ -107,8 +112,8 @@ test('the strip spreads its icons when idle and frames three word slots while ty
 
 test('near-miss taps decode to the intended word, offered in the strip and applied only when tapped', async ({page}) => {
   await page.setViewportSize({width: 393, height: 873});
-  const {answer, keyboard, lexicon} = await openKeyboard(page, true);
-  await lexicon;
+  const {answer, keyboard, decoderReady} = await openKeyboard(page, true);
+  await decoderReady();
   await page.keyboard.type('We ');
   // "hsve": the second tap lands on s, beside a.
   for (const letter of 'hsve') await keyboard.getByRole('button', {name: letter, exact: true}).click();
@@ -117,4 +122,41 @@ test('near-miss taps decode to the intended word, offered in the strip and appli
   await expect(answer).toHaveJSProperty('textContent', 'We hsve');
   await have.click();
   await expect(answer).toHaveJSProperty('textContent', 'We have ');
+});
+
+test('a fix takes the strip like a Gboard correction and steps aside while a new word is typed', async ({page}) => {
+  await page.setViewportSize({width: 393, height: 873});
+  const {answer, keyboard, decoderReady} = await openKeyboard(page, true);
+  await decoderReady();
+  const strip = page.locator('.kb .strip');
+  await page.keyboard.type('We wrote teh');
+  const fix = page.getByRole('button', {name: 'Replace teh with the', exact: true});
+  await expect(fix).toBeVisible();
+  // One row in the strip: ✕ at the left, the word in the middle, Refresh at the right, above the keys.
+  const [fixBox, stripBox, q] = await Promise.all([fix.boundingBox(), strip.boundingBox(),
+    keyboard.getByRole('button', {name: 'q', exact: true}).boundingBox()]);
+  expect(fixBox!.y).toBeGreaterThanOrEqual(stripBox!.y - 1);
+  expect(fixBox!.y + fixBox!.height).toBeLessThanOrEqual(q!.y + 1);
+  expect(fixBox!.x + fixBox!.width / 2).toBeCloseTo(stripBox!.x + stripBox!.width / 2, -1);
+  // Typing a new word with its own suggestions: the words return; the earlier fix waits, still marked in the answer.
+  await page.keyboard.type(' and the nota');
+  await expect(keyboard.getByRole('group', {name: 'Word suggestions', exact: true})
+    .getByRole('button', {name: 'Insert notation', exact: true})).toBeVisible();
+  await expect(fix).toHaveCount(0);
+  await expect(answer.locator('[data-writing-aid-source]')).toHaveText('teh');
+  // At the next word boundary the fix comes back.
+  await page.keyboard.type('tion ');
+  await expect(fix).toBeVisible();
+});
+
+test('LaTeX commands and short forms offer symbols in the strip; tapping inserts the glyph in prose', async ({page}) => {
+  await page.setViewportSize({width: 393, height: 873});
+  const {answer, keyboard} = await openKeyboard(page, true);
+  await page.keyboard.type('Let \\al');
+  const symbols = keyboard.getByRole('group', {name: 'Symbol suggestions', exact: true});
+  await expect(symbols).toBeVisible();
+  const alpha = symbols.getByRole('button', {name: /^Insert α/});
+  await expect(alpha).toBeVisible();
+  await alpha.click();
+  await expect(answer).toHaveJSProperty('textContent', 'Let α');
 });

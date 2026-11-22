@@ -653,7 +653,10 @@ for (const {width, height, textSize} of [{width: 320, height: 640, textSize: 160
     const overlaps = (a: NonNullable<typeof suggestionBox>, b: NonNullable<typeof inputBox>) =>
       a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
     expect(overlaps(suggestionBox!, inputBox!)).toBe(false);
-    expect(overlaps(suggestionBox!, keyboardBox!)).toBe(false);
+    // N221 (Owner, 22 Nov): the suggestion sits in the keyboard's strip, as Gboard shows one, above the keys it must not hide.
+    const firstKey = (await board.getByRole('button', {name: 'q', exact: true}).boundingBox())!;
+    expect(suggestionBox!.y).toBeGreaterThanOrEqual(keyboardBox!.y - 1);
+    expect(suggestionBox!.y + suggestionBox!.height).toBeLessThanOrEqual(firstKey.y + 1);
   });
 }
 
@@ -696,7 +699,10 @@ for (const {width, height, textSize, colorScheme} of layouts) {
     const [cardBox, boardBox] = await Promise.all([floating(page).boundingBox(), board.boundingBox()]);
     const intersects = (a: NonNullable<typeof cardBox>, b: NonNullable<typeof boardBox>) =>
       a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
-    expect(intersects(cardBox!, boardBox!)).toBe(false);
+    // N221 (Owner, 22 Nov): the suggestion sits in the keyboard's strip, as Gboard shows one, above the keys it must not hide.
+    const firstKey = (await board.getByRole('button', {name: 'q', exact: true}).boundingBox())!;
+    expect(cardBox!.y).toBeGreaterThanOrEqual(boardBox!.y - 1);
+    expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(firstKey.y + 1);
     const caretBox = await page.evaluate(() => {
       const selection = window.getSelection();
       if (!selection?.rangeCount) return null;

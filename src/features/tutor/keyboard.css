@@ -210,3 +210,42 @@
     width: var(--v7-touch); height: var(--v7-touch);
   }
 }
+
+/* N221 (Owner: "Suggestion Box seems awkward, match this strip to Gboard") · the writing aid's spelling or notation
+   replacement, its continuation and Undo are no longer a card floating over the answer: they take the strip as Gboard
+   shows a correction, the new word in bold in the middle, ✕ (keep what was typed) at the left and Refresh at the right.
+   The word slots stay in place underneath and return when it is chosen or dismissed; the answer still marks the typed
+   word it would replace. A second choice (rare) takes a second row above. */
+.lemma-tutor .kb .strip {position: relative;}
+.lemma-tutor .kb .strip > .writing-aid-floating {
+  position: absolute; inset: auto 0 0 0; z-index: 3; min-height: 100%; width: auto; min-width: 0; max-width: none; max-height: none;
+  display: grid; grid-template-columns: max(var(--v7-touch), 10.4vw) minmax(0, 1fr) max(var(--v7-touch), 10.4vw);
+  grid-auto-rows: minmax(var(--v7-touch), auto); align-items: stretch;
+  border: 0; border-radius: 0; background: var(--kb); box-shadow: none; overflow: visible;
+}
+.lemma-tutor .kb .strip > .writing-aid-floating :is(.writing-aid-floating-body, .writing-aid-floating-choice) {display: contents;}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-dismiss {grid-area: 1 / 1; border: 0 !important; border-radius: 9999px;}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-preview {grid-column: 2; grid-row: 1;}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-refresh {grid-column: 3; grid-row: 1; border-radius: 9999px;}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-floating-choice + .writing-aid-floating-choice > * {grid-row: 2;}
+.lemma-tutor .kb .strip > .writing-aid-floating :is(.writing-aid-undo, .writing-aid-exhausted) {grid-area: 1 / 2; justify-content: center; text-align: center; align-self: center;}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-preview {
+  display: flex; align-items: center; justify-content: center; padding: 0 8px; border-radius: 0; text-align: center;
+  font: 600 1.15rem/1.1 var(--v7-sans);
+}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-preview small {display: none;}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-diff {justify-content: center; white-space: nowrap; overflow: hidden; overflow-wrap: normal;}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-diff :is(del, del + svg) {display: none;}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-diff strong {font: inherit; overflow: hidden; text-overflow: ellipsis;}
+.lemma-tutor .kb .strip > .writing-aid-floating .writing-aid-undo {font: 500 1rem/1.1 var(--v7-sans); width: auto;}
+/* Symbol suggestions: glyphs in the word slots, and a bare name's symbol in the left icon's place. */
+.lemma-tutor .kb .strip .symbol-words button {font: 400 1.45rem/1 var(--v7-glyph); color: var(--v7-role-selection-fg); background: transparent;}
+.lemma-tutor .kb .strip .symbol-words button.preferred {font-weight: 600;}
+.lemma-tutor .kb .strip .symbol-beside {font: 400 1.35rem/1 var(--v7-glyph);}
+/* After a suggestion is taken, Undo is one key at the strip's left edge (its label stays for screen readers), so the
+   symbols and words stay usable; the next keystroke retires it. */
+.lemma-tutor .kb .strip > .writing-aid-floating[data-undo] {right: auto; width: max(var(--v7-touch), 10.4vw); grid-template-columns: 1fr; background: var(--kb);}
+.lemma-tutor .kb .strip > .writing-aid-floating[data-undo] .writing-aid-undo {grid-area: 1 / 1; padding: 0; justify-content: center; border-radius: 9999px;
+  font-size: 0; color: var(--v7-role-text-secondary);}
+.lemma-tutor .kb .strip > .writing-aid-floating[data-undo] .writing-aid-undo svg {width: 20px; height: 20px;}
+.lemma-tutor .kb .strip > .writing-aid-floating[data-undo] .writing-aid-dismiss {display: none;}

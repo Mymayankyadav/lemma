@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {afterEach, beforeAll, describe, expect, test} from 'vitest';
 import {padEdit} from '../../../src/features/pad/padEdit';
-import {parseDecoderLexicon} from '../../../src/features/tutor/writingAid/decoder/lexicon';
+import {parseLexiconTsv} from '../../../src/features/tutor/writingAid/decoder/completeLexicon';
 import {
   clearKeyTouches, decodeWord, keyCentre, languageLog, recordKeyTouch, setDecoderContext, setDecoderLexicon, spatialLog,
   touchesFor, writingDecoderReady,
@@ -10,8 +10,12 @@ import {predictWritingAid} from '../../../src/features/tutor/writingAid/engine';
 import {applyWritingAidProposal, type WritingAidRequest} from '../../../src/features/tutor/writingAid/policy';
 
 // N221 (Owner task): a simple n-gram + spatial decoder over N219's licensed lexicon.
-const lexicon = parseDecoderLexicon(JSON.parse(readFileSync('public/models/writing-decoder/unigram-v1/lexicon.json', 'utf8')));
+const lexicon = parseLexiconTsv(readFileSync('public/models/writing-decoder/unigram-v2/lexicon.tsv', 'utf8'));
 const words = (before: string, typed: string) => decodeWord(before, typed, before.length).map(item => item.word);
+/** Letters tapped on the answer keyboard, each at its key's centre. */
+function tap(start: number, letters: string) {
+  [...letters].forEach((letter, offset) => recordKeyTouch(start + offset, letter, keyCentre(letter)!));
+}
 
 function request(text: string): WritingAidRequest {
   return {
@@ -37,7 +41,7 @@ describe('spatial model', () => {
 
   test('recorded taps are used while their letters are unchanged, and key centres otherwise', () => {
     recordKeyTouch(4, 'g', {x: 5.4, y: 1.5});
-    expect(touchesFor('tg', 3)).toEqual([keyCentre('t'), {x: 5.4, y: 1.5}]);
+    expect(touchesFor('tg', 3)).toEqual([keyCentre('t'), {x: 5.4, y: 1.5, tapped: true}]);
     expect(touchesFor('th', 3)).toEqual([keyCentre('t'), keyCentre('h')]);
   });
 });
@@ -52,15 +56,26 @@ describe('decoder', () => {
   });
 
   test('decodes near-miss taps to the word the learner meant', () => {
+    tap(3, 'hsve');
     expect(words('we ', 'hsve')[0]).toBe('have');
-    expect(words('', 'thw').slice(0, 3)).toContain('the');
-    expect(words('hello ', 'wprld')[0]).toBe('world');
     const decoded = decodeWord('we ', 'hsve', 3).find(item => item.word === 'have');
     expect(decoded?.correction).toBe(true);
+    clearKeyTouches();
+    tap(0, 'thw');
+    expect(words('', 'thw').slice(0, 3)).toContain('the');
+    clearKeyTouches();
+    tap(6, 'wprld');
+    expect(words('hello ', 'wprld')[0]).toBe('world');
+  });
+
+  test('letters without a recorded tap (a hardware keyboard) are not swapped for neighbouring keys', () => {
+    expect(words('we ', 'hsve')).not.toContain('have');
+    expect(words('', 'restate').filter(word => !word.startsWith('restate'))).toEqual([]);
   });
 
   test('a tap on the edge between two keys counts for the nearer one', () => {
     const typed = 'tge';
+    tap(0, typed);
     const plain = decodeWord('', typed, 0).find(item => item.word === 'the')!.score;
     recordKeyTouch(1, 'g', {x: 5.95, y: 1.5});
     const edge = decodeWord('', typed, 0).find(item => item.word === 'the')!.score;
@@ -88,6 +103,7 @@ describe('writing aid with the decoder', () => {
   });
 
   test('offers the decoded word in the strip as an explicit choice', () => {
+    tap(3, 'hsve');
     const input = request('We hsve');
     const {words: offered} = predictWritingAid(input);
     const have = offered.find(item => item.label === 'have');
@@ -110,5 +126,44 @@ describe('writing aid with the decoder', () => {
     expect(predictWritingAid(request('Every bounded sequence converges.')).words).toHaveLength(0);
     // Proof words are never offered as near-tap corrections of a short stem.
     expect(predictWritingAid(request('This is nkt')).words.map(item => item.label)).not.toContain('not');
+  });
+});
+
+describe('proof-steering words', () => {
+  test('are not offered from a short stem or as the next word, only nearly typed in full', () => {
+    const offered = (draft: string) => predictWritingAid(request(draft)).words.map(item => item.label.toLowerCase());
+    for (const draft of ['The set is closed b', 'It is bounded a', 'x is positive s', 'It is bounded ']) {
+      for (const word of ['because', 'by', 'as', 'since', 'so', 'hence', 'therefore']) expect(offered(draft)).not.toContain(word);
+    }
+    expect(offered('It is bounded becaus')).toContain('because');
+  });
+});
+
+describe('complete lexicon', () => {
+  test('has the ordinary words v1 missed, keeps logic tags and rejects malformed files', () => {
+    const words = new Set(lexicon.entries.map(entry => entry.word));
+    for (const word of ['restate', 'restated', 'preimage', 'the', 'because']) expect(words.has(word)).toBe(true);
+    expect(lexicon.entries.length).toBeGreaterThan(100_000);
+    expect(lexicon.entries.find(entry => entry.word === 'injective')?.riskTags).toEqual(['logic']);
+    expect(() => parseLexiconTsv('beta\t3\nalpha\t2\n')).toThrow();
+    expect(() => parseLexiconTsv('alpha\tmany\n')).toThrow();
+    expect(() => parseLexiconTsv('alpha\t2\tproof\n')).toThrow();
+    expect(parseLexiconTsv('alpha\t2\nbeta\t3\tlogic\n').entries).toHaveLength(2);
+  });
+});
+
+describe('typing slips', () => {
+  test('a swapped, missing or extra letter decodes to the word', () => {
+    expect(words('we wrote ', 'teh')[0]).toBe('the');
+    expect(words('a ', 'functon').slice(0, 3)).toContain('function');
+    expect(words('', 'thhe').slice(0, 3)).toContain('the');
+  });
+
+  test('a real word is not corrected into a neighbouring one', () => {
+    for (const draft of ['could you restate', 'We prove this', 'The limit']) {
+      const typed = draft.split(' ').at(-1)!;
+      const offered = predictWritingAid(request(draft)).words.map(item => item.label);
+      expect(offered.filter(label => !label.toLowerCase().startsWith(typed.toLowerCase()))).toEqual([]);
+    }
   });
 });

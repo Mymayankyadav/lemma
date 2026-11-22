@@ -44,6 +44,9 @@ const SOURCED_LINE = /(?:^|\s)(?:tutor|teacher|instructor|assistant|solution|sys
 const LITERAL_LINE = /(?:search|identifier|code|literal|verbatim|product|brand|named|called)\b[^.!?\n]*$/iu;
 const TOKEN = /\\[A-Za-z]+|[<=>!\-]+|_[0-9]|\bthe the\b|[\p{L}\p{M}]+/gu;
 const RISKY_PERSONAL_WORD = /^(?:not|no|or|if|only|all|some|any|neither|never|contradiction|contrapositive|induction|injective|surjective|bijective|infinite|finite|nonempty|empty|zero|nonzero|positive|negative|unique|uniqueness|compact|compactness|continuous|discontinuous|unbounded|bounded|converges?|convergent|convergence|diverges?|divergent|divergence|contradicts|witness|true|false|greater|less|every|exists|inverse|proof|prove|proves|proved|proving|prime|composite|property|properties|counterexample|theorem|lemma|sufficient|necessary|equivalent|implies|integer|rational|irrational|even|odd|commutative|associative|distributive|invertible|singular|nonsingular|symmetric|antisymmetric|reflexive|transitive|irreflexive|countable|uncountable|measurable|monotone|increasing|decreasing|differentiable|integrable|closed|open|dense|separable|complete|completeness|connected|disconnected|distinct|equal|unequal|idempotent|coprime|independent|dependent|linear|nonlinear|convex|concave)$/iu;
+/** N221 (Owner): words that steer a proof (its reasons and moves) are never offered from a short stem or as the next
+ *  word: typing "b" must not suggest "because", nor a space "as". The learner can still type them in full. */
+const PROOF_STEERING = /^(?:because|by|as|since|so|hence|thus|therefore|then|consequently|implies|implying|whence|thereby|follows|clearly|obviously|trivially|suppose|assume|assuming|wlog)$/iu;
 const phraseEngines = new Map<string, ReturnType<typeof makeRevision>>();
 
 function writtenWord(word: string): boolean {
@@ -104,7 +107,7 @@ function keyProposals(
         word === prefix : !FILLERS.has(word.toLowerCase())) continue;
     // A wider pool must not promote a proof method, property, quantifier, or
     // polarity from a weak stem merely to fill an alternative slot.
-    if ((risk === 'logic' || RISKY_PERSONAL_WORD.test(word)) &&
+    if ((risk === 'logic' || RISKY_PERSONAL_WORD.test(word) || PROOF_STEERING.test(word)) &&
         (!prefix || prefix.length < 5 || prefix.length / word.length < .8)) continue;
     if (protectedGap && prefix && prefix.length / word.length < .6) continue;
     if (mode === 'strict' && (!prefix || prefix.length < 4)) continue;
@@ -154,7 +157,9 @@ function decoded(keys: readonly KeyCandidate[], before: string, prefix: string, 
   if (!writingDecoderReady() || !prefix || PROTECTED_GAP.test(before) ||
       (text.slice(authoredText.length).match(OUTPUT_TOKEN)?.length ?? 0) >= 2) return keys;
   const own = new Map(keys.filter(key => key.kind !== 'transcription').map(key => [key.word.toLowerCase(), key]));
-  const ranked = decodeWord(before, prefix, start, [...own.keys()]);
+  // A correctly spelled word (in the larger spelling list too) is completed, never corrected into another word.
+  const spelled = writtenWord(prefix.toLowerCase());
+  const ranked = decodeWord(before, prefix, start, [...own.keys()]).filter(item => !(spelled && item.correction));
   const seen = new Set<string>();
   const merged: KeyCandidate[] = [];
   for (const item of ranked) {

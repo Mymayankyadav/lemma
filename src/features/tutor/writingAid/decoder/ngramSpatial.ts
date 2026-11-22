@@ -3,7 +3,8 @@
  *
  * score(word) = log P(word | previous word, conversation) + Σ log P(touch_i | letter_i)
  *
- * - Unigrams: N219's licensed 49,232-word lexicon (AOSP LatinIME frequencies, SCOWL spellings, mathlib4 ranks).
+ * - Unigrams: the complete lexicon (unigram-v2, 114,780 words): N219's licensed v1 (AOSP LatinIME frequencies, SCOWL
+ *   spellings, mathlib4 ranks) plus every accepted word of the same AOSP dictionary.
  * - Bigrams: the existing mathlib4 bigram table, Dirichlet-smoothed towards the unigram (μ = 2000).
  * - Cache: words of the tutor's question, the checkpoint and the learner's own draft (Kuhn & De Mori's cache model),
  *   mixed in at 10%, so the terms of the current question rank higher.
@@ -45,6 +46,10 @@ const NEAR = -6;
 const PER_PREFIX = 24;
 /** When the typed letters already begin real words, a correction must beat their completions by this much. */
 const CORRECTION_COST = 3;
+/** One swapped, missing or extra letter (teh → the, functon → function, thhe → the), beyond what the taps explain. */
+const EDIT_COST = 4;
+/** A typed word that is itself a real word is only corrected when the correction is this much likelier. */
+const REAL_WORD_MARGIN = 4;
 
 /** log P(touch | letter): a Gaussian around the key's centre. */
 export function spatialLog(touch: KeyTouch, letter: string): number {
@@ -102,10 +107,10 @@ export function setDecoderLexicon(lexicon: DecoderLexicon | null): void {
   model = {index: createDecoderLexicon(lexicon), frequency, risky, logZ: Math.log(z)};
 }
 
-/** Load N219's verified lexicon once. A failure leaves the writing aid as it was. */
+/** Load the verified complete lexicon once. A failure leaves the writing aid as it was. */
 export function prepareWritingDecoder(): Promise<void> {
   if (model) return Promise.resolve();
-  return loading ??= import('./assets').then(({loadWritingDecoderLexicon}) => loadWritingDecoderLexicon())
+  return loading ??= import('./completeLexicon').then(({loadCompleteLexicon}) => loadCompleteLexicon())
     .then(lexicon => {if (!model) setDecoderLexicon(lexicon);})
     .catch(() => {loading = null;});
 }
@@ -161,11 +166,15 @@ export function clearKeyTouches(): void {
   taps.clear();
 }
 
-/** The touch for each letter of `word` typed at `start`: the recorded tap when it still matches, else the key centre. */
-export function touchesFor(word: string, start: number): KeyTouch[] {
+/**
+ * The touch for each letter of `word` typed at `start`: the recorded tap when it still matches (`tapped`), else the
+ * key's centre. Only a recorded tap can stand for a neighbouring key: a letter from a hardware keyboard, a paste or an
+ * edit has no position, so it counts as exactly the letter typed.
+ */
+export function touchesFor(word: string, start: number): (KeyTouch & {tapped?: true})[] {
   return [...word.toLowerCase()].map((letter, offset) => {
     const tap = taps.get(start + offset);
-    return tap && tap.letter === letter ? tap.touch : KEY.get(letter) ?? {x: -9, y: -9};
+    return tap && tap.letter === letter ? {...tap.touch, tapped: true} : KEY.get(letter) ?? {x: -9, y: -9};
   });
 }
 
@@ -245,9 +254,9 @@ export function decodeWord(before: string, typed: string, start: number, extra: 
     for (const word of [...bigramCount.get(previous)?.keys() ?? [], ...wordAssets.boundary, 'a']) add(word, 0);
   } else {
     let beams = [{prefix: '', spatial: 0}];
-    for (const touch of touches) {
+    for (const [i, touch] of touches.entries()) {
       const next: typeof beams = [];
-      for (const beam of beams) for (const letter of KEY.keys()) {
+      for (const beam of beams) for (const letter of touch.tapped ? KEY.keys() : [lower[i]]) {
         const spatial = spatialLog(touch, letter);
         if (spatial < NEAR) continue;
         const prefix = beam.prefix + letter;
@@ -255,6 +264,19 @@ export function decodeWord(before: string, typed: string, start: number, extra: 
       }
       beams = next.sort((a, b) => b.spatial - a.spatial).slice(0, BEAM);
       if (!beams.length) break;
+    }
+    // Typing slips the taps cannot explain: two letters swapped, one letter missing or one too many (never the first).
+    if (lower.length >= 3) {
+      const exactSpatial = touches.reduce((sum, touch, i) => sum + spatialLog(touch, lower[i]), 0);
+      const variants = new Set<string>();
+      for (let i = 0; i + 1 < lower.length; i++) variants.add(lower.slice(0, i) + lower[i + 1] + lower[i] + lower.slice(i + 2));
+      for (let i = 1; i < lower.length; i++) variants.add(lower.slice(0, i) + lower.slice(i + 1));
+      for (let i = 1; i <= lower.length; i++) for (const letter of KEY.keys()) variants.add(lower.slice(0, i) + letter + lower.slice(i));
+      variants.delete(lower);
+      for (const variant of variants) {
+        if (variant.length < 2 || index.entries[lowerBound(index, variant)]?.word !== variant) continue;
+        add(variant, exactSpatial - EDIT_COST);
+      }
     }
     for (const beam of beams) {
       for (const word of completions(index, beam.prefix, PER_PREFIX)) add(word, beam.spatial);
@@ -275,10 +297,14 @@ export function decodeWord(before: string, typed: string, start: number, extra: 
     if (Number.isFinite(spatial)) add(plain, spatial);
   }
   let ranked = [...scored.values()].sort((a, b) => b.score - a.score);
-  // When the typed letters begin real words, a correction is offered only if it is likelier than every completion.
+  // When the typed letters begin real words, a correction is offered only if it is likelier than every completion; when
+  // they are a real word themselves (restate), only if it is far likelier than that word.
   if (typedIsPrefix) {
     const best = ranked.find(item => !item.correction)?.score ?? -Infinity;
-    ranked = ranked.filter(item => !item.correction || item.score >= best);
+    const typedWord = index.entries[lowerBound(index, lower)]?.word === lower
+      ? languageLog(lower, previous, cache) + touches.reduce((sum, touch, i) => sum + spatialLog(touch, lower[i]), 0) + REAL_WORD_MARGIN
+      : -Infinity;
+    ranked = ranked.filter(item => !item.correction || item.score >= Math.max(best, typedWord));
   }
   return ranked.slice(0, Math.max(limit, extra.length));
 }

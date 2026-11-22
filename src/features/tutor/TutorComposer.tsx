@@ -25,8 +25,9 @@ import {useTutorInputPreferences} from './input/inputPreferences';
 import {sameEditTarget} from './input/recognitionPolicy';
 import type {EditTarget} from './input/types';
 import {useWritingAid, useWritingAidPreferences, WritingAidSettings, advanceWritingAidAnchor, continueWritingAidAnchor, applyWritingAidProposal, type WritingAidAnchor, type WritingAidProposal} from './writingAid';
-import {WritingAidBar, WritingAidWords} from './WritingAidBar';
-import {prepareWritingDecoder, recordKeyTouch, setDecoderContext, type KeyTouch} from './writingAid/decoder/ngramSpatial';
+import {SymbolWords, WritingAidBar, WritingAidWords} from './WritingAidBar';
+import {latexSymbolOptions, type SymbolOption} from './input/latexShortcuts';
+import {prepareWritingDecoder, recordKeyTouch, setDecoderContext, writingDecoderReady, type KeyTouch} from './writingAid/decoder/ngramSpatial';
 import './keyboard.css';
 import './input/input.css';
 import './writing-aid.css';
@@ -78,6 +79,9 @@ export function TutorComposer(props: Props) {
   const authoredAnchor = useRef<WritingAidAnchor | null>(null);
   const acceptedSuggestion = useRef<{before: PadTextHistory; after: PadEdit; proposal: WritingAidProposal} | null>(null);
   const [hideSuggestionUndo, setHideSuggestionUndo] = useState(false);
+  const decoderSeen = useRef(false);
+  const [decoderReady, setDecoderReady] = useState(writingDecoderReady);
+  const shownSuggestions = useRef(0);
   const [swipeProgress, setSwipeProgress] = useState(0);
   const swipe = useRef<{pointer: number; x: number; y: number; time: number; proposal: WritingAidProposal; cursor: PadEdit} | null>(null);
   const [aidSettings, setAidSettings] = useState(false);
@@ -135,22 +139,52 @@ export function TutorComposer(props: Props) {
   // N221: and has suggestions to show; with none, the strip keeps the maths symbols instead of empty slots, as Gboard
   // keeps its toolbar.
   const wordInProgress = cursor.start === cursor.end && /[A-Za-z]$/.test(cursor.text.slice(0, cursor.start)) && writingWords.length > 0;
+  shownSuggestions.current = writingWords.length + Number(Boolean(writingEdit || writingGhost || suggestionUndoable));
+  // N221 (Owner): the writing aid's replacement or continuation takes the strip as Gboard shows a correction: for the
+  // word at the caret, for a continuation, or at a word boundary. While a new word is typed with its own suggestions,
+  // a fix for an earlier word steps aside (the answer still marks it) and returns at the next space. It leaves when
+  // tapped, dismissed with ✕, or when the text no longer has it. Undo is a small key at the strip's left edge.
+  const aidExhausted = aidVisible && (writing.exhausted.edit || writing.exhausted.ghost);
+  const shownEdit = writingEdit && (writingEdit.end === cursor.end || !wordInProgress) ? writingEdit : null;
+  const reviewChoice = Boolean(shownEdit || writingGhost || aidExhausted) && !suggestionUndoable;
+  const review = reviewChoice || suggestionUndoable;
+  // N221 (Owner): symbols for a LaTeX command or short form being typed. A command (\alp) or short form (->) takes the
+  // word slots; a bare name (lambda) puts its symbol beside the words. Off mode turns them off with the rest of the aid.
+  const symbolOptions = useMemo(() => writingPrefs.mode === 'off' || !shown ? [] : latexSymbolOptions(cursor),
+    [cursor, writingPrefs.mode, shown]);
+  const symbolSlots = !reviewChoice && symbolOptions[0] && symbolOptions[0].kind !== 'name' ? symbolOptions : [];
+  const symbolBeside = !reviewChoice && symbolOptions[0]?.kind === 'name' ? symbolOptions[0] : null;
+  /** The strip frames word slots (Gboard's typing strip) rather than spreading its idle icons. */
+  const stripActive = wordInProgress || reviewChoice || symbolSlots.length > 0;
 
   useEffect(() => {
     const reportVisibility = () => {
       const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && !editMenu && document.visibilityState !== 'hidden';
       writing.shown('words', visible ? writingWords : []);
-      writing.shown('edit', visible && writingEdit && !suggestionUndoable ? [writingEdit] : []);
+      writing.shown('edit', visible && shownEdit && !suggestionUndoable ? [shownEdit] : []);
       writing.shown('ghost', visible && writingGhost ? [writingGhost] : []);
     };
     reportVisibility();
     document.addEventListener('visibilitychange', reportVisibility);
     return () => document.removeEventListener('visibilitychange', reportVisibility);
-  }, [writing.shown, writingWords, writingEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, suggestionUndoable]);
+  }, [writing.shown, writingWords, shownEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, suggestionUndoable]);
 
   // N221: load N219's lexicon for the n-gram and touch decoder when the keyboard opens, and let the tutor's question
   // (with the checkpoint's title and step) favour its own words while the learner answers it.
-  useEffect(() => {if (shown) void prepareWritingDecoder();}, [shown]);
+  // Once it is ready, an empty strip is worked out again; a suggestion already shown never changes under the finger.
+  useEffect(() => {
+    if (!shown) return;
+    let live = true;
+    void prepareWritingDecoder().then(() => {
+      if (!live || !writingDecoderReady()) return;
+      setDecoderReady(true);
+      if (decoderSeen.current || shownSuggestions.current) return;
+      decoderSeen.current = true;
+      // A new cursor object recomputes; the edit target's revisions stay, so a picker or drawing in progress stays valid.
+      setCursor(current => ({...current}));
+    });
+    return () => {live = false;};
+  }, [shown]);
   const decoderContext = JSON.stringify(props.notationContext ?? []);
   useEffect(() => {setDecoderContext(JSON.parse(decoderContext) as string[]);}, [decoderContext]);
 
@@ -192,6 +226,16 @@ export function TutorComposer(props: Props) {
     setHideSuggestionUndo(false);
     writing.feedback('accept', proposal);
     haptic('snap');
+  }
+  function acceptSymbol(option: SymbolOption) {
+    remember();
+    const edit = history.current.present;
+    if (editingDisabled || edit.start !== edit.end || edit.end !== option.end ||
+        edit.text.slice(option.start, option.end) !== option.token) return;
+    const base = padEdit(edit.text.slice(0, option.start) + edit.text.slice(option.end), option.start);
+    // Inside $…$ the symbol is its LaTeX command (\alp completes to \alpha); in prose, its glyph.
+    const next = insertTutorSymbol(base, option.symbol.id) ?? insertNotation(base, option.symbol.glyph);
+    if (commit(changePadText(history.current, next), true)) haptic('snap');
   }
   function undoWriting() {
     const saved = acceptedSuggestion.current;
@@ -623,6 +667,9 @@ export function TutorComposer(props: Props) {
   // N221: in the Android app Hide keyboard sits in the band under the keys, where Gboard's ⌄ is; browsers keep it in the strip.
   const hideButton = (className: string) => <button className={className} type="button" aria-label="Hide keyboard"
     onPointerDown={keepSelection} onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>;
+  const symbolButton = (option: SymbolOption) => <button className="sbtn qsym symbol-beside" type="button"
+    aria-label={'Insert ' + option.symbol.glyph + ' (' + option.symbol.name + ')'} title={option.symbol.tex}
+    disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => acceptSymbol(option)}>{option.symbol.glyph}</button>;
   const drawButton = <button className="sbtn" type="button" aria-label="Draw symbol" disabled={editingDisabled} onPointerDown={keepSelection}
     onClick={()=>{remember();revision.current.modeRevision++;haptic('snap');assist.openDraw();}}><PenLine aria-hidden="true"/></button>;
   return <div className="keyboard-composer" data-keyboard={shown ? 'math' : 'hidden'} data-symbols={shown && Boolean(notation[view]) || undefined}>
@@ -701,11 +748,6 @@ export function TutorComposer(props: Props) {
         <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !props.value.trim()&&!hasImage}
           onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
       </div>
-      {shown && !scratch && !assist.drawing && <WritingAidBar words={writingWords} edit={writingEdit} ghost={writingGhost}
-        disabled={editingDisabled} undoable={suggestionUndoable} swipeProgress={swipeProgress}
-        exhausted={aidVisible && (writing.exhausted.edit || writing.exhausted.ghost)}
-        onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
-        onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
     </form>
     <Sheet open={editMenu} onClose={()=>setEditMenu(false)} title="Answer actions">
@@ -727,7 +769,7 @@ export function TutorComposer(props: Props) {
     <Sheet open={aidSettings} onClose={() => setAidSettings(false)} title="Writing assistance"><WritingAidSettings showTitle={false}/></Sheet>
     {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoOpen={photo} onClosePhoto={()=>setPhoto(false)}
       editingImageId={editingImageId} canMigrate={!readOnly} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
-    {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard">
+    {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}>
       {assist.drawing ? <TutorInkPad enabled={inputPrefs.recognition} strokes={assist.snapshot?.strokes??[]}
         readiness={assist.readiness} recognized={assist.recognized} completions={assist.completions} actionable={assist.actionable}
         keepDrawing={assist.keepDrawing} overBudget={assist.snapshot?.overBudget??false} error={assist.error} onBegin={assist.onBegin} onMove={assist.onMove} onEnd={assist.onEnd}
@@ -736,24 +778,29 @@ export function TutorComposer(props: Props) {
         }}
         onBrowse={assist.openPicker} onKeepDrawing={assist.onKeepDrawing} onLockAutomatic={assist.lockAutomatic} onPressCandidate={assist.pressCandidate} onReleaseCandidate={assist.releaseCandidate}
         onAccept={assist.onAccept}/>
-      : <><div className="strip" data-words={writingWords.length > 0 || undefined}>
+      : <><div className="strip" data-words={writingWords.length > 0 || stripActive || undefined} data-review={reviewChoice || undefined}>
         {/* N220 (Owner report): the one-tap maths symbols and Next □ sit in the suggestion strip, so the bottom row keeps
             Gboard's wide space bar. As in Gboard, a word being typed gives its suggestions the whole strip: the symbols
             step aside until the caret is at a word boundary (Next □ stays while a slot is empty).
             N221 (Owner screenshots): Gboard's strip. Idle, its icons are spaced evenly across it; with words, Draw symbol
             at the left and Refresh at the right frame three equal word slots (a browser adds Hide keyboard). */}
-        <div className="tutor-quick-math" role="group" aria-label="Quick math symbols" hidden={wordInProgress && !incomplete}>
+        <div className="tutor-quick-math" role="group" aria-label="Quick math symbols" hidden={stripActive && !incomplete}>
           {['∀', '∈', ...(incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="sbtn qsym" aria-label={symbol}
-            hidden={wordInProgress} disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
+            hidden={stripActive} disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
           {incomplete && <button type="button" className="sbtn qsym" aria-label="Next □" disabled={editingDisabled} onPointerDown={keepSelection}
             onClick={() => {haptic('key'); nextSlot();}}><MoveRight aria-hidden="true"/></button>}
         </div>
-        {wordInProgress && !incomplete && drawButton}
-        <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting}/>
+        {stripActive && !incomplete && (symbolBeside ? symbolButton(symbolBeside) : drawButton)}
+        {symbolSlots.length > 0 && <SymbolWords options={symbolSlots} disabled={editingDisabled} onAccept={acceptSymbol}/>}
+        <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting} hidden={symbolSlots.length > 0}/>
         {refreshable && <button className="sbtn" type="button" aria-label="Refresh suggestions" disabled={editingDisabled}
           onPointerDown={keepSelection} onClick={refreshWriting}><RefreshCw aria-hidden="true"/></button>}
-        {!(wordInProgress && !incomplete) && drawButton}
+        {!(stripActive && !incomplete) && (symbolBeside ? symbolButton(symbolBeside) : drawButton)}
         {hideButton('sbtn')}
+        {!scratch && <WritingAidBar words={writingWords} edit={shownEdit} ghost={writingGhost}
+          disabled={editingDisabled} undoable={suggestionUndoable} swipeProgress={swipeProgress} exhausted={aidExhausted}
+          onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
+          onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
       <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled} onInsert={insert}
         wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
