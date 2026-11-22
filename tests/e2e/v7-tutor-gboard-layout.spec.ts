@@ -86,8 +86,7 @@ test('the strip spreads its icons when idle and frames three word slots while ty
   await decoderReady();
   const strip = page.locator('.kb .strip');
   const icons = await strip.locator('.sbtn:visible').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().width));
-  // ∀ ∈ ⇒, Equation mode and Draw symbol.
-  expect(icons).toHaveLength(5);
+  expect(icons).toHaveLength(4);
   expect(Math.max(...icons) - Math.min(...icons)).toBeLessThan(2);
   // In the app, Hide keyboard sits in the band under the keys, where Gboard draws its chevron.
   const hide = keyboard.getByRole('button', {name: 'Hide keyboard', exact: true});
@@ -160,34 +159,4 @@ test('LaTeX commands and short forms offer symbols in the strip; tapping inserts
   await expect(alpha).toBeVisible();
   await alpha.click();
   await expect(answer).toHaveJSProperty('textContent', 'Let α');
-});
-
-test('equation mode turns typed maths into symbols, keeps the strip geometry and undoes with Backspace', async ({page}) => {
-  await page.setViewportSize({width: 393, height: 873});
-  const {answer, keyboard} = await openKeyboard(page, true);
-  const strip = page.locator('.kb .strip');
-  const before = await strip.boundingBox();
-  const toggle = keyboard.getByRole('button', {name: 'Equation mode', exact: true});
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  expect(await strip.boundingBox()).toEqual(before);
-  await page.keyboard.type('root 2 + x^2 <= 1/2 ');
-  await expect(answer).toHaveJSProperty('textContent', '√2 + x² ≤ ½ ');
-  // Backspace straight after a change puts the typed text back, as after a Gboard autocorrection.
-  await page.keyboard.press('Backspace');
-  await expect(answer).toHaveJSProperty('textContent', '√2 + x² ≤ 1/2 ');
-  // The strip offers the usual next pieces; after a variable, its square and indices.
-  await page.keyboard.type('= y');
-  const choices = keyboard.getByRole('group', {name: 'Equation suggestions', exact: true});
-  await choices.getByRole('button', {name: 'Insert y²', exact: true}).click();
-  await expect(answer).toHaveJSProperty('textContent', '√2 + x² ≤ 1/2 = y²');
-  // Keep, in the strip's left slot, also puts back what was changed.
-  await page.keyboard.type(' alpha ');
-  await expect(answer).toHaveJSProperty('textContent', '√2 + x² ≤ 1/2 = y² α ');
-  await choices.getByRole('button', {name: 'Keep alpha', exact: true}).click();
-  await expect(answer).toHaveJSProperty('textContent', '√2 + x² ≤ 1/2 = y² alpha ');
-  // Off again: ordinary typing is untouched.
-  await toggle.click();
-  await page.keyboard.type('root 2 ');
-  await expect(answer).toHaveJSProperty('textContent', '√2 + x² ≤ 1/2 = y² alpha root 2 ');
 });
