@@ -46,6 +46,8 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   const [reading, setReading] = useState<Reading>({phase: 'idle'});
   /** The reader is on this device (cached, or it read something this session). */
   const ready = useRef<boolean | null>(null);
+  /** The learner agreed to the one-time download; a later Read does not ask again while it finishes. */
+  const consented = useRef(false);
   const run = useRef(0);
   const megabytes = Math.round(EQUATION_MODEL_BYTES / 1e6);
   const sheet = useRef<HTMLDivElement>(null);
@@ -69,11 +71,12 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
     return () => {live = false; run.current++;};
   }, []);
 
-  async function read(consented = false) {
+  async function read(consent = false) {
     const strokes = history.strokes;
     if (!strokes.length || disabled) return;
+    if (consent) consented.current = true;
     const current = ++run.current;
-    if (!ready.current && !consented) {
+    if (!ready.current && !consented.current) {
       const cached = await equationModelCached().catch(() => false);
       if (current !== run.current) return;
       if (!cached) {setReading({phase: 'ask'}); return;}
@@ -92,9 +95,10 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   }
   function change(next: PadInkHistory) {
     setHistory(next);
-    // A reading belongs to the ink it read: new ink waits for the next Read.
+    // A reading belongs to the ink it read: new ink waits for the next Read. That includes a reading still downloading
+    // the model (review of #1830): the download carries on in the worker, and Read, enabled again, picks it up.
     run.current++;
-    setReading(state => state.phase === 'download' ? state : {phase: 'idle'});
+    setReading({phase: 'idle'});
     symbols.onInk(next.strokes, size());
   }
   function clearInk() {
@@ -142,7 +146,7 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
           <Download aria-hidden="true"/><span>Download reader</span><small>{megabytes} MB</small>
         </button>}
         {reading.phase === 'error' && <span className="tutor-equation-status" role="alert"><span>{reading.message}</span>
-          <button type="button" className="tutor-equation-retry" aria-label="Try again" onClick={() => void read(ready.current !== false)}>
+          <button type="button" className="tutor-equation-retry" aria-label="Try again" onClick={() => void read()}>
             <RotateCcw aria-hidden="true"/></button></span>}
         {!inked && <span className="tutor-equation-hint">{replacing ? 'Write the equation again' : 'Write a symbol or an equation'}</span>}
       </div>

@@ -19,8 +19,8 @@ import {readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection, TutorAnswer
 import {TutorKeyboard} from './TutorKeyboard';
 import {TutorInkPad} from './input/TutorInkPad';
 import {TutorSymbolPicker} from './input/TutorSymbolPicker';
-import {insertTutorSymbol, tutorMathContext} from './input/symbolEdit';
-import {symbolByGlyph, symbolById} from './input/symbolCatalog';
+import {insertTutorSymbol, symbolLatex, tutorMathContext} from './input/symbolEdit';
+import {symbolByGlyph} from './input/symbolCatalog';
 import {useTutorInputAssist} from './input/useTutorInputAssist';
 import {useTutorInputPreferences} from './input/inputPreferences';
 import {sameEditTarget} from './input/recognitionPolicy';
@@ -548,9 +548,8 @@ export function TutorComposer(props: Props) {
    * as its glyph where it has no command.
    */
   function insertSymbolChip(id: string) {
-    const symbol = symbolById(id);
-    if (!symbol || editingDisabled) return false;
-    return /^\\[A-Za-z]+$/.test(symbol.tex) ? insertEquation(symbol.tex) : (insert(symbol.glyph), true);
+    const latex = symbolLatex(id);
+    return Boolean(latex) && !editingDisabled && insertEquation(latex!);
   }
   /**
    * The equation paper's ink also goes to the Draw single symbols reader: scaled into its small paper, as if drawn
