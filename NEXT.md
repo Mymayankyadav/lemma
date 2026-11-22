@@ -6,6 +6,15 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N222 Add Equation Assist to Lemma Pad
+
+Owner task: "Refine his approach as per your suggestions and also try to extend to equation assist. Upload your finished work in one pr of lemma."
+Stage: Build · Status: open · Needs: — · Assigned: chat-644281#z6m3
+Done = A learner can activate Equation Assist, select their own Pad text, choose a rendered LaTeX candidate and undo the edit. Candidates use local autoeq inference and bounded context-aware shorthand and proof rules. Autocomplete supplies notation with editable empty slots for the learner to fill.
+Tests: ranked and distinct interpretations, proof declarations and quantifiers, local model inference, notation-only completion, selection lifecycle and undo on a phone viewport.
+Scope: src/features/pad/**; src/features/tutor/input/modelAssets.ts; src/flags.ts; public/models/equation-assist/**; tests/unit/pad/**; tests/e2e/pad-equation-assist.spec.ts; docs/current/N222.md.
+Not: Autocomplete of whole equations, proof steps or answers; tutor transport, OCR, or keyboard layout changes.
+
 ## N220 Make the v7 interface consistent across sheets, Calendar, Atlas, Path, Progress, Settings and the answer keyboard
 
 Owner task: "Please fix all the issues in just one pr."
