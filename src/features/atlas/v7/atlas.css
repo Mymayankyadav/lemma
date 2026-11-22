@@ -228,3 +228,7 @@
 
 /* N220 · the subject in view is marked in the rail. */
 :where(html[data-v7]) .v7-atlas-compass .v7-icon-button[aria-current="true"] {border-color:var(--v7-role-selection-fg);box-shadow:0 0 0 1px var(--v7-role-selection-fg);}
+
+/* N221 · only the rail's buttons take taps; the gaps and padding between them leave the map to the finger. */
+:where(html[data-v7]) .v7-atlas-controls {pointer-events:none;}
+:where(html[data-v7]) .v7-atlas-controls :is(.v7-icon-button,input,.v7-atlas-search-slot) {pointer-events:auto;}

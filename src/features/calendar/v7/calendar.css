@@ -321,3 +321,12 @@
 :where(html[data-v7]) .v7-cal-grid-actions:empty {display:none;}
 :where(html[data-v7]) .v7-cal-grid-actions > .v7-badge {min-height:32px;padding-inline:var(--v7-space-3);border-radius:var(--v7-round);}
 :where(html[data-v7]) .v7-cal-grid-actions > .v7-button {margin-inline-start:auto;}
+
+/* N221 (Owner report) · the view picker reads as the toolbar's label, not a bordered control that grabs attention, and the
+   status row's chip and button share one height and shape. */
+:where(html[data-v7]) .v7-cal-toolbar .v7-cal-viewmenu-button {padding:0 var(--v7-space-2) 0 var(--v7-space-1);border-color:transparent;background:transparent;
+ font:600 var(--v7-type-reading)/1 var(--v7-sans);}
+:where(html[data-v7]) .v7-cal-toolbar .v7-cal-viewmenu-button:hover {background:var(--v7-role-surface-muted);}
+:where(html[data-v7]) .v7-cal-toolbar .v7-cal-viewmenu-button[aria-expanded="true"] {background:var(--v7-role-surface-muted);}
+:where(html[data-v7]) .v7-cal-grid-actions > .v7-badge {min-height:var(--v7-touch);padding-inline:var(--v7-space-3);border-radius:var(--v7-radius-2);font-size:var(--v7-type-supporting);}
+:where(html[data-v7]) .v7-cal-grid-actions .v7-button {border-radius:var(--v7-radius-2);}

@@ -6,6 +6,14 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N221 Finish the Owner's phone review of N220: Gboard keyboard, Atlas subjects, Calendar toolbar, Progress total and session header
+
+Owner task: "N219 completed, before this actually complete the remaining ui bugs reported then move to do this."
+Stage: Harden · Status: done · Needs: — · Assigned: chat-547160#k4sm
+Done = The answer keyboard looks like Gboard (taller flat keys, tinted modifiers with pill ?123 and Enter, plain words with dividers only between words, the maths symbols when there are no words, and space below the keys clear of the gesture bar); Atlas shows a button for every subject with the one in view marked; Calendar's view picker is a plain label and the status row's chip and button share one height; Progress shows its total at display size with Your week beside it and one meta line; the session header is the app's full-width detail header.
+Tests: the Atlas rail test expects every subject; existing keyboard, Calendar, Progress and Tutor tests.
+Scope: src/features/{tutor,atlas,calendar,insights}/**; tests/e2e/v7-atlas-layers.spec.ts; docs/current/N221.md.
+
 ## N220 Make the v7 interface consistent across sheets, Calendar, Atlas, Path, Progress, Settings and the answer keyboard
 
 Owner task: "Please fix all the issues in just one pr."
