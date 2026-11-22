@@ -1934,6 +1934,9 @@ try{
   const typedPatch={from_id:n169Concept,to_id:n170Concept2,kind:'equivalent',
    confidence:0.94,rationale:'The same mathematical concept',
    from_version:vm.get(n169Concept),to_version:vm.get(n170Concept2)};
+  await assert.rejects(mcp(command('atlas_link_proposals','create',{
+   patch:{...typedPatch,from_version:typedPatch.from_version+8}})),
+   /version conflict/i,'stale concept version accepted for proposed link');
   const typedRequest=command('atlas_link_proposals','create',{patch:typedPatch});
   const typedReceipt=status(await mcp(typedRequest),'atlas_link_proposals','create');
   const typedId=typedReceipt.changed[0].id;
