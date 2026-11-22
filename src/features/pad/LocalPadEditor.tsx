@@ -1,11 +1,14 @@
 import {useDeferredValue, useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent} from 'react';
 import {LOCAL_TUTOR_EXCERPT_LIMIT, previewLocalTutorExcerpt} from '../../data/tutor/local-excerpt';
+import {isFlagOn} from '../../flags';
 import {LocalPadPreview} from './LocalPadPreview';
+import {EquationAssist} from './equationAssist/EquationAssist';
+import {applyEquationCandidate} from './equationAssist/candidates';
 import {PadMathKeyboard, type PadKeyboardAction} from './PadMathKeyboard';
 import {PAD_NOTE_MAX} from './padDraftStore';
 import {
-  applyPadSuggestion, changePadText, createPadTextHistory, deletePadBackward, insertPadSymbol, insertPadTemplate,
-  insertPadText, movePadCaret, nextPadSlot, padEdit, padSuggestions, redoPadText, undoPadText, type PadEdit,
+  applyPadNotation, applyPadSuggestion, changePadText, createPadTextHistory, deletePadBackward, insertPadSymbol, insertPadTemplate,
+  insertPadText, movePadCaret, nextPadSlot, padEdit, padNotationSuggestion, padSuggestions, redoPadText, undoPadText, type PadEdit,
 } from './padEdit';
 import './local-pad.css';
 
@@ -122,7 +125,7 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
     if (next.text.length > PAD_NOTE_MAX) {
       setWarning('Pad notes can contain up to 65,536 characters. That edit was not added.');
       restore(compositionBefore.current ?? history.current.present);
-      return;
+      return false;
     }
     if (value.text !== next.text) setWarning('');
     history.current = changePadText(history.current, next);
@@ -130,6 +133,7 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
     if (value.text !== next.text || value.start !== next.start || value.end !== next.end || value.direction !== next.direction) {
       onEdit(next);
     }
+    return true;
   }
 
   function trackSelection(node: HTMLTextAreaElement) {
@@ -151,20 +155,20 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
     };
   });
 
-  function edit(operation: (current: PadEdit) => PadEdit | null) {
+  function edit(operation: (current: PadEdit) => PadEdit | null, mathKeyboard = true) {
     const node = field.current;
-    if (!node || composing.current) return;
+    if (!node || composing.current) return false;
     // Read the actual native selection, including selections made since the last render.
     const current = snapshot(node);
     history.current = changePadText(history.current, current);
     const next = operation(current);
-    if (!next) return;
-    // Choosing a math key is an explicit input-method choice. Hardware typing
-    // remains available, and the adjacent device-keyboard button restores IME.
-    setMode('math'); node.inputMode = 'none';
+    if (!next) return false;
+    // Math keys choose the custom keyboard. Equation Assist keeps the current
+    // input method, including an open system keyboard.
+    if (mathKeyboard) {setMode('math'); node.inputMode = 'none';}
     focusAfterEdit.current = true;
     node.focus({preventScroll: true});
-    publish(next);
+    return publish(next);
   }
 
   function historyStep(direction: 'undo' | 'redo') {
@@ -205,6 +209,8 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
 
   const selection = previewLocalTutorExcerpt(value.text.slice(valueSelection.start, valueSelection.end));
   const suggestions = compositionActive ? [] : padSuggestions(valueSelection);
+  const assist = isFlagOn('equationAssist');
+  const notation = assist && !compositionActive ? padNotationSuggestion(valueSelection) : null;
   return <section aria-label="Local Pad editor" className="local-pad">
     <label htmlFor={id}>Pad notes</label>
     <p id={id + '-hint'}>Write normally, or use $…$ for inline math and $$…$$ for display math.</p>
@@ -233,6 +239,17 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
         compositionBefore.current = null; setFrozenSource(null); setCompositionText(null);
       }}/>
     {warning && <p role="status" className="pad-edit-warning">{warning}</p>}
+    {assist && <EquationAssist value={valueSelection} composing={compositionActive} keepSelection={keepSelection}
+      syncSelection={() => {if (field.current) trackSelection(field.current);}}
+      onApply={(previous, selection, candidate) => edit(current =>
+        current.text === previous.text && current.start === previous.start && current.end === previous.end
+          ? applyEquationCandidate(current, selection, candidate) : null, false)}/>}
+    {notation && <div className="local-pad-controls" role="group" aria-label="Notation suggestions">
+      <button type="button" onPointerDown={keepSelection} onClick={() => edit(current => {
+        const match = padNotationSuggestion(current);
+        return match?.template === notation.template ? applyPadNotation(current, match) : null;
+      }, false)}>{notation.template} slot</button>
+    </div>}
     <PadMathKeyboard shown={shown} mode={mode} nativeKeyboardOpen={nativeKeyboardOpen} composing={compositionActive}
       canUndo={history.current.past.length > 0} canRedo={history.current.future.length > 0} hasSlot={!!nextPadSlot(valueSelection)}
       onShown={showKeyboard} onMode={chooseMode} keepSelection={keepSelection}
