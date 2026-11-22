@@ -9,7 +9,7 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 ## N222 Add Equation Assist to Lemma Pad
 
 Owner task: "Refine his approach as per your suggestions and also try to extend to equation assist. Upload your finished work in one pr of lemma."
-Stage: Build · Status: open · Needs: — · Assigned: chat-644281#z6m3
+Stage: Build · Status: done · Needs: — · Assigned: chat-644281#z6m3
 Done = A learner can activate Equation Assist, select their own Pad text, choose a rendered LaTeX candidate and undo the edit. Candidates use local autoeq inference and bounded context-aware shorthand and proof rules. Autocomplete supplies notation with editable empty slots for the learner to fill.
 Tests: ranked and distinct interpretations, proof declarations and quantifiers, local model inference, notation-only completion, selection lifecycle and undo on a phone viewport.
 Scope: src/features/pad/**; src/features/tutor/input/modelAssets.ts; src/flags.ts; public/models/equation-assist/**; tests/unit/pad/**; tests/e2e/pad-equation-assist.spec.ts; docs/current/N222.md.

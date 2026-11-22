@@ -54,8 +54,7 @@ async function readVerifiedAsset(response: Response, file: AssetFile) {
   return bytes;
 }
 
-async function loadAsset(file: AssetFile, cache?: Cache) {
-  const url = assetUrl(file).href;
+export async function loadVerifiedModelAsset(url: string, file: AssetFile, cache?: Cache) {
   const cached = await cache?.match(url).catch(() => undefined);
   if (cached) {
     try {
@@ -94,11 +93,20 @@ async function openAssetCache() {
 export async function loadTutorModelAssets() {
   const cache = await openAssetCache();
   const [model, metadata, wasm] = await Promise.all([
-    loadAsset(manifest.files.model, cache),
-    loadAsset(manifest.files.classes, cache),
-    loadAsset(manifest.files.wasm, cache),
+    loadVerifiedModelAsset(assetUrl(manifest.files.model).href, manifest.files.model, cache),
+    loadVerifiedModelAsset(assetUrl(manifest.files.classes).href, manifest.files.classes, cache),
+    loadWasm(cache),
   ]);
   if (cache) void pruneRetiredAssetCaches().catch(() => undefined);
   const classes: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(metadata));
   return { model, classes, wasm };
+}
+
+function loadWasm(cache?: Cache) {
+  return loadVerifiedModelAsset(assetUrl(manifest.files.wasm).href, manifest.files.wasm, cache);
+}
+
+/** Equation Assist uses the same verified WASM binary as Draw symbol. */
+export async function loadTutorModelWasm() {
+  return loadWasm(await openAssetCache());
 }

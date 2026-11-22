@@ -47,6 +47,8 @@ export const FLAG_DEFAULTS = {
   v7Scratch: true,
   /** N198: full-page Pad in Settings and the device-local offline entry. */
   padLocal: true,
+  /** N222: explicit Equation Assist and notation slots in the local Pad. */
+  equationAssist: false,
   /** N157 · U4 S14 paper and sky: Plain, Graph, Dot or Ruled paper by day; Clear or Stars by night. */
   v7Paper: true,
   /** N157 · U4 S16 desk clock: Focus as large digits, the intention and a ring; the screen stays awake while it runs. */

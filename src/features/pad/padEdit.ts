@@ -191,3 +191,39 @@ export function padSuggestions(edit: PadEdit): readonly {command: string; start:
 export function applyPadSuggestion(edit: PadEdit, suggestion: ReturnType<typeof padSuggestions>[number]): PadEdit {
   return replace(padEdit(edit.text, suggestion.start, edit.end), suggestion.command + ' ');
 }
+
+
+const TYPABLE_TEMPLATES = {
+  sqrt: 'Square root',
+  frac: 'Fraction',
+  sum: 'Summation',
+  int: 'Definite integral',
+} as const satisfies Record<string, PadTemplate>;
+
+interface PadNotationSuggestion {
+  template: PadTemplate;
+  start: number;
+  base?: string;
+}
+
+/** Suggest the notation scaffold for a half-typed token. All new slots are empty. */
+export function padNotationSuggestion(edit: PadEdit): PadNotationSuggestion | null {
+  if (edit.start !== edit.end || /[a-z0-9_(]/i.test(edit.text[edit.end] ?? '')) return null;
+  const before = edit.text.slice(Math.max(0, edit.start - 24), edit.start);
+  const command = before.match(/(?<![a-z0-9_\\])\\?(sqrt|frac|sum|int)\($/);
+  if (command) {
+    return {template:TYPABLE_TEMPLATES[command[1] as keyof typeof TYPABLE_TEMPLATES],
+      start:edit.end - command[0].length};
+  }
+  const script = before.match(/(?<![a-z0-9_\\])([a-z]|\d+)([\^_])$/i);
+  return script ? {template:script[2] === '^' ? 'Exponent' : 'Subscript',
+    start:edit.end - script[0].length, base:script[1]} : null;
+}
+
+export function applyPadNotation(edit: PadEdit, suggestion: PadNotationSuggestion): PadEdit {
+  const start = suggestion.start;
+  const base = suggestion.base ?? '';
+  // Stage the prefix removal and template insertion as a single Pad edit.
+  const inserted = replace(padEdit(edit.text, start, edit.end), base, 0, base.length);
+  return insertPadTemplate(inserted, suggestion.template);
+}
