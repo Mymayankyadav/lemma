@@ -1,5 +1,5 @@
-import {useEffect,useId,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
-import {Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2} from 'lucide-react';
+import {useEffect,useId,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
+import {ArrowUp,Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {InkCanvas} from '../../ui/v7/ink/InkCanvas';
 import {clearPadInk,initializePadInk,replacePadStrokes,undoPadInk,type PadInkHistory,type PadStrokes} from '../../ui/v7/ink/ink';
@@ -64,12 +64,14 @@ export function useTutorInk(scope:TutorInkScope,enabled:boolean) {
 }
 export type TutorInkState=ReturnType<typeof useTutorInk>;
 
-export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onCloseDrawing,onInsertEquation,
+export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onCloseDrawing,onInsertEquation,leading,
   onMigrateImages,editingImageId,referencedImageIds,canInsertImage,canMigrate,answerLength}: {
   ink:TutorInkState;shown:boolean;photoOpen:boolean;onClosePhoto:()=>void;
   onInsertImage:(id:string,replacesId?:string)=>boolean;onCloseDrawing:()=>void;
   /** N221: insert recognised LaTeX at the answer's caret. */
   onInsertEquation?:(latex:string)=>boolean;
+  /** N221 (Owner): the way back to the keys, at the left end of the scratch pad's one row of tools. */
+  leading?:ReactNode;
   onMigrateImages:(ids:string[])=>boolean;editingImageId:string|null;referencedImageIds:readonly string[];
   canInsertImage:boolean;canMigrate:boolean;answerLength:number;
 }) {
@@ -299,6 +301,21 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
   const pad=<section className="tutor-scratchpad" aria-label="Scratch pad"
     style={{'--scratch-height':height===undefined?undefined:height+'px'} as CSSProperties}>
     <div className="tutor-ink-tools" role="group" aria-label="Drawing tools">
+      {leading}
+      <IconButton label="Pen" disabled={!canDraw||preparing} aria-pressed={mode==='pen'} onClick={()=>setMode('pen')}><Pencil aria-hidden="true"/></IconButton>
+      <IconButton label="Eraser" disabled={!canDraw||preparing} aria-pressed={mode==='eraser'} onClick={()=>setMode('eraser')}><Eraser aria-hidden="true"/></IconButton>
+      <IconButton label="Hand" aria-pressed={mode==='hand'} onClick={()=>setMode('hand')}><Hand aria-hidden="true"/></IconButton>
+      <IconButton label="Undo stroke" disabled={!canDraw||preparing||!history.undo.length} onClick={()=>saveInk(undoPadInk(history),[...redo,history.strokes])}><Undo2 aria-hidden="true"/></IconButton>
+      <IconButton label="Recognize equation" aria-haspopup="dialog" disabled={preparing||!working.strokes.length||!onInsertEquation}
+        onClick={()=>{void openReading();}}><ScanText aria-hidden="true"/></IconButton>
+      <IconButton label="Scratch pad actions" aria-haspopup="dialog" onClick={()=>setToolsOpen(true)}><Ellipsis aria-hidden="true"/></IconButton>
+      <IconButton label={editingImageId?'Update drawing':'Insert drawing'} className="tutor-insert-drawing"
+        disabled={!canDraw||preparing||started||!working.strokes.length||(!editingImageId&&!canInsertImage)}
+        onClick={()=>{void insertDrawing();}}><ArrowUp aria-hidden="true"/></IconButton>
+    </div>
+    {/* N221 (Owner): below the one row of tools, the rest is paper. It is wider and taller than the pad and scrolls
+        both ways with the Hand; the resize grip sits on its top edge and the hint inside it, so neither takes a row. */}
+    <div className="tutor-scratch-sheet">
       <div className="tutor-scratch-resize" role="separator" tabIndex={0} aria-label="Resize scratch pad"
         aria-orientation="horizontal" aria-controls={paperId} aria-valuenow={Math.round(paperHeight/window.innerHeight*100)}
         aria-valuetext={paperHeight+' pixels'}
@@ -322,26 +339,18 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
           }
           event.preventDefault();
         }}><span aria-hidden="true"/></div>
-      <IconButton label="Pen" disabled={!canDraw||preparing} aria-pressed={mode==='pen'} onClick={()=>setMode('pen')}><Pencil aria-hidden="true"/></IconButton>
-      <IconButton label="Eraser" disabled={!canDraw||preparing} aria-pressed={mode==='eraser'} onClick={()=>setMode('eraser')}><Eraser aria-hidden="true"/></IconButton>
-      <IconButton label="Hand" aria-pressed={mode==='hand'} onClick={()=>setMode('hand')}><Hand aria-hidden="true"/></IconButton>
-      <IconButton label="Undo stroke" disabled={!canDraw||preparing||!history.undo.length} onClick={()=>saveInk(undoPadInk(history),[...redo,history.strokes])}><Undo2 aria-hidden="true"/></IconButton>
-      <IconButton label="Recognize equation" aria-haspopup="dialog" disabled={preparing||!working.strokes.length||!onInsertEquation}
-        onClick={()=>{void openReading();}}><ScanText aria-hidden="true"/></IconButton>
-      <IconButton label="Scratch pad actions" aria-haspopup="dialog" onClick={()=>setToolsOpen(true)}><Ellipsis aria-hidden="true"/></IconButton>
-      <Button small variant="primary" className="tutor-insert-drawing" disabled={!canDraw||preparing||started||!working.strokes.length||(!editingImageId&&!canInsertImage)}
-        onClick={()=>{void insertDrawing();}}>{editingImageId?'Update drawing':'Insert drawing'}</Button>
-    </div>
     <div ref={paper} id={paperId} className="tutor-scratch-paper" role="region" aria-label="Drawing paper" aria-describedby={hintId}
       tabIndex={0} onScroll={event=>{paperOffset.current=event.currentTarget.scrollTop;}}>
       <InkCanvas history={history} onChange={saveInk} onStroke={()=>setStarted(true)} onStrokeEnd={()=>setStarted(false)}
-        onPan={(_dx,dy,gesture)=>{
+        onPan={(dx,dy,gesture)=>{
           const viewport=paper.current;
-          const target=gesture==='hand'?viewport:viewport?.closest('.lemma-tutor')?.querySelector<HTMLElement>('[role="log"]');
-          if (target) target.scrollTop-=dy;
+          if (gesture==='hand') {if (viewport) {viewport.scrollLeft-=dx;viewport.scrollTop-=dy;} return;}
+          const chat=viewport?.closest('.lemma-tutor')?.querySelector<HTMLElement>('[role="log"]');
+          if (chat) chat.scrollTop-=dy;
         }} mode={canDraw&&!preparing?mode:'hand'} width={working.width} accent={working.accent} label="Draw your answer"/>
     </div>
     <p id={hintId} className="tutor-scratch-hint">Three fingers to scroll chat</p>
+    </div>
     {!editingImageId&&!canInsertImage&&<p role="status" className="composer-status">Shorten the answer to insert another image.</p>}
   </section>;
   return <>

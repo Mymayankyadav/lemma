@@ -13,10 +13,12 @@ type Interaction =
 const contact = (event: PointerEvent<SVGSVGElement>):Contact => ({x:event.clientX,y:event.clientY});
 
 export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,label,className='',
-  onStroke,onStrokeEnd,onPan}: {
+  onStroke,onStrokeEnd,onPan,panTouches=3}: {
   history:PadInkHistory;onChange:(history:PadInkHistory)=>void;mode?:'pen'|'eraser'|'hand';
   width?:number;accent?:boolean;label:string;className?:string;onStroke?:()=>void;onStrokeEnd?:()=>void;
   onPan?:(dx:number,dy:number,gesture:'hand'|'touch')=>void;
+  /** How many fingers pan instead of drawing (N221: the equation paper pans with two). */
+  panTouches?:number;
 }) {
   const active = useRef<Interaction|null>(null);
   const touches = useRef(new Map<number,Contact>());
@@ -74,7 +76,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
       if (multiTouch.current) {
         // One pointer event updates one contact. Its delta divided by the count
         // is the change of the gesture's centroid.
-        if (size>=3 && !active.current) onPan?.((at.x-previous.x)/size,(at.y-previous.y)/size,'touch');
+        if (size>=panTouches && !active.current) onPan?.((at.x-previous.x)/size,(at.y-previous.y)/size,'touch');
         return;
       }
     }

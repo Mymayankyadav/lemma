@@ -1,5 +1,5 @@
 import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
-import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, MoveRight, Paperclip, Camera, Pencil, PenLine, Undo2, Redo2, SlidersHorizontal, RefreshCw} from 'lucide-react';
+import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, MoveRight, Paperclip, Camera, Pencil, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
 import {TutorInkTray,type TutorInkState} from './TutorInk';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {authGeneration,authOwner} from '../../data/authBoundary';
@@ -27,6 +27,10 @@ import type {EditTarget} from './input/types';
 import {useWritingAid, useWritingAidPreferences, WritingAidSettings, advanceWritingAidAnchor, continueWritingAidAnchor, applyWritingAidProposal, type WritingAidAnchor, type WritingAidProposal} from './writingAid';
 import {SymbolWords, WritingAidBar, WritingAidWords} from './WritingAidBar';
 import {latexSymbolOptions, type SymbolOption} from './input/latexShortcuts';
+import {TutorEquationPanel} from './input/TutorEquationPanel';
+import {INK_VIEWPORT} from './input/TutorInkPad';
+import {resampleInkPath} from './input/inkGeometry';
+import {PAD_PAPER, type PadStrokes} from '../../ui/v7/ink/ink';
 import {prepareWritingDecoder, recordKeyTouch, setDecoderContext, writingDecoderReady, type KeyTouch} from './writingAid/decoder/ngramSpatial';
 import './keyboard.css';
 import './input/input.css';
@@ -53,6 +57,11 @@ interface Props {
   canQueueImage?: boolean;
   inputScopeKey?: string;
 }
+
+/** N221: where the learner writes: the keys, Draw symbol, equation mode or the scratch pad. */
+type Surface = 'keys' | 'symbol' | 'equation' | 'scratch';
+/** Two taps of the composer's pencil this close together are a double tap. */
+const DOUBLE_TAP = 350;
 
 export function TutorComposer(props: Props) {
   const field = useRef<HTMLTextAreaElement>(null);
@@ -85,6 +94,17 @@ export function TutorComposer(props: Props) {
   const [swipeProgress, setSwipeProgress] = useState(0);
   const swipe = useRef<{pointer: number; x: number; y: number; time: number; proposal: WritingAidProposal; cursor: PadEdit} | null>(null);
   const [aidSettings, setAidSettings] = useState(false);
+  /** N221: the equation chip being edited: its $…$ source at `offset`, and the LaTeX in the sheet. */
+  const [equationEdit, setEquationEdit] = useState<{source: string; offset: number; tex: string} | null>(null);
+  /** N221 (Owner): equation mode, where the keys give way to paper; `writeReplace` is the equation it will replace, if any. */
+  const [equationMode, setEquationMode] = useState(false);
+  const [writeReplace, setWriteReplace] = useState<{source: string; offset: number} | null>(null);
+  /** The pencil's last tap: a second within DOUBLE_TAP opens the scratch pad instead. */
+  const pencilTap = useRef(-Infinity);
+  const pencilTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(pencilTimer.current), []);
+  /** Where the caret was when equation mode or Draw symbol opened: insertions go there, not where focus happens to land. */
+  const surfaceSelection = useRef<PadEdit | null>(null);
   const [dismissedAid, setDismissedAid] = useState<string | null>(null);
   const rejectedEdits = useRef(new Set<string>());
   const writingPrefs = useWritingAidPreferences();
@@ -135,6 +155,10 @@ export function TutorComposer(props: Props) {
   const ghostSuffix = writingGhost?.insert;
   const suggestionUndoable = !hideSuggestionUndo && Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
   const refreshable = writingWords.length > 0 || Boolean(writingEdit || writingGhost);
+  /** N221: whether the strip offered suggestions when Answer actions opened (the menu pauses the writing aid). */
+  const [menuRefreshable, setMenuRefreshable] = useState(false);
+  /** Refresh suggestions was chosen in the menu: it applies once the menu has closed and the strip shows them again. */
+  const refreshAfterMenu = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** N220: a word is being typed (a collapsed caret right after a letter), so the strip is the word suggestions'. */
   // N221: and has suggestions to show; with none, the strip keeps the maths symbols instead of empty slots, as Gboard
   // keeps its toolbar.
@@ -394,15 +418,58 @@ export function TutorComposer(props: Props) {
     if (typed) typeText(edit, text, true);
     else change(insertNotation(edit, text), true);
   }
+  /** N221: tapping an equation chip opens it in the equation sheet. */
+  function openEquation(source: string, offset: number) {
+    if (editingDisabled || history.current.present.text.slice(offset, offset + source.length) !== source) return;
+    const tex = source.replace(/^\$\$?|\$\$?$/gu, '');
+    setEquationEdit({source, offset, tex});
+  }
+  /** Closing the equation sheet puts the caret just after the equation, not where the focus lands. */
+  function closeEquation() {
+    const target = equationEdit;
+    setEquationEdit(null);
+    const {text} = history.current.present;
+    if (target && text.slice(target.offset, target.offset + target.source.length) === target.source) {
+      const after = padEdit(text, target.offset + target.source.length);
+      history.current = {...history.current, present: after};
+      pendingSelection.current = after;
+      setCursor(after);
+    }
+  }
+  /** Replace the edited equation with `tex` (empty removes it), keeping its $ or $$ delimiters. */
+  function saveEquation(tex: string) {
+    const target = equationEdit;
+    setEquationEdit(null);
+    if (!target || readOnly) return;
+    const {text} = history.current.present;
+    if (text.slice(target.offset, target.offset + target.source.length) !== target.source) return;
+    const fence = target.source.startsWith('$$') ? '$$' : '$';
+    const replacement = tex.trim() ? fence + tex.trim() + fence : '';
+    const range = padEdit(text, target.offset, target.offset + target.source.length);
+    if (commit(changePadText(history.current, insertNotation(range, replacement)), true)) haptic('snap');
+    if (surfaceSelection.current) surfaceSelection.current = history.current.present;
+  }
   /** N221: recognised handwriting goes in at the caret, as $…$ in prose or as plain LaTeX inside $…$. */
   function insertEquation(latex: string) {
     remember();
     if (readOnly) return false;
-    const edit = history.current.present;
+    const target = writeReplace;
+    if (target) {
+      setWriteReplace(null);
+      const {text} = history.current.present;
+      if (text.slice(target.offset, target.offset + target.source.length) === target.source) {
+        const range = padEdit(text, target.offset, target.offset + target.source.length);
+        return commit(changePadText(history.current, insertNotation(range, '$' + latex + '$')), true);
+      }
+    }
+    const saved = surfaceSelection.current;
+    const edit = saved && saved.text === history.current.present.text ? saved : history.current.present;
     const inMath = tutorMathContext(edit) === 'tex';
     const before = edit.text.slice(0, edit.start);
     const text = inMath ? latex : (before && !/\s$/.test(before) ? ' ' : '') + '$' + latex + '$';
-    return commit(changePadText(history.current, insertNotation(edit, text)), true);
+    const inserted = commit(changePadText(history.current, insertNotation(edit, text)), true);
+    if (inserted && surfaceSelection.current) surfaceSelection.current = history.current.present;
+    return inserted;
   }
   function nextSlot(backward = false) {
     remember();
@@ -430,6 +497,72 @@ export function TutorComposer(props: Props) {
   function keys() {
     setScratch(false);
     setShown(true);
+  }
+  useEffect(() => {
+    if (equationMode && shown && !scratch && inputPrefs.recognition && !assist.drawing && !editingDisabled) assist.openDraw();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [equationMode, shown, scratch, inputPrefs.recognition, assist.drawing, editingDisabled]);
+  /**
+   * N221 (Owner): the ways to write share the keyboard's place: the keys, Draw symbol (one symbol), equation mode
+   * (handwriting, read as an equation and as symbols, with a row of variables) and the scratch pad (a drawing).
+   */
+  function selectSurface(next: Surface) {
+    if (editingDisabled && next !== 'keys') return;
+    if (next !== 'equation') {setEquationMode(false); setWriteReplace(null);}
+    if (next !== 'symbol' && assist.drawing) assist.stop();
+    if (next === 'scratch') {openDrawing(); return;}
+    if (scratch) closeDrawing(); else setShown(true);
+    if (next === 'symbol' || next === 'equation') {remember(); surfaceSelection.current ??= history.current.present;}
+    if (next === 'symbol') {revision.current.modeRevision++; assist.openDraw();}
+    if (next === 'equation') setEquationMode(true);
+    if (next === 'keys') {
+      const saved = surfaceSelection.current;
+      surfaceSelection.current = null;
+      if (saved?.text === history.current.present.text) pendingSelection.current = saved;
+      fieldElement()?.focus({preventScroll: true});
+      if (saved?.text === history.current.present.text) {selectField(saved); history.current = {...history.current, present: saved}; setCursor(saved);}
+    }
+  }
+  /** N221 (Owner): the composer's pencil. A tap opens equation mode (or closes it); a double tap opens the scratch pad. */
+  function pencil() {
+    const now = performance.now();
+    const double = now - pencilTap.current < DOUBLE_TAP;
+    pencilTap.current = double ? -Infinity : now;
+    clearTimeout(pencilTimer.current);
+    haptic('snap');
+    if (double) {if (!scratch) selectSurface('scratch'); return;}
+    const single = () => selectSurface(equationMode && !scratch ? 'keys' : 'equation');
+    // With the keyboard up, equation mode takes the keys' place at once. Otherwise opening it moves the composer, so
+    // wait out a second tap that would land where the pencil was.
+    if (shown && !scratch) single();
+    else pencilTimer.current = setTimeout(single, DOUBLE_TAP);
+  }
+  /**
+   * The equation paper's ink also goes to the Draw single symbols reader: scaled into its small paper, as if drawn
+   * there, so one drawing is read both as an equation and as a symbol. It never inserts on its own here.
+   */
+  function readSymbol(strokes: PadStrokes, size: {width: number; height: number}) {
+    if (!equationMode || !inputPrefs.recognition) return;
+    assist.onClear();
+    if (!strokes.length) return;
+    const points = strokes.map(stroke => stroke.map(point => ({x: point.x / PAD_PAPER.width * size.width, y: point.y / PAD_PAPER.height * size.height})));
+    const all = points.flat();
+    const left = Math.min(...all.map(point => point.x)), top = Math.min(...all.map(point => point.y));
+    const width = Math.max(...all.map(point => point.x)) - left, height = Math.max(...all.map(point => point.y)) - top;
+    const scale = Math.min((INK_VIEWPORT.width - 24) / Math.max(width, 1), (INK_VIEWPORT.height - 24) / Math.max(height, 1));
+    const offsetX = (INK_VIEWPORT.width - width * scale) / 2, offsetY = (INK_VIEWPORT.height - height * scale) / 2;
+    let t = performance.now() - strokes.length * 400;
+    points.forEach((stroke, index) => {
+      const path = resampleInkPath(stroke.map(point => ({x: offsetX + (point.x - left) * scale, y: offsetY + (point.y - top) * scale, t: 0})),
+        Math.min(64, Math.max(2, stroke.length)));
+      const timed = path.map(point => ({...point, t: t += 8}));
+      const id = 9000 + index;
+      assist.onBegin(id, 'pen', timed[0]);
+      for (const point of timed.slice(1, -1)) assist.onMove(id, point);
+      assist.onEnd(id, timed.at(-1)!);
+      t += 120;
+    });
+    assist.lockAutomatic();
   }
   function keyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.target !== event.currentTarget || composition.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
@@ -513,6 +646,12 @@ export function TutorComposer(props: Props) {
       offset += imageReference(part.id).length;
       return [{id: part.id, start, end: offset}];
     });
+  }
+  function deleteBackward() {
+    remember();
+    const edit = history.current.present;
+    const image = imageDeletion(edit, true);
+    change(image ? insertNotation(image, '') : deletePadBackward(edit), true);
   }
   function imageDeletion(edit: PadEdit, backward: boolean) {
     if (edit.start !== edit.end) return;
@@ -625,6 +764,13 @@ export function TutorComposer(props: Props) {
     if (writingGhost) writing.refresh('ghost', [writingGhost]);
     haptic('snap');
   }
+  useEffect(() => {
+    if (!refreshAfterMenu.current || editMenu || !refreshable) return;
+    clearTimeout(refreshAfterMenu.current);
+    refreshAfterMenu.current = null;
+    refreshWriting();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editMenu, refreshable, writingWords, writingEdit, writingGhost]);
   function stopSwipe() {
     swipe.current = null;
     setSwipeProgress(0);
@@ -681,9 +827,17 @@ export function TutorComposer(props: Props) {
     aria-label={'Insert ' + option.symbol.glyph + ' (' + option.symbol.name + ')'} title={option.symbol.tex}
     disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => acceptSymbol(option)}>{option.symbol.glyph}</button>;
   const drawButton = <button className="sbtn" type="button" aria-label="Draw symbol" disabled={editingDisabled} onPointerDown={keepSelection}
-    onClick={()=>{remember();revision.current.modeRevision++;haptic('snap');assist.openDraw();}}><PenLine aria-hidden="true"/></button>;
+    onClick={()=>{haptic('snap');selectSurface('symbol');}}><PenLine aria-hidden="true"/></button>;
+  const surface: Surface = scratch ? 'scratch' : equationMode ? 'equation' : assist.drawing ? 'symbol' : 'keys';
+  // N221 (Owner): the strip's right end is Equation mode (it was Refresh, now in Answer actions): the keys give way
+  // to paper and the strip stays. Pressed while equation mode is open; a tap goes back to the keys.
+  const equationButton = <button className="sbtn tutor-equation-toggle" type="button" aria-label="Equation mode" aria-pressed={surface === 'equation'}
+    disabled={editingDisabled} onPointerDown={keepSelection}
+    onClick={()=>{haptic('snap');selectSurface(surface === 'equation' ? 'keys' : 'equation');}}><Radical aria-hidden="true"/></button>;
+  const keysButton = <button className="sbtn" type="button" aria-label="Keys" onPointerDown={keepSelection}
+    onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></button>;
   return <div className="keyboard-composer" data-keyboard={shown ? 'math' : 'hidden'} data-symbols={shown && Boolean(notation[view]) || undefined}>
-    {props.value.includes('$') && <div className="composer-preview"><MathText source={tutorAnswerParts(props.value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
+    {props.value.includes('$') && !props.ink && <div className="composer-preview"><MathText source={tutorAnswerParts(props.value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
     {answerError && <p className="composer-status" role="alert">{answerError}</p>}
     {recoveryIssue && <div className="composer-status" role={recoveryIssue==='loading'?'status':'alert'}>
       {inkIssueText[recoveryIssue]}
@@ -701,14 +855,15 @@ export function TutorComposer(props: Props) {
         onPointerDownCapture={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={stopSwipe}
         onLostPointerCapture={event => {if (event.target === event.currentTarget && swipe.current) stopSwipe();}}>
       <div className="field">
-        {props.ink&&!scratch
-          ? <IconButton label="Scratch" type="button" disabled={editingDisabled || props.ink.draft.queuedText!==undefined}
-              onPointerDown={keepSelection} onClick={()=>openDrawing()}><Pencil aria-hidden="true"/></IconButton>
+        {props.ink
+          ? <IconButton label="Write by hand" title="Tap for an equation, double-tap for a drawing" type="button"
+              aria-pressed={equationMode || scratch} disabled={editingDisabled || props.ink.draft.queuedText!==undefined}
+              onPointerDown={keepSelection} onClick={pencil}><Pencil aria-hidden="true"/></IconButton>
           : <IconButton label="Keys" type="button" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
               onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
         {props.ink ? <TutorAnswerEditor editor={richField} value={props.value} images={props.ink.draft.photos}
           placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
-          composing={composing} ghost={ghostSuffix} marked={writingEdit ? {start: writingEdit.start, end: writingEdit.end} : undefined} onSelection={remember} onChip={chipAction} onFocus={event=>{
+          composing={composing} ghost={ghostSuffix} marked={writingEdit ? {start: writingEdit.start, end: writingEdit.end} : undefined} onSelection={remember} onChip={chipAction} onMath={openEquation} onFocus={event=>{
             if (event.target === event.currentTarget) focusAnswer();
           }} onKeyDown={keyDown}
           onPointerDown={event=>{if (event.target === event.currentTarget && !readOnly) setShown(true);}}
@@ -754,7 +909,7 @@ export function TutorComposer(props: Props) {
           }}
           onDrop={event => event.preventDefault()}
           onKeyDown={keyDown}/></div>}
-        <IconButton label="Edit answer" type="button" aria-haspopup="dialog" onPointerDown={keepSelection} onClick={()=>{assist.pause();setEditMenu(true);}}><Ellipsis aria-hidden="true"/></IconButton>
+        <IconButton label="Edit answer" type="button" aria-haspopup="dialog" onPointerDown={keepSelection} onClick={()=>{assist.pause();setMenuRefreshable(refreshable);setEditMenu(true);}}><Ellipsis aria-hidden="true"/></IconButton>
         <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !props.value.trim()&&!hasImage}
           onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
       </div>
@@ -763,6 +918,12 @@ export function TutorComposer(props: Props) {
     <Sheet open={editMenu} onClose={()=>setEditMenu(false)} title="Answer actions">
       <div className="tutor-session-actions">
         <Button onClick={() => {setEditMenu(false); setAidSettings(true);}}><SlidersHorizontal aria-hidden="true"/>Writing assistance</Button>
+        {menuRefreshable && <Button disabled={editingDisabled} onClick={() => {
+          setEditMenu(false);
+          if (refreshAfterMenu.current) clearTimeout(refreshAfterMenu.current);
+          refreshAfterMenu.current = setTimeout(() => {refreshAfterMenu.current = null;}, 2000);
+        }}>
+          <RefreshCw aria-hidden="true"/>Refresh suggestions</Button>}
         <Button disabled={!props.canSend||editingDisabled} onClick={()=>{setEditMenu(false);props.onAsk('hint');}}>
           <HelpCircle aria-hidden="true"/>Hint {Math.max(1,Math.min(4,props.hintLevel??1))}/4
         </Button>
@@ -776,24 +937,53 @@ export function TutorComposer(props: Props) {
         <Button disabled={!history.current.future.length||editingDisabled} onClick={()=>{setEditMenu(false);undo(true);}}><Redo2 aria-hidden="true"/>Redo typing</Button>
       </div>
     </Sheet>
+    {/* N221 (Owner): an equation in the answer is edited here: its rendering updates as the LaTeX changes. */}
+    <Sheet open={Boolean(equationEdit)} onClose={closeEquation} title="Equation">
+      {equationEdit && <div className="tutor-equation-edit">
+        <div className="tutor-equation-preview" aria-label="Preview"><MathText source={equationEdit.tex.trim() ? '$' + equationEdit.tex + '$' : ''}/></div>
+        <label className="tutor-equation-latex">LaTeX
+          <textarea rows={2} value={equationEdit.tex} spellCheck={false} autoCapitalize="off" autoCorrect="off"
+            onChange={event => setEquationEdit({...equationEdit, tex: event.target.value})}/>
+        </label>
+        <div className="tutor-session-actions">
+          <Button variant="primary" onClick={() => saveEquation(equationEdit.tex)}>Done</Button>
+          <Button onClick={() => {
+            const target = equationEdit;
+            setEquationEdit(null);
+            selectSurface('equation');
+            setWriteReplace({source: target.source, offset: target.offset});
+          }}><Signature aria-hidden="true"/>Write by hand</Button>
+          <Button onClick={() => saveEquation('')}><X aria-hidden="true"/>Remove</Button>
+        </div>
+      </div>}
+    </Sheet>
     <Sheet open={aidSettings} onClose={() => setAidSettings(false)} title="Writing assistance"><WritingAidSettings showTitle={false}/></Sheet>
     {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoOpen={photo} onClosePhoto={()=>setPhoto(false)}
-      editingImageId={editingImageId} canMigrate={!readOnly} onInsertEquation={insertEquation} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
-    {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}>
-      {assist.drawing ? <TutorInkPad enabled={inputPrefs.recognition} strokes={assist.snapshot?.strokes??[]}
+      editingImageId={editingImageId} canMigrate={!readOnly} onInsertEquation={insertEquation}
+      leading={<IconButton label="Keys" type="button" onPointerDown={keepSelection} onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></IconButton>} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
+    {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}
+      data-surface={surface}>
+      {surface === 'equation' ? <>
+        <TutorEquationPanel disabled={editingDisabled} replacing={writeReplace?.source} leading={keysButton} trailing={equationButton}
+          symbols={{enabled: inputPrefs.recognition, ids: [...new Set([...assist.recognized, ...assist.completions])], actionable: assist.actionable,
+            onAccept: id => assist.onAccept(id, false), onInk: readSymbol}}
+          onInsert={insertEquation} onKey={text => insert(text)} onDelete={deleteBackward}
+          onScratch={props.ink && props.ink.draft.queuedText === undefined ? () => selectSurface('scratch') : undefined}/>
+        {hideButton('sbtn kb-band-hide')}</>
+      : assist.drawing ? <><TutorInkPad enabled={inputPrefs.recognition} strokes={assist.snapshot?.strokes??[]}
         readiness={assist.readiness} recognized={assist.recognized} completions={assist.completions} actionable={assist.actionable}
         keepDrawing={assist.keepDrawing} overBudget={assist.snapshot?.overBudget??false} error={assist.error} onBegin={assist.onBegin} onMove={assist.onMove} onEnd={assist.onEnd}
         onInterrupt={assist.onInterrupt} onUndo={assist.onUndo} onClear={assist.onClear} onClose={()=>{
           assist.stop();fieldElement()?.focus({preventScroll:true});selectField(history.current.present);
         }}
         onBrowse={assist.openPicker} onKeepDrawing={assist.onKeepDrawing} onLockAutomatic={assist.lockAutomatic} onPressCandidate={assist.pressCandidate} onReleaseCandidate={assist.releaseCandidate}
-        onAccept={assist.onAccept}/>
+        onAccept={assist.onAccept}/>{hideButton('sbtn kb-band-hide')}</>
       : <><div className="strip" data-words={writingWords.length > 0 || stripActive || undefined} data-review={reviewChoice || undefined}>
         {/* N220 (Owner report): the one-tap maths symbols and Next □ sit in the suggestion strip, so the bottom row keeps
             Gboard's wide space bar. As in Gboard, a word being typed gives its suggestions the whole strip: the symbols
             step aside until the caret is at a word boundary (Next □ stays while a slot is empty).
             N221 (Owner screenshots): Gboard's strip. Idle, its icons are spaced evenly across it; with words, Draw symbol
-            at the left and Refresh at the right frame three equal word slots (a browser adds Hide keyboard). */}
+            at the left and Equation mode at the right frame three equal word slots (a browser adds Hide keyboard). */}
         <div className="tutor-quick-math" role="group" aria-label="Quick math symbols" hidden={stripActive && !incomplete}>
           {['∀', '∈', ...(incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="sbtn qsym" aria-label={symbol}
             hidden={stripActive} disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
@@ -803,9 +993,8 @@ export function TutorComposer(props: Props) {
         {stripActive && !incomplete && (symbolBeside ? symbolButton(symbolBeside) : drawButton)}
         {symbolSlots.length > 0 && <SymbolWords options={symbolSlots} disabled={editingDisabled} onAccept={acceptSymbol}/>}
         <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting} hidden={symbolSlots.length > 0}/>
-        {refreshable && <button className="sbtn" type="button" aria-label="Refresh suggestions" disabled={editingDisabled}
-          onPointerDown={keepSelection} onClick={refreshWriting}><RefreshCw aria-hidden="true"/></button>}
         {!(stripActive && !incomplete) && (symbolBeside ? symbolButton(symbolBeside) : drawButton)}
+        {equationButton}
         {hideButton('sbtn')}
         {!scratch && <WritingAidBar words={writingWords} edit={shownEdit} ghost={writingGhost}
           disabled={editingDisabled} undoable={suggestionUndoable} swipeProgress={swipeProgress} exhausted={aidExhausted}
@@ -815,12 +1004,7 @@ export function TutorComposer(props: Props) {
       <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled} onInsert={insert}
         wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
         onBrowse={()=>{remember();assist.openPicker();}}
-        onDelete={() => {
-          remember();
-          const edit = history.current.present;
-          const image = imageDeletion(edit, true);
-          change(image ? insertNotation(image, '') : deletePadBackward(edit), true);
-        }}
+        onDelete={deleteBackward}
         onMove={(direction, count) => {
           remember();
           let edit = history.current.present;

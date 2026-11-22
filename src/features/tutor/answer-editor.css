@@ -48,3 +48,35 @@
 }
 .lemma-tutor .tutor-answer-chip button + button {min-width: 32px;}
 .lemma-tutor .keyboard-composer[data-symbols] .tutor-answer-editor {max-height: 76px;}
+
+/* N221 (Owner) · an equation is an inline component: its rendered TeX on a faint selection tint, set into the line
+   like a word, with a soft outline on focus or press. A tap opens it for editing. */
+.lemma-tutor .tutor-math-chip {
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: middle;
+  margin: 1px 2px;
+  border-radius: var(--v7-radius-2);
+  background: color-mix(in srgb, var(--v7-role-selection-subtle) 70%, transparent);
+  color: var(--v7-role-text-primary);
+  white-space: nowrap;
+}
+.lemma-tutor .tutor-math-chip button {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 2px 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border: 0;
+  border-radius: inherit;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.lemma-tutor .tutor-math-chip button:active,
+.lemma-tutor .tutor-math-chip button:focus-visible {outline: 1.5px solid var(--v7-role-selection-fg); outline-offset: 0;}
+.lemma-tutor .tutor-math-chip .katex {font-size: 1.06em; line-height: 1.2;}
+.lemma-tutor .tutor-math-chip[data-display] button {padding-block: 4px;}

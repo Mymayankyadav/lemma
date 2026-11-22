@@ -2,9 +2,14 @@
   min-inline-size: 0;
 }
 .lemma-tutor .tutor-scratchpad .tutor-scratch-resize {
-  flex: 1 1 var(--v7-touch);
-  min-inline-size: var(--v7-touch);
-  min-block-size: var(--v7-touch);
+  /* N221 (Owner): on the paper's top edge, not in a row of its own. */
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 0;
+  inset-inline-start: 50%;
+  transform: translate(-50%, -50%);
+  inline-size: var(--v7-touch);
+  min-block-size: 24px;
   display: grid;
   place-items: center;
   cursor: ns-resize;
@@ -17,22 +22,36 @@
   border-radius: var(--v7-round);
   background: var(--v7-role-border-default);
 }
+/* N221 (Owner): one row of tools in the strip's place: Keys at the left end, the pad's tools, Insert at the right.
+   A narrow screen scrolls the row rather than wrapping it into a second one. */
 .lemma-tutor .tutor-scratchpad .tutor-ink-tools {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 0;
-  overflow: visible;
-  padding: 0;
-  margin: 0;
-}
-.lemma-tutor .tutor-insert-drawing {
-  min-inline-size: 0;
   min-block-size: var(--v7-touch);
-  padding-inline: var(--v7-space-1);
-  margin-inline-start: auto;
-  white-space: nowrap;
-  font-size: var(--v7-type-caption);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 2px;
+  margin: 0 0 calc(48.6px - var(--v7-touch));
 }
+.lemma-tutor .tutor-scratchpad .tutor-ink-tools > * {flex: none;}
+/* Eight tools and Keys share a phone's width: each keeps a 44 px target, none wraps or hides. */
+.lemma-tutor .tutor-scratchpad .tutor-ink-tools > .v7-icon-button {
+  flex: 1 1 0; inline-size: auto; min-inline-size: 40px; max-inline-size: var(--v7-touch); padding-inline: 0; margin: 0;
+}
+.lemma-tutor .tutor-scratchpad .tutor-ink-tools > .sbtn {inline-size: var(--v7-touch); block-size: var(--v7-touch);}
+.lemma-tutor .tutor-insert-drawing {
+  background: var(--v7-role-action-bg);
+  color: var(--v7-role-text-on-action);
+  border-radius: var(--v7-round);
+}
+.lemma-tutor .tutor-insert-drawing:disabled {
+  background: var(--v7-role-surface-muted);
+  color: var(--v7-role-text-disabled);
+}
+.lemma-tutor .tutor-scratch-sheet {position: relative;}
 .lemma-tutor .tutor-scratch-paper {
   block-size: clamp(6rem, var(--scratch-height, min(25dvh, 13rem)), min(48dvh, 32rem));
   overflow: auto;
@@ -40,6 +59,9 @@
   scrollbar-width: thin;
 }
 .lemma-tutor .tutor-scratch-paper .v7-ink-canvas {
+  /* Wider and taller than the pad: the Hand (or a wheel, or the scroll bars) moves the paper both ways. */
+  inline-size: max(100%, 40rem);
+  max-inline-size: none;
   block-size: max(100%, min(56dvh, 36rem));
   border: 0;
   border-radius: 0;
@@ -54,7 +76,11 @@
   cursor: grabbing;
 }
 .tutor-scratch-hint {
-  margin: var(--v7-space-1) 0;
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: var(--v7-space-1);
+  pointer-events: none;
+  margin: 0;
   text-align: center;
   color: var(--v7-role-text-secondary);
   font-size: var(--v7-type-caption);
@@ -76,7 +102,7 @@
 }
 
 /* N221 · Recognize equation: the reading's preview, its editable LaTeX and the download's progress. */
-.lemma-tutor .tutor-equation-reading {display: grid; gap: var(--v7-space-3);}
+.lemma-tutor :is(.tutor-equation-reading, .tutor-equation-edit) {display: grid; gap: var(--v7-space-3);}
 .lemma-tutor .tutor-equation-reading p {margin: 0; font: 400 var(--v7-type-body)/1.45 var(--v7-sans); color: var(--v7-role-text-secondary);}
 .lemma-tutor .tutor-equation-reading progress {width: 100%; height: 8px; accent-color: var(--v7-role-action-bg);}
 .lemma-tutor .tutor-equation-preview {min-height: 56px; display: grid; place-items: center; padding: var(--v7-space-3);

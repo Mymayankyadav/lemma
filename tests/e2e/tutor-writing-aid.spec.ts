@@ -50,6 +50,11 @@ const editPreview = (page: Page) => page.locator('[data-writing-aid-edit]');
 const ghostPreview = (page: Page) => page.locator('[data-writing-aid-ghost]');
 const undoButton = (page: Page) => page.getByRole('button', {name: 'Undo suggestion', exact: true});
 const floating = (page: Page) => page.locator('.writing-aid-floating');
+// N221 (Owner): the strip's right end is Equation mode now; Refresh suggestions is one of the Answer actions.
+const refreshSuggestions = async (page: Page) => {
+  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Answer actions', exact: true}).getByRole('button', {name: 'Refresh suggestions', exact: true}).click();
+};
 const dismissButton = (page: Page) => page.getByRole('button', {name: 'Dismiss suggestion', exact: true});
 const ghostClipping = (page: Page) => page.locator('.writing-editor-mirror').evaluate(node => {
   const range = document.createRange();
@@ -117,7 +122,7 @@ test('keyboard refresh replaces the displayed words and records feedback on thos
   const first = await offeredWords(page);
   expect(new Set(first).size).toBe(3);
   const before = await storedModel(page);
-  await page.getByRole('button', {name: 'Refresh suggestions', exact: true}).click();
+  await refreshSuggestions(page);
   await expect.poll(async () => {
     const words = await offeredWords(page);
     return words.length > 0 && words.join('|') !== first.join('|');
@@ -210,7 +215,7 @@ test('learned writing preferences can be paused and forgotten without changing t
   await useFasterTyping(page);
   await typeDraft(page, answer, 'I think the re');
   await expect.poll(async () => (await offeredWords(page)).length).toBe(3);
-  await page.getByRole('button', {name: 'Refresh suggestions', exact: true}).click();
+  await refreshSuggestions(page);
   await expect.poll(async () => Object.keys((await storedModel(page))?.model.weights ?? {}).length).toBeGreaterThan(0);
   await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
   await page.getByRole('dialog', {name: 'Answer actions', exact: true})
@@ -590,7 +595,7 @@ test('the default demo textarea supports visible edits, refresh, swipe and Balan
   await type('nota');
   await expect(wordStrip(page).getByRole('button', {name: 'Insert notation', exact: true})).toBeVisible();
   const wordsBefore = await offeredWords(page);
-  await page.getByRole('button', {name: 'Refresh suggestions', exact: true}).click();
+  await refreshSuggestions(page);
   await expect.poll(async () => (await offeredWords(page)).join('|')).not.toBe(wordsBefore.join('|'));
   await expect(answer).toHaveValue('nota');
 

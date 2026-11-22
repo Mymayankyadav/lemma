@@ -85,8 +85,9 @@ test('the strip spreads its icons when idle and frames three word slots while ty
   const {keyboard, decoderReady} = await openKeyboard(page, true);
   await decoderReady();
   const strip = page.locator('.kb .strip');
+  // ∀ ∈ ⇒, Draw symbol and Equation mode.
   const icons = await strip.locator('.sbtn:visible').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().width));
-  expect(icons).toHaveLength(4);
+  expect(icons).toHaveLength(5);
   expect(Math.max(...icons) - Math.min(...icons)).toBeLessThan(2);
   // In the app, Hide keyboard sits in the band under the keys, where Gboard draws its chevron.
   const hide = keyboard.getByRole('button', {name: 'Hide keyboard', exact: true});
