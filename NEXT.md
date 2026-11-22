@@ -6,6 +6,15 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N222 Refine autoeq decoding for Equation Assist
+
+Owner task: "Refine his approach as per your suggestions and also try to extend to equation assist. Upload your finished work in one pr of lemma."
+Stage: Build · Status: done · Needs: — · Assigned: chat-644281#z6m3
+Done = Autoeq preserves typed facts during beam search and offers distinct valid interpretations. Equation Assist ranks shorthand using context and translates supported proof phrases. A learner can select their own Pad text, choose a rendered LaTeX candidate and undo the edit. Autocomplete supplies notation with editable empty slots for the learner to fill.
+Tests: checkpoint-matched benchmark and upstream regression suite, ranked readings, proof declarations and quantifiers, local model inference, notation-only completion, selection lifecycle and undo on a phone viewport.
+Scope: src/features/pad/**; src/features/tutor/input/modelAssets.ts; src/flags.ts; public/models/equation-assist/**; scripts/equation-assist/**; tests/unit/pad/**; tests/e2e/pad-equation-assist.spec.ts; docs/current/N222.md.
+Not: Autocomplete of whole equations, proof steps or answers; tutor transport, OCR, or keyboard layout changes.
+
 ## N221 Finish the Owner's phone review of N220: Gboard keyboard, Atlas subjects, Calendar toolbar, Progress total and session header
 
 Owner task: "N219 completed, before this actually complete the remaining ui bugs reported then move to do this."

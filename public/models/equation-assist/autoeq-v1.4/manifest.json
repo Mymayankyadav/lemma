@@ -1,0 +1,23 @@
+{
+  "version": "autoeq-v1.4",
+  "source": "https://github.com/mie00/autoeq",
+  "revision": "ca8fdda9fe8311b0b9b4cd2e7a591f2b66a292f5",
+  "license": "Apache-2.0",
+  "files": {
+    "encoder": {
+      "path": "encoder.int8.onnx",
+      "bytes": 1983720,
+      "sha256": "a5ab752bca2b228943134f08b8f297fccf93cfe77853173bd970bfdffdfae567"
+    },
+    "decoder": {
+      "path": "decoder.int8.onnx",
+      "bytes": 2208967,
+      "sha256": "33769db6ea0b83125da10ba31b2fc72d9f74736e37df70a020b4f49ba63ff050"
+    },
+    "vocab": {
+      "path": "vocab.json",
+      "bytes": 8062,
+      "sha256": "f3b8b78ea5b2e99565ff2002326706b744814b1b32f1624112ef88af537c454b"
+    }
+  }
+}
