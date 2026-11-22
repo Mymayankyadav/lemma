@@ -91,7 +91,7 @@ async function releaseReplies(page: Page) {
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
-test('flag-off keeps baseline suggestions and never starts or fetches the decoder', async ({page, context}) => {
+test('flag-off preserves baseline without a decoder worker or model fetch', async ({page, context}) => {
   await probeWorker(page);
   const assets: string[] = [];
   context.on('request', request => {if (request.url().includes('/models/writing-decoder/')) assets.push(request.url());});
@@ -167,7 +167,16 @@ test('a same-size corrupt asset fails closed and preserves fallback acceptance a
   await undo(page).click();
   await expect(answer).toHaveJSProperty('textContent', 'nota');
   await page.keyboard.type('t');
-  await expect(word(page, 'notation')).toBeEnabled();
+  // Undo restores text without making that restored prefix newly authored.
+  await expect(answer).toHaveJSProperty('textContent', 'notat');
+  await expect(enabledWords(page)).toHaveCount(0);
+  await page.keyboard.type(' denomina');
+  await expect(answer).toHaveJSProperty('textContent', 'notat denomina');
+  await expect(word(page, 'denominator')).toBeEnabled();
+  await word(page, 'denominator').click();
+  await expect(answer).toHaveJSProperty('textContent', 'notat denominator ');
+  await undo(page).click();
+  await expect(answer).toHaveJSProperty('textContent', 'notat denomina');
   await typeDraft(page, answer, 'The function is cont');
   await expect(word(page, 'contain')).toBeEnabled();
   for (const blocked of ['continuous', 'continuity', 'continuously']) {
@@ -175,6 +184,7 @@ test('a same-size corrupt asset fails closed and preserves fallback acceptance a
   }
   await expect(answer).toHaveJSProperty('textContent', 'The function is cont');
   expect(requests).toBe(1);
+  expect((await probe(page)).results).toBe(0);
   expect(errors).toEqual([]);
 });
 

@@ -39,6 +39,16 @@ even though the completed worker path rejected it. The before-display requiremen
 therefore calls for the enabled policy to filter the baseline fallback too, with
 deferred and failed-worker tests. Final-result replay alone cannot test that timing gap.
 
+An additional temporal audit found that prediction identity lacked the decoder flag.
+In supported dev/test in-place overrides, the previous flag's offers could remain
+actionable until the next animation frame. Including the captured flag in the current
+prediction check retires those offers immediately. Production ignores those overrides.
+
+CI also exposed a test assumption that contradicted authored-evidence safety: after
+Undo restores text, adding one letter inside the restored word does not make its whole
+prefix newly learner-authored. The corrupt-asset test now checks that boundary and
+verifies usable fallback on a separately typed fresh word occurrence.
+
 The original replay measures intended-word presence at **one selected prefix per
 fixture**. Its historical JSON field `oraclePoolHits` is fixed-prefix pool coverage,
 not the plan's any-prefix-before-word-end oracle recall. Likewise, 16/24 or 17/24 are

@@ -2,7 +2,7 @@
 
 | Experiment | Protocol | Data hash | Engine/model hash | Primary diagnostic (95% CI) | Secondary | Leaks | False corrections | Latency p95 | Memory | Not measured |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| N219 all-prefix development | n219-development-measurement-v1 | c4ac2a64d1ef… | b2bd33fde693… | Overall MRR@3: existing 0.3551, decoder 0.3980; CI not estimated | Prefix accuracy, pool recall, ideal target-word taps | Not certified; separate regression suite | Not evaluated; no new autocorrection | Not measured | Not measured | Learner, device, and human qualification |
+| N219 all-prefix development | n219-development-measurement-v1 | c4ac2a64d1ef… | 1c782f38f47f… | Overall MRR@3: existing 0.3551, decoder 0.4003; CI not estimated | Prefix accuracy, pool recall, ideal target-word taps | Not certified; separate regression suite | Not evaluated; no new autocorrection | Not measured | Not measured | Learner, device, and human qualification |
 
 **Human qualification: blocked. Winner selection: prohibited.** These are the same 24 hand-authored completion tasks, expanded deterministically to 214 prefixes. They contain 214 target-word characters. They are not a held-out corpus or independent learner documents.
 
@@ -20,16 +20,14 @@ The earlier replay measured one selected prefix per task. This protocol measures
 | baseline | Random mean | 22/24 | 0.3215 | 21.70% | 24.94% |
 | baseline | Degraded | 22/24 | 0.2952 | 18.22% | 23.36% |
 | baseline | Oracle | 22/24 | 0.3598 | 25.70% | 25.70% |
-| decoder | Actual | 24/24 | 0.3980 | 28.50% | 29.44% |
-| decoder | Random mean | 24/24 | 0.3417 | 24.15% | 28.53% |
+| decoder | Actual | 24/24 | 0.4003 | 28.50% | 29.44% |
+| decoder | Random mean | 24/24 | 0.3409 | 24.01% | 28.42% |
 | decoder | Degraded | 24/24 | 0.2858 | 17.29% | 27.10% |
 | decoder | Oracle | 24/24 | 0.4065 | 29.44% | 29.44% |
 
 ## Observed ranking regressions
 
-**1 top-one loss(es); 0 top-three loss(es)** across all prefixes. Aggregate gains do not erase these individual regressions.
-
-- `fast-short-prefix` (fast, prefix 3, `res`): `result` moved from rank 1 to 2. Existing display: ["result","respect","restrict"]; decoder display: ["respect","result","restrict"].
+**0 top-one loss(es); 0 top-three loss(es)** across all prefixes. Aggregate gains do not erase these individual regressions.
 
 No intended word that was in the existing displayed three drops out of the decoder displayed three.
 
@@ -56,11 +54,11 @@ No intended word that was in the existing displayed three drops out of the decod
 | decoder | Actual | 0 | 24 | 0.00% | 0.00% | 0.0000 |
 | decoder | Actual | 1 | 24 | 0.00% | 0.00% | 0.0000 |
 | decoder | Actual | 2 | 24 | 4.17% | 4.17% | 0.0417 |
-| decoder | Actual | 3 | 24 | 8.33% | 12.50% | 0.1042 |
+| decoder | Actual | 3 | 24 | 12.50% | 12.50% | 0.1250 |
 | decoder | Random mean | 0 | 24 | 0.00% | 0.00% | 0.0000 |
 | decoder | Random mean | 1 | 24 | 0.00% | 0.00% | 0.0000 |
 | decoder | Random mean | 2 | 24 | 1.82% | 3.39% | 0.0252 |
-| decoder | Random mean | 3 | 24 | 9.11% | 11.72% | 0.1011 |
+| decoder | Random mean | 3 | 24 | 8.59% | 10.42% | 0.0946 |
 | decoder | Degraded | 0 | 24 | 0.00% | 0.00% | 0.0000 |
 | decoder | Degraded | 1 | 24 | 0.00% | 0.00% | 0.0000 |
 | decoder | Degraded | 2 | 24 | 0.00% | 0.00% | 0.0000 |

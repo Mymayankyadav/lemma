@@ -69,10 +69,10 @@
     },
     {
       "id": "wordPolicy",
-      "path": "src/features/tutor/writingAid/vendor/words.mjs",
+      "path": "scripts/writing-decoder/sources/baseline-words.mjs.txt",
       "url": "https://github.com/Mymayankyadav/lemma/blob/d1b3135f99ae54d52b312f4b728c4460abdabc06/src/features/tutor/writingAid/vendor/words.mjs",
       "license": "Existing Lemma source",
-      "description": "Build copies LOGIC tags without changing eligibility policy",
+      "description": "Immutable baseline source snapshot; build copies original LOGIC tags while runtime ranking can evolve independently",
       "sha256": "1c584932ca2f69dbc0d6af8f0c4aba73b5e9d8c764731a951f00d86ee52f37ba"
     }
   ]

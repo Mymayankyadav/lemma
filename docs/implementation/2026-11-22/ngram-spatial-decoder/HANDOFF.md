@@ -91,19 +91,47 @@ hashes, reviewed declarations, role/provenance restrictions, one owner scope, bo
 reads and whole-day/document/group/overlap checks. It imports no external corpus and
 does not approve fitting or certify semantic safety.
 
+## Checkpoint 4: existing context preserved and CI test contracts corrected
+
+The context-loss mechanism recorded in checkpoint `e34f2c1` is now fixed. A shared
+pure scorer retains the original sequential bigram/trigram contributions, configuration
+and tokenization. Both the original lexical path and the expanded path use it; no
+coefficient, admission rule or vocabulary changed. The original `words.mjs` bytes
+are preserved as `scripts/writing-decoder/sources/baseline-words.mjs.txt` with their
+original source hash/URL, so the lexicon remains byte-identical after the refactor.
+
+The combined **282 unit tests**, production build/typecheck, lint, Kit and PWA/asset
+checks pass. Twenty context tests include exact formula and original-module parity.
+Both replay generators were rerun with unchanged fixture and protocol bytes. Against
+`e34f2c1`, all 132 recorded baseline/fallback rows and all 214 baseline trajectories
+and controls are identical; eligible decoder sets are identical. The only displayed
+change restores `result` above `respect` at prefix `res`. No top-one or top-three loss
+remains versus the baseline or previous decoder. Current decoder MRR@3 is 0.40031,
+versus baseline 0.35514. Ideal target-word tap totals do not change. These remain
+development diagnostics, not qualified model selection or human benefit evidence.
+
+CI run `44986990378` on old head `7c7a820` completed with nine decoder browser cases
+passing and two failing. Structured JUnit artifact `14740193798` confirmed both:
+the worker-module test counted a PWA precache request, and the corrupt-asset case
+expected a completion inside text restored by Undo. The corrected tests distinguish
+precache from the dedicated Worker and verify restored-text suppression followed by
+fallback acceptance/Undo on a freshly typed word. They retain corruption, one-fetch,
+zero-decoder-result and stale/safety assertions. Local Chromium remains blocked before
+startup. Do not claim the current browser gate passed until its own CI completes.
+
 ## Exact next action
 
 1. Fetch the latest PR branch and read the CI comment/status for its current commit.
-2. Correct the loss of established context during the unigram merge with a general,
-   independently tested rule; keep the committed pre-fix report as history. Then rerun
-   both development protocols unchanged and preserve all safety/fallback gates.
-3. In an environment where Chromium can run, execute
+2. In an environment where Chromium can run, execute
    `npx playwright test tests/e2e/tutor-writing-decoder.spec.ts tests/e2e/tutor-writing-aid.spec.ts --workers=2`.
    Keep existing test thresholds and configuration. Record the actual results here.
-4. Resolve any remaining failure in the same draft PR. The local unit/pure replay checks
+3. Resolve any remaining failure in the same draft PR. The local unit/pure replay checks
    do not substitute for loading/fallback, visible acceptance and Undo in a real browser.
-5. After the first stage is qualified, continue the staged plan with the companion
+4. After the first stage is qualified, continue the staged plan with the companion
    specifications and a separate data/evaluation protocol. Do not merge this PR.
+   The next model-preparation milestone is a versioned prose/math normalization and
+   portable 4-gram import/export/scoring-parity pipeline, followed by a reviewed public
+   corpus pilot. Do not fit coefficients to the 24 reused development probes.
 
 ## Later inputs and stages
 

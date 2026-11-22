@@ -40,10 +40,10 @@
   "sourceSha256": {
     "docs/implementation/2026-11-22/ngram-spatial-decoder/replay/fixtures.json": "c4ac2a64d1effeaa108e17472cb9c63455b0baf1fa24d1b3b5457df50bd36d47",
     "public/models/writing-decoder/unigram-v1/AOSP-NOTICE.txt": "d04394c729fc9fda050d5733d8ee11663fb54fe54d94532de968cf85c1cc42fb",
-    "public/models/writing-decoder/unigram-v1/ATTRIBUTION.md": "bec2ded51c9aea451781666366a1bd817abc56c9ab0836e8223fdec50e55227b",
+    "public/models/writing-decoder/unigram-v1/ATTRIBUTION.md": "bab2040293163cbc220d58f211494a324c16fc6adf2ed5039bf9aaa91c6ca6b0",
     "public/models/writing-decoder/unigram-v1/SCOWL-NOTICE.txt": "1d7c0128f6c72d2270bf1b271b37a3a21267f759161b68c4dc6c501574c0892e",
     "public/models/writing-decoder/unigram-v1/lexicon.json": "3c60a7226fcabd574caaf0f152fc8451c9d7173af8e2470a96052f3bd5ed2594",
-    "public/models/writing-decoder/unigram-v1/manifest.json": "0acee7dcd7f191495cc0196545b0f52b15f1255e9f48f475a2145bf996aec4e4",
+    "public/models/writing-decoder/unigram-v1/manifest.json": "aed063300daa06178b47988d981dc54c2072cb1fb0bb9231a51b22d4bfcff909",
     "public/models/writing-decoder/unigram-v1/mathlib4-LICENSE.txt": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
     "scripts/writing-decoder/replay.ts": "92d3baf001b3ad10019ad9da3cf937ab1f29f7b59c2bdecb9a512c7cf53f2b9b",
     "src/features/pad/padEdit.ts": "931c57d89585302e170de63a5efc667c579e11288aa7f6e03fde7093c82f303f",
@@ -54,13 +54,15 @@
     "src/features/tutor/writingAid/decoder/lexicon.ts": "e577103d01a3fb0e9025e1fa86d9a132947ccd32fbe84661f789c290b4ffd4a6",
     "src/features/tutor/writingAid/decoder/protocol.ts": "655212a7d58bf3ee90d92f5f528e37a29d2102ff02a6492e31faa7fb9c895a83",
     "src/features/tutor/writingAid/decoder/writingDecoder.worker.ts": "33481161583e2684ba1ba38c82ece1b1f2d6efd3a8ce0482c906cc4cdc16c389",
-    "src/features/tutor/writingAid/engine.ts": "b2bd33fde6930342dff533a420e56f3f0f7363390c0cc01773d11c892f82f55a",
+    "src/features/tutor/writingAid/engine.ts": "1c782f38f47fcc3d101b953c29a775eb5529927b7d1af6b3f4df38c4244fa233",
     "src/features/tutor/writingAid/learning.ts": "d33f44051a944ee7a3274c7b4eaed1e4103326db956a72ec05dbcb8f0934be71",
     "src/features/tutor/writingAid/policy.ts": "5ecd8edc304e79c21f01f50ce81a5724acc47b45396af0fff61925307108be48",
     "src/features/tutor/writingAid/vendor/accelerator.d.mts": "fefc6385acee3980cf75928f5f7bbc77e8dd3c81213a1fe0b59eb358707a74b1",
     "src/features/tutor/writingAid/vendor/accelerator.mjs": "bacb3d8b178aba07383b99f20e6e4c1721b1b90b10afe8fa41c93403b2676564",
     "src/features/tutor/writingAid/vendor/commitment.mjs": "a6428f8dda79a141de97858f12fe7889779e5c1920f810c0c9ab00e8a7be2710",
     "src/features/tutor/writingAid/vendor/compact-ranks.json": "8e22aa214182878e8182dc0d6231801cb83b7a60555a7739e02f3128fc48de81",
+    "src/features/tutor/writingAid/vendor/corpus-context.d.mts": "e913be88709e3893d74841269e63e7509e9be15f9984042fa7d3d6ddb588934d",
+    "src/features/tutor/writingAid/vendor/corpus-context.mjs": "35df7f0e688c8b736715b549e18cdc1252359367a8f737f82f3e130dcfd6e63b",
     "src/features/tutor/writingAid/vendor/facade.mjs": "75dc0bda49c957c576fa1e78cf8204768896a93f0aa0101f141738a76b20254f",
     "src/features/tutor/writingAid/vendor/legacy/cohort.mjs": "11a5b73a81a569e2f13bac54ee54946acf69c5348b17008a7f0b65d4201ce9cc",
     "src/features/tutor/writingAid/vendor/legacy/complete.mjs": "a577f66b0c22036dfecd3877e45e37c575c6b44f787070f0fbb28dd9faf08df5",
@@ -80,7 +82,7 @@
     "src/features/tutor/writingAid/vendor/word-assets.json": "05d59054ecdc6983531f9b2a1cae5c5b212c262078ee066f759f1ca96ddbeb92",
     "src/features/tutor/writingAid/vendor/wordlist-LICENSE.txt": "1d7c0128f6c72d2270bf1b271b37a3a21267f759161b68c4dc6c501574c0892e",
     "src/features/tutor/writingAid/vendor/wordlist.txt": "67689f3f4ea057f0b57a07b1e3d54fc28257c47691eb8acfab681b7e38b37755",
-    "src/features/tutor/writingAid/vendor/words.mjs": "1c584932ca2f69dbc0d6af8f0c4aba73b5e9d8c764731a951f00d86ee52f37ba"
+    "src/features/tutor/writingAid/vendor/words.mjs": "0d013d0bb3b248675260f593c6d0d6d4d3a86373a5ad34daffe58f1b133eef14"
   },
   "rows": [
     {

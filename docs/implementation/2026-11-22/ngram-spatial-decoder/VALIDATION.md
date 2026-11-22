@@ -27,6 +27,7 @@ npx vitest run \
   tests/unit/tutor/writing-decoder-worker.test.ts \
   tests/unit/tutor/writing-decoder-corpus.test.ts \
   tests/unit/tutor/writing-decoder-metrics.test.ts \
+  tests/unit/tutor/writing-decoder-context.test.ts \
   tests/unit/tutor/writing-aid.test.ts \
   tests/unit/tutor/writing-aid-learning.test.tsx \
   tests/unit/tutor/writing-aid-preferences.test.tsx --maxWorkers=2
@@ -56,15 +57,17 @@ feature itself defaults off.
 | Existing writing-aid engine, personalization and preferences | 25 tests pass |
 | Offline corpus declarations, role/provenance boundaries, splits and overlap audit | 39 tests pass |
 | Rank-sensitive metrics, controls, opportunity and acceptance-cost arithmetic | 9 tests pass |
-| Total affected unit tests | 262 pass |
+| Existing context arithmetic, original predictions and decoder ranking regression | 20 tests pass |
+| Total affected unit tests | 282 pass |
 | Offline asset regeneration | Byte-identical output, 49,232 entries |
 | TypeScript and production build | Pass |
 | Static lint, Kit tokens, PWA and asset checks | Pass |
 | Browser spec discovery | 11 cases discovered |
 | Actual local browser assertions | Blocked before application load; not a pass |
 
-The combined 262-test run, build/typecheck and lint were executed after the before-display
-and flag-identity fixes. The built PWA precache contains the small worker entry but no `lexicon.json` or
+The combined 282-test run, build/typecheck, lint and Kit checks were executed after the
+before-display, flag-identity and shared-context corrections. The built PWA precache
+contains the small worker entry but no `lexicon.json` or
 `models/writing-decoder` asset entry. The 1,688,748-byte lexicon is loaded only by the
 enabled worker and verified before indexing. Bundling verification is not a phone
 memory or timing measurement.
@@ -105,16 +108,26 @@ above. It records source hashes and uses the actual selector and retrieval cap, 
 personalization. [Report and exact controls](evaluation/REPORT.md).
 
 Any-prefix pool coverage is 22/24 on the existing path and 24/24 on the decoder path.
-Overall MRR@3 is 0.35514 versus 0.39798. On each path, fixed-seed random ranking scores
+Overall MRR@3 is 0.35514 versus 0.40031. On each path, fixed-seed random ranking scores
 below actual ranking, actual ranking scores below the oracle, and reversing the ranks
 changes the metric. The target-word tap estimates count one tap per ideal acceptance;
 they are upper bounds for these synthetic targets, not full-passage or human savings.
 
-The report explicitly retains a regression: Fast `I think the res` moves `result` from
-first to second place. Prefix-3 top-one hits fall from 3/24 to 2/24; top-three hits stay
-3/24. The expanded pool's unigram sort drops the existing previous-word bigram ordering.
-This mechanism needs a general context-preserving correction, not a fixture-specific
-exception. Human qualification remains blocked and winner selection is prohibited.
+The [pre-correction report at e34f2c1](https://github.com/Mymayankyadav/lemma/blob/e34f2c1f6ffbee25dcfd7f24978d64feb5bd6fa0/docs/implementation/2026-11-22/ngram-spatial-decoder/evaluation/REPORT.md)
+records the discovered regression: Fast `I think the res` moved `result` from first to
+second because the new unigram ordering discarded existing context evidence. A shared
+scorer now applies the original context formula to both paths, with no new coefficients
+or admission rule. Prefix-3 top-one hits are restored to 3/24. This is the only changed
+display among 214 measured prefixes; no top-one or top-three loss remains against the
+baseline or prior decoder. The ideal tap totals do not change. Every recorded baseline
+trajectory/control, guarded fallback, and eligible candidate set is unchanged.
+
+The 20 new context tests include 5,376 exact old-formula score comparisons and 126
+whole predictions against the immutable original vendor source, plus real-asset ranking,
+context-window, author-boundary, vetted-priority and safety regressions. The original
+policy source is now a pinned build snapshot, so runtime refactoring does not silently
+change asset provenance. Lexicon bytes and the frozen protocol/fixture remain identical.
+Human qualification remains blocked and winner selection is prohibited.
 
 ## Offline corpus preparation
 
@@ -131,6 +144,26 @@ The browser suite covers flag-off no Worker creation/model-asset loading, delaye
 same-size corruption, constructor/runtime/module failures, out-of-order replies,
 selection and Off invalidation, explicit tap/Tab-ghost acceptance and Undo, and proof/
 literal/code contexts. The real decoder gain fixture is `I am reco` → `record`.
+
+CI did execute the original 11 decoder cases on checkpoint `7c7a820`: **9 passed and
+2 failed**, recorded in [run 44986990378](https://github.com/Mymayankyadav/lemma/actions/runs/44986990378),
+PR feedback comment `7074638536`, and structured JUnit artifact `14740193798`
+(`junit-e2e-affected-2`). No CI job logs were read. The failures were:
+
+- Module-download test: final blocked-request count was 2 rather than 1 on all three
+  attempts. The PWA also precaches the worker entry. Checkpoint `e34f2c1` distinguishes
+  Service Worker precache requests from the dedicated Worker module request and still
+  requires one blocked module request, one Worker creation and sticky fallback. The
+  original report does not identify request origins; current-head execution must confirm it.
+- Corrupt-asset test: old line 162 expected `notation` again immediately after Undo and
+  typing `t`. Undo intentionally clears authored evidence; the new typed anchor starts
+  inside the restored word, so that completion is correctly withheld. The corrected
+  test verifies the restored `notat` has no offers, then types a fresh ` denomina`
+  occurrence and requires fallback acceptance and Undo for `denominator`. All integrity,
+  one-fetch, zero-decoded-result, weak-property and no-pageerror assertions remain.
+
+These findings do not make the current browser gate pass. The corrected cases and
+the current runtime still require their own CI result.
 
 The expected Playwright browser download returned HTTP 403. Installed Chromium also
 failed before application loading because the execution host rejects its process-singleton

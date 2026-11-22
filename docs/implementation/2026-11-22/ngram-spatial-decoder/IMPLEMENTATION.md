@@ -24,7 +24,11 @@ See [asset attribution](../../../../public/models/writing-decoder/unigram-v1/ATT
 An exact range-max prefix index retrieves up to 64 candidates by frequency over the whole
 matching range. Candidate tags survive serialization and duplicate merging. The editor
 validates the message, reapplies its permissions, preserves vetted baseline lane priority,
-and uses the existing three-slot selector and personalized ordering.
+and uses the existing three-slot selector and personalized ordering. Expanded ranking
+adds the existing compact context contribution to the unigram prior through the same
+pure scorer used by the baseline. Its original coefficients, tokenization, bounded
+learner window and zero/one/two-context-word policy are retained. This reuses the sparse
+context already in the app; it does not train the later proposed corpus-scale n-gram.
 
 ### Conservative admission rules
 
@@ -75,6 +79,14 @@ See [VALIDATION](VALIDATION.md) for exact commands and tests. Browser cases are 
 but local Chromium execution is blocked by the host's socket restriction. Do not advance
 to the next rollout stage on the strength of unit tests alone. Physical-phone latency,
 memory, touch accuracy and tap savings remain unmeasured.
+
+The separate [all-prefix diagnostic](evaluation/REPORT.md) caught a context-loss
+regression hidden by the original selected-prefix probes. The shared context scorer
+corrects it without changing the candidate sets or any recorded baseline output. Across
+214 prefixes, the only changed display restores `result` above `respect` after `the res`.
+The pre-fix evidence remains in checkpoint `e34f2c1`. The new [corpus auditor](corpus/README.md)
+prepares bounded source/provenance/split checks; its runnable example is synthetic and
+does not close the real-data or model-fitting gates.
 
 ## Remaining plan stages
 

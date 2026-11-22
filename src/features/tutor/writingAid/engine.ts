@@ -8,6 +8,7 @@ import {
 import {scoreWritingAidProposal, writingAidVocabularyStrength, type WritingAidModel} from './learning';
 import {makeStudyInput} from './vendor/study_input.mjs';
 import {isWritingWord, permitAcceleratedWord} from './vendor/accelerator.mjs';
+import {createCorpusContextScorer} from './vendor/corpus-context.mjs';
 import type {DecoderCandidate} from './decoder/lexicon';
 import {readDecoderCandidates} from './decoder/protocol';
 import {makeRevision} from './vendor/legacy/revision.mjs';
@@ -22,8 +23,10 @@ import speedPolicy from './vendor/speed-policy.json';
 // Lemma already offers these spellings. The pinned rank asset includes
 // preimage, while the general-purpose dictionary omits both forms.
 const words = [...wordList.trimEnd().split('\n'), 'preimage', 'preimages'].sort();
+// Resolve the facade's existing ranker defaults once for both lexical paths.
+const rankingPolicy = Object.assign({ranker: 'corpus', contextWords: 1}, speedPolicy);
 const aid = makeStudyInput({
-  phrases: phraseData, veto, policy: editPolicy, words, speedPolicy,
+  phrases: phraseData, veto, policy: editPolicy, words, speedPolicy: rankingPolicy,
   // Context words index data records, including ordinary words like "constructor".
   wordAssets: {...wordAssets, next: Object.assign(Object.create(null), wordAssets.next)},
   ranks: {...compactRanks, unigram: Object.assign(Object.create(null), compactRanks.unigram)},
@@ -106,6 +109,7 @@ function expandedKeys(request: WritingAidRequest, text: string, authoredText: st
   const caseLike = (word: string) => typed === typed.toUpperCase() ? word.toUpperCase() :
     /^\p{Lu}/u.test(typed) ? word[0].toUpperCase() + word.slice(1) : word;
   const frequency = new Map(decoded.map(item => [item.word, item.frequency]));
+  const contextScore = createCorpusContextScorer(text.slice(0, -typed.length), compactRanks, rankingPolicy);
   const union = new Map<string, KeyCandidate>();
   const counts = compactRanks.unigram as Readonly<Record<string, number>>;
   for (const candidate of baseline) union.set(candidate.word.toLowerCase(), candidate);
@@ -127,8 +131,8 @@ function expandedKeys(request: WritingAidRequest, text: string, authoredText: st
   }
   return [...union.values()].map((candidate, index) => ({candidate, index,
     // The pinned asset is a ranking prior, not a calibrated correction probability.
-    // Do not reintroduce unfiltered code-token counts for baseline-only entries.
-    score: frequency.get(candidate.word.toLowerCase()) ?? 0,
+    // No raw unigram-count fallback; retain only the established context contribution.
+    score: contextScore(candidate.word.toLowerCase(), frequency.get(candidate.word.toLowerCase()) ?? 0),
     vetted: candidate.kind === 'vetted-word' ? 1 : 0,
   })).sort((a, b) => b.vetted - a.vetted || b.score - a.score || a.index - b.index).map(item => item.candidate);
 }

@@ -49,10 +49,10 @@
     "package-lock.json": "0d4580b6b3ef314bab5d12fd0b8fcca8d364bb47aba4cc7ee4da8a72e4e62695",
     "package.json": "a787533d75481e453f03b0c03131731e3d58ce94aa0c9a0b8e4c8923204bf47b",
     "public/models/writing-decoder/unigram-v1/AOSP-NOTICE.txt": "d04394c729fc9fda050d5733d8ee11663fb54fe54d94532de968cf85c1cc42fb",
-    "public/models/writing-decoder/unigram-v1/ATTRIBUTION.md": "bec2ded51c9aea451781666366a1bd817abc56c9ab0836e8223fdec50e55227b",
+    "public/models/writing-decoder/unigram-v1/ATTRIBUTION.md": "bab2040293163cbc220d58f211494a324c16fc6adf2ed5039bf9aaa91c6ca6b0",
     "public/models/writing-decoder/unigram-v1/SCOWL-NOTICE.txt": "1d7c0128f6c72d2270bf1b271b37a3a21267f759161b68c4dc6c501574c0892e",
     "public/models/writing-decoder/unigram-v1/lexicon.json": "3c60a7226fcabd574caaf0f152fc8451c9d7173af8e2470a96052f3bd5ed2594",
-    "public/models/writing-decoder/unigram-v1/manifest.json": "0acee7dcd7f191495cc0196545b0f52b15f1255e9f48f475a2145bf996aec4e4",
+    "public/models/writing-decoder/unigram-v1/manifest.json": "aed063300daa06178b47988d981dc54c2072cb1fb0bb9231a51b22d4bfcff909",
     "public/models/writing-decoder/unigram-v1/mathlib4-LICENSE.txt": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
     "scripts/writing-decoder/measure.ts": "5d5d14012658592a286279b96c6f85727ac5830b165d7a955059b17ce407941d",
     "scripts/writing-decoder/metrics.ts": "f49f85f63b1b5b577818cc77de6e907177721243d8e4c259eb62b04a6aeeb394",
@@ -64,7 +64,7 @@
     "src/features/tutor/writingAid/decoder/lexicon.ts": "e577103d01a3fb0e9025e1fa86d9a132947ccd32fbe84661f789c290b4ffd4a6",
     "src/features/tutor/writingAid/decoder/protocol.ts": "655212a7d58bf3ee90d92f5f528e37a29d2102ff02a6492e31faa7fb9c895a83",
     "src/features/tutor/writingAid/decoder/writingDecoder.worker.ts": "33481161583e2684ba1ba38c82ece1b1f2d6efd3a8ce0482c906cc4cdc16c389",
-    "src/features/tutor/writingAid/engine.ts": "b2bd33fde6930342dff533a420e56f3f0f7363390c0cc01773d11c892f82f55a",
+    "src/features/tutor/writingAid/engine.ts": "1c782f38f47fcc3d101b953c29a775eb5529927b7d1af6b3f4df38c4244fa233",
     "src/features/tutor/writingAid/learning.ts": "d33f44051a944ee7a3274c7b4eaed1e4103326db956a72ec05dbcb8f0934be71",
     "src/features/tutor/writingAid/policy.ts": "5ecd8edc304e79c21f01f50ce81a5724acc47b45396af0fff61925307108be48",
     "src/features/tutor/writingAid/useWritingAid.ts": "ad3969e3125154ac0310afe675afc7f06d2cc966d57d950680bc5cc72718375c",
@@ -72,6 +72,8 @@
     "src/features/tutor/writingAid/vendor/accelerator.mjs": "bacb3d8b178aba07383b99f20e6e4c1721b1b90b10afe8fa41c93403b2676564",
     "src/features/tutor/writingAid/vendor/commitment.mjs": "a6428f8dda79a141de97858f12fe7889779e5c1920f810c0c9ab00e8a7be2710",
     "src/features/tutor/writingAid/vendor/compact-ranks.json": "8e22aa214182878e8182dc0d6231801cb83b7a60555a7739e02f3128fc48de81",
+    "src/features/tutor/writingAid/vendor/corpus-context.d.mts": "e913be88709e3893d74841269e63e7509e9be15f9984042fa7d3d6ddb588934d",
+    "src/features/tutor/writingAid/vendor/corpus-context.mjs": "35df7f0e688c8b736715b549e18cdc1252359367a8f737f82f3e130dcfd6e63b",
     "src/features/tutor/writingAid/vendor/facade.mjs": "75dc0bda49c957c576fa1e78cf8204768896a93f0aa0101f141738a76b20254f",
     "src/features/tutor/writingAid/vendor/legacy/cohort.mjs": "11a5b73a81a569e2f13bac54ee54946acf69c5348b17008a7f0b65d4201ce9cc",
     "src/features/tutor/writingAid/vendor/legacy/complete.mjs": "a577f66b0c22036dfecd3877e45e37c575c6b44f787070f0fbb28dd9faf08df5",
@@ -91,7 +93,7 @@
     "src/features/tutor/writingAid/vendor/word-assets.json": "05d59054ecdc6983531f9b2a1cae5c5b212c262078ee066f759f1ca96ddbeb92",
     "src/features/tutor/writingAid/vendor/wordlist-LICENSE.txt": "1d7c0128f6c72d2270bf1b271b37a3a21267f759161b68c4dc6c501574c0892e",
     "src/features/tutor/writingAid/vendor/wordlist.txt": "67689f3f4ea057f0b57a07b1e3d54fc28257c47691eb8acfab681b7e38b37755",
-    "src/features/tutor/writingAid/vendor/words.mjs": "1c584932ca2f69dbc0d6af8f0c4aba73b5e9d8c764731a951f00d86ee52f37ba",
+    "src/features/tutor/writingAid/vendor/words.mjs": "0d013d0bb3b248675260f593c6d0d6d4d3a86373a5ad34daffe58f1b133eef14",
     "src/flags.ts": "889a5551a3b26fe236a66ce40ca6e29f9803c4e1583d4868c7fce59dbb5bab48"
   },
   "results": {
@@ -1422,7 +1424,7 @@
         "prefixOpportunities": 214,
         "anyPrefixPoolHits": 24,
         "anyPrefixPoolRecall": 1,
-        "overallMrrAt3": 0.39797507788161995,
+        "overallMrrAt3": 0.4003115264797508,
         "byPrefix": [
           {
             "prefixLength": 0,
@@ -1454,11 +1456,11 @@
           {
             "prefixLength": 3,
             "opportunities": 24,
-            "top1Hits": 2,
+            "top1Hits": 3,
             "top3Hits": 3,
-            "top1Accuracy": 0.08333333333333333,
+            "top1Accuracy": 0.125,
             "top3Accuracy": 0.125,
-            "mrrAt3": 0.10416666666666667
+            "mrrAt3": 0.125
           }
         ],
         "idealSavings": [
@@ -1612,7 +1614,7 @@
           "prefixOpportunities": 214,
           "anyPrefixPoolHits": 24,
           "anyPrefixPoolRecall": 1,
-          "overallMrrAt3": 0.34165693146417453,
+          "overallMrrAt3": 0.3409267912772586,
           "byPrefix": [
             {
               "prefixLength": 0,
@@ -1644,29 +1646,29 @@
             {
               "prefixLength": 3,
               "opportunities": 24,
-              "top1Hits": 2.1875,
-              "top3Hits": 2.8125,
-              "top1Accuracy": 0.09114583333333331,
-              "top3Accuracy": 0.1171875,
-              "mrrAt3": 0.10112847222222224
+              "top1Hits": 2.0625,
+              "top3Hits": 2.5,
+              "top1Accuracy": 0.08593749999999999,
+              "top3Accuracy": 0.10416666666666666,
+              "mrrAt3": 0.09461805555555555
             }
           ],
           "idealSavings": [
             {
               "k": 1,
               "targetCharacters": 214,
-              "charactersNotTyped": 75.1875,
-              "acceptanceTaps": 23.5,
-              "netTapsSaved": 51.6875,
-              "savingsFraction": 0.2415303738317757
+              "charactersNotTyped": 74.8125,
+              "acceptanceTaps": 23.4375,
+              "netTapsSaved": 51.375,
+              "savingsFraction": 0.24007009345794394
             },
             {
               "k": 3,
               "targetCharacters": 214,
-              "charactersNotTyped": 85.0625,
+              "charactersNotTyped": 84.8125,
               "acceptanceTaps": 24,
-              "netTapsSaved": 61.0625,
-              "savingsFraction": 0.28533878504672894
+              "netTapsSaved": 60.8125,
+              "savingsFraction": 0.2841705607476635
             }
           ]
         },
@@ -1678,73 +1680,7 @@
               "prefixOpportunities": 214,
               "anyPrefixPoolHits": 24,
               "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.33489096573208726,
-              "byPrefix": [
-                {
-                  "prefixLength": 0,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 0,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0,
-                  "mrrAt3": 0
-                },
-                {
-                  "prefixLength": 1,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 0,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0,
-                  "mrrAt3": 0
-                },
-                {
-                  "prefixLength": 2,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 1,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0.041666666666666664,
-                  "mrrAt3": 0.013888888888888888
-                },
-                {
-                  "prefixLength": 3,
-                  "opportunities": 24,
-                  "top1Hits": 3,
-                  "top3Hits": 3,
-                  "top1Accuracy": 0.125,
-                  "top3Accuracy": 0.125,
-                  "mrrAt3": 0.125
-                }
-              ],
-              "idealSavings": [
-                {
-                  "k": 1,
-                  "targetCharacters": 214,
-                  "charactersNotTyped": 73,
-                  "acceptanceTaps": 24,
-                  "netTapsSaved": 49,
-                  "savingsFraction": 0.22897196261682243
-                },
-                {
-                  "k": 3,
-                  "targetCharacters": 214,
-                  "charactersNotTyped": 84,
-                  "acceptanceTaps": 24,
-                  "netTapsSaved": 60,
-                  "savingsFraction": 0.2803738317757009
-                }
-              ]
-            }
-          },
-          {
-            "seed": 29,
-            "metrics": {
-              "targetTasks": 24,
-              "prefixOpportunities": 214,
-              "anyPrefixPoolHits": 24,
-              "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.3411214953271028,
+              "overallMrrAt3": 0.3325545171339564,
               "byPrefix": [
                 {
                   "prefixLength": 0,
@@ -1780,7 +1716,73 @@
                   "top3Hits": 3,
                   "top1Accuracy": 0.08333333333333333,
                   "top3Accuracy": 0.125,
-                  "mrrAt3": 0.09722222222222222
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 70,
+                  "acceptanceTaps": 23,
+                  "netTapsSaved": 47,
+                  "savingsFraction": 0.21962616822429906
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 84,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 60,
+                  "savingsFraction": 0.2803738317757009
+                }
+              ]
+            }
+          },
+          {
+            "seed": 29,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.34190031152647976,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.013888888888888888
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
                 }
               ],
               "idealSavings": [
@@ -1810,7 +1812,7 @@
               "prefixOpportunities": 214,
               "anyPrefixPoolHits": 24,
               "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.3442367601246106,
+              "overallMrrAt3": 0.3426791277258567,
               "byPrefix": [
                 {
                   "prefixLength": 0,
@@ -1843,10 +1845,10 @@
                   "prefixLength": 3,
                   "opportunities": 24,
                   "top1Hits": 2,
-                  "top3Hits": 3,
+                  "top3Hits": 2,
                   "top1Accuracy": 0.08333333333333333,
-                  "top3Accuracy": 0.125,
-                  "mrrAt3": 0.09722222222222222
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
                 }
               ],
               "idealSavings": [
@@ -1861,10 +1863,10 @@
                 {
                   "k": 3,
                   "targetCharacters": 214,
-                  "charactersNotTyped": 85,
+                  "charactersNotTyped": 84,
                   "acceptanceTaps": 24,
-                  "netTapsSaved": 61,
-                  "savingsFraction": 0.2850467289719626
+                  "netTapsSaved": 60,
+                  "savingsFraction": 0.2803738317757009
                 }
               ]
             }
@@ -1942,7 +1944,7 @@
               "prefixOpportunities": 214,
               "anyPrefixPoolHits": 24,
               "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.3520249221183801,
+              "overallMrrAt3": 0.3473520249221184,
               "byPrefix": [
                 {
                   "prefixLength": 0,
@@ -1974,21 +1976,21 @@
                 {
                   "prefixLength": 3,
                   "opportunities": 24,
-                  "top1Hits": 3,
-                  "top3Hits": 3,
-                  "top1Accuracy": 0.125,
-                  "top3Accuracy": 0.125,
-                  "mrrAt3": 0.125
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
                 }
               ],
               "idealSavings": [
                 {
                   "k": 1,
                   "targetCharacters": 214,
-                  "charactersNotTyped": 77,
+                  "charactersNotTyped": 75,
                   "acceptanceTaps": 24,
-                  "netTapsSaved": 53,
-                  "savingsFraction": 0.24766355140186916
+                  "netTapsSaved": 51,
+                  "savingsFraction": 0.2383177570093458
                 },
                 {
                   "k": 3,
@@ -2008,7 +2010,7 @@
               "prefixOpportunities": 214,
               "anyPrefixPoolHits": 24,
               "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.34267912772585674,
+              "overallMrrAt3": 0.3403426791277259,
               "byPrefix": [
                 {
                   "prefixLength": 0,
@@ -2041,10 +2043,10 @@
                   "prefixLength": 3,
                   "opportunities": 24,
                   "top1Hits": 2,
-                  "top3Hits": 3,
+                  "top3Hits": 2,
                   "top1Accuracy": 0.08333333333333333,
-                  "top3Accuracy": 0.125,
-                  "mrrAt3": 0.10416666666666667
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
                 }
               ],
               "idealSavings": [
@@ -2059,10 +2061,10 @@
                 {
                   "k": 3,
                   "targetCharacters": 214,
-                  "charactersNotTyped": 84,
+                  "charactersNotTyped": 82,
                   "acceptanceTaps": 24,
-                  "netTapsSaved": 60,
-                  "savingsFraction": 0.2803738317757009
+                  "netTapsSaved": 58,
+                  "savingsFraction": 0.27102803738317754
                 }
               ]
             }
@@ -2074,7 +2076,7 @@
               "prefixOpportunities": 214,
               "anyPrefixPoolHits": 24,
               "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.34190031152647976,
+              "overallMrrAt3": 0.34423676012461063,
               "byPrefix": [
                 {
                   "prefixLength": 0,
@@ -2107,10 +2109,10 @@
                   "prefixLength": 3,
                   "opportunities": 24,
                   "top1Hits": 2,
-                  "top3Hits": 2,
+                  "top3Hits": 3,
                   "top1Accuracy": 0.08333333333333333,
-                  "top3Accuracy": 0.08333333333333333,
-                  "mrrAt3": 0.08333333333333333
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
                 }
               ],
               "idealSavings": [
@@ -2272,205 +2274,7 @@
               "prefixOpportunities": 214,
               "anyPrefixPoolHits": 24,
               "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.35046728971962615,
-              "byPrefix": [
-                {
-                  "prefixLength": 0,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 0,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0,
-                  "mrrAt3": 0
-                },
-                {
-                  "prefixLength": 1,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 0,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0,
-                  "mrrAt3": 0
-                },
-                {
-                  "prefixLength": 2,
-                  "opportunities": 24,
-                  "top1Hits": 1,
-                  "top3Hits": 1,
-                  "top1Accuracy": 0.041666666666666664,
-                  "top3Accuracy": 0.041666666666666664,
-                  "mrrAt3": 0.041666666666666664
-                },
-                {
-                  "prefixLength": 3,
-                  "opportunities": 24,
-                  "top1Hits": 2,
-                  "top3Hits": 3,
-                  "top1Accuracy": 0.08333333333333333,
-                  "top3Accuracy": 0.125,
-                  "mrrAt3": 0.09722222222222222
-                }
-              ],
-              "idealSavings": [
-                {
-                  "k": 1,
-                  "targetCharacters": 214,
-                  "charactersNotTyped": 78,
-                  "acceptanceTaps": 24,
-                  "netTapsSaved": 54,
-                  "savingsFraction": 0.2523364485981308
-                },
-                {
-                  "k": 3,
-                  "targetCharacters": 214,
-                  "charactersNotTyped": 86,
-                  "acceptanceTaps": 24,
-                  "netTapsSaved": 62,
-                  "savingsFraction": 0.2897196261682243
-                }
-              ]
-            }
-          },
-          {
-            "seed": 367,
-            "metrics": {
-              "targetTasks": 24,
-              "prefixOpportunities": 214,
-              "anyPrefixPoolHits": 24,
-              "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.32632398753894076,
-              "byPrefix": [
-                {
-                  "prefixLength": 0,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 0,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0,
-                  "mrrAt3": 0
-                },
-                {
-                  "prefixLength": 1,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 0,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0,
-                  "mrrAt3": 0
-                },
-                {
-                  "prefixLength": 2,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 1,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0.041666666666666664,
-                  "mrrAt3": 0.020833333333333332
-                },
-                {
-                  "prefixLength": 3,
-                  "opportunities": 24,
-                  "top1Hits": 2,
-                  "top3Hits": 3,
-                  "top1Accuracy": 0.08333333333333333,
-                  "top3Accuracy": 0.125,
-                  "mrrAt3": 0.09722222222222222
-                }
-              ],
-              "idealSavings": [
-                {
-                  "k": 1,
-                  "targetCharacters": 214,
-                  "charactersNotTyped": 68,
-                  "acceptanceTaps": 22,
-                  "netTapsSaved": 46,
-                  "savingsFraction": 0.21495327102803738
-                },
-                {
-                  "k": 3,
-                  "targetCharacters": 214,
-                  "charactersNotTyped": 86,
-                  "acceptanceTaps": 24,
-                  "netTapsSaved": 62,
-                  "savingsFraction": 0.2897196261682243
-                }
-              ]
-            }
-          },
-          {
-            "seed": 419,
-            "metrics": {
-              "targetTasks": 24,
-              "prefixOpportunities": 214,
-              "anyPrefixPoolHits": 24,
-              "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.34267912772585674,
-              "byPrefix": [
-                {
-                  "prefixLength": 0,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 0,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0,
-                  "mrrAt3": 0
-                },
-                {
-                  "prefixLength": 1,
-                  "opportunities": 24,
-                  "top1Hits": 0,
-                  "top3Hits": 0,
-                  "top1Accuracy": 0,
-                  "top3Accuracy": 0,
-                  "mrrAt3": 0
-                },
-                {
-                  "prefixLength": 2,
-                  "opportunities": 24,
-                  "top1Hits": 1,
-                  "top3Hits": 1,
-                  "top1Accuracy": 0.041666666666666664,
-                  "top3Accuracy": 0.041666666666666664,
-                  "mrrAt3": 0.041666666666666664
-                },
-                {
-                  "prefixLength": 3,
-                  "opportunities": 24,
-                  "top1Hits": 2,
-                  "top3Hits": 3,
-                  "top1Accuracy": 0.08333333333333333,
-                  "top3Accuracy": 0.125,
-                  "mrrAt3": 0.10416666666666667
-                }
-              ],
-              "idealSavings": [
-                {
-                  "k": 1,
-                  "targetCharacters": 214,
-                  "charactersNotTyped": 81,
-                  "acceptanceTaps": 24,
-                  "netTapsSaved": 57,
-                  "savingsFraction": 0.26635514018691586
-                },
-                {
-                  "k": 3,
-                  "targetCharacters": 214,
-                  "charactersNotTyped": 84,
-                  "acceptanceTaps": 24,
-                  "netTapsSaved": 60,
-                  "savingsFraction": 0.2803738317757009
-                }
-              ]
-            }
-          },
-          {
-            "seed": 467,
-            "metrics": {
-              "targetTasks": 24,
-              "prefixOpportunities": 214,
-              "anyPrefixPoolHits": 24,
-              "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.33956386292834895,
+              "overallMrrAt3": 0.3489096573208723,
               "byPrefix": [
                 {
                   "prefixLength": 0,
@@ -2513,30 +2317,162 @@
                 {
                   "k": 1,
                   "targetCharacters": 214,
-                  "charactersNotTyped": 74,
+                  "charactersNotTyped": 78,
                   "acceptanceTaps": 24,
-                  "netTapsSaved": 50,
-                  "savingsFraction": 0.2336448598130841
+                  "netTapsSaved": 54,
+                  "savingsFraction": 0.2523364485981308
                 },
                 {
                   "k": 3,
                   "targetCharacters": 214,
-                  "charactersNotTyped": 87,
+                  "charactersNotTyped": 86,
                   "acceptanceTaps": 24,
-                  "netTapsSaved": 63,
-                  "savingsFraction": 0.29439252336448596
+                  "netTapsSaved": 62,
+                  "savingsFraction": 0.2897196261682243
                 }
               ]
             }
           },
           {
-            "seed": 523,
+            "seed": 367,
             "metrics": {
               "targetTasks": 24,
               "prefixOpportunities": 214,
               "anyPrefixPoolHits": 24,
               "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.3450155763239875,
+              "overallMrrAt3": 0.3247663551401869,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.020833333333333332
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 68,
+                  "acceptanceTaps": 22,
+                  "netTapsSaved": 46,
+                  "savingsFraction": 0.21495327102803738
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 86,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 62,
+                  "savingsFraction": 0.2897196261682243
+                }
+              ]
+            }
+          },
+          {
+            "seed": 419,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.3403426791277259,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 81,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 57,
+                  "savingsFraction": 0.26635514018691586
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 84,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 60,
+                  "savingsFraction": 0.2803738317757009
+                }
+              ]
+            }
+          },
+          {
+            "seed": 467,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.34190031152647976,
               "byPrefix": [
                 {
                   "prefixLength": 0,
@@ -2572,7 +2508,73 @@
                   "top3Hits": 3,
                   "top1Accuracy": 0.08333333333333333,
                   "top3Accuracy": 0.125,
-                  "mrrAt3": 0.09722222222222222
+                  "mrrAt3": 0.10416666666666667
+                }
+              ],
+              "idealSavings": [
+                {
+                  "k": 1,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 74,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 50,
+                  "savingsFraction": 0.2336448598130841
+                },
+                {
+                  "k": 3,
+                  "targetCharacters": 214,
+                  "charactersNotTyped": 87,
+                  "acceptanceTaps": 24,
+                  "netTapsSaved": 63,
+                  "savingsFraction": 0.29439252336448596
+                }
+              ]
+            }
+          },
+          {
+            "seed": 523,
+            "metrics": {
+              "targetTasks": 24,
+              "prefixOpportunities": 214,
+              "anyPrefixPoolHits": 24,
+              "anyPrefixPoolRecall": 1,
+              "overallMrrAt3": 0.34579439252336447,
+              "byPrefix": [
+                {
+                  "prefixLength": 0,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 1,
+                  "opportunities": 24,
+                  "top1Hits": 0,
+                  "top3Hits": 0,
+                  "top1Accuracy": 0,
+                  "top3Accuracy": 0,
+                  "mrrAt3": 0
+                },
+                {
+                  "prefixLength": 2,
+                  "opportunities": 24,
+                  "top1Hits": 1,
+                  "top3Hits": 1,
+                  "top1Accuracy": 0.041666666666666664,
+                  "top3Accuracy": 0.041666666666666664,
+                  "mrrAt3": 0.041666666666666664
+                },
+                {
+                  "prefixLength": 3,
+                  "opportunities": 24,
+                  "top1Hits": 2,
+                  "top3Hits": 3,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.125,
+                  "mrrAt3": 0.10416666666666667
                 }
               ],
               "idealSavings": [
@@ -2602,7 +2604,7 @@
               "prefixOpportunities": 214,
               "anyPrefixPoolHits": 24,
               "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.338006230529595,
+              "overallMrrAt3": 0.3411214953271028,
               "byPrefix": [
                 {
                   "prefixLength": 0,
@@ -2634,11 +2636,11 @@
                 {
                   "prefixLength": 3,
                   "opportunities": 24,
-                  "top1Hits": 2,
+                  "top1Hits": 3,
                   "top3Hits": 3,
-                  "top1Accuracy": 0.08333333333333333,
+                  "top1Accuracy": 0.125,
                   "top3Accuracy": 0.125,
-                  "mrrAt3": 0.09722222222222222
+                  "mrrAt3": 0.125
                 }
               ],
               "idealSavings": [
@@ -2668,7 +2670,7 @@
               "prefixOpportunities": 214,
               "anyPrefixPoolHits": 24,
               "anyPrefixPoolRecall": 1,
-              "overallMrrAt3": 0.33956386292834895,
+              "overallMrrAt3": 0.33489096573208726,
               "byPrefix": [
                 {
                   "prefixLength": 0,
@@ -2700,29 +2702,29 @@
                 {
                   "prefixLength": 3,
                   "opportunities": 24,
-                  "top1Hits": 3,
-                  "top3Hits": 3,
-                  "top1Accuracy": 0.125,
-                  "top3Accuracy": 0.125,
-                  "mrrAt3": 0.125
+                  "top1Hits": 2,
+                  "top3Hits": 2,
+                  "top1Accuracy": 0.08333333333333333,
+                  "top3Accuracy": 0.08333333333333333,
+                  "mrrAt3": 0.08333333333333333
                 }
               ],
               "idealSavings": [
                 {
                   "k": 1,
                   "targetCharacters": 214,
-                  "charactersNotTyped": 73,
+                  "charactersNotTyped": 72,
                   "acceptanceTaps": 23,
-                  "netTapsSaved": 50,
-                  "savingsFraction": 0.2336448598130841
+                  "netTapsSaved": 49,
+                  "savingsFraction": 0.22897196261682243
                 },
                 {
                   "k": 3,
                   "targetCharacters": 214,
-                  "charactersNotTyped": 84,
+                  "charactersNotTyped": 83,
                   "acceptanceTaps": 24,
-                  "netTapsSaved": 60,
-                  "savingsFraction": 0.2803738317757009
+                  "netTapsSaved": 59,
+                  "savingsFraction": 0.2757009345794392
                 }
               ]
             }
@@ -2739,27 +2741,7 @@
     }
   },
   "trajectoryRegressions": {
-    "top1Losses": [
-      {
-        "taskId": "fast-short-prefix",
-        "mode": "fast",
-        "target": "result",
-        "prefixLength": 3,
-        "typedPrefix": "res",
-        "baselineRank": 1,
-        "decoderRank": 2,
-        "baselineDisplayed": [
-          "result",
-          "respect",
-          "restrict"
-        ],
-        "decoderDisplayed": [
-          "respect",
-          "result",
-          "restrict"
-        ]
-      }
-    ],
+    "top1Losses": [],
     "top3Losses": []
   },
   "actualTrajectories": {
@@ -6447,15 +6429,15 @@
           {
             "prefixLength": 3,
             "pool": [
-              "respect",
               "result",
+              "respect",
               "restrict",
               "respectively",
               "residue"
             ],
             "displayed": [
-              "respect",
               "result",
+              "respect",
               "restrict"
             ]
           },
