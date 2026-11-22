@@ -121,3 +121,27 @@
   .lemma-tutor .keyboard-composer[data-symbols] .composer textarea {max-height: 76px;}
   .lemma-tutor .keyboard-composer[data-symbols] .composer-preview {max-height: 44px;}
 }
+
+/* N221 (Owner report) · closer to Gboard: taller flat keys (a 38 px cap on a 48 px row on most phones), the modifier keys,
+   ?123 and Enter in one tinted shade with pill ends on ?123 and Enter, a strip of plain words with thin dividers (no
+   placeholder dots, no raised middle box), and room below the keys so the bottom row sits clear of the gesture bar. */
+@media (max-width: 699px) {
+  :root .lemma-tutor {--cell: clamp(44px, 5.7dvh, 48px);}
+  :root .lemma-tutor .kb {padding-bottom: calc(var(--v7-space-4) + var(--v7-safe-bottom, env(safe-area-inset-bottom)));}
+}
+:root .lemma-tutor .kb {
+  --key-fn: light-dark(
+    color-mix(in srgb, var(--v7-role-selection-subtle) 55%, var(--v7-role-surface-muted-hover)),
+    color-mix(in srgb, var(--v7-role-selection-subtle) 60%, var(--v7-role-surface-overlay))
+  );
+}
+.lemma-tutor .kb .k::before {top: 5px; bottom: 5px; border-radius: 7px; box-shadow: none;}
+.lemma-tutor .kb .k.go {color: var(--v7-role-text-primary);}
+.lemma-tutor .kb .k.go::before {background: var(--key-fn); border-radius: 9999px;}
+.lemma-tutor .kb .k.go.down::before {background: var(--key-down); filter: none;}
+.lemma-tutor .kb .row.bottom .k.fn.w15::before {border-radius: 9999px;}
+.lemma-tutor .kb .sugg button, .lemma-tutor .kb .sugg button:nth-child(2) {background: transparent; border-radius: 0;}
+.lemma-tutor .kb .sugg button.preferred {font-weight: 600;}
+/* A divider only separates two words, never an empty slot. */
+.lemma-tutor .kb .sugg button:disabled::before, .lemma-tutor .kb .sugg button:disabled + button::before {display: none;}
+.lemma-tutor .kb .sugg .writing-aid-empty {visibility: hidden;}

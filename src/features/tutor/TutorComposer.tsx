@@ -131,7 +131,9 @@ export function TutorComposer(props: Props) {
   const suggestionUndoable = !hideSuggestionUndo && Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
   const refreshable = writingWords.length > 0 || Boolean(writingEdit || writingGhost);
   /** N220: a word is being typed (a collapsed caret right after a letter), so the strip is the word suggestions'. */
-  const wordInProgress = cursor.start === cursor.end && /[A-Za-z]$/.test(cursor.text.slice(0, cursor.start));
+  // N221: and has suggestions to show; with none, the strip keeps the maths symbols instead of empty slots, as Gboard
+  // keeps its toolbar.
+  const wordInProgress = cursor.start === cursor.end && /[A-Za-z]$/.test(cursor.text.slice(0, cursor.start)) && writingWords.length > 0;
 
   useEffect(() => {
     const reportVisibility = () => {

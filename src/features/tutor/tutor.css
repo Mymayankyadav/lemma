@@ -386,3 +386,12 @@
 .lemma-tutor .writing-composer-card .field > .v7-icon-button:not([data-tutor-send]) {border:1px solid var(--v7-role-border-subtle);color:var(--v7-role-text-secondary);}
 .lemma-tutor .writing-composer-card .field > .v7-icon-button[aria-pressed="true"] {background:var(--v7-role-selection-subtle);border-color:transparent;color:var(--v7-role-selection-fg);}
 .lemma-tutor .writing-composer-card .field > [data-tutor-send]:disabled {background:var(--v7-role-surface-muted);color:var(--v7-role-text-disabled);opacity:1;}
+
+/* N221 (Owner report) · the session header is the app's detail header: edge to edge, 52 px, Back and actions at the
+   screen's sides and the title centred at body size, instead of a narrower bar with a small title. */
+.lemma-tutor .tutor-header {display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--v7-space-2);min-height:52px;
+ margin-inline:calc(var(--v7-page-margin) * -1);padding-inline:var(--v7-space-2);padding-bottom:var(--v7-space-1);
+ border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);background:var(--v7-role-surface-page);}
+.lemma-tutor .tutor-header-title {justify-content:center;gap:var(--v7-space-2);}
+.lemma-tutor .tutor-header-title strong {font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
+.lemma-tutor .tutor-session-progress {margin-top:var(--v7-space-2);}

@@ -113,9 +113,16 @@ export default function ProgressV7(){
   }catch{notify('Could not make the image',{tone:'danger'});}
  }
  const hero=<section className="v7-progress-hero" aria-label="Focused time">
-  <p className="v7-progress-figure">{formatDuration(total)}</p>
-  <p className="v7-meta">Focused · {ranges.find(item=>item.value===range)?.label}</p>
-  {chip?<StatusBadge tone={chip.tone}>{chip.text}</StatusBadge>:<p className="v7-meta">{range==='30'?'Your first month':'First in this range'}</p>}
+  {/* N221 (Owner report): the total is the screen's headline, with Your week beside it and one meta line beneath, so
+      the chart starts higher. */}
+  <div className="v7-progress-figure-row">
+   <p className="v7-progress-figure">{formatDuration(total)}</p>
+   {isFlagOn('v7Week')&&<Link className="v7-progress-week-link" to="/week">Your week<ChevronRight aria-hidden="true"/></Link>}
+  </div>
+  <div className="v7-progress-meta-row">
+   <p className="v7-meta">Focused · {ranges.find(item=>item.value===range)?.label}{!chip&&<> · {range==='30'?'Your first month':'First in this range'}</>}</p>
+   {chip&&<StatusBadge tone={chip.tone}>{chip.text}</StatusBadge>}
+  </div>
   {range==='7'&&summary&&<Button small variant="ghost" onClick={()=>{void shareWeek();}}><Share2 aria-hidden="true"/>Share this week</Button>}
   {/* N220 (Owner report): "Your week" belongs to the figure it explains, not floating between the tabs and the range. */}
   {isFlagOn('v7Week')&&<Link className="v7-progress-week-link" to="/week">Your week<ChevronRight aria-hidden="true"/></Link>}
