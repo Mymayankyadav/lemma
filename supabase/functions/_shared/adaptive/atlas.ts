@@ -12,12 +12,20 @@ import {sessionQueue,type Action} from './kg.ts';
 import {reentryProbes,finalReviews,allocateProjects,type FinalReview} from './scheduler.ts';
 import {bridgeStrength,bridgeCounts,type AtlasLink} from './links.ts';
 import {DAY,logit,clamp} from './math.ts';
-export type AtlasRows={settings:any;concepts:any[];projects:any[];checkpoints:any[];cpConcepts:any[];sessions:any[];attempts?:any[];attemptTags?:any[];instructionEvents?:any[];atlasLinks?:any[];prereqs?:any[];modelFits?:any[];items?:any[];assumptions?:any[];cards?:any[];notes?:any[];reviews?:any[];intervals?:any[];busy?:any[];studyEntries?:any[]};
+export type AtlasRows={settings:any;concepts:any[];projects:any[];checkpoints:any[];cpConcepts:any[];sessions:any[];attempts?:any[];attemptTags?:any[];instructionEvents?:any[];atlasLinks?:any[];prereqs?:any[];aliases?:any[];modelFits?:any[];items?:any[];assumptions?:any[];cards?:any[];notes?:any[];reviews?:any[];intervals?:any[];busy?:any[];studyEntries?:any[]};
 export type FacetValue=Estimate&{certified:boolean;status:string};
 export type AtlasReadModel={sessions?:AtlasRows['sessions'];settings:typeof ATLAS_DEFAULTS;checkpoints:any[];checkpointConcepts:any[];model:MeasurementState;facets:Record<string,FacetValue[]>;health:Health[];fits:Record<string,ReturnType<typeof feasibility>>;durations:Record<string,ReturnType<typeof predictDuration>>;budget:ReturnType<typeof cardBudget>;queue:ReturnType<typeof sessionQueue>;slots:ReturnType<typeof rankSlots>;themes:{id:string;name:string;instances:string[]}[];bridges:{from:string;to:string;strength:ReturnType<typeof bridgeStrength>}[];attempts:any[];links:AtlasLink[];frustration:ReturnType<typeof frustration>;capacity:number|null;finalReviews:FinalReview[];allocation:ReturnType<typeof allocateProjects>};
 export function factsForAtlas(rows:AtlasRows):AtlasFacts{
  const notes=new Map((rows.notes??[]).map(n=>[n.id,n]));
- return {concepts:rows.concepts,attempts:(rows.attempts??[]).map(a=>({...a,novelty:a.context?.novelty??a.novelty})),tags:[...(rows.attemptTags??[]),...(rows.attempts??[]).flatMap(a=>(a.tags??[]).map((t:any)=>({...t,attempt_id:a.id})))],instructions:rows.instructionEvents??[],links:rows.atlasLinks??[],items:rows.items??[],sessions:rows.sessions,assumptions:rows.assumptions??[],
+ // Cross-subject aliases preserve concept IDs and direct evidence while sharing a
+ // statistical ability component. Never turn an alias into certification or a
+ // second equivalent component when an approved typed equivalent already exists.
+ const typed=rows.atlasLinks??[], ids=new Set(rows.concepts.map(c=>c.id));
+ const pair=(a:string,b:string)=>[a,b].sort().join(':');
+ const equivalents=new Set(typed.filter(l=>l.kind==='equivalent'&&l.status==='approved').map(l=>pair(l.from_id,l.to_id)));
+ const aliases=(rows.aliases??[]).filter(a=>a.concept_a!==a.concept_b&&ids.has(a.concept_a)&&ids.has(a.concept_b)&&!equivalents.has(pair(a.concept_a,a.concept_b)))
+  .map(a=>({id:'alias:'+a.id,from_id:a.concept_a,to_id:a.concept_b,kind:'equivalent',status:'approved'}));
+ return {concepts:rows.concepts,attempts:(rows.attempts??[]).map(a=>({...a,novelty:a.context?.novelty??a.novelty})),tags:[...(rows.attemptTags??[]),...(rows.attempts??[]).flatMap(a=>(a.tags??[]).map((t:any)=>({...t,attempt_id:a.id})))],instructions:rows.instructionEvents??[],links:[...typed,...aliases],items:rows.items??[],sessions:rows.sessions,assumptions:rows.assumptions??[],
   cards:(rows.cards??[]).map(c=>({...c,concept_id:c.concept_id??notes.get(c.note_id)?.concept_id,project_id:c.project_id??notes.get(c.note_id)?.project_id})).filter(c=>c.concept_id),reviews:(rows.reviews??[]).map(r=>({...r,occurred_at:r.reviewed_at??r.occurred_at})),};
 }
 /** One block per remaining study day from the declared weekday capacity, split evenly among the projects still running that day. */
