@@ -394,6 +394,16 @@ export function TutorComposer(props: Props) {
     if (typed) typeText(edit, text, true);
     else change(insertNotation(edit, text), true);
   }
+  /** N221: recognised handwriting goes in at the caret, as $…$ in prose or as plain LaTeX inside $…$. */
+  function insertEquation(latex: string) {
+    remember();
+    if (readOnly) return false;
+    const edit = history.current.present;
+    const inMath = tutorMathContext(edit) === 'tex';
+    const before = edit.text.slice(0, edit.start);
+    const text = inMath ? latex : (before && !/\s$/.test(before) ? ' ' : '') + '$' + latex + '$';
+    return commit(changePadText(history.current, insertNotation(edit, text)), true);
+  }
   function nextSlot(backward = false) {
     remember();
     const slot = findNotationSlot(history.current.present, backward);
@@ -768,7 +778,7 @@ export function TutorComposer(props: Props) {
     </Sheet>
     <Sheet open={aidSettings} onClose={() => setAidSettings(false)} title="Writing assistance"><WritingAidSettings showTitle={false}/></Sheet>
     {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoOpen={photo} onClosePhoto={()=>setPhoto(false)}
-      editingImageId={editingImageId} canMigrate={!readOnly} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
+      editingImageId={editingImageId} canMigrate={!readOnly} onInsertEquation={insertEquation} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
     {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}>
       {assist.drawing ? <TutorInkPad enabled={inputPrefs.recognition} strokes={assist.snapshot?.strokes??[]}
         readiness={assist.readiness} recognized={assist.recognized} completions={assist.completions} actionable={assist.actionable}

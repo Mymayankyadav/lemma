@@ -120,7 +120,8 @@ export default function ProgressV7(){
    {isFlagOn('v7Week')&&<Link className="v7-progress-week-link" to="/week">Your week<ChevronRight aria-hidden="true"/></Link>}
   </div>
   <div className="v7-progress-meta-row">
-   <p className="v7-meta">Focused · {ranges.find(item=>item.value===range)?.label}{!chip&&<> · {range==='30'?'Your first month':'First in this range'}</>}</p>
+   {/* "Focused · range" stays its own text so it reads (and is found) as the figure's label. */}
+   <p className="v7-meta"><span>Focused · {ranges.find(item=>item.value===range)?.label}</span>{!chip&&<span> · {range==='30'?'Your first month':'First in this range'}</span>}</p>
    {chip&&<StatusBadge tone={chip.tone}>{chip.text}</StatusBadge>}
   </div>
   {range==='7'&&summary&&<Button small variant="ghost" onClick={()=>{void shareWeek();}}><Share2 aria-hidden="true"/>Share this week</Button>}

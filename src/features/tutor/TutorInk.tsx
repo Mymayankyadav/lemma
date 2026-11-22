@@ -1,5 +1,5 @@
 import {useEffect,useId,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
-import {Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,Trash2,Undo2} from 'lucide-react';
+import {Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {InkCanvas} from '../../ui/v7/ink/InkCanvas';
 import {clearPadInk,initializePadInk,replacePadStrokes,undoPadInk,type PadInkHistory,type PadStrokes} from '../../ui/v7/ink/ink';
@@ -7,6 +7,9 @@ import {rasterizeInk,reencodePhoto} from '../../ui/v7/ink/images';
 import {TUTOR_ATTACHMENT_COUNT,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from '../../data/tutor/attachment-types';
 import {assertTutorInkScope,editInkDraft,emptyInk,finishStagedDrawing,keepDraftImage,readInkDraft,readTutorImage,writeInkDraft,
   type InkDraft,type InkRecovery,type TutorInkScope} from '../../data/tutor/ink-storage';
+import {MathText} from '../../ui/MathText';
+import {EQUATION_MODEL,EQUATION_MODEL_BYTES} from './input/equationModel';
+import {equationModelCached,recognizeEquation} from './input/equationRecognizer';
 import './scratchpad.css';
 
 const openingInk:InkRecovery={draft:emptyInk,status:'loading'};
@@ -61,10 +64,12 @@ export function useTutorInk(scope:TutorInkScope,enabled:boolean) {
 }
 export type TutorInkState=ReturnType<typeof useTutorInk>;
 
-export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onCloseDrawing,
+export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onCloseDrawing,onInsertEquation,
   onMigrateImages,editingImageId,referencedImageIds,canInsertImage,canMigrate,answerLength}: {
   ink:TutorInkState;shown:boolean;photoOpen:boolean;onClosePhoto:()=>void;
   onInsertImage:(id:string,replacesId?:string)=>boolean;onCloseDrawing:()=>void;
+  /** N221: insert recognised LaTeX at the answer's caret. */
+  onInsertEquation?:(latex:string)=>boolean;
   onMigrateImages:(ids:string[])=>boolean;editingImageId:string|null;referencedImageIds:readonly string[];
   canInsertImage:boolean;canMigrate:boolean;answerLength:number;
 }) {
@@ -97,6 +102,33 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
   const migrateImages=useRef(onMigrateImages);
   migrateImages.current=onMigrateImages;
   const legacy=!draft.inlineImages&&Boolean(draft.photos.length||draft.strokes.length);
+  // N221 (Owner): handwritten equation recognition (Pix2Text MFR, on this device after a one-time download).
+  type Reading={phase:'ask'|'download'|'reading'|'result'|'error';loaded?:number;latex?:string;message?:string};
+  const [reading,setReading]=useState<Reading|null>(null);
+  const readingRun=useRef(0);
+  async function readEquation(){
+    const run=++readingRun.current;
+    const cached=await equationModelCached().catch(()=>false);
+    if(run!==readingRun.current)return;
+    setReading({phase:cached?'reading':'download',loaded:0});
+    try{
+      const latex=await recognizeEquation(working.strokes,working.width,loaded=>{
+        if(run===readingRun.current)setReading(current=>current&&current.phase==='download'?{...current,loaded}:current);
+      });
+      if(run===readingRun.current)setReading({phase:'result',latex});
+    }catch(error){
+      if(run===readingRun.current)setReading({phase:'error',message:error instanceof Error?error.message:'Recognition failed.'});
+    }
+  }
+  async function openReading(){
+    const run=++readingRun.current;
+    setReading({phase:'reading'});
+    const cached=await equationModelCached().catch(()=>false);
+    if(run!==readingRun.current)return;
+    if(cached)void readEquation();else setReading({phase:'ask'});
+  }
+  function closeReading(){readingRun.current++;setReading(null);}
+  const megabytes=Math.round(EQUATION_MODEL_BYTES/1e6);
 
   useEffect(()=>{
     if (strokes.current===working.strokes) return;
@@ -294,6 +326,8 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
       <IconButton label="Eraser" disabled={!canDraw||preparing} aria-pressed={mode==='eraser'} onClick={()=>setMode('eraser')}><Eraser aria-hidden="true"/></IconButton>
       <IconButton label="Hand" aria-pressed={mode==='hand'} onClick={()=>setMode('hand')}><Hand aria-hidden="true"/></IconButton>
       <IconButton label="Undo stroke" disabled={!canDraw||preparing||!history.undo.length} onClick={()=>saveInk(undoPadInk(history),[...redo,history.strokes])}><Undo2 aria-hidden="true"/></IconButton>
+      <IconButton label="Recognize equation" aria-haspopup="dialog" disabled={preparing||!working.strokes.length||!onInsertEquation}
+        onClick={()=>{void openReading();}}><ScanText aria-hidden="true"/></IconButton>
       <IconButton label="Scratch pad actions" aria-haspopup="dialog" onClick={()=>setToolsOpen(true)}><Ellipsis aria-hidden="true"/></IconButton>
       <Button small variant="primary" className="tutor-insert-drawing" disabled={!canDraw||preparing||started||!working.strokes.length||(!editingImageId&&!canInsertImage)}
         onClick={()=>{void insertDrawing();}}>{editingImageId?'Update drawing':'Insert drawing'}</Button>
@@ -312,6 +346,43 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
   </section>;
   return <>
     {shown&&(!editingAsset||editingAsset.ink)&&pad}
+    <Sheet open={Boolean(reading)&&shown} onClose={closeReading} title="Recognize equation">
+      <div className="tutor-equation-reading" aria-live="polite">
+        {reading?.phase==='ask'&&<>
+          <p>Lemma reads your handwriting on this device with {EQUATION_MODEL.name} ({EQUATION_MODEL.license} licence). It downloads
+            the model once, about {megabytes} MB, and works offline after that.</p>
+          <div className="tutor-session-actions">
+            <Button variant="primary" onClick={()=>{void readEquation();}}>Download and recognize</Button>
+            <Button onClick={closeReading}>Not now</Button>
+          </div>
+        </>}
+        {reading?.phase==='download'&&<>
+          <p>Downloading the model, {Math.round((reading.loaded??0)/1e6)} of {megabytes} MB…</p>
+          <progress max={EQUATION_MODEL_BYTES} value={reading.loaded??0} aria-label="Model download"/>
+        </>}
+        {reading?.phase==='reading'&&<p role="status">Reading your handwriting…</p>}
+        {reading?.phase==='result'&&<>
+          <div className="tutor-equation-preview"><MathText source={'$'+(reading.latex??'')+'$'}/></div>
+          <label className="tutor-equation-latex">LaTeX
+            <textarea rows={2} value={reading.latex??''} spellCheck={false} autoCapitalize="off"
+              onChange={event=>setReading({phase:'result',latex:event.target.value})}/>
+          </label>
+          <div className="tutor-session-actions">
+            <Button variant="primary" disabled={!reading.latex?.trim()} onClick={()=>{
+              if(onInsertEquation?.(reading.latex!.trim()))closeReading();
+            }}>Insert into answer</Button>
+            <Button onClick={()=>{void readEquation();}}>Read again</Button>
+          </div>
+        </>}
+        {reading?.phase==='error'&&<>
+          <p role="alert">{reading.message} Your drawing is still here.</p>
+          <div className="tutor-session-actions">
+            <Button variant="primary" onClick={()=>{void readEquation();}}>Try again</Button>
+            <Button onClick={closeReading}>Not now</Button>
+          </div>
+        </>}
+      </div>
+    </Sheet>
     <Sheet open={toolsOpen&&shown} onClose={()=>setToolsOpen(false)} title="Scratch pad actions">
       <div className="tutor-session-actions">
         <Button small disabled={!canDraw||preparing||!redo.length} onClick={()=>{redoStroke();setToolsOpen(false);}}><Redo2 aria-hidden="true"/>Redo stroke</Button>
