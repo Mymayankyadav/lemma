@@ -12,7 +12,7 @@ import {studyDayBounds} from "../../lib/derive";
  * conserves its review/rating counts, and is independent of the browser locale.
  */
 export function makeStressInsightAggregate(
- data:DemoStore, days:7|30|90, now:number, timeZone:string, rolloverHour:number,
+ data:DemoStore, days:1|7|30|90, now:number, timeZone:string, rolloverHour:number,
 ):InsightAggregate|null {
  const total=data.stressReviewCount??null;
  if(total===null)return null;

@@ -11,7 +11,8 @@ export const asRange=(value:string|null):ProgressRange=>value==='day'||value==='
 export const rangePhrase=(range:ProgressRange)=>range==='day'?'today':'in the last '+range+' days';
 export const previousPhrase=(range:ProgressRange)=>range==='day'?'yesterday':'the '+range+' days before';
 /** The insight read only knows 7, 30 and 90 days; Today filters the 7-day read to one day. */
-export const insightDays=(range:ProgressRange):7|30|90=>range==='day'||range==='7'?7:Number(range) as 30|90;
+/** Today fetches one study day: the live aggregate's totals cover the whole fetched span. */
+export const insightDays=(range:ProgressRange):1|7|30|90=>range==='day'?1:range==='7'?7:Number(range) as 30|90;
 export const rangeLength=(range:ProgressRange)=>range==='day'?1:Number(range);
 
 function periodOf(days:string[],range:EffortRange,zone:string):EffortPeriod{

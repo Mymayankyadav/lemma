@@ -92,7 +92,7 @@ test('Account deletion removes only that owner’s tutor ink and fences a delaye
  await page.evaluate(()=>{location.hash='/p/logic/cp/CP1/tutor'})
  await expect(page).toHaveURL(/#\/p\/logic\/cp\/CP1\/tutor$/)
  await page.getByRole('button',{name:'Write a question',exact:true}).click()
- await page.getByRole('button',{name:'Write by hand',exact:true}).dblclick()
+ await page.getByRole('button',{name:'Scratch',exact:true}).click()
  await expect(page.getByRole('button',{name:'Pen',exact:true})).toBeEnabled()
  await page.evaluate(()=>{
   const open=IDBFactory.prototype.open
@@ -158,7 +158,7 @@ for(const entry of ['chat','Pad'] as const){
   },draftKey+':source')
 
   const chat=entry==='chat'
-  await page.goto('/lemma/?demo=0&flags=v7Shell,padLocal,tutorThreads#'+(chat?'/p/logic/cp/CP1/tutor':'/pad?path=logic&checkpoint=CP1'))
+  await page.goto('/lemma/?demo=0&flags=v7Shell,padLocal,tutorThreads,-tutorScratch#'+(chat?'/p/logic/cp/CP1/tutor':'/pad?path=logic&checkpoint=CP1'))
   const tutor=page.getByRole(chat?'main':'dialog',{name:'Checkpoint tutor'})
   if(chat)await tutor.getByRole('button',{name:'Write a question',exact:true}).click()
   else await page.getByRole('button',{name:'Open checkpoint tutor',exact:true}).click()
@@ -174,7 +174,7 @@ for(const entry of ['chat','Pad'] as const){
   }
   const context=chat?page.getByRole('dialog',{name:'Context for your tutor'}):tutor
   await context.getByText('Add a page from '+short,{exact:true}).click()
-  await context.getByRole('button',{name:'Preview linked source page'}).click()
+  await context.getByRole('button',{name:'Preview page'}).click()
   await context.getByRole('button',{name:'Add source excerpt'}).click()
   await expect(context.getByRole('region',{name:'Attached source excerpt'})).toContainText(excerpt)
   expect(await page.evaluate(key=>[localStorage.getItem(key+':question'),localStorage.getItem(key+':source')],draftKey)).toEqual([text,null])
@@ -231,7 +231,7 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
   if(request.headers()['accept']?.includes('vnd.pgrst.object')&&Array.isArray(result))result=result[0]??null
   return route.fulfill({json:result})
  })
- await page.goto('/lemma/?demo=0&flags=v7Shell,padLocal,tutorThreads#/pad?path=logic&checkpoint=CP1')
+ await page.goto('/lemma/?demo=0&flags=v7Shell,padLocal,tutorThreads,-tutorScratch#/pad?path=logic&checkpoint=CP1')
  const open=page.getByRole('button',{name:'Open checkpoint tutor'})
  await open.click()
  const dialog=page.getByRole('dialog',{name:'Checkpoint tutor'})
@@ -249,10 +249,10 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
  await dialog.getByRole('button',{name:'Confirm import'}).click()
  const result=dialog.getByRole('article',{name:'Imported reply'})
  await expect(result.getByRole('heading',{name:'Imported by you'})).toBeVisible()
- await result.getByRole('button',{name:'Draft a card',exact:true}).click()
+ await result.getByRole('button',{name:'Make a card from this reply',exact:true}).click()
  await result.getByLabel('Front').fill('Is the converse always true?')
  await result.getByLabel('Back').fill('It needs a separate proof.')
- await result.getByRole('button',{name:'Send to proposal review'}).click()
+ await result.getByRole('button',{name:'Propose card'}).click()
  await expect(result.getByRole('link',{name:'Review proposal'})).toHaveAttribute('href',new RegExp('/proposals[?]card='+proposalId+'$'))
  await result.getByRole('link',{name:'Review proposal'}).click()
  await expect(page.locator('[data-proposal="'+proposalId+'"]')).toContainText('Is the converse always true?')
@@ -289,7 +289,7 @@ test('global hold keeps owner history and receipt recovery available without sub
   if(request.headers()['accept']?.includes('vnd.pgrst.object')&&Array.isArray(data))data=data[0]??null
   return route.fulfill({json:data})
  })
- await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads#/p/logic/cp/CP1/tutor')
+ await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads,-tutorScratch#/p/logic/cp/CP1/tutor')
  const tutor=page.getByRole('main',{name:'Checkpoint tutor'})
  await expect(tutor.getByRole('article',{name:'Imported reply'})).toContainText('Previously confirmed answer')
  const draft=tutor.getByRole('textbox',{name:'Your answer'})
@@ -297,7 +297,7 @@ test('global hold keeps owner history and receipt recovery available without sub
  await expect(draft).toHaveJSProperty('readOnly',true)
  await expect(tutor.getByRole('region',{name:'Pending tutor submission'})).toContainText('Never submitted question')
  await expect(tutor.getByRole('button',{name:'Send',exact:true})).toBeDisabled()
- await expect(tutor.getByRole('button',{name:'Draft a card',exact:true})).toHaveCount(0)
+ await expect(tutor.getByRole('button',{name:'Make a card from this reply',exact:true})).toHaveCount(0)
  await tutor.getByRole('button',{name:'Check saved receipt'}).click()
  await expect(tutor.getByRole('alert')).toContainText('No saved receipt was found')
  expect(receipts).toContain(committed.operationId);expect(receipts).toContain(unconfirmed.operationId)
@@ -322,7 +322,7 @@ test('a previously available checkpoint reopens its confirmed conversation offli
   if(request.headers()['accept']?.includes('vnd.pgrst.object')&&Array.isArray(data))data=data[0]??null
   return route.fulfill({json:data})
  })
- await page.goto('/lemma/?demo=0&flags=v7Shell,padLocal,tutorThreads#/pad?path=logic&checkpoint=CP1')
+ await page.goto('/lemma/?demo=0&flags=v7Shell,padLocal,tutorThreads,-tutorScratch#/pad?path=logic&checkpoint=CP1')
  const open=page.getByRole('button',{name:'Open checkpoint tutor'}),dialog=page.getByRole('dialog',{name:'Checkpoint tutor'})
  await open.click()
  await expect(dialog.getByRole('article',{name:'Imported reply'})).toContainText('Previously confirmed answer')

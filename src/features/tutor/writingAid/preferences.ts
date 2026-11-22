@@ -3,6 +3,7 @@ import {authGeneration, authOwner, onAccountChange} from '../../../data/authBoun
 import {getDemoProfile, getMode} from '../../../data/mode';
 import {subscribeTutorLocalCleanup, tutorLocalScopeActive, writeTutorLocal} from '../../../data/tutor/local-storage';
 import {ALL_WRITING_AID_SURFACES, type WritingAidMode, type WritingAidSurface, type WritingAidSurfaces} from './policy';
+import {isFlagOn} from '../../../flags';
 
 const CHANGE = 'lemma:tutor-writing-aid-preferences';
 const DEFAULT_MASK = 15;
@@ -91,11 +92,16 @@ export function useWritingAidPreferences(): {
 } {
   const stored = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   const [scopeKey, available, mode, mask] = JSON.parse(stored) as [string, boolean, WritingAidMode, number];
-  const surfaces = mask === DEFAULT_MASK ? ALL_WRITING_AID_SURFACES : {
+  // N223 (Owner: "These will default and no settings are needed for them as they are non-intrusive"): suggestions are
+  // on in every account, live included, whatever was stored, unless the old settings are back behind their flag. The
+  // grey-text continuation is off either way until the proof assist brings it back.
+  const ghost = isFlagOn('proofAssistGhost');
+  if (!isFlagOn('writingAidSettings')) return {scopeKey, available, mode: 'balanced', surfaces: {...ALL_WRITING_AID_SURFACES, ghost}};
+  const surfaces = mask === DEFAULT_MASK ? {...ALL_WRITING_AID_SURFACES, ghost} : {
     words: Boolean(mask & SURFACE_BITS.words),
     replace: Boolean(mask & SURFACE_BITS.replace),
     correction: Boolean(mask & SURFACE_BITS.correction),
-    ghost: Boolean(mask & SURFACE_BITS.ghost),
+    ghost: ghost && Boolean(mask & SURFACE_BITS.ghost),
   };
   return {scopeKey, available, mode, surfaces};
 }

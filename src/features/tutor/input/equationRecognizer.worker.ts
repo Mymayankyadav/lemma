@@ -12,6 +12,8 @@ const TUTOR_RUNTIME = MODEL_MANIFEST.runtime;
 
 export type EquationWorkerRequest =
   | {type: 'status'}
+  /** N223: load the cached model now, so the first Read does not wait for it. */
+  | {type: 'prepare'}
   | {type: 'recognize'; id: number; pixels: Float32Array};
 export type EquationWorkerResponse =
   | {type: 'status'; cached: boolean}
@@ -25,6 +27,9 @@ const scope = self as unknown as {
 };
 let model: Promise<{encoder: InferenceSession; decoder: InferenceSession; vocabulary: string[]}> | undefined;
 let loaded = 0;
+/** N223: only the newest read runs to the end; an older one stops at its next decoding step. */
+let latest = 0;
+const CANCELLED = 'Superseded by a newer reading.';
 
 async function openCache() {
   try {return await self.caches?.open(EQUATION_MODEL_CACHE);} catch {return undefined;}
@@ -82,7 +87,8 @@ function load() {
       fetchFile(EQUATION_MODEL.files.decoder, cache)]);
     const vocabulary = vocabularyFrom(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(tokenizer)));
     if (env.versions.web !== TUTOR_RUNTIME.version) throw new Error('Mismatched recognition runtime');
-    env.wasm.numThreads = TUTOR_RUNTIME.threads;
+    // N223: every core when the page is cross-origin isolated (WASM threads need SharedArrayBuffer); otherwise one.
+    env.wasm.numThreads = self.crossOriginIsolated ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1)) : TUTOR_RUNTIME.threads;
     env.wasm.proxy = false;
     env.wasm.wasmBinary = wasm;
     try {
@@ -98,11 +104,13 @@ function load() {
   })().catch(error => {model = undefined; throw error;});
 }
 
-async function recognize(pixels: Float32Array): Promise<string> {
+async function recognize(id: number, pixels: Float32Array): Promise<string> {
   const {encoder, decoder, vocabulary} = await load();
+  if (id !== latest) throw new Error(CANCELLED);
   const size = EQUATION_MODEL.inputSize;
   const {[EQUATION_MODEL.encoder.output]: hidden} = await encoder.run({[EQUATION_MODEL.encoder.input]: new Tensor('float32', pixels, [1, 3, size, size])});
   const ids = await greedyDecode(async tokens => {
+    if (id !== latest) throw new Error(CANCELLED);
     const input = new Tensor('int64', BigInt64Array.from(tokens, BigInt), [1, tokens.length]);
     const {[EQUATION_MODEL.decoder.output]: logits} = await decoder.run({[EQUATION_MODEL.decoder.ids]: input, [EQUATION_MODEL.decoder.hidden]: hidden});
     const data = logits.data as Float32Array, vocab = EQUATION_MODEL.vocabSize;
@@ -119,8 +127,11 @@ scope.onmessage = event => {
       const hits = await Promise.all(files.map(file => cache?.match(equationModelUrl(file)).catch(() => undefined)));
       scope.postMessage({type: 'status', cached: hits.every(Boolean)});
     });
+  } else if (request.type === 'prepare') {
+    void load().catch(() => undefined);
   } else if (request.type === 'recognize') {
-    recognize(request.pixels).then(latex => scope.postMessage({type: 'result', id: request.id, latex}),
+    latest = request.id;
+    recognize(request.id, request.pixels).then(latex => scope.postMessage({type: 'result', id: request.id, latex}),
       (error: unknown) => scope.postMessage({type: 'error', id: request.id,
         message: error instanceof Error ? error.message : 'Recognition failed.'}));
   }

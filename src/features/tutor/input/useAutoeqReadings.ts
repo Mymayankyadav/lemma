@@ -6,6 +6,16 @@ import {
 import {symbolByGlyph} from './symbolCatalog';
 
 export type AutoeqReading = EquationCandidate;
+
+/**
+ * The strip has three slots. When the equation as written differs from every reading it keeps one of them (review of
+ * #1830: x1+x2=4 has three readings, and the as-written one was cut), after the two best readings.
+ */
+export function slotReadings(found: readonly AutoeqReading[], typed: string): AutoeqReading[] {
+  const seen = new Set(found.map(item => equationCandidateKey(item.latex)));
+  const asWritten = typed && !seen.has(equationCandidateKey(typed)) ? [{label: 'As written', latex: typed}] : [];
+  return [...found.slice(0, asWritten.length ? 2 : 3), ...asWritten];
+}
 export type AutoeqReadings = {readings: AutoeqReading[]; reading: boolean; unavailable: boolean};
 
 const glyphTex: Readonly<Record<string, string>> = {
@@ -89,9 +99,6 @@ export function useAutoeqReadings(composition: string, context: string): AutoeqR
     if (!text) return {readings: [], reading: false, unavailable: false};
     const current = input && model?.text === input ? model : undefined;
     const found = local.length ? local : current?.readings ?? [];
-    const seen = new Set(found.map(item => equationCandidateKey(item.latex)));
-    const typed = compositionLatex(text);
-    const asTyped = typed && !seen.has(equationCandidateKey(typed)) ? [{label: 'As written', latex: typed}] : [];
-    return {readings: [...found.slice(0, 3), ...asTyped], reading: Boolean(input && !current), unavailable: current?.readings === null};
+    return {readings: slotReadings(found, compositionLatex(text)), reading: Boolean(input && !current), unavailable: current?.readings === null};
   }, [text, local, input, model]);
 }

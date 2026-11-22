@@ -32,3 +32,13 @@ export function insertTutorSymbol(edit: PadEdit, symbolId: string): PadEdit | un
   const symbol = symbolById(symbolId);
   if (symbol) return insertSymbol(edit, symbol);
 }
+
+/**
+ * N224 (review of #1830): the LaTeX a symbol read from handwriting goes in as, so it always becomes an equation chip
+ * (and can replace the equation being written again): its command, \\forall or \\mathbb{R}, or its glyph where it has none.
+ */
+export function symbolLatex(id: string): string | null {
+  const symbol = symbolById(id);
+  if (!symbol) return null;
+  return symbol.tex?.trim() || symbol.glyph;
+}
