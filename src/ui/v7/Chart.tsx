@@ -68,7 +68,7 @@ function usePlotMetrics() {
 }
 export function Chart({ title, data, series, kind = "bars", area = false, target, format = String, summary: suppliedSummary, compact = false, totalFormat = format }: ChartProps) {
  const studyRepair=useStudyUi();
-  const [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null), id = useId();
+  const [selected, setSelected] = useState<number | null>(null), id = useId();
   const {ref: measureRef, caption, width, captionSize} = usePlotMetrics();
   const textWidth = (text: string) => labelWidth(text) * captionSize / 12;
   const percentage = /%/.test(format(100));
@@ -123,15 +123,25 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
   }
   return <section ref={measureRef} className="v7-chart" data-chart="plot" data-study-ui={studyRepair?'':undefined} aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <span ref={caption} className="v7-chart-caption-probe" aria-hidden="true" />
-    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-label={table ? "Show chart" : "Show as table"} aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Chart" : "Table"}</button></div>
+    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3></div>
     <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{summary}</p>
     {!!data.length && series.length > 3 && <ul className="v7-chart-legend" data-mark={kind === "line" ? "line" : "bar"}>{series.map((seriesItem, index) => {
       const subject = seriesItem.subject ?? subjectFor(seriesItem.label);
       return <li key={seriesItem.label}>{subject && <SubjectMark subject={subject} />}<span>{seriesItem.label}</span><i style={{ background: color(index) }} aria-hidden="true" /></li>;
     })}</ul>}
-    {/* F04/F46: the selection readout is pinned above the plot, so it never lands under a bar or a sticky bar. */}
-    {selectedRow && !table && <p className="v7-chart-tooltip" role="status">{selectedRow.values.map((value, index) => `${format(value)} ${series[index]?.label ?? ""}`).join(" · ")} · {selectedRow.label}</p>}
-    {table ? <div className="v7-chart-scroll"><table><caption className="v7-sr-only">{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div> : data.length ?
+    {/* N220 (Owner report): no Table switch. Tapping a bar shows its values in a tip above that bar (pinned above the plot,
+        F04/F46, so it never lands under a bar); the same data is a table for screen readers. */}
+    <div className="v7-sr-only"><table><caption>{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div>
+    {data.length ? <div className="v7-chart-plot">
+      {selectedRow && selected !== null && <p className="v7-chart-tooltip" role="status" data-floating=""
+        style={(share => ({left: share + '%', transform: `translateX(-${share}%)`}))(Math.round(Math.max(0, Math.min(1, point(selected) / Math.max(1, width))) * 100))}>
+        {/* The readout keeps its words in the order it always had ("2 h Analysis · 3 h Algebra · Mon"); subject series
+            carry their glyph (a bare subject-coloured dot is not allowed), other series a swatch. */}
+        {selectedRow.values.map((value, index) => {
+          const mark = series[index]?.subject ?? subjectFor(series[index]?.label ?? '');
+          return <span key={index}>{index ? ' · ' : ''}<span className="v7-chart-tip-value">{series.length > 1 && (mark ? <SubjectMark subject={mark}/> : <i style={{background: color(index)}} aria-hidden="true"/>)}{`${format(value)} ${series[index]?.label ?? ''}`}</span></span>;
+        })}{' · '}<strong>{selectedRow.label}</strong>
+      </p>}
       <svg className="v7-plot" viewBox={`0 0 ${width} ${height}`} data-plot-width={width} role="group" aria-label={title}>
         {ticks.map(tick => tick / maximum).map(value => <g key={value}><line x1={left} x2={plotRight} y1={y(value * maximum)} y2={y(value * maximum)} className={value === 0 ? "v7-chart-axis" : "v7-chart-grid"} /><text x={left - 8} y={y(value * maximum) + 4} textAnchor="end" className="v7-chart-text">{format(value * maximum)}</text></g>)}
         {targetShown && <g className="v7-chart-target-group"><line x1={left} x2={plotRight + 4} y1={y(target!)} y2={y(target!)} className="v7-chart-target" /><text x={plotRight + 8} y={y(target!) - 2} textAnchor="start" className="v7-chart-data-label"><tspan x={plotRight + 8}>Goal</tspan><tspan x={plotRight + 8} dy={captionSize * 1.3}>{format(target!)}</tspan></text></g>}
@@ -166,23 +176,23 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
           <path d={`M${point(index)+bar/2} ${actual}L${plotRight+4} ${labelY}H${plotRight+8}`} fill="none" stroke={color(j)} strokeWidth="1"/>
           <foreignObject x={plotRight+10} y={labelY-10} width={92} height={22}><span className="v7-chart-direct-label">{(item.subject??subjectFor(item.label))&&<SubjectMark subject={(item.subject??subjectFor(item.label))!}/>}<span>{item.label}</span></span></foreignObject>
         </g>)}
-      </svg> : null}
+      </svg></div> : null}
   </section>;
 }
 export function HorizontalBars({ title, data, format = String }: { title: string; data: { label: string; value: number; color?: string; subject?: Subject }[]; format?: (value: number) => string }) {
-  const id = useId(), [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null);
+  const id = useId(), [selected, setSelected] = useState<number | null>(null);
   const max = Math.max(1, ...data.map(item => finite(item.value))), total = data.reduce((value, item) => value + finite(item.value), 0);
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
-    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-label={table ? "Show chart" : "Show as table"} aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Chart" : "Table"}</button></div>
+    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3></div>
     <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{total>0
       ? `You studied ${format(total)} across ${data.length} ${data.length===1?'subject':'subjects'}, most in ${data.reduce((best,item)=>item.value>best.value?item:best).label}.`
       : 'None yet.'}</p>
-    {table ? <table><thead><tr><th scope="col">Subject</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.label}><th scope="row">{item.label}</th><td>{format(item.value)}</td></tr>)}</tbody></table> :
-      <ul className="v7-horizontal-bars">{data.map((item, index) => <li key={item.label}><button type="button" data-chart-point="" onKeyDown={event => { movePoint(event, index, data.length); }} onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)}>
+    <div className="v7-sr-only"><table><thead><tr><th scope="col">Subject</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.label}><th scope="row">{item.label}</th><td>{format(item.value)}</td></tr>)}</tbody></table></div>
+    {<ul className="v7-horizontal-bars">{data.map((item, index) => <li key={item.label}><button type="button" data-chart-point="" onKeyDown={event => { movePoint(event, index, data.length); }} onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)}>
         <span className="v7-subject-label">{(item.subject??subjectFor(item.label)) && <SubjectMark subject={(item.subject??subjectFor(item.label))!} />}{item.label}</span><span>{format(item.value)}</span>
         <span className="v7-horizontal-track"><span style={{ width: `${bounded(item.value / max) * 100}%`, background: item.color ?? "var(--v7-role-subject-analysis)" }} /></span>
       </button></li>)}</ul>}
-    {selected !== null && data[selected] && !table && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · {data[selected].label}</p>}
+    {selected !== null && data[selected] && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · <strong>{data[selected].label}</strong></p>}
   </section>;
 }
 function displayHeatmapDate(value: string): string { return /^\d{4}-\d{2}-\d{2}$/.test(value) ? formatDay(value) : value; }
@@ -211,7 +221,7 @@ export function heatmapIndexAt({x, y, width, height, gapX = 0, gapY = 0, weeks, 
   return index >= 0 && index < days ? index : null;
 }
 export function Heatmap({ title, data: all, format = String }: { title: string; data: { date: string; value: number }[]; format?: (value: number) => string }) {
-  const id = useId(), [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null);
+  const id = useId(), [selected, setSelected] = useState<number | null>(null);
   const data = heatmapDays(all), scroller = useRef<HTMLDivElement>(null);
   const activeDays = data.filter(item => item.value > 0).length, today = new Date().toLocaleDateString("en-CA");
   const first = data[0]?.date, offset = first && /^\d{4}-\d{2}-\d{2}$/.test(first) ? (new Date(`${first}T12:00:00Z`).getUTCDay() + 6) % 7 : 0;
@@ -223,7 +233,7 @@ export function Heatmap({ title, data: all, format = String }: { title: string; 
     if (!view || !cell) return;
     const from = view.getBoundingClientRect(), at = cell.getBoundingClientRect();
     if (at.right > from.right || at.left < from.left) view.scrollLeft += at.right - from.right + 8;
-  }, [table, home, data.length]);
+  }, [home, data.length]);
   // V36: the almanac is one touch target, like a slider: a tap anywhere on the grid (gaps included) picks the day under
   // the finger, and a mouse picks as it moves. The 24 px cells keep their roving focus for keys and screen readers.
   const pick = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -233,9 +243,11 @@ export function Heatmap({ title, data: all, format = String }: { title: string; 
     if (index !== null) setSelected(index);
   };
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
-    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
+    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3></div>
     <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{activeDays?`${activeDays} study ${activeDays===1?'day':'days'} in ${data.length}`:'None yet.'}</p>
-    {table ? <div className="v7-chart-scroll"><table><thead><tr><th scope="col">Date</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.date}><th scope="row">{displayHeatmapDate(item.date)}</th><td>{format(item.value)}</td></tr>)}</tbody></table></div> : <>
+    {/* N220: no Table switch; tapping a day shows its time, and screen readers get the table. */}
+    <div className="v7-sr-only"><table><thead><tr><th scope="col">Date</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.date}><th scope="row">{displayHeatmapDate(item.date)}</th><td>{format(item.value)}</td></tr>)}</tbody></table></div>
+    <>
       <div ref={scroller} className="v7-heatmap-scroll" tabIndex={0} aria-label="Activity calendar; scroll to see all weeks"><div className="v7-heatmap-frame" style={style}>
         <div className="v7-heatmap-weeks" aria-hidden="true">{Array.from({length:weeks},(_,week)=>{const date=new Date(`${first}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-offset+week*7);return <span key={week}>{week%2===0?new Intl.DateTimeFormat('en',{month:'short',day:'numeric',timeZone:'UTC'}).format(date):""}</span>;})}</div>
         <div className="v7-heatmap-days" aria-hidden="true">{["M", "T", "W", "T", "F", "S", "S"].map((day, index) => <span key={index}>{day}</span>)}</div>
@@ -249,7 +261,7 @@ export function Heatmap({ title, data: all, format = String }: { title: string; 
       </div></div>
       <p className="v7-caption">Last {weeks} weeks, today ringed.</p>
       <div className="v7-heat-swatches" aria-label="Heatmap legend">{["0", "1–15", "16–30", "31–60", "60+ min"].map((label, index) => <span key={label}><i style={{ background: index === 0 ? "transparent" : `var(--v7-role-viz-heat${index})` }} aria-hidden="true" />{label}</span>)}</div>
-    </>}
-    {selected !== null && data[selected] && !table && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · {displayHeatmapDate(data[selected].date)}</p>}
+    </>
+    {selected !== null && data[selected] && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · <strong>{displayHeatmapDate(data[selected].date)}</strong></p>}
   </section>;
 }

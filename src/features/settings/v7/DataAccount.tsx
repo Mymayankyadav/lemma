@@ -5,6 +5,7 @@ import {Button,Checkbox,Field,Sheet} from '../../../ui/v7/components';
 import {useBackup} from '../v6/Export';
 import {DELETE_CONFIRMATION,useAccountDeletion} from '../v6/DeleteAccount';
 import {Group} from './SettingsLists';
+import {InfoTip} from '../../../ui/v7/InfoTip';
 import {isFlagOn} from '../../../flags';
 
 /**
@@ -20,26 +21,23 @@ export function DataAccount({demo,onSignOut,signingOut}:{demo:boolean;onSignOut:
  const padAvailable=isFlagOn('padLocal');
  const devicePads=!demo&&padAvailable;
  return <div className="v7-settings-body v7-data">
-  <Group title="Account" note={demo?'You are exploring the example workspace. Sign in with Google to open your own record.':undefined}>
+  <Group title="Account" info={demo?'You are exploring the example workspace. Sign in with Google to open your own record.':undefined}>
    <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">{demo?'Example workspace':'Your study record'}</span></span>
     <Button small loading={signingOut} onClick={onSignOut}><LogOut aria-hidden="true"/>Sign out</Button></li>
   </Group>
   {padAvailable&&<Group title="Device notes">
-   <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">Saved Pad notes</span>
-    <small>Open or export notes and drawings saved on this device.</small></span>
+   <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">Saved Pad notes<InfoTip label="Saved Pad notes">Open or export notes and drawings saved on this device.</InfoTip></span></span>
     <Link className="v7-button v7-secondary v7-small" to="/pad">Open saved notes</Link></li>
   </Group>}
   <Group title="Export">
-   <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">Backup</span>
-    <small>{backup.app?'A JSON copy of your whole record. Android asks where to keep it: Files keeps it on this phone; Drive or email keeps a copy elsewhere.'
-     :'A JSON copy of your whole record. Keep it somewhere only you can open.'}{devicePads&&' Includes saved Local Pad revisions on this device.'}</small></span>
+   <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">Backup<InfoTip label="Backup">{backup.app?'A JSON copy of your whole record. Android asks where to keep it: Files keeps it on this phone; Drive or email keeps a copy elsewhere.'
+     :'A JSON copy of your whole record. Keep it somewhere only you can open.'}{devicePads&&' Includes saved Local Pad revisions on this device.'}</InfoTip></span></span>
     <Button small loading={backup.busy} onClick={()=>{void backup.run();}}><Download aria-hidden="true"/>{backup.busy?'Preparing backup…':backup.label}</Button></li>
    {backup.shared&&<li className="v7-data-status" role="status">Your backup is in Android's share sheet. Choose Files to keep it on this phone.</li>}
    {backup.error&&<li className="v7-data-status" role="alert">{backup.error}</li>}
   </Group>
   <Group title="Delete account">
-   <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">Delete account</span>
-    <small>Removes your study record, files, tutor connection and sign-in for good.</small></span>
+   <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">Delete account<InfoTip label="Delete account">Removes your study record, files, tutor connection and sign-in for good.</InfoTip></span></span>
     <Button small destructive onClick={()=>setConfirming(true)}><Trash2 aria-hidden="true"/>Delete…</Button></li>
   </Group>
   <Sheet open={confirming} onClose={()=>setConfirming(false)} eyebrow="Data and account" title="Delete your account?"

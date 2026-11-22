@@ -7,13 +7,16 @@ async function release(page:Page,route:string,width=390,height=844){
  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#'+route);await page.waitForLoadState('networkidle');
  await expect(page.locator('html')).toHaveAttribute('data-v7','');
 }
-test('released ruler controls appear on Today and Calendar without U4 overrides',async({page})=>{
+// N220 (Owner report): the time block sheet takes typed times and length presets; the ruler stays on Today.
+test('released ruler controls appear on Today, and Calendar blocks take length presets, without U4 overrides',async({page})=>{
  await release(page,'/');await expect(page.getByRole('slider',{name:'Time',exact:true})).toBeVisible();
  await release(page,'/calendar?view=day&date='+DATE+'&quick=1');
- const sheet=page.getByRole('dialog',{name:'New time block',exact:true});
- await expect(sheet.getByRole('slider',{name:'Length'})).toHaveValue('50');
- await sheet.getByRole('slider',{name:'Length'}).focus();await page.keyboard.press('ArrowRight');
- await expect(sheet.getByRole('slider',{name:'Length'})).toHaveValue('55');
+ const sheet=page.getByRole('dialog',{name:'New time block',exact:true}),lengths=sheet.getByRole('group',{name:'Length',exact:true});
+ await expect(sheet.getByRole('slider')).toHaveCount(0);
+ await expect(lengths.getByRole('button',{name:'50 min',exact:true})).toHaveAttribute('aria-pressed','true');
+ await lengths.getByRole('button',{name:'1 h 30 min',exact:true}).focus();await page.keyboard.press('Enter');
+ await expect(lengths.getByRole('button',{name:'1 h 30 min',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(lengths.getByRole('button',{name:'50 min',exact:true})).toHaveAttribute('aria-pressed','false');
 });
 test('released completion treatment shows the whole close-day page',async({page})=>{
  await release(page,'/today/close');await expect(page.locator('html')).toHaveAttribute('data-v7-qed','');

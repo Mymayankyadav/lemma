@@ -161,9 +161,10 @@ function Tutor({settings,released}:{settings:Settings;released:boolean}){
  const lastUsed=settings.connectorLastSeenAt?new Date(settings.connectorLastSeenAt):null;
  return <div className="v7-settings-body">
   {released&&<Group title="Checkpoint tutor">
-   <InfoRow label="Checkpoint chat" hint="Continue with tutor opens your checkpoint conversation. Your connected tutor can read your answer and send its next question back through Lemma MCP."/>
-   <InfoRow label="Manual handoff" hint="Use Tutor connection in the chat to copy a question or import a reply."/>
-   <InfoRow label="ChatGPT plan on this phone" value="Unavailable" hint="Lemma needs provider approval for direct access to a ChatGPT plan."/>
+   {/* N220 (Owner report): one short line per route instead of a paragraph. */}
+   <InfoRow label="Checkpoint chat" hint="Your connected tutor reads your answer and replies here."/>
+   <InfoRow label="Manual handoff" hint="Copy a question or import a reply."/>
+   <InfoRow label="ChatGPT plan on this phone" value="Unavailable" hint="Needs provider approval."/>
    <InfoRow label="Last connector activity" value={lastUsed&&Number.isFinite(lastUsed.getTime())?lastUsed.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'No activity recorded'}/>
   </Group>}
   <WritingAidSettings/>
@@ -172,7 +173,7 @@ function Tutor({settings,released}:{settings:Settings;released:boolean}){
     onChange={enabled=>{if(!setTutorRecognition(enabled))notify('Could not save math input settings.',{tone:'danger'});}}/></li>
    <li className="v7-set-switch"><Switch label="Automatic insertion when qualified" checked={input.automatic} disabled={!input.recognition}
     onChange={enabled=>{if(!setTutorAutomatic(enabled))notify('Could not save math input settings.',{tone:'danger'});}}/></li>
-   <InfoRow label="Choose a match" hint="Draw one symbol at a time on this device. The beta requires a tap to insert a match."/>
+   <InfoRow label="Choose a match" hint="Draw one symbol, then tap a match."/>
   </Group>
   <div className="v7-settings-card">
    <p className="v7-eyebrow">Connector address</p>

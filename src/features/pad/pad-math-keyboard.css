@@ -1,7 +1,7 @@
 .pad-math-keyboard {
   min-width:0; border:1px solid var(--line, currentColor); border-radius:.75rem;
   background:var(--well, transparent); padding:.5rem;
-  padding-bottom:max(.5rem, env(safe-area-inset-bottom));
+  padding-bottom:max(.5rem, var(--v7-safe-bottom,env(safe-area-inset-bottom)));
 }
 .pad-keyboard-bar {display:flex; flex-wrap:wrap; gap:.4rem; align-items:center}
 .pad-keyboard-bar strong {margin-right:auto}

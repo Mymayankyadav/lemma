@@ -42,20 +42,24 @@ for(const [width,height,scale] of [[320,640,100],[390,844,160]])test(`Path tabs 
  await page.setViewportSize({width,height});
  await page.addInitScript(value=>document.addEventListener('DOMContentLoaded',()=>document.documentElement.style.fontSize=value+'%'),scale);
  await go(page,'/p/real-analysis');
+ // N220 (Owner report): the goal is one line under the title that opens in place; its text is never shown twice.
  const goal=page.locator('.v7-path-goal');
- const disclosure=page.locator('.v7-path-head .v7-disclosure').filter({has:goal});
- const trigger=disclosure.getByRole('button');
+ const trigger=page.locator('.v7-path-head button.v7-path-goal-line').filter({has:goal});
  const goalText=(await goal.textContent())!;
  const [goalBox,arrowBox,triggerBox]=await Promise.all([
   goal.boundingBox(),trigger.locator(':scope > svg').boundingBox(),trigger.boundingBox(),
  ]);
  expect(goalBox!.x+goalBox!.width).toBeLessThanOrEqual(arrowBox!.x);
  expect(arrowBox!.x+arrowBox!.width).toBeLessThanOrEqual(triggerBox!.x+triggerBox!.width+.5);
+ await expect(trigger).toHaveAttribute('aria-expanded','false');
  await trigger.click();
  await expect(trigger).toHaveAttribute('aria-expanded','true');
- await expect(disclosure.locator('p')).toHaveText(goalText);
- await expect(disclosure.locator('p')).toBeVisible();
+ await expect(goal).toHaveText(goalText);
+ await expect(goal).toBeVisible();
+ await expect(page.locator('.v7-path-head').getByText(goalText,{exact:true})).toHaveCount(1);
+ expect(await goal.evaluate(node=>node.scrollWidth<=node.clientWidth+1)).toBe(true);
  await trigger.click();
+ await expect(trigger).toHaveAttribute('aria-expanded','false');
  const tabs=page.getByRole('tablist',{name:'Path sections'});
  await expect(tabs.getByRole('tab')).toHaveCount(4);
  expect(await tabs.evaluate(node=>{

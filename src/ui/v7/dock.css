@@ -2,7 +2,7 @@
   :where(html[data-v7]) .v7-pinned-dock {
     position: fixed;
     z-index: var(--v7-z-dock);
-    inset: auto var(--v7-page-margin) calc(var(--v7-space-3) + env(safe-area-inset-bottom));
+    inset: auto var(--v7-page-margin) calc(var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));
     margin-inline: auto;
     max-width: 656px;
   }

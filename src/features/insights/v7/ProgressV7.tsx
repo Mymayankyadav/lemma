@@ -22,7 +22,7 @@ import {kitSubject,subjectToken} from '../../atlas/v7/model';
 import {civilDay,effortSummary} from '../../progress-v6/model';
 import {goalSavedMinutes} from '../../progress-v6/goal-model';
 import {almanacPeriod,asRange,changeChip,coveringSpan,currentPeriod,goalView,groupDays,insightDays,insightSentences,previousPeriod,ranges,stackColumns,type ProgressRange} from './progressModel';
-import {CalendarDays,ChartColumn,Plus,Share2} from 'lucide-react';
+import {CalendarDays,ChartColumn,ChevronRight,Plus,Share2} from 'lucide-react';
 import {useToast} from '../../../ui/Toast';
 import './progress.css';
 import {isFlagOn} from '../../../flags';
@@ -117,6 +117,8 @@ export default function ProgressV7(){
   <p className="v7-meta">Focused · {ranges.find(item=>item.value===range)?.label}</p>
   {chip?<StatusBadge tone={chip.tone}>{chip.text}</StatusBadge>:<p className="v7-meta">{range==='30'?'Your first month':'First in this range'}</p>}
   {range==='7'&&summary&&<Button small variant="ghost" onClick={()=>{void shareWeek();}}><Share2 aria-hidden="true"/>Share this week</Button>}
+  {/* N220 (Owner report): "Your week" belongs to the figure it explains, not floating between the tabs and the range. */}
+  {isFlagOn('v7Week')&&<Link className="v7-progress-week-link" to="/week">Your week<ChevronRight aria-hidden="true"/></Link>}
  </section>;
  const nothing=<EmptyMoment art="progress" title="No study time yet" action={{label:'Start focus',to:'/?quick=1'}}/>;
  return <main id="main-content" className="v7-page v7-progress" aria-label="Progress">
@@ -126,7 +128,6 @@ export default function ProgressV7(){
    ...(isFlagOn('v7Week')?[{label:'Your week',icon:<CalendarDays/>,onClick:()=>{window.location.hash='/week';}}]:[]),
    ...(range==='7'?[{label:'Share this week',icon:<Share2/>,onClick:()=>{void shareWeek();}}]:[]),
   ]}/>}><ProgressTabs current={tab}/></HubHeader>
-  {status==='ready'&&total>0&&isFlagOn('v7Week')&&<Link className="v7-button v7-ghost v7-small" to="/week">Your week</Link>}
   {<Segmented label="Range" options={ranges.map(item=>item.label)} value={ranges.find(item=>item.value===range)!.label} onChange={label=>set('range',ranges.find(item=>item.label===label)!.value)}/>}
   {status==='loading'&&<Skeleton/>}
   {status==='error'&&<div role="alert" className="v7-progress-error"><p>Erratum: your saved study time didn’t load. Try again.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}

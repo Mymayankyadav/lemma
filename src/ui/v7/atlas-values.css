@@ -22,11 +22,11 @@
  .v7-atlas[data-study-ui] .v7-atlas-map-tools {
   display:grid;grid-template-areas:"filters filters" "legend controls";grid-template-columns:minmax(0,1fr) auto;
   gap:var(--v7-space-2);align-items:end;position:absolute;
-  inset:auto var(--v7-space-3) calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-3));
+  inset:auto var(--v7-space-3) calc(var(--v7-dock-height,var(--v7-safe-bottom,env(safe-area-inset-bottom))) + var(--v7-space-3));
   z-index:2;pointer-events:none;
  }
  .v7-atlas[data-study-ui][data-sheet="peek"] .v7-atlas-map-tools {
-  bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-3) + var(--v7-atlas-sheet-h));
+  bottom:calc(var(--v7-dock-height,var(--v7-safe-bottom,env(safe-area-inset-bottom))) + var(--v7-space-3) + var(--v7-atlas-sheet-h));
  }
  .v7-atlas[data-study-ui] .v7-atlas-map-tools .v7-atlas-filters-floating {
   grid-area:filters;position:static;margin:0;width:auto;max-width:100%;max-height:5.5rem;overflow:auto;

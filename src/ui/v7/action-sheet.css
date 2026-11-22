@@ -17,3 +17,7 @@
 :where(html[data-v7]) .v7-action-danger,:where(html[data-v7]) .v7-action-danger .v7-action-icon {color:var(--v7-role-status-danger);}
 :where(html[data-v7]) .v7-action-danger .v7-action-icon {background:var(--v7-role-status-danger-subtle);}
 }
+
+/* N220 (Owner report): the destructive row shares the kit's `.v7-action-danger` class with the text-button style, whose
+   negative inline margin pulled its icon out of the icon column. A row keeps the column. */
+:where(html[data-v7]) .v7-action-row.v7-action-danger {margin-inline:0;}

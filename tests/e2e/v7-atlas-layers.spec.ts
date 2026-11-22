@@ -224,8 +224,10 @@ test('Atlas options form one vertical rail above the subject shortcuts and can c
  const hide=rail.getByRole('button',{name:'Hide options'});
  const search=rail.getByRole('button',{name:'Search concepts'});
  const recentre=rail.getByRole('button',{name:'Recentre map'});
- const subjects=rail.getByRole('navigation',{name:'Nearby constellations'}).getByRole('button');
+ // N220 (Owner report): the rail has a button for every other subject (no cap of two); the demo has three subjects.
+ const subjects=rail.getByRole('navigation',{name:'Subjects'}).getByRole('button');
  await expect(subjects).toHaveCount(2);
+ for(const name of await subjects.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label'))))expect(name).toMatch(/^Go to /);
  const names=await rail.getByRole('button').evaluateAll(buttons=>buttons.map(button=>button.getAttribute('aria-label')));
  expect(names.slice(0,5)).toEqual(['Hide options','Search concepts','List','Layers','Recentre map']);
  const positions=await rail.getByRole('button').evaluateAll(buttons=>buttons.map(button=>{
@@ -273,7 +275,7 @@ test('Short landscape Atlas scrolls its options below a pinned toggle clear of d
  const initial=(await toggle.boundingBox())!;
  const details=page.getByRole('region',{name:'Compactness',exact:true});
  await details.getByRole('button',{name:'Show neighbours and actions'}).click();
- const last=rail.getByRole('navigation',{name:'Nearby constellations'}).getByRole('button').last();
+ const last=rail.getByRole('navigation',{name:'Subjects'}).getByRole('button').last();
  await last.scrollIntoViewIfNeeded();
  await expect(last).toBeInViewport({ratio:1});
  expect((await toggle.boundingBox())!.y).toBe(initial.y);

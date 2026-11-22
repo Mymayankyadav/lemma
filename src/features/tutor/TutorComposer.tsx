@@ -1,5 +1,5 @@
 import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
-import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, Paperclip, Camera, Pencil, PenLine, Undo2, Redo2, SlidersHorizontal, RefreshCw} from 'lucide-react';
+import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, MoveRight, Paperclip, Camera, Pencil, PenLine, Undo2, Redo2, SlidersHorizontal, RefreshCw} from 'lucide-react';
 import {TutorInkTray,type TutorInkState} from './TutorInk';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {authGeneration,authOwner} from '../../data/authBoundary';
@@ -130,6 +130,8 @@ export function TutorComposer(props: Props) {
   const ghostSuffix = writingGhost?.insert;
   const suggestionUndoable = !hideSuggestionUndo && Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
   const refreshable = writingWords.length > 0 || Boolean(writingEdit || writingGhost);
+  /** N220: a word is being typed (a collapsed caret right after a letter), so the strip is the word suggestions'. */
+  const wordInProgress = cursor.start === cursor.end && /[A-Za-z]$/.test(cursor.text.slice(0, cursor.start));
 
   useEffect(() => {
     const reportVisibility = () => {
@@ -719,16 +721,25 @@ export function TutorComposer(props: Props) {
         onBrowse={assist.openPicker} onKeepDrawing={assist.onKeepDrawing} onLockAutomatic={assist.lockAutomatic} onPressCandidate={assist.pressCandidate} onReleaseCandidate={assist.releaseCandidate}
         onAccept={assist.onAccept}/>
       : <><div className="strip">
+        {/* N220 (Owner report): the one-tap maths symbols and Next □ sit in the suggestion strip, so the bottom row keeps
+            Gboard's wide space bar. As in Gboard, a word being typed gives its suggestions the whole strip: the symbols
+            step aside until the caret is at a word boundary (Next □ stays while a slot is empty). */}
+        <div className="tutor-quick-math" role="group" aria-label="Quick math symbols" hidden={wordInProgress && !incomplete}>
+          {['∀', '∈', ...(incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="sbtn qsym" aria-label={symbol}
+            hidden={wordInProgress} disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
+          {incomplete && <button type="button" className="sbtn qsym" aria-label="Next □" disabled={editingDisabled} onPointerDown={keepSelection}
+            onClick={() => {haptic('key'); nextSlot();}}><MoveRight aria-hidden="true"/></button>}
+        </div>
         <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting}/>
-        <button className="sbtn" type="button" aria-label="Refresh suggestions" disabled={editingDisabled || !refreshable}
-          onPointerDown={keepSelection} onClick={refreshWriting}><RefreshCw aria-hidden="true"/></button>
+        {refreshable && <button className="sbtn" type="button" aria-label="Refresh suggestions" disabled={editingDisabled}
+          onPointerDown={keepSelection} onClick={refreshWriting}><RefreshCw aria-hidden="true"/></button>}
         <button className="sbtn" type="button" aria-label="Draw symbol" disabled={editingDisabled} onPointerDown={keepSelection}
           onClick={()=>{remember();revision.current.modeRevision++;haptic('snap');assist.openDraw();}}><PenLine aria-hidden="true"/></button>
         <button className="sbtn" type="button" aria-label="Hide keyboard" onPointerDown={keepSelection} onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>
       </div>
       <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled} onInsert={insert}
+        wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
         onBrowse={()=>{remember();assist.openPicker();}}
-        onNextSlot={incomplete ? () => nextSlot() : undefined}
         onDelete={() => {
           remember();
           const edit = history.current.present;

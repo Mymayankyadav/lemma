@@ -113,18 +113,23 @@ for(const [width,scale] of sizes){
 }
 
 for(const [width,scale] of sizes){
- test("Calendar's view choice is a header menu on a phone, which frees the row the segments took, at "+width+" px, text x"+scale,async({page})=>{
+ // N220 (Owner report): the hub header matches every other hub (title and page actions only); the view menu leads the
+ // Calendar toolbar under the tabs, beside the period arrows.
+ test("Calendar's view choice is a compact menu in the Calendar toolbar on a phone, which frees the row the segments took, at "+width+" px, text x"+scale,async({page})=>{
   await open(page,"#/calendar?view=day&date=2026-11-09",width,scale);
   const button=page.getByRole("button",{name:"Calendar view: Day"});
   await expect(button).toBeVisible();
-  // The shared title and view share the header. The week strip carries the dates;
-  // date picking is available as the fourth action rather than a duplicate pill.
+  // The week strip carries the dates; date picking is available as the fourth action rather than a duplicate pill.
   const title=page.getByRole("heading",{name:"Calendar",exact:true});
   await expect(title).toBeVisible();
   await expect(page.getByRole("button",{name:/^Calendar date:/})).toHaveCount(0);
-  const titleBox=(await title.boundingBox())!,b=(await button.boundingBox())!;
-  if(scale===1)expect(Math.abs((b.y+b.height/2)-(titleBox.y+titleBox.height/2))).toBeLessThanOrEqual(12);
-  await expect(page.locator(".v7-hub-bar").getByRole("button",{name:"Calendar view: Day"})).toBeVisible();
+  const toolbar=page.getByRole("group",{name:"Calendar navigation"});
+  await expect(toolbar.getByRole("button",{name:"Calendar view: Day"})).toBeVisible();
+  await expect(page.locator(".v7-hub-bar").getByRole("button",{name:/^Calendar view:/})).toHaveCount(0);
+  const titleBox=(await title.boundingBox())!,b=(await button.boundingBox())!,tabs=(await page.getByRole("navigation",{name:"Calendar sections"}).boundingBox())!;
+  expect(b.y).toBeGreaterThanOrEqual(titleBox.y+titleBox.height);
+  expect(b.y).toBeGreaterThanOrEqual(tabs.y+tabs.height-1);
+  expect(b.x+b.width).toBeLessThanOrEqual(width);
   expect(b.height).toBeGreaterThanOrEqual(44);
   await expect(page.getByRole("radiogroup",{name:"Calendar view"})).toHaveCount(0);
   // The menu lists the four views, with the current one checked, and switching works by tap and by keyboard.

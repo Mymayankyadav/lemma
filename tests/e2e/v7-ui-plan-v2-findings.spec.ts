@@ -173,7 +173,8 @@ test('L8, L10 and T10 keep first-card fields wide, Scratch in flow and the proof
 test('T7 and U6 use kit controls in the Calendar and Pad',async({page},info)=>{
   await go(page,'/calendar?view=day&date='+DATE+'&new=block');
   const editor=page.getByRole('dialog',{name:'New time block'});
-  await expect(editor.getByRole('slider',{name:'Start'})).toBeVisible();
+  // N220 (Owner report): Start is the kit's typed time field, not a ruler.
+  await expect(editor.getByRole('textbox',{name:'Start',exact:true})).toBeVisible();
   await expect(editor.locator('input[type=date],input[type=time],select')).toHaveCount(0);
   await frame(page,info,'T7-kit-time-block');
   await page.keyboard.press('Escape');

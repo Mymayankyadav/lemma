@@ -110,11 +110,13 @@ function RecordSheet({topic,busy,onClose,onSave}:{topic:PracticeTopicRecord;busy
     <button key={value} type="button" role="radio" aria-checked={rating===value} className="v7-filter-chip" onClick={()=>setRating(value)}>{ratingNames[value]}</button>)}</div>
    <label className="v7-pr-field">Notes (optional)
     <textarea rows={3} maxLength={4000} value={notes} onChange={event=>setNotes(event.target.value)}/></label>
-   <div className="v7-pr-timer">
+   {/* N220 (Owner report): the time row is one line of equal-height controls: elapsed time, the timer, then minutes
+       typed by hand with its label inside the field. */}
+   <div className="v7-pr-timer" role="group" aria-label="Time spent">
     <output aria-label="Elapsed time">{clock(seconds)}</output>
     <Button variant="secondary" small onClick={()=>setRunning(value=>!value)}>{running?'Pause timer':seconds>0?'Resume timer':'Start timer'}</Button>
-    <label className="v7-pr-field">Minutes
-     <input type="number" inputMode="numeric" min={0} max={1440} placeholder={seconds>0?String(Math.max(1,Math.round(seconds/60))):'Optional'} value={minutes} onChange={event=>setMinutes(event.target.value)}/></label>
+    <label className="v7-pr-minutes"><span>Minutes</span>
+     <input type="number" inputMode="numeric" min={0} max={1440} placeholder={seconds>0?String(Math.max(1,Math.round(seconds/60))):'–'} value={minutes} onChange={event=>setMinutes(event.target.value)}/></label>
    </div>
    {!!problem&&<p role="alert" className="v7-alert">{problem}</p>}
   </div>
