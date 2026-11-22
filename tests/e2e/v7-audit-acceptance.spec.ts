@@ -16,7 +16,8 @@ for(const scheme of ['light','dark'] as const){
   const points=chart.locator('[data-chart-point]');
   await points.first().focus();await page.keyboard.press('ArrowRight');await expect(points.nth(1)).toBeFocused();
   await expect(chart.getByRole('status')).not.toBeEmpty();
-  await chart.getByRole('button',{name:'Show as table'}).click();
+  // N220 (Owner report): no Table switch; the screen-reader table carries the same fourteen days.
+  await expect(chart.getByRole('button',{name:'Show as table'})).toHaveCount(0);
   await expect(chart.locator('tbody tr')).toHaveCount(14);
   await expect(chart.locator('thead th')).toHaveCount(series+1);
   await expect(chart.locator('tbody tr').first()).toContainText('Today');
@@ -124,9 +125,12 @@ test('PA11 Review: Undo removes the last coloured segment',async({page})=>{
  await expect(page.getByRole('progressbar',{name:'Review progress'})).toHaveAttribute('aria-valuenow','0');
 });
 
-test('BS2/QA4: title receives focus and the quick-add draft is above the sheet',async({page})=>{
+// N220 (Owner report): the block sheet opens without the keyboard; the title takes focus only when it is tapped.
+test('BS2/QA4: the block sheet opens without focusing the title and the quick-add draft is above the sheet',async({page})=>{
  await openScene(page,shot('calendar-block-sheet'),'dark',{width:390,height:844});
- await expect(page.getByRole('dialog').getByRole('textbox',{name:'Calendar block title',exact:true})).toBeFocused();
+ const title=page.getByRole('dialog').getByRole('textbox',{name:'Calendar block title',exact:true});
+ await expect(title).toBeVisible();
+ await expect(title).not.toBeFocused();
  await openScene(page,shot('calendar-quick-add'),'dark',{width:390,height:844});
  await expect(page.getByRole('dialog')).toHaveCount(1);
  const draft=await page.locator('[data-kind="draft"]').boundingBox(),sheet=await page.getByRole('dialog').boundingBox();

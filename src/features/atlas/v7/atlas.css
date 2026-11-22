@@ -2,13 +2,13 @@
 /* v7 Atlas (PLAN §6.12). Role tokens only: Day and Night differ in token values, never in structure. */
 @layer v7-components {
  :where(html[data-v7]) .v7-atlas {
-  --atlas-bar-top-padding:max(env(safe-area-inset-top),var(--v7-space-2));
+  --atlas-bar-top-padding:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-2));
   --atlas-bar-height:calc(var(--atlas-bar-top-padding) + var(--v7-touch) + var(--v7-space-2));
   --atlas-rail-end:var(--v7-space-3);
   --atlas-rail-width:calc(var(--v7-touch) + 2 * var(--v7-space-1));
   --atlas-search-top:calc(var(--atlas-bar-top-padding) + var(--v7-touch) + var(--v7-space-2));
   --atlas-detail-reserve:calc(var(--v7-touch) + var(--v7-space-2));
-  --atlas-detail-max:min(var(--v7-sheet-max),calc(100dvh - var(--atlas-bar-top-padding) - var(--atlas-detail-reserve) - env(safe-area-inset-bottom)));
+  --atlas-detail-max:min(var(--v7-sheet-max),calc(100dvh - var(--atlas-bar-top-padding) - var(--atlas-detail-reserve) - var(--v7-safe-bottom,env(safe-area-inset-bottom))));
   --atlas-control-surface:var(--v7-role-surface-overlay);
   position:relative;min-height:100dvh;color:var(--v7-role-text-primary);background:var(--v7-role-surface-sunken);
   font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);
@@ -27,7 +27,7 @@
   background:transparent;
  }
  :where(html[data-v7]) .v7-atlas:not([data-sheet="closed"])[data-sheet] .v7-atlas-option-rail {
-  inset-block-end:calc(var(--v7-atlas-sheet-h) + env(safe-area-inset-bottom) + var(--v7-space-1));
+  inset-block-end:calc(var(--v7-atlas-sheet-h) + var(--v7-safe-bottom,env(safe-area-inset-bottom)) + var(--v7-space-1));
  }
  :where(html[data-v7]) .v7-atlas-option-rail > .v7-icon-button,
  :where(html[data-v7]) .v7-atlas-controls {pointer-events:auto;}
@@ -73,10 +73,10 @@
  :where(html[data-v7]) .v7-atlas-sky {position:absolute;inset:0;}
  :where(html[data-v7]) .v7-atlas-sky canvas {display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
  :where(html[data-v7]) .v7-atlas-sky canvas:active {cursor:grabbing;}
- :where(html[data-v7]) .v7-atlas-legend {position:absolute;left:var(--v7-space-4);bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-4));z-index:2;display:grid;gap:var(--v7-space-2);justify-items:start;}
+ :where(html[data-v7]) .v7-atlas-legend {position:absolute;left:var(--v7-space-4);bottom:calc(var(--v7-dock-height,var(--v7-safe-bottom,env(safe-area-inset-bottom))) + var(--v7-space-4));z-index:2;display:grid;gap:var(--v7-space-2);justify-items:start;}
  /* N161: the concept sheet's measured height (set by AtlasV7), 180 px until it is measured. */
  :where(html[data-v7]) .v7-atlas {--v7-atlas-sheet-h:180px;}
- :where(html[data-v7]) .v7-atlas[data-sheet="peek"] .v7-atlas-legend {bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-4) + var(--v7-atlas-sheet-h));}
+ :where(html[data-v7]) .v7-atlas[data-sheet="peek"] .v7-atlas-legend {bottom:calc(var(--v7-dock-height,var(--v7-safe-bottom,env(safe-area-inset-bottom))) + var(--v7-space-4) + var(--v7-atlas-sheet-h));}
  :where(html[data-v7]) .v7-atlas-chip {min-height:var(--v7-touch);padding-inline:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-round);
   background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);box-shadow:var(--v7-shadow-1);}
  :where(html[data-v7]) .v7-atlas-legend ul {order:-1;list-style:none;margin:0;padding:var(--v7-space-3);display:grid;gap:var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-subtle);
@@ -142,7 +142,7 @@
  :where(html[data-v7]) .v7-atlas-handle {touch-action:none;}
  :where(html[data-v7]) .v7-atlas-sheet-head {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-atlas-sheet-controls {display:flex;flex:none;}
- :where(html[data-v7]) .v7-atlas-sheet-title {font:450 var(--v7-type-headline)/1.2 var(--v7-serif);letter-spacing:-.005em;min-width:0;overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-atlas-sheet-title {margin:0;font:600 var(--v7-type-subhead)/1.3 var(--v7-sans);letter-spacing:-.005em;min-width:0;overflow-wrap:anywhere;}
  :where(html[data-v7]) .v7-atlas-sheet-meta {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-atlas-counts {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-atlas-actions,:where(html[data-v7]) .v7-atlas-more-actions {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
@@ -159,14 +159,19 @@
 :where(html[data-v7]) .v7-atlas-sheet {
  inset-inline:var(--v7-space-2);min-height:0;gap:var(--v7-space-1);z-index:var(--v7-z-sheet);
 }
-:where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] {max-height:min(150px,var(--atlas-detail-max));padding-block-end:var(--v7-space-1);}
+/* N220 (Owner report): the peek fits its title (two lines at most), chips and actions, and its content clears the gesture
+   bar: with the tab bar hidden the sheet sits on the screen's edge, so its bottom padding takes the inset (the measured
+   sheet height that places the map tools and rail includes it). */
+:where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] {max-height:calc(min(196px,var(--atlas-detail-max)) + var(--v7-safe-bottom));
+ padding-block-end:calc(var(--v7-space-1) + var(--v7-safe-bottom));}
+:where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] .v7-atlas-sheet-title {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
 :where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] .v7-atlas-actions {flex-wrap:nowrap;}
 :where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] .v7-atlas-actions > a {padding-inline:var(--v7-space-2);white-space:nowrap;}
 @media (max-width:360px) {
  :where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] {padding-inline:var(--v7-space-2);}
 }
 :where(html[data-v7]) .v7-atlas-detail-dock[data-inset="edge"] {
- inset-inline:var(--v7-space-2);bottom:env(safe-area-inset-bottom);
+ inset-inline:var(--v7-space-2);bottom:calc(var(--v7-safe-bottom,env(safe-area-inset-bottom)) + var(--v7-space-2));
  z-index:var(--v7-z-sheet);max-width:calc(var(--v7-space-20) * 8);pointer-events:none;
 }
 :where(html[data-v7]) .v7-atlas-detail-dock > .v7-atlas-sheet {position:relative;inset:auto;pointer-events:auto;}
@@ -220,3 +225,6 @@
  :where(html[data-v7]) .v7-atlas-search li > button > .v7-atlas-mark {grid-row:span 2;align-self:start;}
  :where(html[data-v7]) .v7-atlas-search li > button > .v7-atlas-meta {grid-column:2;}
 }
+
+/* N220 · the subject in view is marked in the rail. */
+:where(html[data-v7]) .v7-atlas-compass .v7-icon-button[aria-current="true"] {border-color:var(--v7-role-selection-fg);box-shadow:0 0 0 1px var(--v7-role-selection-fg);}

@@ -6,6 +6,14 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N220 Make the v7 interface consistent across sheets, Calendar, Atlas, Path, Progress, Settings and the answer keyboard
+
+Owner task: "Please fix all the issues in just one pr."
+Stage: Harden · Status: done · Needs: — · Assigned: chat-547160#k4sm
+Done = The Owner's November screenshots are fixed in one PR. Headings use one type family and scale; sheets have a spaced eyebrow and title, equal footer buttons and clear the gesture bar, and safe-area insets come from the Android app as well as env(). Calendar has the shared hub header (title, Search, Inbox, ⋯), its view and period arrows on one toolbar row, a dragged block that stays under the finger while the grid auto-scrolls, and time blocks with typed Start and End times and length presets that do not open the keyboard on the title. Atlas shows a button for every subject, names only a few concepts at a distance and keeps its concept peek above the gesture bar. Path shows its emblem and a one-line goal that opens in place, with dates as chips. Practice's time row is one aligned line. Progress puts Your week with its figure, at a reading size, and charts answer a tap with a tip instead of a Table switch. Easy is blue. Settings explanations sit behind (i) tips, and the hosted advanced forms use the kit's type and controls. The answer keyboard follows Gboard: a wide space bar, a key preview that lingers, the system keyboard-tap haptic and tap correction, with the maths symbols in the suggestion strip, compact symbol candidates and a chat-style composer.
+Tests: updated e2e for the Calendar header, block sheet, charts, Atlas rail, Path goal and Inbox-only reminders; new unit tests for tap correction and the typed time field; the v7 kit check and lint.
+Scope: src/ui/v7/**; src/app/v7/**; src/features/{atlas,calendar,home,insights,pad,practice,project,review-run,ritual,focus,settings,tutor}/**; src/platform/{bridge,haptics}.ts; android/app/src/main/java/io/github/mymayankyadav/lemma/LemmaNativePlugin.java; tests/**; docs/current/N220.md.
+
 ## N219 CPU-only n-gram and spatial decoder
 
 Owner task: "Start working on this plan. You can open your pr on lemma but you have work within it don't merge the pr. Tell me what you need from me."

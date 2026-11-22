@@ -4,7 +4,7 @@ import './grades.css';
 /**
  * Release plan R1 · F22: one grade language. Each of the four grades is defined once (name, colour role, glyph, short
  * label) and used everywhere a grade appears: review buttons and progress, round complete, card history, practice and
- * charts. Colours: Again danger, Hard warning, Good success, Easy indigo. Glyphs: ↺, a half-filled circle, a filled
+ * charts. Colours: Again danger, Hard warning, Good success, Easy blue (N220: no longer the pale indigo that read as grey). Glyphs: ↺, a half-filled circle, a filled
  * circle, a star — so a grade never depends on colour alone.
  */
 export type GradeKey='again'|'hard'|'good'|'easy';
@@ -13,7 +13,7 @@ export const GRADES:Readonly<Record<GradeKey,{label:string;rating:1|2|3|4;colour
  again:{label:'Again',rating:1,colour:'var(--v7-role-status-danger)'},
  hard:{label:'Hard',rating:2,colour:'var(--v7-role-status-warning)'},
  good:{label:'Good',rating:3,colour:'var(--v7-role-status-success)'},
- easy:{label:'Easy',rating:4,colour:'var(--v7-role-selection-fg)'},
+ easy:{label:'Easy',rating:4,colour:'var(--v7-role-viz-easy)'},
 };
 export const gradeOf=(rating:number):GradeKey=>GRADE_KEYS[Math.max(1,Math.min(4,Math.round(rating)))-1];
 

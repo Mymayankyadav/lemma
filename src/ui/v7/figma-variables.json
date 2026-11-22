@@ -541,6 +541,16 @@
           }
         },
         {
+          "name": "viz/easy",
+          "type": "COLOR",
+          "modes": {
+            "day": "#1C64C8",
+            "night": "#58A6FF",
+            "day-hc": "#1C64C8",
+            "night-hc": "#58A6FF"
+          }
+        },
+        {
           "name": "foundation/sans",
           "type": "fontFamily",
           "value": "\"Lemma v7 Instrument Sans\", \"Lemma v7 Sans fallback\", sans-serif"
@@ -1706,6 +1716,17 @@
             "night": "#B1B7C6",
             "day-hc": "#40495C",
             "night-hc": "#B1B7C6"
+          }
+        },
+        {
+          "name": "viz/easy",
+          "type": "COLOR",
+          "description": "The Easy grade in review charts and legends: a clear blue, distinct from Good (green), Hard (amber) and Again (red).",
+          "modes": {
+            "day": "#1C64C8",
+            "night": "#58A6FF",
+            "day-hc": "#1C64C8",
+            "night-hc": "#58A6FF"
           }
         },
         {

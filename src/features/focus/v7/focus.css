@@ -3,7 +3,7 @@
 @layer v7-components {
  /* V11: one column as wide as the screen, never as wide as its widest line (at 200% text the header and the centre
     grew past the screen's edge and were cut). */
- :where(html[data-v7]) .v7-focus {position:relative;min-height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;padding:0 var(--v7-page-margin) calc(env(safe-area-inset-bottom) + var(--v7-space-6));
+ :where(html[data-v7]) .v7-focus {position:relative;min-height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;overflow:hidden;padding:0 var(--v7-page-margin) calc(var(--v7-safe-bottom,env(safe-area-inset-bottom)) + var(--v7-space-6));
   background:radial-gradient(circle at 50% 42%,transparent 40%,color-mix(in oklab,var(--v7-role-surface-sunken) 70%,var(--v7-role-text-primary) 4%) 100%),var(--v7-role-surface-sunken);color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-focus-empty {display:grid;justify-items:center;align-content:center;gap:var(--v7-space-4);text-align:center;}
 :where(html[data-v7]) .v7-focus-emblem {position:absolute;left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;opacity:.15;color:var(--v7-subject,var(--v7-role-text-secondary));pointer-events:none;z-index:-1;animation:v7-focus-turn 240s linear infinite;}

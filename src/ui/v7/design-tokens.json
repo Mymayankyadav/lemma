@@ -214,6 +214,10 @@
       "viz.neutral": {
         "$type": "color",
         "$value": "#40495C"
+      },
+      "viz.easy": {
+        "$type": "color",
+        "$value": "#1C64C8"
       }
     },
     "night": {
@@ -428,6 +432,10 @@
       "viz.neutral": {
         "$type": "color",
         "$value": "#B1B7C6"
+      },
+      "viz.easy": {
+        "$type": "color",
+        "$value": "#58A6FF"
       }
     }
   },
@@ -1794,6 +1802,33 @@
           },
           {
             "foreground": "viz.neutral",
+            "background": "border.subtle",
+            "minimum": 3
+          }
+        ]
+      }
+    },
+    "viz.easy": {
+      "$type": "color",
+      "$value": "{raw.day.viz.easy}",
+      "$description": "The Easy grade in review charts and legends: a clear blue, distinct from Good (green), Hard (amber) and Again (red).",
+      "$extensions": {
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "border.subtle"
+        ],
+        "lemma.modes": {
+          "night": "{raw.night.viz.easy}"
+        },
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.easy",
+            "background": "surface.raised",
+            "minimum": 3
+          },
+          {
+            "foreground": "viz.easy",
             "background": "border.subtle",
             "minimum": 3
           }

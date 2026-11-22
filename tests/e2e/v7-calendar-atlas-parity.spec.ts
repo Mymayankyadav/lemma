@@ -33,7 +33,7 @@ test('mobile Calendar Agenda exposes overdue triage',async({page})=>{
  const editor=page.getByRole('dialog',{name:'New time block',exact:true});
  await expect(editor).toBeVisible();
  await expect(editor.getByRole('textbox',{name:'Calendar block title',exact:true})).toHaveValue('Work on eigenvectors');
- await expect(editor.getByRole('slider',{name:'Length',exact:true})).toHaveAttribute('aria-valuetext','25 min');
+ await expect(editor.getByRole('group',{name:'Length',exact:true}).getByRole('button',{name:'25 min',exact:true})).toHaveAttribute('aria-pressed','true');
 });
 
 test('Atlas filtered List only offers jumps to subjects with visible concepts',async({page})=>{

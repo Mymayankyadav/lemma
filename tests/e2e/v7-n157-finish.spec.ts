@@ -15,15 +15,17 @@ for(const width of [390,1440])for(const scheme of ['light','dark'] as const)test
  expect(cell.width).toBeGreaterThanOrEqual(23);expect(Math.abs(cell.width-cell.height)).toBeLessThanOrEqual(1);
  expect(box.height).toBeLessThanOrEqual(182);
  const count=await grid.locator('[data-chart-point]').count();
- await almanac.getByRole('button',{name:'Show as table'}).click();
+ // N220 (Owner report): no Table switch; the screen-reader table has a row per day, next to the grid.
+ await expect(almanac.getByRole('button',{name:'Show as table'})).toHaveCount(0);
  await expect(almanac.locator('tbody tr')).toHaveCount(count);
- await almanac.getByRole('button',{name:'Show chart'}).click();
  await expect(grid.locator('[data-chart-point][tabindex="0"]')).toHaveCount(1);
 });
-test('New block ruler changes the saved duration, with keyboard access and exact-version Undo',async({page})=>{
+// N220 (Owner report): Start and End are typed times and the length a preset, instead of rulers.
+test('New block end time changes the saved duration, with keyboard access and exact-version Undo',async({page})=>{
  await go(page,'/calendar?view=day&date='+DATE+'&quick=1',390);
- const sheet=page.getByRole('dialog',{name:'New time block',exact:true}),slider=sheet.getByRole('slider',{name:'Length'});
- await expect(slider).toHaveValue('50');await slider.focus();await page.keyboard.press('ArrowRight');await expect(slider).toHaveValue('55');
+ const sheet=page.getByRole('dialog',{name:'New time block',exact:true}),end=sheet.getByRole('textbox',{name:'End',exact:true});
+ await expect(sheet.getByRole('group',{name:'Length',exact:true}).getByRole('button',{name:'50 min',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(end).toHaveValue('14:50');await end.fill('');await end.pressSequentially('1455');await end.press('Enter');await expect(end).toHaveValue('14:55');
  await sheet.getByRole('textbox',{name:'Calendar block title'}).fill('Ruler integration proof');await sheet.getByRole('button',{name:'Create block',exact:true}).click();
  const block=page.getByRole('button',{name:/Ruler integration proof, Planned study/});await expect(block).toBeVisible();
  await expect(block).toHaveAttribute('aria-label',/14:00–14:55/);

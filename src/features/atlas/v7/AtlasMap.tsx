@@ -9,6 +9,8 @@ export interface AtlasMapHandle{recentre():void; zoomBy(factor:number):void; fly
 interface Props{
  focusCluster?:number|null;focusSelected?:boolean;highlighted?:readonly number[]|null;
  model:AtlasModel; layout:LayoutResult; source:LayoutSource; selected:number|null; reduced:boolean; paused?:boolean; insets:Insets;
+ /** N220: where floating controls cover the map; labels keep out without changing the framing. */
+ labelMargin?:Insets;
  onSelect:(index:number|null)=>void; onPan?:(panning:boolean)=>void; ref?:Ref<AtlasMapHandle>;
 }
 const FLY_MS=700,ZOOM_MS=200,DOUBLE_TAP_MS=300,TAP_SLOP=6;
@@ -25,7 +27,8 @@ function readPalette(element:Element,model:AtlasModel):ScenePalette{
 const ease=(t:number)=>1-Math.pow(1-t,3);
 
 /** The Atlas sky: canvas only, hidden from assistive technology (the List view is the accessible path). */
-export default function AtlasMap({model,layout,source,selected,reduced,paused=false,insets,onSelect,onPan,ref,focusCluster=null,focusSelected=true,highlighted=null}:Props){
+const NO_MARGIN:Insets={top:0,right:0,bottom:0,left:0};
+export default function AtlasMap({model,layout,source,selected,reduced,paused=false,insets,labelMargin=NO_MARGIN,onSelect,onPan,ref,focusCluster=null,focusSelected=true,highlighted=null}:Props){
  const studyRepair=useStudyUi();
  const wrap=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null),scene=useRef<AtlasScene|null>(null);
  const frame=useRef(0),animation=useRef<{from:Camera;to:Camera;start:number;duration:number}|null>(null);
@@ -61,7 +64,7 @@ export default function AtlasMap({model,layout,source,selected,reduced,paused=fa
   const element=canvas.current,box=wrap.current;if(!element||!box)return;
   const created=new AtlasScene(element,model,layout,readPalette(box,model));
   created.strongEdges=studyRepair;
-  scene.current=created;created.setInsets(insets);created.select(selected);created.labelCluster=focusCluster;created.highlighted=highlighted?new Set(highlighted):null;
+  scene.current=created;created.setInsets(insets);created.labelMargin=labelMargin;created.select(selected);created.labelCluster=focusCluster;created.highlighted=highlighted?new Set(highlighted):null;
   const measure=()=>{const rect=box.getBoundingClientRect();created.setSize(rect.width,rect.height,Math.min(2,window.devicePixelRatio||1));};
   measure();
   created.camera=focusSelected&&selected!==null?created.focusCamera(selected,1.4):focusCluster!==null?created.clusterCamera(focusCluster):created.fitCamera();
@@ -74,6 +77,7 @@ export default function AtlasMap({model,layout,source,selected,reduced,paused=fa
  },[model,layout,focusCluster,focusSelected,studyRepair]);
  useEffect(()=>{if(scene.current){scene.current.highlighted=highlighted?new Set(highlighted):null;paint();}},[highlighted]);
  useEffect(()=>{scene.current?.setInsets(insets);paint();},[insets.top,insets.right,insets.bottom,insets.left]);
+ useEffect(()=>{if(scene.current){scene.current.labelMargin=labelMargin;paint();}},[labelMargin.top,labelMargin.right,labelMargin.bottom,labelMargin.left]);
  useEffect(()=>{scene.current?.select(selected);paint();},[selected]);
  useEffect(()=>{
   if(paused){cancelAnimationFrame(frame.current);frame.current=0;animation.current=null;return;}

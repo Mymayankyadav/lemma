@@ -10,7 +10,8 @@ for(const mode of ["graph","graph-night"] as const){
   await study.getByRole("button",{name:/Mon: Analysis/}).focus();
   await page.keyboard.press("Enter");
   await expect(study.getByRole("status")).toContainText("Analysis");
-  await study.getByRole("button",{name:"Show as table"}).click();
+  // N220 (Owner report): no Table switch; the equivalent table is there for screen readers.
+  await expect(study.getByRole("button",{name:"Show as table"})).toHaveCount(0);
   await expect(study.getByRole("table")).toContainText("Algebra");
  });
 }

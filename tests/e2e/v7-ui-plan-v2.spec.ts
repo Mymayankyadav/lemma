@@ -189,7 +189,8 @@ test('calendar creation and direct results use the v7 shell',async({page})=>{
   await page.clock.setFixedTime(NOW);
   await page.goto(pageAt('/calendar?view=day&date=2026-11-09&quick=1'));
   const sheet=page.getByRole('dialog',{name:'New time block'});
-  await expect(sheet.getByRole('slider',{name:/Start/})).toBeVisible();
+  // N220 (Owner report): Start is a typed time field, not a ruler.
+  await expect(sheet.getByRole('textbox',{name:'Start',exact:true})).toBeVisible();
   await expect(sheet.getByRole('button',{name:'More',exact:true})).toBeVisible();
   await page.goto(pageAt('/review/done'));
   await expect(page.getByRole('heading',{name:'Review results'})).toBeVisible();

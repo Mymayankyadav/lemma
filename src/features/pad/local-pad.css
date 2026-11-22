@@ -48,9 +48,9 @@
 
 .local-pad-page {
   box-sizing:border-box; display:grid; gap:1rem; max-width:48rem; margin-inline:auto;
-  padding:calc(1rem + env(safe-area-inset-top)) 1rem calc(2rem + env(safe-area-inset-bottom));
+  padding:calc(1rem + var(--v7-safe-top,env(safe-area-inset-top))) 1rem calc(2rem + var(--v7-safe-bottom,env(safe-area-inset-bottom)));
 }
-.local-pad-page[data-offline="true"] {padding-top:calc(6rem + env(safe-area-inset-top))}
+.local-pad-page[data-offline="true"] {padding-top:calc(6rem + var(--v7-safe-top,env(safe-area-inset-top)))}
 .local-pad-page h1 {margin:0; font-size:1.75rem}
 .local-pad-page a {text-decoration:underline; text-underline-offset:.15em}
 html[data-native-app] .local-pad-controls button {min-width:48px; min-height:48px}

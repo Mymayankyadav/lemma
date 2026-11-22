@@ -417,7 +417,9 @@ test.each(['Teh', 'Cacuhy', 'x=teh', 'f(teh', 'f( teh', 'f.teh', '$teh', 'Let te
 test('quick math keys insert at the caret without changing the alphabet layout', async () => {
   await act(async () => root.render(<Harness initial="x y"/>));
   await act(async () => {field().focus(); field().setSelectionRange(1, 2);});
-  await click('∈', keyboard());
+  // N220 (Owner report): the one-tap symbols moved from the bottom row to the suggestion strip (Gboard's wide space bar).
+  expect(keyboard().querySelector('[aria-label="Quick math symbols"]')).toBeNull();
+  await click('∈', host.querySelector<HTMLElement>('[role="group"][aria-label="Quick math symbols"]')!);
   expect(field().value).toBe('x∈y');
   expect(button('q', keyboard())).toBeDefined();
   expect([field().selectionStart, field().selectionEnd]).toEqual([2, 2]);

@@ -13,7 +13,8 @@ test("the new v7 gallery shows Day and Night together, and four contrast modes",
  await expect(pair.nth(0)).toHaveAttribute("data-theme","graph");
  await expect(pair.nth(1)).toHaveAttribute("data-theme","graph-night");
  // 51 with the neutral data colour viz.neutral (Night critique KA4).
- await expect(pair.nth(0).locator(".v7-token-card")).toHaveCount(51);
+ // 52 with the Easy grade colour viz.easy (N220).
+ await expect(pair.nth(0).locator(".v7-token-card")).toHaveCount(52);
  await expect(pair.nth(0).locator(".v7-type-card")).toHaveCount(17);
  await page.getByRole("checkbox",{name:"High contrast comparison"}).check();
  await expect(pair.nth(0)).toHaveAttribute("data-contrast","high");
@@ -71,7 +72,8 @@ test("every chart has a summary, keyboard data and an equivalent table",async({p
  const point=study.getByRole("button",{name:/Mon: Analysis/});
  await point.focus();await page.keyboard.press("Enter");
  await expect(study.getByRole("status")).toContainText("Analysis");
- await study.getByRole("button",{name:"Show as table"}).click();
+ // N220 (Owner report): no Table switch; the equivalent table is there for screen readers.
+ await expect(study.getByRole("button",{name:"Show as table"})).toHaveCount(0);
  await expect(study.getByRole("table")).toContainText("2 h");
  const heat=charts.locator(".v7-chart").filter({has:page.getByRole("heading",{name:"Activity"})});
  await expect(heat.locator(".v7-heat-swatches span")).toHaveCount(5);

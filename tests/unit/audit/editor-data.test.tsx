@@ -22,6 +22,8 @@ vi.mock('../../../src/ui/v7/components',()=>({
  Picker:({label,value,options,onChange}:any)=><select aria-label={label} value={value} onChange={e=>onChange(e.target.value)}>{options.map((o:string)=><option key={o}>{o}</option>)}</select>,
  DatePicker:({label,value,onChange}:any)=><input aria-label={label} value={value} onChange={e=>onChange(e.target.value)}/>,
  Segmented:({options,onChange}:any)=><div>{options.map((o:string)=><button type="button" key={o} onClick={()=>onChange(o)}>{o}</button>)}</div>,
+ // N220: the block sheet's length presets are kit chips.
+ Chip:({children,onClick,selected}:any)=><button type="button" aria-pressed={!!selected} onClick={onClick}>{children}</button>,
 }));
 
 let host:HTMLDivElement,root:Root;

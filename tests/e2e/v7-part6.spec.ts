@@ -180,15 +180,17 @@ test("Calendar Agenda lists days with headings and switches back to Day",async({
 });
 
 // Part 7d: the Calendar block editor, suggestions and overdue sheet.
-test("Calendar grid opens the block editor with a duration ruler and More link fields",async({page})=>{
+// N220 (Owner report): the editor opens without the keyboard (the title is not focused), and the length is a preset.
+test("Calendar grid opens the block editor with length presets and More link fields",async({page})=>{
  await page.goto(at("/calendar?view=day&date=2026-11-11"));
  await page.locator(".v7-cal-slots").click({position:{x:120,y:12}});
  const sheet=page.getByRole("dialog",{name:"New time block"});
  await expect(sheet).toBeVisible();
- await expect(sheet.getByRole("textbox",{name:"Calendar block title"})).toBeFocused();
- const length=sheet.getByRole("slider",{name:"Length"});
- for(let step=0;step<8;step++)await length.press("ArrowRight");
- await expect(length).toHaveValue("90");
+ await expect(sheet.getByRole("textbox",{name:"Calendar block title"})).not.toBeFocused();
+ await expect(sheet.getByRole("slider")).toHaveCount(0);
+ const length=sheet.getByRole("group",{name:"Length",exact:true}).getByRole("button",{name:"1 h 30 min",exact:true});
+ await length.click();
+ await expect(length).toHaveAttribute("aria-pressed","true");
  await sheet.getByRole("button",{name:"Create block"}).click();
  await expect(sheet.getByRole("alert")).toHaveText("Enter a title of at most 200 characters.");
  await sheet.getByRole("button",{name:"More",exact:true}).click();
@@ -199,7 +201,7 @@ test("Calendar grid opens the block editor with a duration ruler and More link f
 test("Calendar block editor opens from a Tasks Schedule link and carries the length",async({page})=>{
  await page.goto(at("/calendar?view=day&date=2026-11-11&quick=1&len=25"));
  const sheet=page.getByRole("dialog",{name:"New time block"});
- await expect(sheet.getByRole("slider",{name:"Length"})).toHaveValue("25");
+ await expect(sheet.getByRole("group",{name:"Length",exact:true}).getByRole("button",{name:"25 min",exact:true})).toHaveAttribute("aria-pressed","true");
  await page.keyboard.press("Escape");
  await expect(page).not.toHaveURL(/quick=1|new=block/);
  await expect(sheet).toBeHidden();
@@ -244,11 +246,11 @@ test("Today Needs you completes a due task with Undo, and every section stays un
 test("Calendar More keeps the title and length in the block editor",async({page})=>{
  await page.goto(at("/calendar?view=day&date=2026-11-11&quick=1"));
  const sheet=page.getByRole("dialog",{name:"New time block"});
- const title=sheet.getByRole("textbox",{name:"Calendar block title"}),length=sheet.getByRole("slider",{name:"Length"});
+ const title=sheet.getByRole("textbox",{name:"Calendar block title"}),length=sheet.getByRole("group",{name:"Length",exact:true}).getByRole("button",{name:"25 min",exact:true});
  await title.fill("Compactness drill");
- for(let step=0;step<5;step++)await length.press("ArrowLeft");
+ await length.click();
  await sheet.getByRole("button",{name:"More",exact:true}).click();
  await expect(title).toHaveValue("Compactness drill");
- await expect(length).toHaveValue("25");
+ await expect(length).toHaveAttribute("aria-pressed","true");
  await expect(sheet.getByRole("button",{name:"Task: No task"})).toBeVisible();
 });

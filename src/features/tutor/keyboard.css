@@ -28,28 +28,40 @@
 .lemma-tutor .kb .k.mid {font-size: clamp(10px, 3.3vw, 16px);}
 .lemma-tutor .kb .k sup {top: 6px; right: calc(var(--capr) + 3px); font-size: 9px;}
 .lemma-tutor .kb .k.sliding::before {background: var(--v7-role-selection-subtle);}
-.lemma-tutor .kb .tutor-quick-math {display: flex; flex: 3 1 0; min-width: 0;}
-.lemma-tutor .kb .tutor-quick-math .k {font-size: 16px; flex: 1 1 0;}
-.lemma-tutor .kb .row.bottom .k.space {flex-grow: 3.4;}
-.lemma-tutor .kb .k.quick-action {flex: 0 0 40px;}
-.lemma-tutor .kb .k.quick-action svg {width: 16px; height: 16px;}
+/* N220 · Gboard's bottom row: ?123 and Enter a key and a half, comma, maths and full stop one key, the space bar four. */
+.lemma-tutor .kb .row.bottom .k {flex-grow: 1;}
+.lemma-tutor .kb .row.bottom .k.w15 {flex-grow: 1.5;}
+.lemma-tutor .kb .row.bottom .k.space {flex-grow: 4;}
+/* The one-tap maths symbols lead the suggestion strip. */
+.lemma-tutor .kb .strip {gap: 0; padding-inline: 2px;}
+.lemma-tutor .kb .strip .tutor-quick-math {display: flex; flex: none; align-items: center; padding-inline-end: 4px; margin-inline-end: 2px; border-inline-end: 1px solid color-mix(in srgb, var(--v7-role-border-default) 40%, transparent);}
+.lemma-tutor .kb .strip .sbtn.qsym {width: 36px; border-radius: 10px; color: var(--v7-role-selection-fg); font: 400 20px/1 var(--v7-glyph);}
+.lemma-tutor .kb .strip .sbtn.qsym svg {width: 18px; height: 18px;}
+.lemma-tutor .kb .strip .sugg {flex: 1 1 0; min-width: 0;}
+/* While a word is typed the symbols step aside (the hidden attribute), so its suggestions have the strip. */
+.lemma-tutor .kb .strip .tutor-quick-math[hidden], .lemma-tutor .kb .strip .sbtn[hidden] {display: none;}
+@media (max-width: 359px) {.lemma-tutor .kb .strip .sbtn.qsym {width: 32px;}}
+/* N220: the pressed key grows above the finger, as in Gboard, and stays a moment after a quick tap. */
 .lemma-tutor .kb .tutor-key-preview {
   position: absolute;
-  z-index: 3;
-  min-width: 48px;
-  height: 54px;
-  padding: 0 4px;
+  z-index: 6;
+  min-width: 52px;
+  height: max(56px, calc(var(--cell) * 1.3));
+  padding: 0 6px 6px;
   display: grid;
   place-items: center;
   transform: translate(-50%, -100%);
   border: 1px solid var(--v7-role-border-subtle);
   border-radius: 12px;
-  background: var(--v7-role-surface-overlay);
+  background: var(--key, var(--v7-role-surface-overlay));
   color: var(--v7-role-text-primary);
   box-shadow: var(--v7-shadow-2);
-  font: 400 32px/1 var(--v7-glyph);
+  font: 400 32px/1 var(--v7-sans);
   pointer-events: none;
 }
+.lemma-tutor .kb .tutor-key-preview[data-glyph] {font-family: var(--v7-glyph);}
+.lemma-tutor .kb .tutor-key-preview[data-leaving] {animation: tutor-key-preview-out 110ms var(--v7-ease-in, ease-in) forwards;}
+@keyframes tutor-key-preview-out {from {opacity: 1;} to {opacity: 0; transform: translate(-50%, calc(-100% + 4px));}}
 .lemma-tutor .kb .grid {
   height: auto;
   overflow: visible;
