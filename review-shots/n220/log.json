@@ -337,7 +337,7 @@
    "keyboard": null,
    "space": null,
    "strip": null,
-   "compass": 2,
+   "compass": 3,
    "peek": null,
    "tooltip": null
   },
@@ -352,7 +352,7 @@
    "keyboard": null,
    "space": null,
    "strip": null,
-   "compass": 2,
+   "compass": 3,
    "peek": [
     8,
     714,
@@ -486,7 +486,7 @@
    "peek": null,
    "tooltip": [
     44,
-    323,
+    315,
     229,
     27
    ]
@@ -676,19 +676,19 @@
    "footer": null,
    "keyboard": [
     0,
-    618,
+    606,
     390,
-    226
+    238
    ],
    "space": [
     138,
-    794,
+    782,
     153,
     44
    ],
    "strip": [
     4,
-    618,
+    606,
     382,
     44
    ],
@@ -706,19 +706,19 @@
    "footer": null,
    "keyboard": [
     0,
-    618,
+    606,
     390,
-    226
+    238
    ],
    "space": [
     138,
-    794,
+    782,
     153,
     44
    ],
    "strip": [
     4,
-    618,
+    606,
     382,
     44
    ],
@@ -736,14 +736,14 @@
    "footer": null,
    "keyboard": [
     0,
-    582,
+    570,
     390,
-    262
+    274
    ],
    "space": null,
    "strip": [
     4,
-    582,
+    570,
     382,
     44
    ],
