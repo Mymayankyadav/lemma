@@ -1889,13 +1889,15 @@ try{
  const n169Subject='aaaaaaaa-0000-4000-8000-000000000001',n169Project='aaaaaaaa-0000-4000-8000-000000000002',n169Concept='aaaaaaaa-0000-4000-8000-000000000003';
  await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'N169 Math','M','cyan')",[n169Subject,owner]);
  await q("insert into public.projects(id,user_id,subject_id,slug,title,goal) values($1,$2,$3,'n169-parity','N169','Study')",[n169Project,owner,n169Subject]);
- await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'n169-concept','N169 concept')",[n169Concept,owner,n169Subject]);
+ await q("insert into public.concepts(id,user_id,subject_id,slug,name,blurb) values($1,$2,$3,'n169-concept','Group basics',$4)",
+  [n169Concept,owner,n169Subject,'A proof sketch.\n']);
  await roundTrip('capacity_overrides',specs.capacity_overrides);
  await createOnlyTrip('recheck_decisions',{concept_id:n169Concept,level:'use',action:'rate_easy',note:'parity'},'note','parity');
  await createOnlyTrip('plan_baselines',{project_id:n169Project,reason:'parity baseline'},'reason','parity baseline');
  const n170Concept2='aaaaaaaa-0000-4000-8000-000000000004';
  await role(null);
- await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'n170-concept','N170 concept')",[n170Concept2,owner,n169Subject]);
+ await q("insert into public.concepts(id,user_id,subject_id,slug,name,blurb) values($1,$2,$3,'n170-concept',$4,$5)",
+  [n170Concept2,owner,n169Subject,'Ｆinite Cafe\u0301 𝟚','\ufeff\u00a0\tA Unicode proof of café.\nA second line: 𝔾.\r\n\u2028\u2029\u3000']);
  await twoStepTrip('assumptions',{concept_id:n169Concept,level:'recall',reason:'parity'},'revoke',async id=>(await q('select revoked_at is not null r from public.assumptions where id=$1',[id]))[0]?.r===true);
  await twoStepTrip('concept_aliases',{concept_a:n169Concept,concept_b:n170Concept2},'delete',async id=>(await q('select count(*)::int n from public.concept_aliases where id=$1',[id]))[0].n===0);
  // Atlas v3 (N172, N178): the registered Atlas commands through the real MCP dispatcher. Each operation: create-or-fixture → exact replay →
@@ -1928,22 +1930,21 @@ try{
   await atlasStep('atlas_links','approve',{target:{id:A(1)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(1))())==='approved');
   await atlasStep('atlas_links','reject',{target:{id:A(2)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(2))())==='rejected');
   // N225: command-only pending Atlas link through MCP (not owner autoapproval).
-  await role(null);
-  const versions=await q('select id,version from public.concepts where id=$1 or id=$2 order by id',[n169Concept,n170Concept2]);
-  const vm=new Map(versions.map(r=>[r.id,r.version]));
-  assert.ok(Number.isInteger(vm.get(n169Concept))&&Number.isInteger(vm.get(n170Concept2)),
-   'N225 owner concept version inventory must not be read under service-role RLS');
+  await as(owner);
   const {contentHash}=await tsImport('../../../supabase/functions/_shared/adaptive/links.ts',import.meta.url);
-  const conceptRows=await q('select id,name,blurb from public.concepts where id=$1 or id=$2',[n169Concept,n170Concept2]);
-  const hm=new Map(conceptRows.map(x=>[x.id,contentHash(x)]));
-  assert.equal(conceptRows.length,2,'Owner-scoped concept hashes must not be empty');
-  for(const x of conceptRows)assert.equal((await q('select public.atlas_concept_hash($1,$2) h',[x.name,x.blurb]))[0].h,
-    hm.get(x.id),'Postgres and TypeScript hashes must agree');
+  const conceptRows=await q('select c.id,c.name,c.blurb,c.version,public.content_hash(c) content_hash from public.concepts c where c.user_id=$1 and c.id in ($2,$3) order by c.id',
+   [owner,n169Concept,n170Concept2]);
+  assert.deepEqual(conceptRows.map(row=>row.id),[n169Concept,n170Concept2],
+   'Owner-scoped concept hash projection must return both endpoints');
+  const [from,to]=conceptRows;
+  assert.equal(from.content_hash,'45a11c70','A trailing line break must not change the content hash');
+  for(const row of conceptRows)assert.equal(row.content_hash,contentHash(row),
+   'Computed and Atlas hashes must agree on multiline and Unicode text');
   await role('service_role');
   const typedPatch={from_id:n169Concept,to_id:n170Concept2,kind:'equivalent',
    confidence:0.94,rationale:'The same mathematical concept',
-   from_version:vm.get(n169Concept),to_version:vm.get(n170Concept2),
-   from_hash:hm.get(n169Concept),to_hash:hm.get(n170Concept2)};
+   from_version:from.version,to_version:to.version,
+   from_hash:from.content_hash,to_hash:to.content_hash};
   const staleProposal=await mcp(command('atlas_link_proposals','create',{
    patch:{...typedPatch,from_version:typedPatch.from_version+8}}))
    .then(result=>result,error=>({status:'error',reason:String(error)}));
@@ -2006,9 +2007,9 @@ try{
   assert.match(JSON.stringify(unchanged),/unchanged/i);
   await role(null);
   await q("update public.concepts set blurb='Edited proof concept' where id=$1",[n169Concept]);
-  const refreshed=(await q('select id,name,blurb,version from public.concepts where id=$1',[n169Concept]))[0];
+  const refreshed=(await q('select c.version,public.content_hash(c) content_hash from public.concepts c where c.id=$1',[n169Concept]))[0];
   const revised={...typedPatch,from_version:refreshed.version,
-    from_hash:contentHash(refreshed),expected_rejected_version:oldVersion};
+    from_hash:refreshed.content_hash,expected_rejected_version:oldVersion};
   await role('service_role');
   const resubmitted=status(await mcp(command('atlas_link_proposals','create',{patch:revised})),
     'atlas_link_proposals','create');

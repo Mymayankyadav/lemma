@@ -1,7 +1,8 @@
 import {describe,expect,it} from 'vitest';
-import {fakeContext,tablesFrom} from './fakedb';
+import {createClient} from '@supabase/supabase-js';
+import {fakeContext,OWNER,tablesFrom} from './fakedb';
 import {rowsFor} from './rows';
-import {contentHash} from '../../../supabase/functions/_shared/adaptive/links';
+import {FACETS} from '../../../supabase/functions/_shared/adaptive/kc';
 import {factsForAtlas} from '../../../supabase/functions/_shared/adaptive/atlas';
 import {parseWorkerPage,readAtlasWorker,readAtlasTagSuggestions} from '../../../supabase/functions/mcp/tools/atlas-worker-read';
 
@@ -12,8 +13,34 @@ const ids=[
 ];
 const nodes=ids.map((id,i)=>({id,user_id:'11111111-1111-4111-8111-111111111111',
   subject_id:'11111111-1111-4111-8111-111111111121',name:['Group basics','Homomorphisms','Proof technique'][i],
-  slug:'concept-'+i,blurb:'Mathematics '+i,kind:i===2?'technique':'topic',
+  slug:'concept-'+i,blurb:'Mathematics '+i,content_hash:'abc0000'+i,kind:i===2?'technique':'topic',
   parent_id:null,family_id:null,level:'planet',version:1,updated_at:'2026-11-22T00:00:00Z'}));
+
+type LinkRow={id?:string;user_id?:string;from_id:string;to_id:string;kind:string;status?:string};
+const linkConcept=(i:number)=>'aaaaaaaa-aaaa-4aaa-8aaa-'+String(i).padStart(12,'0');
+
+function tagContext(legacy:LinkRow[],typed:LinkRow[]){
+  const tables:Record<string,Record<string,unknown>[]>={concepts:nodes,
+    concept_links:legacy.map(row=>({user_id:OWNER,...row})),
+    atlas_links:typed.map(row=>({user_id:OWNER,...row}))};
+  const fetcher:typeof fetch=async(input,init)=>{
+    const url=new URL(input instanceof Request?input.url:input);
+    const table=url.pathname.split('/').at(-1)!;
+    const params=url.searchParams;
+    let rows=tables[table].filter(row=>Array.from(params).every(([field,filter])=>
+      !filter.startsWith('eq.')||String(row[field])===filter.slice(3)));
+    if(params.has('or')){
+      expect(params.get('or')).toBe(`(and(kind.eq.uses_technique,from_id.eq.${ids[1]}),and(kind.eq.part_of,to_id.eq.${ids[1]}))`);
+      rows=rows.filter(row=>(row.kind==='uses_technique'&&row.from_id===ids[1])||
+        (row.kind==='part_of'&&row.to_id===ids[1]));
+    }
+    const page=rows.slice(0,Math.min(Number(params.get('limit')??1000),1000));
+    const count=new Headers(init?.headers).get('prefer')?.includes('count=exact')?rows.length:'*';
+    return Response.json(page,{headers:{'Content-Range':`${page.length?'0-'+(page.length-1):'*'}/${count}`}});
+  };
+  const db=createClient('https://example.invalid','test-key',{global:{fetch:fetcher},accessToken:async()=>null});
+  return {userId:OWNER,db};
+}
 
 describe('API-key-free Atlas MCP worker reads',()=>{
   it('enforces a bounded, section-bound cursor',()=>{
@@ -28,29 +55,45 @@ describe('API-key-free Atlas MCP worker reads',()=>{
     const first=JSON.parse(await readAtlasWorker(ctx,{id:'concepts',limit:2}));
     expect(first.section).toBe('concepts');
     expect(first.items.map((x:any)=>x.id)).toEqual(ids.slice(0,2));
-    expect(first.items[0].content_hash).toBe(contentHash(nodes[0]));
+    expect(first.items[0].content_hash).toBe(nodes[0].content_hash);
     expect(first.items[0].user_id).toBeUndefined();
     expect(first.nextCursor).toBe('concepts:2');
     const second=JSON.parse(await readAtlasWorker(ctx,{id:'concepts',cursor:first.nextCursor,limit:2}));
     expect(second.items.map((x:any)=>x.id)).toEqual([ids[2]]);
     expect(second.nextCursor).toBeNull();
   });
-  it('returns prerequisites and approved typed-technique tags as advisory only',async()=>{
-    const r=rowsFor([{slug:'a',cps:1,done:0,target:'2026-11-24'}]);
-    const ctx=fakeContext(tablesFrom(r,{
-      concepts:nodes,
-      concept_links:[{from_id:ids[0],to_id:ids[1],kind:'prereq'}],
-      atlas_links:[{id:'link-a',from_id:ids[1],to_id:ids[2],kind:'uses_technique',status:'approved'},
-                   {id:'link-b',from_id:ids[1],to_id:ids[0],kind:'uses_technique',status:'proposed'}]
-    }),[],{project:true});
+  it('finds direction-specific advisory tags beyond unrelated rows for every facet',async()=>{
+    const unrelated=Array.from({length:1000},(_,i)=>({id:linkConcept(i),from_id:linkConcept(i),
+      to_id:ids[2],kind:'uses_technique',status:'approved'}));
+    const related=unrelated.slice(0,501).map(row=>({from_id:row.from_id,to_id:ids[1],kind:'related'}));
+    const ctx=tagContext([
+      ...related,{from_id:ids[0],to_id:ids[1],kind:'prereq'},
+    ],[
+      ...unrelated,
+      {id:'technique',from_id:ids[1],to_id:ids[2],kind:'uses_technique',status:'approved'},
+      {id:'part',from_id:ids[0],to_id:ids[1],kind:'part_of',status:'approved'},
+      {id:'pending',from_id:ids[1],to_id:ids[0],kind:'uses_technique',status:'proposed'},
+      {id:'incoming-technique',from_id:ids[2],to_id:ids[1],kind:'uses_technique',status:'approved'},
+      {id:'outgoing-part',from_id:ids[1],to_id:ids[0],kind:'part_of',status:'approved'},
+      {id:'foreign',from_id:ids[1],to_id:ids[0],kind:'uses_technique',status:'approved',user_id:linkConcept(2000)},
+    ]);
     const answer=JSON.parse(await readAtlasTagSuggestions(ctx,{id:ids[1]}));
     expect(answer.advisoryOnly).toBe(true);
-    expect(answer.byFacet.use).toEqual([
-      {concept_id:ids[0],facet:'use',role:'required',demand:-1},
-      {concept_id:ids[2],facet:'select',role:'required',demand:0}
+    expect(Object.keys(answer.byFacet)).toEqual(FACETS);
+    for(const facet of FACETS)expect(answer.byFacet[facet]).toEqual([
+      {concept_id:ids[0],facet,role:'required',demand:-1},
+      {concept_id:ids[2],facet:'select',role:'required',demand:0},
+      {concept_id:ids[0],facet:'execute',role:'required',demand:0},
     ]);
     await expect(readAtlasTagSuggestions(ctx,{id:'bad'})).rejects.toThrow('UUID');
     await expect(readAtlasTagSuggestions(ctx,{id:'11111111-1111-4111-8111-111111111120'})).rejects.toThrow('not found');
+  });
+  it('reports too many relevant links even when the API caps its response at 1,000 rows',async()=>{
+    const typed=Array.from({length:1001},(_,i)=>({id:linkConcept(i),from_id:ids[1],
+      to_id:linkConcept(i),kind:'uses_technique',status:'approved'}));
+    const fullPage=JSON.parse(await readAtlasTagSuggestions(tagContext([],typed.slice(0,1000)),{id:ids[1]}));
+    expect(fullPage.byFacet.recognise).toHaveLength(1000);
+    await expect(readAtlasTagSuggestions(tagContext([],typed),{id:ids[1]})).rejects.toThrow('Too many links');
   });
 });
 describe('aliases in Atlas V3 model',()=>{

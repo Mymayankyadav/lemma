@@ -1,11 +1,13 @@
 -- N225 / X1: owner-scoped proposal creation for ChatGPT/Claude through the existing MCP study command.
 -- No model API key, new credential, scheduler, or implicit approval is introduced.
 -- Preserve the existing atlas_command implementation for approve/reject and other Atlas resources.
--- Mirrors adaptive/links.ts contentHash: NFKC, lower case, alphanumeric tokens,
--- and FNV-1a over UTF-16 code units (including surrogate pairs).
-create function public.atlas_concept_hash(p_name text,p_blurb text)
+-- Computed field on concepts. MCP reads and proposal writes use the same hash,
+-- with the Atlas FNV-1a format over UTF-16 code units.
+create function public.content_hash(public.concepts)
 returns text language plpgsql immutable set search_path='' as $atlas_hash$
 declare
+ -- Match ECMAScript String.trim whitespace and line terminators for blurbs.
+ v_trim_chars constant text := U&'\0009\000A\000B\000C\000D\0020\00A0\1680\2000\2001\2002\2003\2004\2005\2006\2007\2008\2009\200A\2028\2029\202F\205F\3000\FEFF';
  v_name text;
  v_text text;
  v_ch text;
@@ -15,9 +17,9 @@ declare
  v_i integer;
 begin
  v_name := pg_catalog.btrim(pg_catalog.regexp_replace(
-   pg_catalog.lower(pg_catalog.normalize(coalesce(p_name,''),'NFKC')),
+   pg_catalog.lower(pg_catalog.normalize(coalesce(($1).name,''),'NFKC')),
    '[^[:alnum:]]+',' ','g'));
- v_text := v_name||'|'||pg_catalog.btrim(coalesce(p_blurb,''));
+ v_text := v_name||'|'||pg_catalog.btrim(coalesce(($1).blurb,''),v_trim_chars);
  for v_i in 1..pg_catalog.char_length(v_text) loop
    v_ch := pg_catalog.substr(v_text,v_i,1);
    v_cp := pg_catalog.ascii(v_ch);
@@ -151,11 +153,11 @@ begin
    return pg_catalog.jsonb_build_object('status','conflict','operationId',v_opid,
      'reason','operationId reused with a different payload','actionNo',null,'changed','[]'::jsonb);
  end if;
- select version,public.atlas_concept_hash(name,blurb) into v_current_from,v_stored_from_hash from public.concepts
- where user_id=v_owner and id=v_from for update;
+ select c.version,public.content_hash(c) into v_current_from,v_stored_from_hash from public.concepts c
+ where c.user_id=v_owner and c.id=v_from for update;
  if not found then raise exception 'Atlas link source not found for owner';end if;
- select version,public.atlas_concept_hash(name,blurb) into v_current_to,v_stored_to_hash from public.concepts
- where user_id=v_owner and id=v_to for update;
+ select c.version,public.content_hash(c) into v_current_to,v_stored_to_hash from public.concepts c
+ where c.user_id=v_owner and c.id=v_to for update;
  if not found then raise exception 'Atlas link target not found for owner';end if;
  if v_current_from<>v_from_version or v_current_to<>v_to_version then
    raise exception 'Concept version conflict: refresh graph before proposing';end if;
@@ -231,8 +233,8 @@ begin
 end;
 $atlas_links_mcp$;
 
-revoke all on function public.atlas_concept_hash(text,text) from public,anon;
-grant execute on function public.atlas_concept_hash(text,text) to authenticated,service_role;
+revoke all on function public.content_hash(public.concepts) from public,anon;
+grant execute on function public.content_hash(public.concepts) to authenticated,service_role;
 revoke all on function public.atlas_links_mcp_command(jsonb) from public,anon;
 grant execute on function public.atlas_links_mcp_command(jsonb) to authenticated,service_role;
 -- Additive-only registry entry: atlas_links approval and rejection remain unchanged.
