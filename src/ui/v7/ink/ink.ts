@@ -56,7 +56,13 @@ export function transformedPaperPoint(clientX: number, clientY: number,
 
 export function appendPadPoint(stroke: PadStroke, point: PadPoint): PadStroke {
   const last = stroke.at(-1);
-  if (stroke.length >= PAD_INK_LIMIT.points || (last?.x === point.x && last.y === point.y)) return stroke;
+  if (last?.x === point.x && last.y === point.y) return stroke;
+  // Silently dropping the tail at 256 samples made a long handwritten stroke end
+  // mid-gesture. Thin older points before appending, preserving the first point
+  // and the live endpoint while keeping the database's bounded vector contract.
+  if (stroke.length >= PAD_INK_LIMIT.points) {
+    return [...stroke.filter((_, index) => index % 2 === 0), point];
+  }
   return [...stroke, point];
 }
 

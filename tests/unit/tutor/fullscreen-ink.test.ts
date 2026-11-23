@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {transformedPaperPoint} from '../../../src/ui/v7/ink/ink';
+import {PAD_INK_LIMIT,appendPadPoint,transformedPaperPoint} from '../../../src/ui/v7/ink/ink';
 
 describe('full-screen and landscape writing coordinates',()=>{
   it('reads a normal paper at 2× CSS scale',()=>{
@@ -8,6 +8,13 @@ describe('full-screen and landscape writing coordinates',()=>{
   it('undoes a clockwise 90-degree rotation before saving or model recognition',()=>{
     // x_screen = 400 - y_paper, y_screen = x_paper.
     expect(transformedPaperPoint(320,120,{a:0,b:1,c:-1,d:0,e:400,f:0})).toEqual({x:120,y:80});
+  });
+  it('keeps the live endpoint on a long handwriting stroke without exceeding storage limits',()=>{
+    let stroke=Array.from({length:PAD_INK_LIMIT.points},(_,i)=>({x:i,y:30}));
+    for(let i=256;i<=560;i++)stroke=appendPadPoint(stroke,{x:i,y:30});
+    expect(stroke.length).toBeLessThanOrEqual(PAD_INK_LIMIT.points);
+    expect(stroke[0]).toEqual({x:0,y:30});
+    expect(stroke.at(-1)).toEqual({x:560,y:30});
   });
   it('clamps outside positions and rejects noninvertible transforms',()=>{
     expect(transformedPaperPoint(-99,999,{a:1,b:0,c:0,d:1,e:0,f:0})).toEqual({x:0,y:400});
