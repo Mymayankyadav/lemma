@@ -272,6 +272,61 @@ const savedThread=(threadId:string):TutorThreadView=>({
   finalReply:{turnId:'saved-turn',messageId:'saved-reply',body:'Previously confirmed answer',provenance:{kind:'manual-import',label:'Imported by you'},citations:[],suggestions:[]}}],
 })
 
+test('a focused device refreshes deletions in all loaded Tutor history pages',async({page:writer,browser,baseURL})=>{
+ const device=await browser.newContext({baseURL})
+ try {
+  const reader=await device.newPage()
+  const {threadId,payload}=await prepareLiveTutor(writer)
+  await prepareLiveTutor(reader)
+  const seed=savedThread(threadId), turns:TutorThreadView['turns']=[1,2,3].map(sequence=>({
+   id:'history-turn-'+sequence,threadId,sequence,version:2,status:'completed',
+   snapshot:{question:'History question '+sequence,selectedContext:[]},
+   finalReply:{turnId:'history-turn-'+sequence,messageId:'history-reply-'+sequence,body:'History answer '+sequence,
+    provenance:{kind:'manual-import',label:'Imported by you'},citations:[],suggestions:[]},
+  }))
+  let deleted=false
+  const readerCursors:(number|null)[]=[]
+  for(const target of [writer,reader]){
+   await target.route('**/rest/v1/**',route=>{
+    const request=route.request(),resource=new URL(request.url()).pathname.split('/rest/v1/')[1]
+    if(resource==='rpc/tutor_thread_state'){
+     const cursor=request.postDataJSON().p_before as number|null
+     if(target===reader)readerCursors.push(cursor)
+     const sequence=cursor===null?3:cursor-1,turn=turns[sequence-1]
+     return route.fulfill({json:{...seed,head:{...seed.head,lastSequence:3},canSubmit:true,
+      before:sequence>1?sequence:null,turns:[sequence===1&&deleted?{...turn,questionDeleted:true}:turn]}})
+    }
+    if(resource==='rpc/tutor_delete_messages'){
+     expect(target).toBe(writer)
+     expect(request.postDataJSON().p_messages).toEqual([{kind:'question',id:'history-turn-1'}])
+     deleted=true
+     return route.fulfill({json:true})
+    }
+    return route.fulfill({json:liveTutorFixtureResponse(payload,resource,request.headers().accept)})
+   })
+   await target.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads#/p/logic/cp/CP1/tutor')
+   const load=target.getByRole('button',{name:'Load earlier questions'})
+   await load.click()
+   await expect(target.getByText('History question 2',{exact:true})).toBeVisible()
+   await load.click()
+   await expect(target.getByText('History question 1',{exact:true})).toBeVisible()
+  }
+  await writer.locator('[data-tutor-message="question:history-turn-1"]').press('Space')
+  await writer.getByRole('group',{name:'Selected messages'}).getByRole('button',{name:'Delete',exact:true}).click()
+  await writer.getByRole('dialog',{name:'Delete this message?'}).getByRole('button',{name:'Delete',exact:true}).click()
+  await expect(writer.getByText('History question 1',{exact:true})).toHaveCount(0)
+  // Distinct browser contexts do not share the writer's local deletion cache.
+  readerCursors.length=0
+  await reader.bringToFront()
+  await reader.evaluate(()=>dispatchEvent(new Event('focus')))
+  await expect.poll(()=>readerCursors).toContain(null)
+  await expect(reader.getByText('History question 1',{exact:true})).toHaveCount(0)
+  await expect(reader.getByText('History answer 1',{exact:true})).toBeVisible()
+  await expect(reader.getByText('History question 2',{exact:true})).toBeVisible()
+  await expect(reader.getByText('History question 3',{exact:true})).toBeVisible()
+ }finally {await device.close()}
+})
+
 test('global hold keeps owner history and receipt recovery available without submitting new work',async({page})=>{
  const {owner,cpId,threadId,payload}=await prepareLiveTutor(page,false)
  const state=savedThread(threadId),receipts:string[]=[],writes:unknown[]=[]

@@ -190,6 +190,15 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const [deletedMessages,setDeletedMessages]=useState<ReadonlySet<string>>(()=>new Set())
   const [historyDrafts,setHistoryDrafts]=useState<TutorThreadView['recoveredDrafts']>([])
   const [historyCursor,setHistoryCursor]=useState<number|null>()
+  const loadedHistoryCursors=useRef(new Set<number>())
+  const rememberDeletions=useCallback((turns:TutorThreadView['turns'])=>{
+    const keys:string[]=[]
+    for(const turn of turns){
+      if(turn.questionDeleted)keys.push(tutorMessageKey({kind:'question',id:turn.id}))
+      if(turn.replyDeleted&&turn.status==='completed')keys.push(tutorMessageKey({kind:'reply',id:turn.finalReply.messageId}))
+    }
+    if(keys.length)setDeletedMessages(current=>keys.every(key=>current.has(key))?current:new Set([...current,...keys]))
+  },[])
   useEffect(()=>{setHistoryCursor(undefined)},[session?.thread.before])
   const [draftNext,setDraftNext]=useState(false)
   const [showLocal,setShowLocal]=useState(false)
@@ -203,11 +212,20 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   },[readOnly,padHandoff,onHandoffConsumed])
   const [connectionVersion,setConnectionVersion]=useState(0)
   const readVersion=useRef(0)
-  const refresh=useCallback(async(api:ManualTutor,reconcile=Boolean(connectorUrl))=>{
+  const refresh=useCallback(async(api:ManualTutor,reconcile=Boolean(connectorUrl),revalidateHistory=false)=>{
     const request=++readVersion.current
     const thread=await api.resume(undefined,reconcile,connectorUrl)
-    if(request===readVersion.current){setSession({api,thread});setError('')}
-  },[connectorUrl])
+    if(request!==readVersion.current)return
+    rememberDeletions(thread.turns)
+    setSession({api,thread});setError('')
+    // A deletion does not advance a turn's sequence. Re-read the pages already
+    // on screen, and keep confirmed flags even if an overlapping page is older.
+    if(revalidateHistory&&!thread.offline)for(const before of [...loadedHistoryCursors.current]){
+      const older=await api.resume(before)
+      if(request!==readVersion.current)return
+      if(older.head.threadId===thread.head.threadId)rememberDeletions(older.turns)
+    }
+  },[connectorUrl,rememberDeletions])
   useEffect(()=>{
     let active=true,api:ManualTutor|undefined
     async function connect() {
@@ -252,7 +270,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   useEffect(()=>{
     if(!live||!activeApi)return
     let active=true,refreshing=false
-    const update=()=>{if(!refreshing&&document.visibilityState!=='hidden'){refreshing=true;void refresh(activeApi,true).catch(()=>{
+    const update=()=>{if(!refreshing&&document.visibilityState!=='hidden'){refreshing=true;void refresh(activeApi,true,true).catch(()=>{
       if(active)setError('Could not refresh. Showing the last confirmed conversation.')
     }).finally(()=>{refreshing=false})}}
     window.addEventListener('focus',update);window.addEventListener('online',update);window.addEventListener('offline',update)
@@ -530,7 +548,10 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       completed={false} readOnly={recoveryOnly} onConfirm={(body,id)=>confirm(body,pending.id,pending.version,id)}/>}
   </>
   const loadEarlier=session&&thread?.before!=null&&thread.before>0&&<Button onClick={()=>void action(async()=>{
-    const older=await session.api.resume(historyCursor??thread.before!)
+    const before=historyCursor??thread.before!
+    const older=await session.api.resume(before)
+    loadedHistoryCursors.current.add(before)
+    rememberDeletions(older.turns)
     setHistory(seen=>[...older.turns,...seen])
     setHistoryDrafts(seen=>[...older.recoveredDrafts,...seen])
     setHistoryCursor(older.before??null)

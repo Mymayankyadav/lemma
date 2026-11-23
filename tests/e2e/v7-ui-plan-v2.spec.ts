@@ -183,6 +183,9 @@ for (const reason of ['offline', 'waiting for a reply'] as const) test(`Tutor re
   await expect(removePhoto).toBeEnabled();
   await expect(removeDrawing).toBeEnabled();
   await page.getByRole('button',{name:'Queue answer'}).click();
+  await expect(page.getByText('Answer queued',{exact:false})).toBeVisible();
+  // The status is optimistic; the action unlocks only after the queue write settles.
+  await expect(page.getByRole('button',{name:'Keep as draft'})).toBeEnabled();
   await page.reload();
   await expect(page.getByText('Answer queued',{exact:false})).toBeVisible();
   await expect(removePhoto).toBeDisabled();
