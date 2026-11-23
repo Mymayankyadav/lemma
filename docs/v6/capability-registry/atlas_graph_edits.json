@@ -1,5 +1,12 @@
 {
-  "table": "atlas_graph_edits",
+  "resource": "atlas_graph_edits",
   "version": 1,
-  "columns": {}
+  "classification": "command-only",
+  "operations": [
+    "change_level",
+    "delete_empty",
+    "reclassify_link",
+    "link_batch"
+  ],
+  "description": "MCP command resource that edits existing concepts and concept_links. No public.atlas_graph_edits table exists; do not add this document to the table-column capability inventory."
 }
