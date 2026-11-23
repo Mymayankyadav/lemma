@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {PAD_INK_LIMIT,appendPadPoint,transformedPaperPoint} from '../../../src/ui/v7/ink/ink';
+import {PAD_INK_LIMIT,appendPadPoint,transformedPaperPoint,type PadStroke} from '../../../src/ui/v7/ink/ink';
 
 describe('full-screen and landscape writing coordinates',()=>{
   it('reads a normal paper at 2× CSS scale',()=>{
@@ -10,7 +10,7 @@ describe('full-screen and landscape writing coordinates',()=>{
     expect(transformedPaperPoint(320,120,{a:0,b:1,c:-1,d:0,e:400,f:0})).toEqual({x:120,y:80});
   });
   it('keeps the live endpoint on a long handwriting stroke without exceeding storage limits',()=>{
-    let stroke=Array.from({length:PAD_INK_LIMIT.points},(_,i)=>({x:i,y:30}));
+    let stroke:PadStroke=Array.from({length:PAD_INK_LIMIT.points},(_,i)=>({x:i,y:30}));
     for(let i=256;i<=560;i++)stroke=appendPadPoint(stroke,{x:i,y:30});
     expect(stroke.length).toBeLessThanOrEqual(PAD_INK_LIMIT.points);
     expect(stroke[0]).toEqual({x:0,y:30});
