@@ -27,6 +27,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
   // Directly update the one in-progress SVG path. A React render for every pointer sample
   // remounted every completed stroke and made writing visibly laggy on Android.
   const preview = useRef<SVGPathElement>(null);
+  const [drawing,setDrawing] = useState(false);
   const showPending = (stroke:PadStroke) => preview.current?.setAttribute('d',stroke.length?padStrokePath(stroke):'');
   const [erasing,setErasing] = useState<PadStrokes>();
   const pointAt = (x:number,y:number,svg:SVGSVGElement) => {
@@ -39,6 +40,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
     if (active.current?.type==='pen') onStrokeEnd?.();
     active.current=null;
     showPending([]);
+    setDrawing(false);
     setErasing(undefined);
   }
 
@@ -71,6 +73,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
     } else {
       active.current={pointer:event.pointerId,type:'pen',stroke:[at]};
       onStroke?.();
+      setDrawing(true);
       showPending([at]);
     }
   }
@@ -136,7 +139,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
     onPointerCancel={event=>end(event,false)} onLostPointerCapture={event=>end(event,false)}>
     <g fill="none" stroke={accent?'var(--v7-role-selection-fg)':'currentColor'} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round">
       {(erasing??history.strokes).map((stroke,index)=><path key={index} d={padStrokePath(stroke)}/>)}
-      <path ref={preview} d="" opacity={0.7} pointerEvents="none"/>
+      {drawing && <path ref={preview} d="" opacity={0.7} pointerEvents="none"/>}
     </g>
   </svg>;
 }
