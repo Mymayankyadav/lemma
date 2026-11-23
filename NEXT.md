@@ -6,6 +6,15 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N226 Atlas V3 evidence-safe operations and atomic MCP graph editing
+
+Owner task: "Complete the whole job like all X nothing should remain deploy full e2e solution"
+Stage: Build · Status: done · Needs: N225 · Assigned: chat-947#b6q8
+Done = The Atlas V3 graph never silently deletes learning evidence during a merge, duplicate concepts with evidence can be retained and aliased, and authenticated ChatGPT/Claude MCP can change concept levels with hierarchy validation, remove truly empty orphan concepts, reclassify an existing prerequisite/related link atomically, and create up to 50 version-checked links in one audited transaction. App and MCP operations preserve existing owner checks and Undo. Full SQL and unit regression tests pass before independent Supabase review.
+Tests: tests/mcp/sql/parity.mjs, tests/mcp/sql/registries.mjs, tests/mcp/sql/command-manifest-mirror.mjs; tests/unit/mcp/{capability-map,instructions-coverage}.test.ts.
+Scope: supabase/migrations/20261218002300_n226_atlas_safe_graph_edits.sql; docs/current/N226.md; NEXT.md; docs/v6/capability-registry/{lemma_command_resources,atlas_graph_edits}.json; docs/mcp/capability-map.json; supabase/functions/mcp/rules.ts; tests/mcp/sql/parity.mjs; tests/unit/mcp/instructions-coverage.test.ts.
+Not: losing any learner evidence, altering study results, auto-approving V3 suggestions, modifying protected CI paths, bypassing owner review, or adding a model API key.
+
 ## N224 One suggestion strip, equation mode as paper, the rich answer on, and the Owner's phone review
 
 Owner task: "Auto eq doesn't work in the chat box. I have realised that eq composer it's actually the right idea to just keep the drawing by hand and remove all these symbols bs so the scratch pad can become bigger, i think the slowness might have been caused by multiple triggers caused by handwriting as it progress we can use manual trigger if it is faster not for detexify. Another thing i see no suggestion card as this when I wrote eps and all. I can see that there might be lot of this going around that's why it's impossible be seen the what comes first like auto eq and this custom shortcut in the input, first integrate all this in one hood remove grey text prediction. These will default and no settings are needed for them as they non intrusive remove those confusing settings in the main settings. The grey text will come as proof assist option later. But keep this in mind while implementing."
