@@ -1933,12 +1933,13 @@ try{
   const vm=new Map(versions.map(r=>[r.id,r.version]));
   assert.ok(Number.isInteger(vm.get(n169Concept))&&Number.isInteger(vm.get(n170Concept2)),
    'N225 owner concept version inventory must not be read under service-role RLS');
-  await role('service_role');
   const {contentHash}=await tsImport('../../../supabase/functions/_shared/adaptive/links.ts',import.meta.url);
   const conceptRows=await q('select id,name,blurb from public.concepts where id=$1 or id=$2',[n169Concept,n170Concept2]);
   const hm=new Map(conceptRows.map(x=>[x.id,contentHash(x)]));
+  assert.equal(conceptRows.length,2,'Owner-scoped concept hashes must not be empty');
   for(const x of conceptRows)assert.equal((await q('select public.atlas_concept_hash($1,$2) h',[x.name,x.blurb]))[0].h,
     hm.get(x.id),'Postgres and TypeScript hashes must agree');
+  await role('service_role');
   const typedPatch={from_id:n169Concept,to_id:n170Concept2,kind:'equivalent',
    confidence:0.94,rationale:'The same mathematical concept',
    from_version:vm.get(n169Concept),to_version:vm.get(n170Concept2),
