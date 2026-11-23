@@ -35,8 +35,9 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
   const register=(n:string,description:string,schema:any,readOnly:boolean,fn:(a:any,ctx:Context)=>Promise<string>)=>{
     m.registerTool(n,{description,inputSchema:lean(schema),annotations:readOnly?noop:write},async(a:any,toolContext)=>{
       try{
-        if(n==='get'&&(a.what==='tutor_turn'||a.what==='tutor_next'||a.what==='tutor_attachment'||a.what==='tutor_questionnaires')){
+        if(n==='get'&&(a.what==='tutor_turn'||a.what==='tutor_next'||a.what==='tutor_attachment'||a.what==='tutor_questionnaires'||a.what==='tutor_followups')){
           if(!tutor)throw Error('Tutor connector unavailable.');
+          if(a.what==='tutor_followups')return {content:[{type:'text' as const,text:await tutor.followups(a.id)}]};
           if(a.what==='tutor_questionnaires')return {content:[{type:'text' as const,text:await tutor.questionnaires(a.id)}]};
           if(a.what==='tutor_attachment')return {content:await tutor.attachment(a.id)};
           if(a.what==='tutor_turn')return {content:await tutor.content(a.id)};

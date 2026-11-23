@@ -1,0 +1,48 @@
+{
+  "table": "tutor_followups",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_followup_add (post) and tutor_followup_state (read)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_followup_connector (read only; marks seen). Learner's own message id; a retry is the same message",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_followup_add (post) and tutor_followup_state (read)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_followup_connector (read only; marks seen). Derived server-side",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "turn_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_followup_add (post) and tutor_followup_state (read)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_followup_connector (read only; marks seen). The waiting turn the message was posted on",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "body": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_followup_add (post) and tutor_followup_state (read)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_followup_connector (read only; marks seen). The message text, up to 2000 characters",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_followup_add (post) and tutor_followup_state (read)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_followup_connector (read only; marks seen). Set by the database",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "seen_at": {
+      "classification": "derived",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_followup_add (post) and tutor_followup_state (read)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_followup_connector (read only; marks seen). Set when the tutor reads the message through the connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    }
+  }
+}

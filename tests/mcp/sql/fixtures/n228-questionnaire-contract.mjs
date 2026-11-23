@@ -127,3 +127,71 @@ export async function checkQuestionnaireConnector({db,owner,as,one,ownerCmd,stat
  await as();
  console.log('N228 passed questionnaire attach after reply, idempotent create, limits, learner saves and the tutor\'s read.');
 }
+
+/**
+ * N228 (Owner: "allow posting of messages even when tutor is not"): follow-up messages on the waiting turn. `connector` is
+ * the tutor's read (PostgreSQL only). The owner path runs in PGlite and PostgreSQL.
+ */
+export async function checkFollowups({db,owner,other,slug,checkpoint,as,one,ownerCmd,state,denied,connector=false}){
+ const read=(id=owner)=>one('select public.tutor_followup_state($1,$2,$3) result',[id,slug,checkpoint]);
+ const add=(turn,message,body,id=owner)=>one('select public.tutor_followup_add($1,$2,$3,$4,$5,$6) result',[id,slug,checkpoint,turn,message,body]);
+ await as('authenticated',owner);
+ const turn=await newTurn(ownerCmd,state,'A question the tutor has not answered yet');
+ const first=randomUUID();
+ let saved=await add(turn,first,'  Also, I am not sure about part (b).  ');
+ assert.equal(saved.status,'saved');assert.equal(saved.followup.body,'Also, I am not sure about part (b).');assert.equal(saved.followup.seen,false);
+ // A retry is the same message; a different message under its id is refused.
+ assert.deepEqual(await add(turn,first,'Also, I am not sure about part (b).'),saved);
+ await denied(add(turn,first,'Something else'),'23505');
+ await add(turn,randomUUID(),'And one more thing.');
+ for(const body of ['',' \n ','x'.repeat(2001)]) await denied(add(turn,randomUUID(),body),'22023');
+ for(let i=0;i<8;i++) await add(turn,randomUUID(),'More '+i);
+ await denied(add(turn,randomUUID(),'One too many'),'22023');
+ const listed=await read();
+ assert.equal(listed.filter(item=>item.turnId===turn).length,10);
+ assert.equal(listed.find(item=>item.id===first).body,'Also, I am not sure about part (b).');
+ // Browsers never write the table; other users see and write nothing.
+ await as();
+ for(const role of ['anon','authenticated'])
+  assert.equal(await one('select has_table_privilege($1,$2,$3) result',[role,'public.tutor_followups','INSERT,UPDATE,DELETE,TRUNCATE']),false);
+ await as('authenticated',other);
+ await denied(read());await denied(add(turn,randomUUID(),'Not mine'));
+ await as('authenticated',owner);
+ // The tutor's reply completes the turn; it takes no more messages (the next one is a new turn), but a retry still answers.
+ await ownerCmd(cmd('manual',{turnId:turn,expectedVersion:1,messageId:randomUUID(),body:'Here is the reply.'}));
+ await denied(add(turn,randomUUID(),'Too late'),'40001');
+ assert.deepEqual(await add(turn,first,'Also, I am not sure about part (b).'),saved);
+ assert.equal((await read()).filter(item=>item.turnId===turn).length,10);
+ await as();
+ if(!connector)return;
+
+ // The tutor reads them with the turn's grant, and marks them seen.
+ const secret='1'.repeat(48);
+ await as();await db.exec('update public.tutor_release_controls set enabled=true');await db.query('update public.settings set connector_secret=$1 where user_id=$2',[secret,owner]);
+ await as('authenticated',owner);
+ const waiting=await newTurn(ownerCmd,state,'Another waiting question');
+ const operationId=randomUUID();
+ await ownerCmd({operation:'grant',operationId,turnId:waiting,expectedVersion:1,tokenHash:verifier(secret,waiting,operationId)});
+ await add(waiting,randomUUID(),'First extra message');
+ await add(waiting,randomUUID(),'Second extra message');
+ const call=(nonce,command,key=secret)=>one('select public.tutor_followup_connector($1,$2,$3,$4::jsonb) result',[owner,sha(key),nonce,JSON.stringify(command)]);
+ await as('authenticated',owner);await denied(call(operationId,{operation:'followups',turnId:waiting}));
+ await as('service_role');
+ await denied(call(randomUUID(),{operation:'followups',turnId:waiting}));
+ await denied(call(operationId,{operation:'followups',turnId:waiting},'9'.repeat(48)));
+ await denied(call(operationId,{operation:'followups',turnId:waiting,extra:1}),'22023');
+ const peek=await call(operationId,{operation:'followups',turnId:waiting});
+ assert.deepEqual(peek.followups.map(item=>item.body),['First extra message','Second extra message']);
+ assert.equal(peek.unseen,2);
+ assert.equal((await call(operationId,{operation:'followups',turnId:waiting})).unseen,2,'a read without markSeen leaves them unseen');
+ assert.equal((await call(operationId,{operation:'followups',turnId:waiting,markSeen:true})).unseen,2);
+ assert.equal((await call(operationId,{operation:'followups',turnId:waiting})).unseen,0);
+ await as('authenticated',owner);await add(waiting,randomUUID(),'Third, after the tutor read');
+ await as('service_role');
+ const later=await call(operationId,{operation:'followups',turnId:waiting});
+ assert.equal(later.unseen,1);assert.equal(later.followups.length,3);assert.equal(later.followups[0].seen,true);
+ await as();await db.query('update public.tutor_grants set revoked_at=clock_timestamp() where turn_id=$1',[waiting]);
+ await as('service_role');await denied(call(operationId,{operation:'followups',turnId:waiting}));
+ await as();
+ console.log('N228 passed follow-up messages on a waiting turn: idempotent posting, limits, ordering with the reply and the tutor\'s read.');
+}

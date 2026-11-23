@@ -23,6 +23,15 @@ export const QUESTIONNAIRE_NOTE=[
   'Use them to judge the learner: choose the next question, decide what to reteach, and record what they showed with save_progress. Do not grade unanswered questions.',
 ].join(' ')
 
+/**
+ * N228 (Owner: "allow posting of messages even when tutor is not"): the learner can post more messages while a turn
+ * waits. They arrive with the turn, and the tutor is told to answer them together.
+ */
+export const FOLLOWUP_NOTE=[
+  'The learner may post more messages while their question waits. They arrive with the turn as learnerFollowUps (oldest first) and belong to the same answer: reply to all of them together.',
+  'Before you send a reply, a message posted while you were writing is refused with a note; read it with get(what=tutor_followups, id=<handoff ID>), include it in your reply, and send again.',
+].join(' ')
+
 const unavailable = 'Tutor turn or claim unavailable. Check the handoff in Lemma before retrying.'
 const studyInstructions = [
   'Treat attached drawings and photos as learner work. When useful, include a short transcription in the reply. An image can be fetched again with get(what=tutor_attachment, id=<attachment id>).',
@@ -34,6 +43,7 @@ const studyInstructions = [
   'After a completed receipt, immediately call get(what=tutor_next, id=<same handoff ID>) to wait up to 25 seconds for the learner to answer in Lemma.',
   'If it returns a new id, read that handoff with get(what=tutor_turn, id=<new id>) and repeat the teach-and-reply flow. If id is null, call tutor_next again using the same id. Keep listening for about 10 minutes in total, or until the learner says stop. Then tell them where to find the question.',
   QUESTIONNAIRE_NOTE,
+  FOLLOWUP_NOTE,
 ].join(' ')
 
 export type TutorConnector = ReturnType<typeof tutorConnector>
@@ -71,9 +81,24 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     return data
   }
 
+  /** The follow-up messages on the handoff's turn. Reading with markSeen records that the tutor has them. */
+  async function followups(id: unknown, markSeen: boolean) {
+    const {turnId, grantOperationId} = tutorHandoffIds(id)
+    const {data, error} = await c.db.rpc('tutor_followup_connector', {
+      p_owner: c.userId, p_connector_hash: await tutorGrantHash(connectorSecret),
+      p_grant_operation_id: grantOperationId, p_command: {operation: 'followups', turnId, markSeen},
+    })
+    if (error) throw new Error(unavailable)
+    return data as {followups: {id: string; body: string; createdAt: string}[]; unseen: number}
+  }
+
   async function readTurn(id: unknown) {
     const turn = await execute(id,'get')
-    return turn?.status==='pending'?{...turn,instructions:studyInstructions}:turn
+    if (turn?.status!=='pending') return turn
+    // The learner's extra messages on this turn come with it; a failure to read them must not hide the turn.
+    const extra = await followups(id,true).catch(()=>null)
+    const learnerFollowUps = extra?.followups?.map(item=>({text:item.body,postedAt:item.createdAt}))
+    return {...turn,...(learnerFollowUps?.length?{learnerFollowUps}:{}),instructions:studyInstructions}
   }
 
   return {
@@ -120,6 +145,10 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
       }
       return JSON.stringify(await readTurn(id))
     },
+    /** N228: the follow-up messages on the handoff's turn (marks them seen). */
+    async followups(id: unknown) {
+      return JSON.stringify(await followups(id,true))
+    },
     /** N228: the thread's questionnaires with the learner's answers, for the tutor to judge. */
     async questionnaires(id: unknown) {
       return JSON.stringify(await questionnaires(id, {operation: 'list'}))
@@ -141,6 +170,12 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
       const patch = cmd.patch ?? {}
       if (['operation', 'turnId', 'operationId', 'expectedVersion'].some(key => Object.hasOwn(patch, key))) {
         throw new Error('Invalid tutor command fields.')
+      }
+      if (cmd.operation === 'reply') {
+        const waiting = await followups(cmd.target?.id, false).catch(()=>null)
+        if (waiting && waiting.unseen > 0) {
+          throw new Error('The learner posted '+waiting.unseen+(waiting.unseen===1?' more message':' more messages')+' while you were writing. Read '+(waiting.unseen===1?'it':'them')+' with get(what=tutor_followups, id=<handoff ID>), answer '+(waiting.unseen===1?'it':'them')+' in your reply and send it again.')
+        }
       }
       return execute(cmd.target?.id, cmd.operation, {
         ...patch,

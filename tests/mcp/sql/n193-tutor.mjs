@@ -5,7 +5,7 @@ import {readdir,readFile} from 'node:fs/promises';
 import {openN191Postgres} from './fixtures/n191-pg-fixture.mjs';
 import {checkTutorInk} from './fixtures/n208-tutor-ink-contract.mjs';
 import {checkRegularTutorConnector} from './fixtures/n201-connector-contract.mjs';
-import {checkQuestionnaireConnector,checkQuestionnaireOwner} from './fixtures/n228-questionnaire-contract.mjs';
+import {checkFollowups,checkQuestionnaireConnector,checkQuestionnaireOwner} from './fixtures/n228-questionnaire-contract.mjs';
 
 const db=process.env.NOTIF_TEST_DATABASE_URL ? await openN191Postgres(process.env.NOTIF_TEST_DATABASE_URL) :
  new (await import(process.env.PGLITE_MODULE || '@electric-sql/pglite')).PGlite();
@@ -308,6 +308,7 @@ try {
  await checkTutorInk({db,owner,other,slug,objective,seed,as,q,one,ownerCmd,state,denied});
  await checkQuestionnaireOwner({db,owner,other,slug,checkpoint,as,one,ownerCmd,state,denied});
  if(db.native)await checkQuestionnaireConnector({db,owner,as,one,ownerCmd,state,denied});
+ await checkFollowups({db,owner,other,slug,checkpoint,as,one,ownerCmd,state,denied,connector:db.native});
  await as('service_role');await q('select public.lemma_begin_account_delete($1)',[owner]);
  await as('authenticated',owner);await denied(state());
  await as('service_role');await q('select public.lemma_purge_account_rows($1)',[owner]);

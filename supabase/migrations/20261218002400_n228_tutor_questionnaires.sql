@@ -267,3 +267,143 @@ begin
 end $connector$;
 revoke all on function public.tutor_questionnaire_connector(uuid,text,uuid,jsonb) from public, anon, authenticated;
 grant execute on function public.tutor_questionnaire_connector(uuid,text,uuid,jsonb) to service_role;
+
+-- N228 (Owner: "allow posting of messages even when tutor is not"): the learner can keep posting while a turn waits for
+-- the tutor. Each extra message is kept with the waiting turn (never a second pending turn), shown in the chat in order,
+-- and read by the tutor with that turn. Additive only: one new table and new functions.
+create table public.tutor_followups (
+ id uuid primary key,
+ user_id uuid not null,
+ turn_id uuid not null,
+ body text not null check (char_length(body) between 1 and 2000 and body ~ '[^[:space:]]'),
+ created_at timestamptz not null default clock_timestamp(),
+ seen_at timestamptz,
+ unique(user_id,id),
+ foreign key(user_id,turn_id) references public.tutor_turns(user_id,id) on delete cascade
+);
+create index tutor_followups_turn on public.tutor_followups(user_id,turn_id,created_at);
+alter table public.tutor_followups enable row level security;
+revoke insert, update, delete, truncate on public.tutor_followups from anon, authenticated;
+do $followup_delete_guard$
+begin
+ if to_regprocedure('public.lemma_block_account_deletion_writes()') is not null then
+  create trigger lemma_account_delete_write_guard before insert or update or delete on public.tutor_followups
+   for each row execute function public.lemma_block_account_deletion_writes();
+ end if;
+end $followup_delete_guard$;
+insert into lemma_export_private.additional_tables(table_name) values ('tutor_followups') on conflict(table_name) do nothing;
+
+create function public.tutor_followup_json(f public.tutor_followups) returns jsonb
+language sql stable set search_path='' as $fjson$
+ select jsonb_build_object('id',f.id,'turnId',f.turn_id,'body',f.body,'createdAt',f.created_at,'seen',f.seen_at is not null)
+$fjson$;
+revoke all on function public.tutor_followup_json(public.tutor_followups) from public, anon, authenticated, service_role;
+
+-- The owner's follow-up messages on one checkpoint's tutor thread, oldest first.
+create function public.tutor_followup_state(p_owner uuid, p_slug text, p_checkpoint uuid)
+returns jsonb language plpgsql stable security definer set search_path='' as $fstate$
+declare u uuid:=auth.uid(); cp public.checkpoints%rowtype; h public.tutor_threads%rowtype;
+begin
+ if current_setting('role',true) is distinct from 'authenticated' or u is null or u is distinct from p_owner then
+  raise exception 'Sign in to this account to open the tutor' using errcode='42501';
+ end if;
+ select c.* into cp from public.checkpoints c join public.projects p on p.id=c.project_id and p.user_id=c.user_id
+ where c.id=p_checkpoint and c.user_id=u and p.slug=p_slug;
+ if not found or exists(select 1 from public.account_deletion_requests d where d.user_id=u) then
+  raise exception 'Checkpoint is unavailable' using errcode='42501';
+ end if;
+ select * into h from public.tutor_threads where user_id=u and checkpoint_id=cp.id;
+ return coalesce((select jsonb_agg(public.tutor_followup_json(f) order by t.sequence,f.created_at,f.id)
+  from public.tutor_followups f join public.tutor_turns t on t.user_id=f.user_id and t.id=f.turn_id
+  where f.user_id=u and t.thread_id=h.id),'[]'::jsonb);
+end $fstate$;
+revoke all on function public.tutor_followup_state(uuid,text,uuid) from public, anon, service_role;
+grant execute on function public.tutor_followup_state(uuid,text,uuid) to authenticated;
+
+-- Post another message on the turn that is waiting for the tutor. p_message is the message's own id (a retry is the
+-- same message). A turn the tutor has already answered takes no more: the answer is a new turn.
+create function public.tutor_followup_add(p_owner uuid, p_slug text, p_checkpoint uuid, p_turn uuid, p_message uuid, p_body text)
+returns jsonb language plpgsql security definer set search_path='' as $fadd$
+declare u uuid:=auth.uid(); cp public.checkpoints%rowtype; h public.tutor_threads%rowtype; t public.tutor_turns%rowtype;
+ f public.tutor_followups%rowtype; text_body text:=regexp_replace(coalesce(p_body,''),'^[[:space:]]+|[[:space:]]+$','','g');
+begin
+ if current_setting('role',true) is distinct from 'authenticated' or u is null or u is distinct from p_owner then
+  raise exception 'Sign in to this account to open the tutor' using errcode='42501';
+ end if;
+ if not public.tutor_plan_released() or not exists(select 1 from public.tutor_release_controls where capability='manual' and enabled) then
+  raise exception 'Tutor questions are unavailable' using errcode='55000';
+ end if;
+ select c.* into cp from public.checkpoints c join public.projects p on p.id=c.project_id and p.user_id=c.user_id
+ where c.id=p_checkpoint and c.user_id=u and p.slug=p_slug;
+ if not found or exists(select 1 from public.account_deletion_requests d where d.user_id=u) then
+  raise exception 'Checkpoint is unavailable' using errcode='42501';
+ end if;
+ if p_message is null or char_length(text_body) not between 1 and 2000 or text_body !~ '[^[:space:]]' then
+  raise exception 'A message of up to 2000 characters is required' using errcode='22023';
+ end if;
+ -- The same lock a tutor reply takes, so a message and the reply that completes the turn are ordered.
+ perform pg_advisory_xact_lock(hashtextextended(u::text||':tutor:'||cp.id::text,0));
+ select * into h from public.tutor_threads where user_id=u and checkpoint_id=cp.id;
+ select * into t from public.tutor_turns where user_id=u and thread_id=h.id and id=p_turn;
+ if not found then raise exception 'Turn is unavailable' using errcode='42501'; end if;
+ select * into f from public.tutor_followups where id=p_message;
+ if found then
+  if f.user_id=u and f.turn_id=t.id and f.body=text_body then
+   return jsonb_build_object('status','saved','followup',public.tutor_followup_json(f));
+  end if;
+  raise exception 'This message ID is already used' using errcode='23505';
+ end if;
+ if t.status<>'pending' then raise exception 'The tutor has already answered this question' using errcode='40001'; end if;
+ if (select count(*) from public.tutor_followups where user_id=u and turn_id=t.id)>=10 then
+  raise exception 'Wait for the tutor to reply before posting more' using errcode='22023';
+ end if;
+ insert into public.tutor_followups(id,user_id,turn_id,body) values(p_message,u,t.id,text_body) returning * into f;
+ update public.tutor_threads set updated_at=clock_timestamp() where id=h.id;
+ return jsonb_build_object('status','saved','followup',public.tutor_followup_json(f));
+end $fadd$;
+revoke all on function public.tutor_followup_add(uuid,text,uuid,uuid,uuid,text) from public, anon, service_role;
+grant execute on function public.tutor_followup_add(uuid,text,uuid,uuid,uuid,text) to authenticated;
+
+-- The tutor reads the follow-ups on a turn its grant covers. markSeen records that it has read them; `unseen` counts the
+-- ones it had not read before this call, so it can tell that more arrived while it was writing.
+create function public.tutor_followup_connector(p_owner uuid, p_connector_hash text, p_grant_operation_id uuid, p_command jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $fconn$
+declare
+ secret text; verifier text; anchor_grant uuid; target_turn uuid; unseen integer; items jsonb;
+begin
+ if current_setting('role',true) is distinct from 'service_role' then
+  raise exception 'Restricted tutor connector' using errcode='42501';
+ end if;
+ select s.connector_secret into secret from public.settings s
+ where s.user_id=p_owner and encode(sha256(convert_to(s.connector_secret,'UTF8')),'hex')=p_connector_hash;
+ if not found or not public.tutor_plan_released()
+  or not exists(select 1 from public.tutor_release_controls where capability='mcp' and enabled)
+  or exists(select 1 from public.account_deletion_requests d where d.user_id=p_owner) then
+  raise exception 'Tutor connector unavailable' using errcode='42501';
+ end if;
+ if p_grant_operation_id is null or jsonb_typeof(p_command) is distinct from 'object' or p_command->>'operation' is distinct from 'followups'
+  or (p_command-array['operation','turnId','markSeen'])<>'{}' then
+  raise exception 'Invalid tutor follow-up command' using errcode='22023';
+ end if;
+ target_turn:=(p_command->>'turnId')::uuid;
+ verifier:=public.tutor_connector_verifier(secret,target_turn,p_grant_operation_id);
+ select g.id into anchor_grant from public.command_receipts rc
+ join public.tutor_grants g on g.user_id=rc.user_id and g.id::text=rc.result->>'grantId'
+ join public.tutor_grant_credentials c on c.grant_id=g.id
+ where rc.user_id=p_owner and rc.operation_id=p_grant_operation_id and rc.resource='tutor'
+  and rc.trusted_writer_version=1 and rc.result->>'status'='granted'
+  and g.turn_id=target_turn and g.revoked_at is null and g.expires_at>clock_timestamp() and c.token_hash=verifier;
+ if not found then raise exception 'Tutor connector unavailable' using errcode='42501'; end if;
+ if not exists(select 1 from public.tutor_turns where user_id=p_owner and id=target_turn) then
+  raise exception 'Tutor connector unavailable' using errcode='42501';
+ end if;
+ select count(*) filter (where seen_at is null) into unseen from public.tutor_followups where user_id=p_owner and turn_id=target_turn;
+ select coalesce(jsonb_agg(public.tutor_followup_json(f) order by f.created_at,f.id),'[]'::jsonb) into items
+  from public.tutor_followups f where f.user_id=p_owner and f.turn_id=target_turn;
+ if coalesce((p_command->>'markSeen')::boolean,false) then
+  update public.tutor_followups set seen_at=clock_timestamp() where user_id=p_owner and turn_id=target_turn and seen_at is null;
+ end if;
+ return jsonb_build_object('followups',items,'unseen',unseen);
+end $fconn$;
+revoke all on function public.tutor_followup_connector(uuid,text,uuid,jsonb) from public, anon, authenticated;
+grant execute on function public.tutor_followup_connector(uuid,text,uuid,jsonb) to service_role;
