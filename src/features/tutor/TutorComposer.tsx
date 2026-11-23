@@ -46,7 +46,7 @@ const MAX_ANSWER_LENGTH = 2000;
 const IMAGE_REFERENCE_LENGTH = imageReference('00000000-0000-0000-0000-000000000000').length;
 
 export function keepsKeyboardOpenFor(target: Element) {
-  return target.closest('[role="dialog"],[data-tutor-session-actions]') !== null;
+  return target.closest('dialog,[role="dialog"],[data-tutor-session-actions]') !== null;
 }
 
 interface Props {
@@ -1009,8 +1009,13 @@ export function TutorComposer(props: Props) {
         {isFlagOn('writingAidSettings') && <Button onClick={() => {props.onCloseActions(); setAidSettings(true);}}><SlidersHorizontal aria-hidden="true"/>Writing assistance</Button>}
         {refreshable && <Button disabled={editingDisabled} onClick={() => {
           refreshWriting();
+          const caret = history.current.present;
           props.onCloseActions();
-          requestAnimationFrame(() => fieldElement()?.focus({preventScroll:true}));
+          requestAnimationFrame(() => {
+            // A modal round trip can leave a contenteditable caret at the start of the draft.
+            pendingSelection.current = caret;
+            fieldElement()?.focus({preventScroll:true});
+          });
         }}>
           <RefreshCw aria-hidden="true"/>Refresh suggestions</Button>}
         <Button disabled={!props.canSend||editingDisabled} onClick={()=>{props.onCloseActions();props.onAsk('hint');}}>
