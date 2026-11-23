@@ -8,6 +8,16 @@ returns trigger language plpgsql security definer set search_path='' as $guard$
 begin
  -- Auth account deletion cascades from the already-deleted auth.users row. A
  -- normal Atlas merge/delete has an extant owner and must pass this guard.
+ -- Explicit owner-account purges run with a transaction-bound marker that
+ -- only the service-role cleanup function can set. Do not block that cleanup
+ -- while its auth.users row is still present (N191); ordinary merges have no marker.
+ if pg_catalog.current_setting('role',true)='service_role' and exists(
+    select 1 from public.account_deletion_requests d
+    where d.user_id=old.user_id
+      and d.cleanup_txid=pg_catalog.txid_current()
+      and d.cleanup_pid=pg_catalog.pg_backend_pid()) then
+   return old;
+ end if;
  if pg_catalog.pg_trigger_depth()>1 and
     not exists(select 1 from auth.users where id=old.user_id) then
    return old;

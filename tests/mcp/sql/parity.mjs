@@ -1968,8 +1968,8 @@ try{
    assert.equal((await q('select level from public.concepts where id=$1',[empty.id]))[0].level,'planet');
    mark('atlas_graph_edits','change_level');
 
-   await role('service_role');
    const beforeDelete=(await q('select version from public.concepts where id=$1',[empty.id]))[0].version;
+   await role('service_role');
    const remove=command('atlas_graph_edits','delete_empty',{target:{id:empty.id},expectedVersion:beforeDelete,patch:{}});
    const gone=status(await mcp(remove),'atlas_graph_edits','delete_empty');
    await role(null);
