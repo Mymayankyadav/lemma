@@ -1,6 +1,39 @@
 -- N225 / X1: owner-scoped proposal creation for ChatGPT/Claude through the existing MCP study command.
 -- No model API key, new credential, scheduler, or implicit approval is introduced.
 -- Preserve the existing atlas_command implementation for approve/reject and other Atlas resources.
+-- Mirrors adaptive/links.ts contentHash: NFKC, lower case, alphanumeric tokens,
+-- and FNV-1a over UTF-16 code units (including surrogate pairs).
+create function public.atlas_concept_hash(p_name text,p_blurb text)
+returns text language plpgsql immutable set search_path='' as $atlas_hash$
+declare
+ v_name text;
+ v_text text;
+ v_ch text;
+ v_cp integer;
+ v_unit integer;
+ v_hash bigint := 2166136261;
+ v_i integer;
+begin
+ v_name := pg_catalog.btrim(pg_catalog.regexp_replace(
+   pg_catalog.lower(pg_catalog.normalize(coalesce(p_name,''),NFKC)),
+   '[^[:alnum:]]+',' ','g'));
+ v_text := v_name||'|'||pg_catalog.btrim(coalesce(p_blurb,''));
+ for v_i in 1..pg_catalog.char_length(v_text) loop
+   v_ch := pg_catalog.substr(v_text,v_i,1);
+   v_cp := pg_catalog.ascii(v_ch);
+   if v_cp>65535 then
+     v_unit := 55296 + ((v_cp-65536)/1024);
+     v_hash := ((v_hash # v_unit::bigint)*16777619)%4294967296;
+     v_unit := 56320 + ((v_cp-65536)%1024);
+   else
+     v_unit := v_cp;
+   end if;
+   v_hash := ((v_hash # v_unit::bigint)*16777619)%4294967296;
+ end loop;
+ return pg_catalog.to_hex(v_hash);
+end
+$atlas_hash$;
+
 create function public.atlas_links_mcp_command(p jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $atlas_links_mcp$
 declare
@@ -21,6 +54,10 @@ declare
  v_to_version integer;
  v_current_from integer;
  v_current_to integer;
+ v_stored_from_hash text;
+ v_stored_to_hash text;
+ v_old public.atlas_links%rowtype;
+ v_expected_rejected integer;
  v_row public.atlas_links%rowtype;
  v_previous jsonb;
  v_result jsonb;
@@ -50,7 +87,7 @@ begin
    raise exception 'Atlas link patch must be an object';
  end if;
  select key into v_bad from pg_catalog.jsonb_object_keys(v_patch) as keys(key)
- where key not in ('from_id','to_id','kind','confidence','rationale','from_hash','to_hash','from_version','to_version') limit 1;
+ where key not in ('from_id','to_id','kind','confidence','rationale','from_hash','to_hash','from_version','to_version','expected_rejected_version') limit 1;
  if v_bad is not null then raise exception 'Unknown Atlas link field %',v_bad; end if;
  if (select count(*) from pg_catalog.jsonb_object_keys(v_patch))<7
      or not (v_patch?'from_id' and v_patch?'to_id' and v_patch?'kind'
@@ -89,10 +126,10 @@ begin
      pg_catalog.array_length(pg_catalog.regexp_split_to_array(v_reason,'[[:space:]]+'),1)>20 then
    raise exception 'A nonempty rationale of at most 20 words and 200 characters is required';
  end if;
- if (v_patch?'from_hash')<>(v_patch?'to_hash') then
-   raise exception 'Both concept content hashes must be supplied together';
+ if not (v_patch?'from_hash' and v_patch?'to_hash') then
+   raise exception 'Both concept content hashes are required';
  end if;
- if v_patch?'from_hash' then
+ if true then
    if pg_catalog.jsonb_typeof(v_patch->'from_hash') is distinct from 'string'
        or pg_catalog.jsonb_typeof(v_patch->'to_hash') is distinct from 'string'
        or (v_patch->>'from_hash') !~ '^[0-9a-f]{1,8}$'
@@ -114,19 +151,42 @@ begin
    return pg_catalog.jsonb_build_object('status','conflict','operationId',v_opid,
      'reason','operationId reused with a different payload','actionNo',null,'changed','[]'::jsonb);
  end if;
- select version into v_current_from from public.concepts
+ select version,public.atlas_concept_hash(name,blurb) into v_current_from,v_stored_from_hash from public.concepts
  where user_id=v_owner and id=v_from for update;
  if not found then raise exception 'Atlas link source not found for owner';end if;
- select version into v_current_to from public.concepts
+ select version,public.atlas_concept_hash(name,blurb) into v_current_to,v_stored_to_hash from public.concepts
  where user_id=v_owner and id=v_to for update;
  if not found then raise exception 'Atlas link target not found for owner';end if;
  if v_current_from<>v_from_version or v_current_to<>v_to_version then
    raise exception 'Concept version conflict: refresh graph before proposing';end if;
- if exists(select 1 from public.atlas_links l
-   where l.user_id=v_owner and l.kind=v_kind and
-    ((l.from_id=v_from and l.to_id=v_to) or
-     (v_kind in ('equivalent','analogous','contrasts') and l.from_id=v_to and l.to_id=v_from))) then
-   raise exception 'Typed Atlas relationship already exists; review it rather than duplicating it';
+ if v_stored_from_hash<>v_from_hash or v_stored_to_hash<>v_to_hash then
+   raise exception 'Concept content hash mismatch: refresh graph before proposing';end if;
+ select * into v_old from public.atlas_links l
+ where l.user_id=v_owner and l.kind=v_kind and
+ ((l.from_id=v_from and l.to_id=v_to) or
+  (v_kind in ('equivalent','analogous','contrasts') and l.from_id=v_to and l.to_id=v_from))
+ order by case when l.from_id=v_from then 0 else 1 end limit 1 for update;
+ if found then
+   if v_old.status<>'rejected' then
+     raise exception 'Typed Atlas relationship already exists; review it rather than duplicating it';
+   end if;
+   if pg_catalog.jsonb_typeof(v_patch->'expected_rejected_version') is distinct from 'number'
+      or (v_patch->>'expected_rejected_version') !~ '^[1-9][0-9]*$'
+      or (v_patch->>'expected_rejected_version')::numeric>2147483647
+      or (v_patch->>'expected_rejected_version')::integer<>v_old.version then
+     raise exception 'Rejected proposal version conflict: refresh before resubmission';
+   end if;
+   if v_old.from_id=v_from then
+     if v_old.from_hash is not distinct from v_from_hash and
+        v_old.to_hash is not distinct from v_to_hash then
+       raise exception 'Rejected proposal unchanged: edit concept content before resubmission';
+     end if;
+   elsif v_old.from_hash is not distinct from v_to_hash and
+         v_old.to_hash is not distinct from v_from_hash then
+     raise exception 'Rejected proposal unchanged: edit concept content before resubmission';
+   end if;
+ elsif v_patch?'expected_rejected_version' then
+   raise exception 'No rejected proposal to resubmit';
  end if;
 
  if v_role<>'service_role' then
@@ -134,11 +194,21 @@ begin
    perform pg_catalog.set_config('lemma.tool','atlas_links_mcp',true);
  end if;
  perform pg_catalog.set_config('lemma.summary','Atlas link proposal',true);
- insert into public.atlas_links(user_id,from_id,to_id,kind,status,origin,confidence,rationale,from_hash,to_hash)
- values(v_owner,v_from,v_to,v_kind,'proposed',
-   case when v_role='service_role' then 'tutor' else 'user' end,
-   v_conf,v_reason,v_from_hash,v_to_hash)
- returning * into v_row;
+ if v_old.id is not null then
+   -- The rejected version is retained in the undoable action journal.
+   update public.atlas_links set status='proposed',confidence=v_conf,rationale=v_reason,
+     from_hash=case when from_id=v_from then v_from_hash else v_to_hash end,
+     to_hash=case when to_id=v_to then v_to_hash else v_from_hash end,
+     origin=case when v_role='service_role' then 'tutor' else 'user' end
+   where id=v_old.id and user_id=v_owner and version=v_old.version
+   returning * into v_row;
+ else
+   insert into public.atlas_links(user_id,from_id,to_id,kind,status,origin,confidence,rationale,from_hash,to_hash)
+   values(v_owner,v_from,v_to,v_kind,'proposed',
+     case when v_role='service_role' then 'tutor' else 'user' end,
+     v_conf,v_reason,v_from_hash,v_to_hash)
+   returning * into v_row;
+ end if;
 
  select no into v_action from public.actions
  where user_id=v_owner and txid=pg_catalog.txid_current();
@@ -153,9 +223,11 @@ begin
 end;
 $atlas_links_mcp$;
 
+revoke all on function public.atlas_concept_hash(text,text) from public,anon;
+grant execute on function public.atlas_concept_hash(text,text) to authenticated,service_role;
 revoke all on function public.atlas_links_mcp_command(jsonb) from public,anon;
 grant execute on function public.atlas_links_mcp_command(jsonb) to authenticated,service_role;
 -- Additive-only registry entry: atlas_links approval and rejection remain unchanged.
 insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
  values('atlas_link_proposals','atlas_links_mcp_command',true,
- '{"operations":["create"],"fields":["from_id","to_id","kind","confidence","rationale","from_hash","to_hash","from_version","to_version"]}'::jsonb);
+ '{"operations":["create"],"fields":["from_id","to_id","kind","confidence","rationale","from_hash","to_hash","from_version","to_version","expected_rejected_version"]}'::jsonb);

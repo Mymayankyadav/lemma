@@ -1934,9 +1934,15 @@ try{
   assert.ok(Number.isInteger(vm.get(n169Concept))&&Number.isInteger(vm.get(n170Concept2)),
    'N225 owner concept version inventory must not be read under service-role RLS');
   await role('service_role');
+  const {contentHash}=await tsImport('../../../supabase/functions/_shared/adaptive/links.ts',import.meta.url);
+  const conceptRows=await q('select id,name,blurb from public.concepts where id=$1 or id=$2',[n169Concept,n170Concept2]);
+  const hm=new Map(conceptRows.map(x=>[x.id,contentHash(x)]));
+  for(const x of conceptRows)assert.equal((await q('select public.atlas_concept_hash($1,$2) h',[x.name,x.blurb]))[0].h,
+    hm.get(x.id),'Postgres and TypeScript hashes must agree');
   const typedPatch={from_id:n169Concept,to_id:n170Concept2,kind:'equivalent',
    confidence:0.94,rationale:'The same mathematical concept',
-   from_version:vm.get(n169Concept),to_version:vm.get(n170Concept2)};
+   from_version:vm.get(n169Concept),to_version:vm.get(n170Concept2),
+   from_hash:hm.get(n169Concept),to_hash:hm.get(n170Concept2)};
   const staleProposal=await mcp(command('atlas_link_proposals','create',{
    patch:{...typedPatch,from_version:typedPatch.from_version+8}}))
    .then(result=>result,error=>({status:'error',reason:String(error)}));
@@ -1948,6 +1954,12 @@ try{
   assert.equal((await q("select count(*)::int n from public.atlas_links where user_id=$1 and kind='equivalent'",[owner]))[0].n,0,
    'stale proposal wrote an Atlas relationship before version validation');
   await role('service_role');
+  await assert.rejects(mcp(command('atlas_link_proposals','create',{
+    patch:{...typedPatch,from_hash:'deadbeef'}})),/hash mismatch/i,
+    'mismatched hash must be rejected');
+  await assert.rejects(mcp(command('atlas_link_proposals','create',{
+    patch:{...typedPatch,from_hash:undefined,to_hash:undefined}})),/hash/i,
+    'missing hashes must be rejected');
   const typedRequest=command('atlas_link_proposals','create',{patch:typedPatch});
   const typedReceipt=status(await mcp(typedRequest),'atlas_link_proposals','create');
   const typedId=typedReceipt.changed[0].id;
@@ -1972,6 +1984,34 @@ try{
   await role(null);
   assert.equal((await q('select count(*)::int n from public.atlas_links where id=$1',[typedId]))[0].n,0,
    'typed link Undo retained proposed row');
+  // Rejection preserves history. Changed content enables version-checked resubmission.
+  await role('service_role');
+  const rejected=status(await mcp(command('atlas_link_proposals','create',{patch:typedPatch})),
+    'atlas_link_proposals','create');
+  const rejectedId=rejected.changed[0].id;
+  await atlasStep('atlas_links','reject',{target:{id:rejectedId},expectedVersion:1,patch:{}},
+    async()=>(await q('select status from public.atlas_links where id=$1',[rejectedId]))[0].status==='rejected');
+  // atlasStep undoes the rejection, so reject again without undo for the resubmission fixture.
+  await role('service_role');
+  await mcp(command('atlas_links','reject',{target:{id:rejectedId},expectedVersion:1,patch:{}}));
+  const oldVersion=(await q('select version from public.atlas_links where id=$1',[rejectedId]))[0].version;
+  const unchanged=await mcp(command('atlas_link_proposals','create',{
+    patch:{...typedPatch,expected_rejected_version:oldVersion}})).then(x=>x,e=>({error:String(e)}));
+  assert.match(JSON.stringify(unchanged),/unchanged/i);
+  await role(null);
+  await q("update public.concepts set blurb='Edited proof concept' where id=$1",[n169Concept]);
+  const refreshed=(await q('select id,name,blurb,version from public.concepts where id=$1',[n169Concept]))[0];
+  const revised={...typedPatch,from_version:refreshed.version,
+    from_hash:contentHash(refreshed),expected_rejected_version:oldVersion};
+  await role('service_role');
+  const resubmitted=status(await mcp(command('atlas_link_proposals','create',{patch:revised})),
+    'atlas_link_proposals','create');
+  assert.equal(resubmitted.changed[0].id,rejectedId,'rejected link identity must be retained');
+  await role(null);
+  assert.equal((await q('select status from public.atlas_links where id=$1',[rejectedId]))[0].status,'proposed');
+  assert.ok((await q("select count(*)::int n from public.action_changes where table_name='atlas_links' and row_pk->>'id'=$1",[rejectedId]))[0].n>=2,
+    'rejection history must remain in audit journal');
+  await role('service_role');
   mark('atlas_link_proposals','create');
   const conceptVersion=Number((await q('select version from public.concepts where id=$1',[n169Concept]))[0].version);
   await atlasStep('atlas_concepts','update',{target:{id:n169Concept},expectedVersion:conceptVersion,patch:{kind:'technique'}},

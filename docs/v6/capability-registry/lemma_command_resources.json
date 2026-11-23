@@ -699,7 +699,7 @@
         "operations": ["create"],
         "fields": [
           "from_id", "to_id", "kind", "confidence", "rationale",
-          "from_hash", "to_hash", "from_version", "to_version"
+          "from_hash", "to_hash", "from_version", "to_version", "expected_rejected_version"
         ]
       }
     },
