@@ -57,7 +57,7 @@ interface Props {
   hasContext: boolean;
   notationContext?: readonly string[];
   ink?: TutorInkState;
-  canQueueImage?: boolean;
+  canQueue?: boolean;
   inputScopeKey?: string;
 }
 
@@ -123,7 +123,7 @@ export function TutorComposer(props: Props) {
   const recoveryIssue = imageIssue ?? (props.ink?.status === 'failed' ? 'failed' : undefined);
   const uncommitted = props.ink?.ready && inkDraft && (inkDraft.inlineImages || hasImage) && Boolean(inkDraft.strokes.length ||
     (inkDraft.editingDrawing && refs.includes(inkDraft.editingDrawing.id)));
-  const queue=props.canQueueImage&&hasImage;
+  const queue=Boolean(props.canQueue);
   const blocked = readOnly || !queue&&!props.canSend || incomplete || composing || scratch || uncommitted || Boolean(imageIssue);
   const editingDisabled = readOnly || composing;
   const inputPrefs = useTutorInputPreferences();

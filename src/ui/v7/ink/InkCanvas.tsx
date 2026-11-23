@@ -1,7 +1,7 @@
 import {useRef,useState,type PointerEvent} from 'react';
 import {
   appendPadPoint,replacePadStrokes,erasePadStroke,finishPadStroke,PAD_PAPER,padStrokePath,
-  paperPoint,type PadInkHistory,type PadPoint,type PadStroke,type PadStrokes,
+  paperPoint,transformedPaperPoint,type PadInkHistory,type PadPoint,type PadStroke,type PadStrokes,
 } from './ink';
 import './ink.css';
 
@@ -24,14 +24,21 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
   const active = useRef<Interaction|null>(null);
   const touches = useRef(new Map<number,Contact>());
   const multiTouch = useRef(false);
-  const [pending,setPending] = useState<PadStroke>([]);
+  // Directly update the one in-progress SVG path. A React render for every pointer sample
+  // remounted every completed stroke and made writing visibly laggy on Android.
+  const preview = useRef<SVGPathElement>(null);
+  const showPending = (stroke:PadStroke) => preview.current?.setAttribute('d',stroke.length?padStrokePath(stroke):'');
   const [erasing,setErasing] = useState<PadStrokes>();
-  const point = (event: PointerEvent<SVGSVGElement>) => paperPoint(event.clientX,event.clientY,event.currentTarget.getBoundingClientRect());
+  const pointAt = (x:number,y:number,svg:SVGSVGElement) => {
+    const matrix = svg.getScreenCTM?.();
+    return matrix ? transformedPaperPoint(x,y,matrix) : paperPoint(x,y,svg.getBoundingClientRect());
+  };
+  const point = (event: PointerEvent<SVGSVGElement>) => pointAt(event.clientX,event.clientY,event.currentTarget);
 
   function reset() {
     if (active.current?.type==='pen') onStrokeEnd?.();
     active.current=null;
-    setPending([]);
+    showPending([]);
     setErasing(undefined);
   }
 
@@ -64,7 +71,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
     } else {
       active.current={pointer:event.pointerId,type:'pen',stroke:[at]};
       onStroke?.();
-      setPending([at]);
+      showPending([at]);
     }
   }
 
@@ -93,8 +100,17 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
     if (interaction.type==='eraser') {
       erase(interaction,paper);
     } else {
-      interaction.stroke=appendPadPoint(interaction.stroke,paper);
-      setPending(interaction.stroke);
+      // Consume browser coalesced samples before the dispatched pointermove, keeping
+      // the stroke continuous without routing high-frequency events through React.
+      const native=event.nativeEvent as globalThis.PointerEvent;
+      const samples=native.getCoalescedEvents?.()??[];
+      let stroke=interaction.stroke;
+      for(const sample of samples) {
+        const point=pointAt(sample.clientX,sample.clientY,event.currentTarget);
+        if(point) stroke=appendPadPoint(stroke,point);
+      }
+      interaction.stroke=appendPadPoint(stroke,paper);
+      showPending(interaction.stroke);
     }
   }
 
@@ -120,7 +136,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
     onPointerCancel={event=>end(event,false)} onLostPointerCapture={event=>end(event,false)}>
     <g fill="none" stroke={accent?'var(--v7-role-selection-fg)':'currentColor'} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round">
       {(erasing??history.strokes).map((stroke,index)=><path key={index} d={padStrokePath(stroke)}/>)}
-      {!!pending.length&&<path d={padStrokePath(pending)} opacity={0.7}/>}
+      <path ref={preview} d="" opacity={0.7} pointerEvents="none"/>
     </g>
   </svg>;
 }

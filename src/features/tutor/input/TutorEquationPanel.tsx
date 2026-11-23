@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState, type CSSProperties, type ReactNode} from 'react';
-import {Download, LoaderCircle, RotateCcw, ScanText, Trash2, Undo2} from 'lucide-react';
+import {Download, LoaderCircle, Maximize2, Minimize2, RotateCcw, RotateCw, ScanText, Trash2, Undo2} from 'lucide-react';
 import {MathText} from '../../../ui/MathText';
 import {InkCanvas} from '../../../ui/v7/ink/InkCanvas';
 import {clearPadInk, initializePadInk, PAD_PAPER, undoPadInk, type PadInkHistory, type PadStrokes} from '../../../ui/v7/ink/ink';
@@ -7,6 +7,7 @@ import {haptic} from '../../../ui/v7/haptics';
 import {EQUATION_MODEL_BYTES} from './equationModel';
 import {equationModelCached, prepareEquationModel, recognizeEquation} from './equationRecognizer';
 import {symbolById} from './symbolCatalog';
+import {useWritingFullscreen} from '../useWritingFullscreen';
 
 type Reading =
   | {phase: 'idle' | 'ask' | 'reading'}
@@ -46,6 +47,7 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   onInsertSymbol: (id: string) => boolean;
 }) {
   const [history, setHistory] = useState<PadInkHistory>(() => initializePadInk()!);
+  const full=useWritingFullscreen();
   const [reading, setReading] = useState<Reading>({phase: 'idle'});
   /** A stroke is being drawn: the floating tools step aside. */
   const [stroking, setStroking] = useState(false);
@@ -133,7 +135,9 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   const clampExtra = (value: number) => Math.max(0, Math.min(maxExtra(), value));
   const busy = reading.phase !== 'idle';
   const shownSymbols = symbols.enabled && inked ? symbols.ids.slice(0, busy ? 2 : 4) : [];
-  return <section className="tutor-equation" aria-label="Equation mode">
+  return <section className="tutor-equation" aria-label="Equation mode" ref={full.root}
+    data-fullscreen={full.fullscreen||undefined} data-landscape={full.fullscreen&&full.landscape||undefined}
+    role={full.fullscreen?'dialog':undefined} aria-modal={full.fullscreen||undefined}>
     <div className="strip tutor-equation-strip">
       {leading}
       <div className="tutor-equation-candidates" role="group" aria-label="Equation suggestions" aria-live="polite">
@@ -162,6 +166,10 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
         {!inked && <span className="tutor-equation-hint">{replacing ? 'Write the equation again' : 'Write a symbol or an equation'}</span>}
       </div>
       {trailing}
+      <button type="button" className="sbtn" aria-label={full.fullscreen?'Exit equation full screen':'Full screen equation'}
+        aria-pressed={full.fullscreen} onClick={full.toggleFullscreen}>{full.fullscreen?<Minimize2 aria-hidden="true"/>:<Maximize2 aria-hidden="true"/>}</button>
+      {full.fullscreen&&<button type="button" className="sbtn" aria-label={full.landscape?'Portrait equation':'Landscape equation'}
+        aria-pressed={full.landscape} onClick={full.toggleLandscape}><RotateCw aria-hidden="true"/></button>}
     </div>
     {/* N227 (Owner: "these options waste the row; float them and hide them while drawing"; "expandable as in the
         scratch pad"): the paper takes the whole place. Read, Undo and Clear float in its corner and step aside while a

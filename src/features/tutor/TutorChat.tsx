@@ -35,7 +35,7 @@ type Props = {
   listenerSeenAt?: string | null;
   resumePrompt: string;
   ink?: TutorInkState;
-  canQueueImage?: boolean;
+  canQueue?: boolean;
   context: ReactNode;
   connection: ReactNode;
   transcript: ReactNode;
@@ -48,7 +48,7 @@ function questionPreview(body: string) {
 }
 
 export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOnly, pending, offline,
-  status, pendingStatus, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage}: Props) {
+  status, pendingStatus, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueue}: Props) {
   const [view, setView] = useState<'overview' | 'chat'>();
   const [panel, setPanel] = useState<'context' | 'connection' | 'close' | 'question'>();
   const chat = useRef<HTMLDivElement>(null), follow = useRef(true);
@@ -133,7 +133,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
     </div>
     {panel !== 'context' && draftWarning && <p className="composer-status" role="alert">{draftWarning}</p>}
     {!overview &&
-      <TutorComposer inputScopeKey={inputScopeKey} ink={ink} canQueueImage={canQueueImage} value={draft} onChange={onChange} onSend={send} canSend={canSend}
+      <TutorComposer inputScopeKey={inputScopeKey} ink={ink} canQueue={canQueue} value={draft} onChange={onChange} onSend={send} canSend={canSend}
         hintLevel={hintIndex + 1}
         onAsk={kind => {
           const request = kind === 'hint' ? hints[hintIndex] : kind === 'stuck' ?

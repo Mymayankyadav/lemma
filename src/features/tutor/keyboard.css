@@ -370,3 +370,20 @@
 .lemma-tutor .kb .strip .equation-words button p {margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 .lemma-tutor .kb .strip .equation-words button .katex {font-size: 1em;}
 .lemma-tutor .kb .strip .equation-words button.preferred {font-weight: 400; color: var(--v7-role-selection-fg);}
+
+/* N228: expand equation mode to a true full-viewport writing surface. */
+.lemma-tutor .tutor-equation[data-fullscreen] {
+  position: fixed; inset: 0; z-index: 1100; display: grid; grid-template-rows: auto minmax(0,1fr);
+  width: 100vw; height: 100dvh; min-height: 0; padding: max(6px, env(safe-area-inset-top))
+    max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  background: var(--v7-role-surface-raised);
+}
+.lemma-tutor .tutor-equation[data-fullscreen] .tutor-equation-body {height: auto; min-height: 0;}
+.lemma-tutor .tutor-equation[data-fullscreen] .tutor-equation-grip {display:none;}
+.lemma-tutor .tutor-equation[data-fullscreen] .tutor-equation-paper {min-height: 0;}
+@media (orientation: portrait) {
+  .lemma-tutor .tutor-equation[data-fullscreen][data-landscape] {
+    inset: auto; top: 0; left: 0; width: 100dvh; height: 100vw;
+    transform-origin: 0 0; transform: translateX(100vw) rotate(90deg);
+  }
+}

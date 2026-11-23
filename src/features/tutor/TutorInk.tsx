@@ -1,5 +1,5 @@
 import {useEffect,useId,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
-import {ArrowUp,Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2} from 'lucide-react';
+import {ArrowUp,Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Maximize2,Minimize2,Minus,Pencil,Plus,Redo2,RotateCw,ScanText,Trash2,Undo2} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {InkCanvas} from '../../ui/v7/ink/InkCanvas';
 import {clearPadInk,initializePadInk,replacePadStrokes,undoPadInk,type PadInkHistory,type PadStrokes} from '../../ui/v7/ink/ink';
@@ -10,6 +10,7 @@ import {assertTutorInkScope,editInkDraft,emptyInk,finishStagedDrawing,keepDraftI
 import {MathText} from '../../ui/MathText';
 import {EQUATION_MODEL,EQUATION_MODEL_BYTES} from './input/equationModel';
 import {equationModelCached,recognizeEquation} from './input/equationRecognizer';
+import {useWritingFullscreen} from './useWritingFullscreen';
 import './scratchpad.css';
 
 const openingInk:InkRecovery={draft:emptyInk,status:'loading'};
@@ -83,6 +84,7 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
   const [redo,setRedo]=useState<readonly PadStrokes[]>([]);
   const [mode,setMode]=useState<'pen'|'eraser'|'hand'>('pen');
   const [toolsOpen,setToolsOpen]=useState(false);
+  const full=useWritingFullscreen(shown);
   const [preview,setPreview]=useState('');
   const [height,setHeight]=useState<number>();
   const paper=useRef<HTMLDivElement>(null);
@@ -298,7 +300,9 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
     setToolsOpen(false);
     onCloseDrawing();
   }
-  const pad=<section className="tutor-scratchpad" aria-label="Scratch pad"
+  const pad=<section className="tutor-scratchpad" aria-label="Scratch pad" ref={full.root}
+    data-fullscreen={full.fullscreen||undefined} data-landscape={full.fullscreen&&full.landscape||undefined}
+    role={full.fullscreen?'dialog':undefined} aria-modal={full.fullscreen||undefined}
     style={{'--scratch-height':height===undefined?undefined:height+'px'} as CSSProperties}>
     <div className="tutor-ink-tools" role="group" aria-label="Drawing tools">
       {leading}
@@ -308,6 +312,10 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
       <IconButton label="Undo stroke" disabled={!canDraw||preparing||!history.undo.length} onClick={()=>saveInk(undoPadInk(history),[...redo,history.strokes])}><Undo2 aria-hidden="true"/></IconButton>
       <IconButton label="Recognize equation" aria-haspopup="dialog" disabled={preparing||!working.strokes.length||!onInsertEquation}
         onClick={()=>{void openReading();}}><ScanText aria-hidden="true"/></IconButton>
+      <IconButton label={full.fullscreen?'Exit scratch pad full screen':'Full screen scratch pad'}
+        aria-pressed={full.fullscreen} onClick={full.toggleFullscreen}>{full.fullscreen?<Minimize2 aria-hidden="true"/>:<Maximize2 aria-hidden="true"/>}</IconButton>
+      {full.fullscreen&&<IconButton label={full.landscape?'Portrait scratch pad':'Landscape scratch pad'} aria-pressed={full.landscape}
+        onClick={full.toggleLandscape}><RotateCw aria-hidden="true"/></IconButton>}
       <IconButton label="Scratch pad actions" aria-haspopup="dialog" onClick={()=>setToolsOpen(true)}><Ellipsis aria-hidden="true"/></IconButton>
       <IconButton label={editingImageId?'Update drawing':'Insert drawing'} className="tutor-insert-drawing"
         disabled={!canDraw||preparing||started||!working.strokes.length||(!editingImageId&&!canInsertImage)}

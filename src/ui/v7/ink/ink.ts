@@ -40,6 +40,20 @@ export function paperPoint(clientX: number, clientY: number,
   };
 }
 
+/** Screen CTM inversion keeps finger/pen coordinates correct when a full-screen paper is rotated.
+ * Saving and model recognition still use unrotated 640 × 400 paper coordinates. */
+export function transformedPaperPoint(clientX: number, clientY: number,
+  matrix: Pick<DOMMatrixReadOnly, 'a' | 'b' | 'c' | 'd' | 'e' | 'f'>): PadPoint | null {
+  const determinant = matrix.a * matrix.d - matrix.b * matrix.c;
+  if (!Number.isFinite(determinant) || Math.abs(determinant) < 1e-10) return null;
+  const dx = clientX - matrix.e, dy = clientY - matrix.f;
+  const x = (matrix.d * dx - matrix.c * dy) / determinant;
+  const y = (matrix.a * dy - matrix.b * dx) / determinant;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return {x: Math.round(Math.max(0, Math.min(PAD_PAPER.width, x))),
+    y: Math.round(Math.max(0, Math.min(PAD_PAPER.height, y)))};
+}
+
 export function appendPadPoint(stroke: PadStroke, point: PadPoint): PadStroke {
   const last = stroke.at(-1);
   if (stroke.length >= PAD_INK_LIMIT.points || (last?.x === point.x && last.y === point.y)) return stroke;

@@ -246,8 +246,16 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       setError('Insert or cancel the current drawing before sending.');return;
     }
     const hasImages=Boolean(inline?ids.length:inkDraft.strokes.length||inkDraft.photos.length);
-    if(session?.thread.offline&&hasImages&&!readOnly) {
-      await ink.update(current=>current===inkDraft?{...current,queuedText:text}:current).catch(()=>{});
+    // N228: the server accepts only one unanswered turn. Save later messages durably
+    // on this device (even while the tutor is away) and dispatch them when the prior
+    // reply arrives. Never describe an unsent message as posted to the tutor.
+    if(session&&!readOnly&&!busy&&!options.keepDraft&&scratchEnabled&&ink.ready&&
+      (session.thread.offline||session.thread.head.pendingTurnId||session.thread.outbox?.length)) {
+      try {
+        await ink.update(current=>current.queuedText===undefined?{...current,queuedText:text}:current);
+        question.clearIfUnchanged(text);
+        setError('');
+      } catch {setError('Could not keep the queued answer on this device. Your draft remains here.');}
       return;
     }
     if (!session || busy || readOnly || session.thread.offline || session.thread.canSubmit===false ||
@@ -280,7 +288,10 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         : await session.api.submit(id,draft,sequence)
       if(result.kind==='submitted' && !options.keepDraft) {
         question.clearIfUnchanged(text);attachedLocal.clearIfUnchanged(attachedLocal.text);sourceDraft.clearIfUnchanged(sourceDraft.text)
-        if(hasImages)await ink.update(current=>removeSubmittedInk(current,new Set(attachments.map(image=>image.id)))).catch(()=>{})
+        if(hasImages||inkDraft.queuedText===text)await ink.update(current=>{
+          const cleaned=hasImages?removeSubmittedInk(current,new Set(attachments.map(image=>image.id))):current;
+          return cleaned.queuedText===text?{...cleaned,queuedText:undefined}:cleaned;
+        }).catch(()=>{})
       }
       await refresh(session.api).catch(()=>setError('Question confirmed. Reconnect to refresh the conversation.'))
       if(result.kind!=='submitted')setError('The question was not saved. Your draft was kept.')
@@ -320,7 +331,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   useEffect(()=>{
     const queued=ink.draft.queuedText;
     if(!scratchEnabled||!ink.ready||queued===undefined||tutorInkIssue(queued,ink)||!session||session.thread.offline||
-      session.thread.head.pendingTurnId||session.thread.outbox?.length||readOnly||busy||connectorLoading)return;
+      session.thread.head.pendingTurnId||session.thread.outbox?.length||session.thread.canSubmit===false||readOnly||busy||connectorLoading)return;
     // Reconnect sends the draft selected for offline delivery.
     if(!error)void saveQuestion(queued);
   },[scratchEnabled,ink.status,ink.draft,session?.thread.offline,session?.thread.head.pendingTurnId,session?.thread.outbox?.length,busy,readOnly,error,connectorLoading])
@@ -515,14 +526,16 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       </div>)}
     </Disclosure>}  </>
   if(page)return <TutorChat page={page} turns={allTurns} draft={ink.draft.queuedText??question.text} onChange={question.change}
-    onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread?.offline&&!readOnly&&!pending&&!thread.outbox?.length)} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
+    onSend={saveQuestion} ink={scratchEnabled?ink:undefined}
+    canQueue={Boolean(scratchEnabled&&ink.ready&&session&&!readOnly&&!busy&&!connectorLoading&&
+      (thread?.offline||pending||thread?.outbox?.length))} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
     draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
     canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&!pending&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
     listenerSeenAt={thread?.listenerSeenAt} resumePrompt={delivery
       ? 'Continue my Lemma tutor session. Use get(what=tutor_turn, id='+delivery.reference+').'
       : 'Continue my Lemma tutor session. Use get(what=tutor_turn) to find my answer.'}
     pendingStatus={recoveryOnly?'Offline · Saved conversation':!live?'Demo: import a reply to continue':claimed?'Replying…':'Waiting for '+clientName}
-    status={<>{ink.draft.queuedText!==undefined&&<p role="status">{tutorInkIssue(ink.draft.queuedText,ink)?'Queued answer needs its images.':'Answer queued · Sends when connected.'}
+    status={<>{ink.draft.queuedText!==undefined&&<p role="status">{tutorInkIssue(ink.draft.queuedText,ink)?'Queued answer needs its images.':'Answer saved on this device · Sends after the previous tutor reply and reconnection.'}
       <Button small disabled={readOnly||busy||!ink.ready} onClick={()=>{
         const queued=ink.snapshot().draft.queuedText;
         if(queued===undefined||!question.change(queued))return;
