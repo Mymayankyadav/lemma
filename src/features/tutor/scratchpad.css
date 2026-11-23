@@ -110,3 +110,20 @@
 .lemma-tutor .tutor-equation-latex {display: grid; gap: var(--v7-space-1); font: 600 var(--v7-type-caption)/1.3 var(--v7-sans); color: var(--v7-role-text-secondary);}
 .lemma-tutor .tutor-equation-latex textarea {width: 100%; min-height: 64px; padding: var(--v7-space-2); border: 1px solid var(--v7-role-border-default);
   border-radius: var(--v7-radius-2); background: var(--v7-role-surface-raised); color: var(--v7-role-text-primary); font: 400 0.95rem/1.4 var(--v7-mono);}
+
+/* N228: the expand button floats in the paper's corner, outside the scrolling paper so it stays put. */
+.lemma-tutor .tutor-paper-expand {
+  position: absolute; z-index: 1; inset-block-start: var(--v7-space-1); inset-inline-end: var(--v7-space-1);
+  display: grid; place-items: center; inline-size: 36px; block-size: 36px; padding: 0; border-radius: var(--v7-round); cursor: pointer;
+  background: color-mix(in srgb, var(--v7-role-surface-overlay) 88%, transparent); border: 1px solid var(--v7-role-border-subtle);
+  color: var(--v7-role-text-secondary); box-shadow: var(--v7-shadow-1);
+}
+.lemma-tutor .tutor-paper-expand svg {inline-size: 18px; block-size: 18px;}
+.lemma-tutor .tutor-paper-full .tutor-scratchpad {display: flex; flex: 1 1 auto; flex-direction: column; min-block-size: 0; inline-size: 100%;}
+.lemma-tutor .tutor-paper-full .tutor-scratch-sheet {flex: 1 1 auto; min-block-size: 0; display: flex; flex-direction: column;}
+.lemma-tutor .tutor-paper-full :is(.tutor-scratch-resize, .tutor-scratch-hint) {display: none;}
+.lemma-tutor .tutor-paper-full .tutor-scratch-paper {flex: 1 1 auto; block-size: auto; min-block-size: 0; container-type: size;}
+.lemma-tutor .tutor-paper-full .tutor-scratch-paper .v7-ink-canvas {inline-size: max(100cqw, 160cqh); block-size: max(62.5cqw, 100cqh);}
+@supports not (width: 1cqw) {
+  .lemma-tutor .tutor-paper-full .tutor-scratch-paper .v7-ink-canvas {inline-size: max(100vw, 160dvh); block-size: max(62.5vw, 100dvh);}
+}

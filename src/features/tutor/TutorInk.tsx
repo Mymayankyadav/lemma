@@ -1,7 +1,8 @@
 import {useEffect,useId,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
-import {ArrowUp,Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2} from 'lucide-react';
+import {ArrowUp,Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2,Maximize2,Minimize2} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {InkCanvas} from '../../ui/v7/ink/InkCanvas';
+import {FullscreenPaper} from './FullscreenPaper';
 import {clearPadInk,initializePadInk,replacePadStrokes,undoPadInk,type PadInkHistory,type PadStrokes} from '../../ui/v7/ink/ink';
 import {rasterizeInk,reencodePhoto} from '../../ui/v7/ink/images';
 import {TUTOR_ATTACHMENT_COUNT,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from '../../data/tutor/attachment-types';
@@ -90,6 +91,9 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
   const paperId=useId(), hintId=useId();
   const paperOffset=useRef(0);
   const [paperHeight,setPaperHeight]=useState(0);
+  const [full,setFull]=useState(false)
+  /** N228 (Owner): the scratch pad fills the screen. */
+  const [fullscreen,setFullscreen]=useState(false)
   const [started,setStarted]=useState(false),[error,setError]=useState(''),[preparing,setPreparing]=useState(false);
   const pending=useRef(false),migration=useRef(false);
   const lastMigration=useRef<{draft:InkDraft;answerLength:number}|undefined>(undefined);
@@ -298,7 +302,7 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
     setToolsOpen(false);
     onCloseDrawing();
   }
-  const pad=<section className="tutor-scratchpad" aria-label="Scratch pad"
+  const pad=<section className="tutor-scratchpad" aria-label="Scratch pad" data-fullscreen={fullscreen||undefined}
     style={{'--scratch-height':height===undefined?undefined:height+'px'} as CSSProperties}>
     <div className="tutor-ink-tools" role="group" aria-label="Drawing tools">
       {leading}
@@ -316,6 +320,9 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
     {/* N221 (Owner): below the one row of tools, the rest is paper. It is wider and taller than the pad and scrolls
         both ways with the Hand; the resize grip sits on its top edge and the hint inside it, so neither takes a row. */}
     <div className="tutor-scratch-sheet">
+      <button type="button" className="tutor-paper-expand" aria-label={fullscreen?'Exit full screen':'Full screen'} title={fullscreen?'Exit full screen':'Full screen'}
+        data-fullscreen-toggle="" aria-pressed={fullscreen} onClick={()=>setFullscreen(on=>!on)}
+      >{fullscreen?<Minimize2 aria-hidden="true"/>:<Maximize2 aria-hidden="true"/>}</button>
       <div className="tutor-scratch-resize" role="separator" tabIndex={0} aria-label="Resize scratch pad"
         aria-orientation="horizontal" aria-controls={paperId} aria-valuenow={Math.round(paperHeight/window.innerHeight*100)}
         aria-valuetext={paperHeight+' pixels'}
@@ -341,20 +348,23 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
         }}><span aria-hidden="true"/></div>
     <div ref={paper} id={paperId} className="tutor-scratch-paper" role="region" aria-label="Drawing paper" aria-describedby={hintId}
       tabIndex={0} onScroll={event=>{paperOffset.current=event.currentTarget.scrollTop;}}>
-      <InkCanvas history={history} onChange={saveInk} onStroke={()=>setStarted(true)} onStrokeEnd={()=>setStarted(false)}
+      <InkCanvas history={history} onChange={saveInk} onStroke={()=>{setStarted(true);setFull(false)}} onStrokeEnd={()=>setStarted(false)} onFull={()=>setFull(true)}
         onPan={(dx,dy,gesture)=>{
           const viewport=paper.current;
           if (gesture==='hand') {if (viewport) {viewport.scrollLeft-=dx;viewport.scrollTop-=dy;} return;}
+          // Full screen has no chat in view to scroll.
+          if (fullscreen) return;
           const chat=viewport?.closest('.lemma-tutor')?.querySelector<HTMLElement>('[role="log"]');
           if (chat) chat.scrollTop-=dy;
         }} mode={canDraw&&!preparing?mode:'hand'} width={working.width} accent={working.accent} label="Draw your answer"/>
     </div>
     <p id={hintId} className="tutor-scratch-hint">Three fingers to scroll chat</p>
     </div>
+    {full&&<p role="status" className="composer-status">The drawing is full. Insert it, or clear it, to keep drawing.</p>}
     {!editingImageId&&!canInsertImage&&<p role="status" className="composer-status">Shorten the answer to insert another image.</p>}
   </section>;
   return <>
-    {shown&&(!editingAsset||editingAsset.ink)&&pad}
+    {shown&&(!editingAsset||editingAsset.ink)&&<FullscreenPaper active={fullscreen} onExit={()=>setFullscreen(false)} label="Scratch pad, full screen">{pad}</FullscreenPaper>}
     <Sheet open={Boolean(reading)&&shown} onClose={closeReading} title="Recognize equation">
       <div className="tutor-equation-reading" aria-live="polite">
         {reading?.phase==='ask'&&<>
