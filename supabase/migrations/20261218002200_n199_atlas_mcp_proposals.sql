@@ -15,7 +15,7 @@ declare
  v_i integer;
 begin
  v_name := pg_catalog.btrim(pg_catalog.regexp_replace(
-   pg_catalog.lower(pg_catalog.normalize(coalesce(p_name,''),NFKC)),
+   pg_catalog.lower(pg_catalog.normalize(coalesce(p_name,''),'NFKC')),
    '[^[:alnum:]]+',' ','g'));
  v_text := v_name||'|'||pg_catalog.btrim(coalesce(p_blurb,''));
  for v_i in 1..pg_catalog.char_length(v_text) loop
