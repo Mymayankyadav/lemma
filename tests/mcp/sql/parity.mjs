@@ -99,7 +99,7 @@ async function mcpPage(resource,id,userId=owner){
 }
 // N94 (#1231, #1237): command-only resources are verified on the rows their
 // operations change, so they have no table inventory of their own.
-const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','session_progress','account_controls','atlas_graph_edits']);
+const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','session_progress','account_controls','atlas_graph_edits','atlas_link_proposals']);
 const docsBase=new URL('../../../docs/v6/capability-registry/',import.meta.url);
 /** The legacy mcp_commit allowlist (`allowed` in tools/control.ts) is a real MCP write path. */
 async function legacyMcpFields(){
@@ -1889,13 +1889,15 @@ try{
  const n169Subject='aaaaaaaa-0000-4000-8000-000000000001',n169Project='aaaaaaaa-0000-4000-8000-000000000002',n169Concept='aaaaaaaa-0000-4000-8000-000000000003';
  await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'N169 Math','M','cyan')",[n169Subject,owner]);
  await q("insert into public.projects(id,user_id,subject_id,slug,title,goal) values($1,$2,$3,'n169-parity','N169','Study')",[n169Project,owner,n169Subject]);
- await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'n169-concept','N169 concept')",[n169Concept,owner,n169Subject]);
+ await q("insert into public.concepts(id,user_id,subject_id,slug,name,blurb) values($1,$2,$3,'n169-concept','Group basics',$4)",
+  [n169Concept,owner,n169Subject,'A proof sketch.\n']);
  await roundTrip('capacity_overrides',specs.capacity_overrides);
  await createOnlyTrip('recheck_decisions',{concept_id:n169Concept,level:'use',action:'rate_easy',note:'parity'},'note','parity');
  await createOnlyTrip('plan_baselines',{project_id:n169Project,reason:'parity baseline'},'reason','parity baseline');
  const n170Concept2='aaaaaaaa-0000-4000-8000-000000000004';
  await role(null);
- await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'n170-concept','N170 concept')",[n170Concept2,owner,n169Subject]);
+ await q("insert into public.concepts(id,user_id,subject_id,slug,name,blurb) values($1,$2,$3,'n170-concept',$4,$5)",
+  [n170Concept2,owner,n169Subject,'Ｆinite Cafe\u0301 𝟚','\ufeff\u00a0\tA Unicode proof of café.\nA second line: 𝔾.\r\n\u2028\u2029\u3000']);
  await twoStepTrip('assumptions',{concept_id:n169Concept,level:'recall',reason:'parity'},'revoke',async id=>(await q('select revoked_at is not null r from public.assumptions where id=$1',[id]))[0]?.r===true);
  await twoStepTrip('concept_aliases',{concept_a:n169Concept,concept_b:n170Concept2},'delete',async id=>(await q('select count(*)::int n from public.concept_aliases where id=$1',[id]))[0].n===0);
  // Atlas v3 (N172, N178): the registered Atlas commands through the real MCP dispatcher. Each operation: create-or-fixture → exact replay →
@@ -1927,6 +1929,118 @@ try{
   const linkStatus=id=>async()=>(await q('select status from public.atlas_links where id=$1',[id]))[0].status;
   await atlasStep('atlas_links','approve',{target:{id:A(1)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(1))())==='approved');
   await atlasStep('atlas_links','reject',{target:{id:A(2)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(2))())==='rejected');
+  // N225: command-only pending Atlas link through MCP (not owner autoapproval).
+  await as(owner);
+  const {contentHash}=await tsImport('../../../supabase/functions/_shared/adaptive/links.ts',import.meta.url);
+  const conceptRows=await q('select c.id,c.name,c.blurb,c.version,public.content_hash(c) content_hash from public.concepts c where c.user_id=$1 and c.id in ($2,$3) order by c.id',
+   [owner,n169Concept,n170Concept2]);
+  assert.deepEqual(conceptRows.map(row=>row.id),[n169Concept,n170Concept2],
+   'Owner-scoped concept hash projection must return both endpoints');
+  const [from,to]=conceptRows;
+  assert.equal(from.content_hash,'45a11c70','A trailing line break must not change the content hash');
+  for(const row of conceptRows)assert.equal(row.content_hash,contentHash(row),
+   'Computed and Atlas hashes must agree on multiline and Unicode text');
+  await role('service_role');
+  const typedPatch={from_id:n169Concept,to_id:n170Concept2,kind:'equivalent',
+   confidence:0.94,rationale:'The same mathematical concept',
+   from_version:from.version,to_version:to.version,
+   from_hash:from.content_hash,to_hash:to.content_hash};
+  const staleProposal=await mcp(command('atlas_link_proposals','create',{
+   patch:{...typedPatch,from_version:typedPatch.from_version+8}}))
+   .then(result=>result,error=>({status:'error',reason:String(error)}));
+  assert.notEqual(staleProposal.status,'ok',
+   'stale concept version accepted for proposed link: '+JSON.stringify(staleProposal));
+  assert.match(JSON.stringify(staleProposal),/version conflict/i,
+   'stale version must be a specific conflict, not an unclassified error: '+JSON.stringify(staleProposal));
+  await role(null);
+  assert.equal((await q("select count(*)::int n from public.atlas_links where user_id=$1 and kind='equivalent'",[owner]))[0].n,0,
+   'stale proposal wrote an Atlas relationship before version validation');
+  await role('service_role');
+  await assert.rejects(mcp(command('atlas_link_proposals','create',{
+    patch:{...typedPatch,from_hash:'deadbeef'}})),/hash mismatch/i,
+    'mismatched hash must be rejected');
+  await assert.rejects(mcp(command('atlas_link_proposals','create',{
+    patch:{...typedPatch,from_hash:undefined,to_hash:undefined}})),/hash/i,
+    'missing hashes must be rejected');
+  const typedRequest=command('atlas_link_proposals','create',{patch:typedPatch});
+  const typedReceipt=status(await mcp(typedRequest),'atlas_link_proposals','create');
+  const typedId=typedReceipt.changed[0].id;
+  assert.deepEqual(await mcp(typedRequest),typedReceipt,'typed link exact replay');
+  assert.equal((await mcp({...typedRequest,patch:{...typedPatch,rationale:'Altered claim'}})).status,
+   'conflict','typed link changed operationId accepted');
+  await role(null);
+  assert.equal((await q('select status from public.atlas_links where id=$1',[typedId]))[0].status,
+   'proposed','created typed link not pending');
+  assert.equal((await mcpPage('atlas_links',typedId)).items[0].status,'proposed',
+   'pending link missing from owner MCP read');
+  await as(other);
+  assert.equal((await q('select count(*)::int n from public.atlas_links where id=$1',[typedId]))[0].n,0,
+   'typed link leaked to foreign owner');
+  await role('service_role');
+  await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+    [other,'chatgpt',JSON.stringify(command('atlas_link_proposals','create',{patch:typedPatch}))]),
+    /not found for owner/i,'MCP accepted foreign link endpoints');
+  await as(owner);
+  assert.equal(Number((await undo(typedReceipt.actionNo)).undone),Number(typedReceipt.actionNo),
+   'typed link Undo failed');
+  await role(null);
+  assert.equal((await q('select count(*)::int n from public.atlas_links where id=$1',[typedId]))[0].n,0,
+   'typed link Undo retained proposed row');
+  // Rejection preserves history. Changed content enables version-checked resubmission.
+  await role('service_role');
+  const rejected=status(await mcp(command('atlas_link_proposals','create',{patch:typedPatch})),
+    'atlas_link_proposals','create');
+  const rejectedId=rejected.changed[0].id;
+  await atlasStep('atlas_links','reject',{target:{id:rejectedId},expectedVersion:1,patch:{}},
+    async()=>(await q('select status from public.atlas_links where id=$1',[rejectedId]))[0].status==='rejected');
+  // atlasStep undoes the rejection, so reject again without undo for the resubmission fixture.
+  await role(null);
+  const restored=(await q('select version,status from public.atlas_links where id=$1',[rejectedId]))[0];
+  assert.equal(restored.status,'proposed','Undo must restore a proposed link before re-rejection');
+  await role('service_role');
+  await mcp(command('atlas_links','reject',{target:{id:rejectedId},expectedVersion:restored.version,patch:{}}));
+  await role(null);
+  const oldVersion=(await q('select version from public.atlas_links where id=$1',[rejectedId]))[0].version;
+  await role('service_role');
+  const unchanged=await mcp(command('atlas_link_proposals','create',{
+    patch:{...typedPatch,expected_rejected_version:oldVersion}})).then(x=>x,e=>({error:String(e)}));
+  assert.match(JSON.stringify(unchanged),/unchanged/i);
+  await role(null);
+  await q("update public.concepts set blurb='Edited proof concept' where id=$1",[n169Concept]);
+  const refreshed=(await q('select c.version,public.content_hash(c) content_hash from public.concepts c where c.id=$1',[n169Concept]))[0];
+  const revised={...typedPatch,from_version:refreshed.version,
+    from_hash:refreshed.content_hash,expected_rejected_version:oldVersion};
+  await role('service_role');
+  const resubmitted=status(await mcp(command('atlas_link_proposals','create',{patch:revised})),
+    'atlas_link_proposals','create');
+  assert.equal(resubmitted.changed[0].id,rejectedId,'rejected link identity must be retained');
+  await role(null);
+  assert.equal((await q('select status from public.atlas_links where id=$1',[rejectedId]))[0].status,'proposed');
+  assert.ok((await q("select count(*)::int n from public.action_changes where table_name='atlas_links' and row_pk->>'id'=$1",[rejectedId]))[0].n>=2,
+    'rejection history must remain in audit journal');
+  await role('service_role');
+  // Reviewer regression: a rejected forward link must not mask an approved reverse.
+  await role(null);
+  const symA=(await q("insert into public.concepts(user_id,subject_id,slug,name,blurb) values($1,$2,'n225-symmetric-a','Symmetric A','Original') returning id,version,name,blurb",[owner,n169Subject]))[0];
+  const symB=(await q("insert into public.concepts(user_id,subject_id,slug,name,blurb) values($1,$2,'n225-symmetric-b','Symmetric B','Original') returning id,version,name,blurb",[owner,n169Subject]))[0];
+  const hA=contentHash(symA),hB=contentHash(symB);
+  await q("insert into public.atlas_links(id,user_id,from_id,to_id,kind,status,origin,from_hash,to_hash) values($1,$2,$3,$4,'equivalent','rejected','tutor','stale','stale'),($5,$2,$4,$3,'equivalent','approved','tutor',$6,$7)",
+    [A(7),owner,symA.id,symB.id,A(8),hB,hA]);
+  await role('service_role');
+  await assert.rejects(mcp(command('atlas_link_proposals','create',{patch:{
+    from_id:symA.id,to_id:symB.id,kind:'equivalent',confidence:0.9,
+    rationale:'Candidate reconsidered after changing its description',
+    from_hash:hA,to_hash:hB,from_version:symA.version,
+    to_version:symB.version,expected_rejected_version:1
+  }})),/already exists/i,'approved reverse link must block rejected forward resubmission');
+  await role(null);
+  const symStatus=await q('select id,status from public.atlas_links where id=$1 or id=$2',[A(7),A(8)]);
+  assert.deepEqual(new Map(symStatus.map(r=>[r.id,r.status])),
+   new Map([[A(7),'rejected'],[A(8),'approved']]),
+   'neither historical link decision may change on a failed resubmission');
+  await role('service_role');
+  mark('atlas_link_proposals','create');
+  await role(null);
   const conceptVersion=Number((await q('select version from public.concepts where id=$1',[n169Concept]))[0].version);
   await atlasStep('atlas_concepts','update',{target:{id:n169Concept},expectedVersion:conceptVersion,patch:{kind:'technique'}},
    async()=>(await q('select kind from public.concepts where id=$1',[n169Concept]))[0].kind==='technique');

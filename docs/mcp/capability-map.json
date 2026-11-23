@@ -523,6 +523,12 @@
           ]
         },
         {
+          "resource": "atlas_link_proposals",
+          "operations": [
+            "create"
+          ]
+        },
+        {
           "resource": "atlas_links",
           "operations": [
             "approve",

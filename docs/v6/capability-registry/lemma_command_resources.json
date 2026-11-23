@@ -692,12 +692,45 @@
       }
     },
     {
+      "resource": "atlas_link_proposals",
+      "command_fn": "atlas_links_mcp_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create"
+        ],
+        "fields": [
+          "from_id",
+          "to_id",
+          "kind",
+          "confidence",
+          "rationale",
+          "from_hash",
+          "to_hash",
+          "from_version",
+          "to_version",
+          "expected_rejected_version"
+        ]
+      }
+    },
+    {
       "resource": "atlas_graph_edits",
       "command_fn": "atlas_graph_edits_command",
       "mcp_ok": true,
       "schema": {
-        "operations": ["change_level","delete_empty","reclassify_link","link_batch"],
-        "fields": ["level","to_id","from_kind","to_kind","links"]
+        "operations": [
+          "change_level",
+          "delete_empty",
+          "reclassify_link",
+          "link_batch"
+        ],
+        "fields": [
+          "level",
+          "to_id",
+          "from_kind",
+          "to_kind",
+          "links"
+        ]
       }
     },
     {

@@ -90,7 +90,7 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
   register('resume',"Resume.",z.object({
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
-  register('get',"Read, including tutor_turn.",z.object({
+  register('get',"Read.",z.object({
     what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics','study_entries','calendar_blocks','tasks','resources'])
       .or(S().regex(/^[a-z][a-z0-9_]{0,60}$/)),project:optProject,
     id:S().max(120).optional(),limit:z.number().int().min(1).max(50).optional(),
