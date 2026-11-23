@@ -19,7 +19,7 @@ async function message(response:Response){
 Deno.test('narrow tutor HTTP profile checks every bearer and exposes four bounded tools',async()=>{
  const secret='9'.repeat(64)
  const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(secret))),v=>v.toString(16).padStart(2,'0')).join('')
- let granted=true,checks=0,imageQueries=0
+ let granted=true,checks=0,imageQueries=0,unread=false
  const calls:Record<string,unknown>[]=[]
  const db:Db={
   from(table){
@@ -30,8 +30,13 @@ Deno.test('narrow tutor HTTP profile checks every bearer and exposes four bounde
   async rpc(fn,args={}){
    assert.equal(args.p_token_hash,digest)
    if(fn==='tutor_grant_active'){checks++;return {data:granted,error:null}}
+   if(fn==='tutor_grant_followups'){
+    assert.equal(args.p_turn,turnId)
+    return {data:{followups:[{body:'And one more thing.',createdAt:'2026-11-23T10:00:00Z'}]},error:null}
+   }
    assert.equal(fn,'tutor_grant_command')
    const command=args.p_command as Record<string,unknown>;calls.push(command)
+   if(command.operation==='reply'&&unread)return {data:null,error:{code:'P2281',message:'Unread follow-ups'}}
    return {data:{turnId:command.turnId,status:'pending'},error:null}
   },
  }
@@ -40,7 +45,8 @@ Deno.test('narrow tutor HTTP profile checks every bearer and exposes four bounde
  assert.deepEqual(list.result.tools.map((t:{name:string})=>t.name).sort(),['claim_tutor_turn','get_tutor_turn','renew_tutor_claim','submit_tutor_reply'])
  const turnId='b66ed590-bfef-46aa-9a04-e547cec3643c'
  const get=await message(await request(db,secret,'tools/call',{name:'get_tutor_turn',arguments:{turnId}}))
- assert.deepEqual(JSON.parse(get.result.content[0].text),{turnId,status:'pending'})
+ assert.deepEqual(JSON.parse(get.result.content[0].text),{turnId,status:'pending',
+  learnerFollowUps:[{text:'And one more thing.',postedAt:'2026-11-23T10:00:00Z'}]})
  assert.equal(get.result.content.length,1)
  assert.deepEqual(calls,[{turnId,operation:'get'}])
  const forbidden=await message(await request(db,secret,'tools/call',{name:'approve_proposal',arguments:{turnId}}))
@@ -50,10 +56,16 @@ Deno.test('narrow tutor HTTP profile checks every bearer and exposes four bounde
  const nextQuestion='Evaluate this integral.\n\n'+String.raw`\[\int_0^1 x^2\,dx\]`+'\n\nGive its exact value.'
  const reply={turnId,operationId:crypto.randomUUID(),claimId:crypto.randomUUID(),messageId:crypto.randomUUID(),
   generation:1,expectedVersion:2,body:'Correct.\n\n'+nextQuestion,nextQuestion}
+ unread=true
+ const refused=await message(await request(db,secret,'tools/call',{name:'submit_tutor_reply',arguments:reply}))
+ assert.equal(refused.result.isError,true)
+ assert.match(refused.result.content[0].text,/Use get_tutor_turn to read them/)
+ unread=false
  const submission=await message(await request(db,secret,'tools/call',{name:'submit_tutor_reply',arguments:reply}))
  assert.equal(submission.result.isError,undefined)
  assert.deepEqual(calls[1],{...reply,operation:'reply'})
- granted=false;assert.equal((await request(db,secret,'tools/list')).status,401);assert.equal(checks,6)
+ assert.deepEqual(calls[2],calls[1])
+ granted=false;assert.equal((await request(db,secret,'tools/list')).status,401);assert.equal(checks,7)
  assert.equal(imageQueries,1,'only a successful get can query the turn attachments')
 })
 
@@ -66,11 +78,12 @@ Deno.test('bearer grants deliver authorized images in answer order through get_t
   [photo]:new Blob([Uint8Array.of(255,216,255)],{type:mimeTypes[photo]}),
  }
  const rows=[drawing,photo].map(id=>({id,user_id:owner,kind:id===drawing?'drawing':'photo',mime_type:mimeTypes[id],byte_size:images[id].size}))
- let status='pending',question='One '+imageReference(photo)+' two '+imageReference(drawing)+' three',queries=0,storageFailure=false
+ let status='pending',question='One '+imageReference(photo)+' two '+imageReference(drawing)+' three',queries=0,followupReads=0,storageFailure=false
  const paths:string[]=[]
  const db:Db={
   async rpc(fn,args={}){
    if(fn==='tutor_grant_active')return {data:true,error:null}
+   if(fn==='tutor_grant_followups'){followupReads++;return {data:{followups:[]},error:null}}
    assert.equal(fn,'tutor_grant_command')
    const command=args.p_command as Record<string,unknown>
    assert.equal(command.operation,'get')
@@ -124,4 +137,5 @@ Deno.test('bearer grants deliver authorized images in answer order through get_t
  const completed=await get()
  assert.equal(completed.content.length,1)
  assert.equal(queries,3,'only pending authorized turns query files')
+ assert.equal(followupReads,2,'only successful pending reads acknowledge follow-ups')
 })

@@ -11,7 +11,7 @@ async function waitingTurn(page: Page) {
   const turn: SavedTutorTurn = {id: turnId, threadId, sequence: 1, version: 1, status: 'awaiting-tutor',
     snapshot: {question: 'Is every continuous surjection a quotient map?', selectedContext: []}};
   const thread: TutorThreadView = {head: {threadId, lastSequence: 1, pendingTurnId: turnId}, turns: [turn], recoveredDrafts: [], canSubmit: true, canConnect: false};
-  const server = {followups: [] as {id: string; turnId: string; body: string; createdAt: string; seen: boolean}[], adds: [] as Record<string, unknown>[], refuse: ''};
+  const server = {followups: [] as {id: string; turnId: string; body: string; createdAt: string; seen: boolean}[], adds: [] as Record<string, unknown>[], refuse: '', loseResponse: false, thread};
   await page.route('**/rest/v1/**', route => {
     const request = route.request(), resource = new URL(request.url()).pathname.split('/rest/v1/')[1];
     if (!resource.startsWith('rpc/tutor_')) return route.fulfill({json: liveTutorFixtureResponse(payload, resource, request.headers().accept)});
@@ -23,8 +23,13 @@ async function waitingTurn(page: Page) {
       expect([args.p_owner, args.p_slug, args.p_checkpoint, args.p_turn]).toEqual([owner, 'logic', cpId, turnId]);
       server.adds.push(args);
       if (server.refuse) return route.fulfill({status: 400, json: {code: server.refuse, message: 'refused'}});
-      const followup = {id: args.p_message, turnId, body: String(args.p_body).trim(), createdAt: new Date().toISOString(), seen: false};
-      server.followups.push(followup);
+      const existing = server.followups.find(item => item.id === args.p_message);
+      const followup = existing ?? {id: args.p_message, turnId, body: String(args.p_body).trim(), createdAt: new Date().toISOString(), seen: false};
+      if (!existing) server.followups.push(followup);
+      if (server.loseResponse) {
+        server.loseResponse = false;
+        return route.abort('timedout');
+      }
       return route.fulfill({json: {status: 'saved', followup}});
     }
     return route.fulfill({json: []});
@@ -69,4 +74,28 @@ test('a message the server refuses stays in the box with a plain reason', async 
   await expect(tutor(page).getByText(/The tutor has just replied/)).toBeVisible();
   await expect(answer(page)).toContainText('One more thing.');
   await expect(tutor(page).locator('[data-followup]')).toHaveCount(0);
+});
+
+test('a committed follow-up with a lost response can be retried after reload and reply', async ({page}) => {
+  const server = await waitingTurn(page);
+  server.loseResponse = true;
+  const body = 'I also have a question about injectivity.';
+  await answer(page).fill(body);
+  await send(page).click();
+  await expect(tutor(page).getByText(/Could not confirm your message/)).toBeVisible();
+  await expect(answer(page)).toHaveText(body);
+  expect(server.followups).toHaveLength(1);
+
+  server.thread.head = {...server.thread.head, pendingTurnId: null};
+  server.thread.turns = [{...server.thread.turns[0], status: 'completed', version: 2, finalReply: {
+    turnId, messageId: 'reply', body: 'Here are answers to both questions.',
+    provenance: {kind: 'connector', reportedHost: 'claude', hostVerified: false}, citations: [], suggestions: [],
+  }}];
+  await page.reload();
+  await expect(tutor(page).getByRole('article', {name: 'Tutor reply'}).getByText('Here are answers to both questions.')).toBeVisible();
+  await expect(answer(page)).toHaveText(body);
+  await send(page).click();
+  await expect(answer(page)).toHaveText('');
+  expect(server.adds.map(add => add.p_message)).toEqual([server.followups[0].id, server.followups[0].id]);
+  await expect(tutor(page).locator('[data-followup]')).toHaveText([body]);
 });

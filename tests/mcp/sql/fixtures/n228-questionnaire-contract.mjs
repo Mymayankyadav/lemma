@@ -134,7 +134,7 @@ export async function checkQuestionnaireConnector({db,owner,as,one,ownerCmd,stat
  */
 export async function checkFollowups({db,owner,other,slug,checkpoint,as,one,ownerCmd,state,denied,connector=false}){
  const read=(id=owner)=>one('select public.tutor_followup_state($1,$2,$3) result',[id,slug,checkpoint]);
- const add=(turn,message,body,id=owner)=>one('select public.tutor_followup_add($1,$2,$3,$4,$5,$6) result',[id,slug,checkpoint,turn,message,body]);
+ const add=(turn,message,body,id=owner,c=db)=>one('select public.tutor_followup_add($1,$2,$3,$4,$5,$6) result',[id,slug,checkpoint,turn,message,body],c);
  await as('authenticated',owner);
  const turn=await newTurn(ownerCmd,state,'A question the tutor has not answered yet');
  const first=randomUUID();
@@ -174,22 +174,71 @@ export async function checkFollowups({db,owner,other,slug,checkpoint,as,one,owne
  await ownerCmd({operation:'grant',operationId,turnId:waiting,expectedVersion:1,tokenHash:verifier(secret,waiting,operationId)});
  await add(waiting,randomUUID(),'First extra message');
  await add(waiting,randomUUID(),'Second extra message');
- const call=(nonce,command,key=secret)=>one('select public.tutor_followup_connector($1,$2,$3,$4::jsonb) result',[owner,sha(key),nonce,JSON.stringify(command)]);
+ const call=(nonce,command,key=secret,c=db)=>one('select public.tutor_followup_connector($1,$2,$3,$4::jsonb) result',[owner,sha(key),nonce,JSON.stringify(command)],c);
+ const host=(command,c=db)=>one('select public.tutor_connector_command($1,$2,$3,$4::jsonb) result',[owner,sha(secret),operationId,JSON.stringify(command)],c);
+ const followups={operation:'followups',turnId:waiting};
+ const mark={...followups,markSeen:true};
  await as('authenticated',owner);await denied(call(operationId,{operation:'followups',turnId:waiting}));
  await as('service_role');
  await denied(call(randomUUID(),{operation:'followups',turnId:waiting}));
  await denied(call(operationId,{operation:'followups',turnId:waiting},'9'.repeat(48)));
  await denied(call(operationId,{operation:'followups',turnId:waiting,extra:1}),'22023');
- const peek=await call(operationId,{operation:'followups',turnId:waiting});
+ const peek=await call(operationId,followups);
  assert.deepEqual(peek.followups.map(item=>item.body),['First extra message','Second extra message']);
  assert.equal(peek.unseen,2);
- assert.equal((await call(operationId,{operation:'followups',turnId:waiting})).unseen,2,'a read without markSeen leaves them unseen');
- assert.equal((await call(operationId,{operation:'followups',turnId:waiting,markSeen:true})).unseen,2);
- assert.equal((await call(operationId,{operation:'followups',turnId:waiting})).unseen,0);
- await as('authenticated',owner);await add(waiting,randomUUID(),'Third, after the tutor read');
- await as('service_role');
- const later=await call(operationId,{operation:'followups',turnId:waiting});
- assert.equal(later.unseen,1);assert.equal(later.followups.length,3);assert.equal(later.followups[0].seen,true);
+ assert.equal((await call(operationId,followups)).unseen,2,'a read without markSeen leaves them unseen');
+ const claim=await host(cmd('claim',{turnId:waiting,expectedVersion:1}));
+ const reply=cmd('reply',{turnId:waiting,expectedVersion:claim.version,claimId:claim.claimId,generation:claim.generation,
+  messageId:randomUUID(),body:'Here is the reply to all of your questions.'});
+ await assert.rejects(host(reply),error=>error.code==='P2281'&&/posted 2 more messages/.test(error.message));
+ assert.equal((await call(operationId,mark)).unseen,2);
+ assert.equal((await call(operationId,followups)).unseen,0);
+ await assert.rejects(db.transaction(async c=>{
+  // Simulate a failed unread lookup in the disposable test database. The failed reply rolls back the rename too.
+  await c.query('alter table public.tutor_followups rename to tutor_followups_unavailable');
+  await as('service_role','',c);
+  return host(reply,c);
+ }),error=>error.code==='42P01');
+
+ // Pause an uncommitted student post while the tutor reaches the same advisory lock in a separate session.
+ async function concurrentPost(body,act) {
+  const ready=Promise.withResolvers(),release=Promise.withResolvers(),pid=Promise.withResolvers();
+  const post=db.transaction(async c=>{
+   await as('authenticated',owner,c);
+   await add(waiting,randomUUID(),body,owner,c);
+   ready.resolve();
+   await release.promise;
+  });
+  post.catch(ready.reject);
+  await ready.promise;
+  const tutor=db.transaction(async c=>{
+   await as('service_role','',c);
+   pid.resolve(await one('select pg_backend_pid() result',[],c));
+   return act(c);
+  });
+  tutor.catch(pid.reject);
+  try {await db.waitForBlockedLock(await pid.promise)} finally {release.resolve();await post;}
+  return tutor;
+ }
+ const racedRead=await concurrentPost('Third, while the tutor read',c=>call(operationId,mark,secret,c));
+ assert.equal(racedRead.unseen,1);
+ assert.equal(racedRead.followups.at(-1).body,'Third, while the tutor read');
+ assert.equal(racedRead.followups.at(-1).seen,false);
+ assert.equal((await call(operationId,followups)).unseen,0);
+
+ await assert.rejects(concurrentPost('Fourth, while the tutor replied',c=>host(reply,c)),
+  error=>error.code==='P2281'&&/posted 1 more message/.test(error.message));
+ const later=await call(operationId,followups);
+ assert.equal(later.unseen,1);assert.equal(later.followups.length,4);assert.equal(later.followups[0].seen,true);
+ const token=verifier(secret,waiting,operationId);
+ const bearer=(hash,turn=waiting)=>one('select public.tutor_grant_followups($1,$2) result',[hash,turn]);
+ await denied(bearer('f'.repeat(64)));
+ await denied(bearer(token,turn));
+ await denied(one('select public.tutor_grant_command($1,$2::jsonb) result',[token,JSON.stringify(reply)]),'P2281');
+ assert.deepEqual(await bearer(token),later);
+ const finished=await host(reply);
+ assert.equal(finished.status,'completed');
+ assert.deepEqual(await host(reply),finished,'the successful reply can still be retried');
  await as();await db.query('update public.tutor_grants set revoked_at=clock_timestamp() where turn_id=$1',[waiting]);
  await as('service_role');await denied(call(operationId,{operation:'followups',turnId:waiting}));
  await as();

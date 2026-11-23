@@ -14,7 +14,7 @@ const keys=(id=owner)=>[
  'lemma.tutor.confirmed.v1:'+tuple(id),
  'lemma.tutor.pending.v1:'+tuple(id)+':operation',
  'lemma.tutor.connector.v1:'+tuple(id)+':turn',
- ...['question','context','source','attached-local','reply:turn'].map(field=>'lemma.tutor.draft:'+tuple(id)+':'+field),
+ ...['question','context','source','attached-local','reply:turn','followup'].map(field=>'lemma.tutor.draft:'+tuple(id)+':'+field),
  'lemma.tutor.draft:'+tuple(id,'input','preferences')+':input-assist',
 ]
 const saved:TutorThreadView={head:{threadId:'thread',lastSequence:1,pendingTurnId:null},canSubmit:true,canConnect:false,

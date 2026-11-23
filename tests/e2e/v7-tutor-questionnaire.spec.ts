@@ -125,3 +125,34 @@ test('a quick questionnaire opens from the reply row, its colour tracks its stat
   await expect(opener(page)).toHaveAccessibleName('Open questionnaire: Quick check · complete');
   expect(await iconColour()).toBe(await roleColour('--v7-role-status-success'));
 });
+
+test('offline edits and a cleared answer survive a reload after a newer save on another device', async ({page}) => {
+  const server = await liveQuestionnaire(page);
+  await opener(page).click();
+  const first = sheet(page).getByRole('textbox', {name: 'Answer to question 1'});
+  const openMaps = sheet(page).getByRole('checkbox', {name: 'Open surjections'});
+  await first.fill('A previous answer.');
+  await sheet(page).getByRole('radio', {name: 'No'}).check();
+  await expect(sheet(page).getByRole('status')).toContainText('Saved');
+  await expect.poll(() => server.questionnaire.answers).toEqual({q1: 'A previous answer.', q2: 1});
+
+  server.failing = true;
+  await first.fill('');
+  await openMaps.check();
+  await expect(sheet(page).getByRole('status')).toContainText('kept on this device');
+  server.questionnaire = {...server.questionnaire, version: server.questionnaire.version + 1,
+    answers: {...server.questionnaire.answers, q2: 0}};
+
+  await page.reload();
+  await opener(page).click();
+  await expect(first).toHaveValue('');
+  await expect(openMaps).toBeChecked();
+  await expect(sheet(page).getByRole('radio', {name: 'Yes'})).toBeChecked();
+  server.failing = false;
+  await closeSheet(page);
+  await expect.poll(() => server.questionnaire.answers).toEqual({q2: 0, q3: [0]});
+  await page.reload();
+  await opener(page).click();
+  await expect(first).toHaveValue('');
+  await expect(openMaps).toBeChecked();
+});

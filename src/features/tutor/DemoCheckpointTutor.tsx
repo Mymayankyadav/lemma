@@ -30,6 +30,7 @@ import './replyActions.css'
 
 type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
 type Handoff = {text:string;requestId:string}
+type FollowupDraft = {id:string;turnId:string;body:string}
 type EntryProps = {initialQuestion?:string;page?:TutorPageContext;connectorUrl?:string;connectorLoading?:boolean;scope:Scope;handoff?:Handoff;onHandoffConsumed?:(id:string)=>void}
 const subscribe=(refresh:()=>void)=>{
   const account=onAccountChange(refresh),cleanup=subscribeTutorLocalCleanup(refresh)
@@ -112,6 +113,11 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     [live,ownerId,generation,profile,pathId,checkpointId]);
   const ink=useTutorInk(inkScope,scratchEnabled);
   const question=useDraft(draftKey+':question',live), context=useDraft(draftKey+':context',live)
+  const followupDraft=useDraft(draftKey+':followup',live)
+  function editQuestion(text:string) {
+    if(followupDraft.text&&text.trim()!==question.text.trim())followupDraft.clearIfUnchanged(followupDraft.text)
+    return question.change(text)
+  }
   const capturedQuestion=useRef(false);
   useEffect(()=>{
     if(!initialQuestion||capturedQuestion.current||readOnly)return;
@@ -146,25 +152,30 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     try{setFollowups(await followupApi.list())}catch{/* They are shown when the thread reloads. */}
   },[followupApi])
   useEffect(()=>{void loadFollowups()},[loadFollowups,session?.thread.readAt])
-  const replaceQuestionnaire=useCallback((next:TutorQuestionnaire)=>setQuestionnaires(list=>list.map(item=>item.id===next.id?next:item)),[])
+  const replaceQuestionnaire=useCallback((next:TutorQuestionnaire)=>setQuestionnaires(list=>list.map(item=>item.id===next.id&&item.version<=next.version?next:item)),[])
   const questionnaireBackup=useMemo<QuestionnaireBackup>(()=>{
     const key=(id:string)=>draftKey+':questionnaire:'+id
     return {
       read(id){
         try {
           const kept:unknown=JSON.parse(localStorage.getItem(key(id))??'null')
-          return kept&&typeof kept==='object'&&typeof (kept as {base?:unknown}).base==='number'&&typeof (kept as {answers?:unknown}).answers==='object'
-            ?kept as ReturnType<QuestionnaireBackup['read']>:null
+          if(!kept||typeof kept!=='object')return null
+          const answers='edits' in kept?kept.edits:'base' in kept&&typeof kept.base==='number'&&'answers' in kept?kept.answers:null
+          return answers&&typeof answers==='object'&&!Array.isArray(answers)?kept as ReturnType<QuestionnaireBackup['read']>:null
         } catch {return null}
       },
-      write(id,base,answers){
+      write(id,edits,expected){
         try {
-          const value=JSON.stringify({base,answers})
+          if(live&&!tutorLocalScopeActive({ownerId:ownerId!,generation:generation!}))return false
+          // A late acknowledgement must leave any newer draft written by another tab in place.
+          if(expected!==undefined&&(localStorage.getItem(key(id))??'null')!==JSON.stringify(expected))return false
+          if(!Object.keys(edits).length){localStorage.removeItem(key(id));return true}
+          const value=JSON.stringify({edits})
           if(live)writeTutorLocal({ownerId:ownerId!,generation:generation!},key(id),value)
           else localStorage.setItem(key(id),value)
-        } catch {/* The server copy still holds every saved answer. */}
+          return true
+        } catch {return false}
       },
-      clear(id){try{localStorage.removeItem(key(id))}catch{/* Nothing to keep. */}},
     }
   },[draftKey,live,ownerId,generation])
   const [busy,setBusy]=useState(false)
@@ -259,17 +270,29 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       await ink.update(current=>current===inkDraft?{...current,queuedText:text}:current).catch(()=>{});
       return;
     }
-    const waiting=session?.thread.head.pendingTurnId
+    const body=text.trim()
+    let retry:FollowupDraft|undefined
+    try {
+      const stored:FollowupDraft|null=JSON.parse(followupDraft.text||'null')
+      if(stored?.body===body&&typeof stored.id==='string'&&typeof stored.turnId==='string')retry=stored
+    } catch {/* Treat an unreadable attempt as a new draft. */}
+    // A committed follow-up remains retrievable by ID even if the tutor replied before the retry.
+    const waiting=retry?.turnId??session?.thread.head.pendingTurnId
     if (waiting && followupApi && session && !busy && !readOnly && !session.thread.offline && session.thread.canSubmit!==false && !session.thread.outbox?.length) {
       // N228: the tutor has not replied yet. The message joins the waiting question (text only; pictures wait for the reply).
       if (hasImages) {setError('Pictures can be sent once the tutor has replied. Remove them to post this now.');return}
-      if (!text.trim() || text.length>2000 || text.includes('□')) return
+      if (!body || text.length>2000 || text.includes('□')) return
       setBusy(true);setError('')
+      const attempt=retry??{id:crypto.randomUUID(),turnId:waiting,body}
+      const stored=JSON.stringify(attempt)
+      if(!retry)followupDraft.change(stored)
       try {
-        const saved=await followupApi.add(waiting,crypto.randomUUID(),text)
+        const saved=await followupApi.add(attempt.turnId,attempt.id,attempt.body)
         setFollowups(list=>list.some(item=>item.id===saved.id)?list:[...list,saved])
         question.clearIfUnchanged(text)
+        followupDraft.clearIfUnchanged(stored)
       } catch (err) {
+        if(err instanceof Error&&'code' in err&&err.code==='40001')followupDraft.clearIfUnchanged(stored)
         await refresh(session.api).catch(()=>{})
         setError(err instanceof Error?err.message:'Your message was not saved. It is still in the box.')
       } finally {setBusy(false)}
@@ -543,7 +566,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         <textarea className="v7-field" aria-label={'Recoverable reply '+(i+1)} readOnly value={item.body}/>
       </div>)}
     </Disclosure>}  </>
-  if(page)return <TutorChat page={page} turns={allTurns} draft={ink.draft.queuedText??question.text} onChange={question.change}
+  if(page)return <TutorChat page={page} turns={allTurns} draft={ink.draft.queuedText??question.text} onChange={editQuestion}
     onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread?.offline&&!readOnly&&!pending&&!thread.outbox?.length)} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
     draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
     canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&(!pending||!!followupApi)&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
@@ -586,7 +609,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     {session&&!recoveryOnly&&(!pending||(live&&draftNext))&&session.thread.canSubmit!==false&&<div className="v7-field-group">
       <label htmlFor={questionId}>Question</label>
       <textarea id={questionId} className="v7-field" rows={4} maxLength={2000} value={question.text}
-        disabled={busy} onChange={e=>question.change(e.currentTarget.value)}/>
+        disabled={busy} onChange={e=>editQuestion(e.currentTarget.value)}/>
       {tutorInkIssue(question.text)&&<p role="alert">{inkIssueText.unavailable}
         <Button small disabled={busy} onClick={()=>question.change(removeTutorImageReferences(question.text))}>Remove image references</Button>
       </p>}

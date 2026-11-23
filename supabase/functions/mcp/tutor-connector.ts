@@ -1,4 +1,4 @@
-import {downloadTutorImage,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
+import {downloadTutorImage,tutorFollowupFields,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
 import {setTimeout as delay} from 'node:timers/promises'
 import {tutorGrantHash, tutorHandoffIds} from '../_shared/tutor-connector.ts'
 import type {Context} from './db.ts'
@@ -55,7 +55,7 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
       p_grant_operation_id: grantOperationId, p_command: command,
     })
     const {data, error} = await (signal && call.abortSignal ? call.abortSignal(signal) : call)
-    if (error) throw new Error(unavailable)
+    if (error) throw new Error(error.code === 'P2281' ? error.message : unavailable)
     return data
   }
 
@@ -81,24 +81,23 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     return data
   }
 
-  /** The follow-up messages on the handoff's turn. Reading with markSeen records that the tutor has them. */
-  async function followups(id: unknown, markSeen: boolean) {
+  /** Reading the follow-ups on the handoff's turn records that the tutor has them. */
+  async function readFollowups(id: unknown) {
     const {turnId, grantOperationId} = tutorHandoffIds(id)
     const {data, error} = await c.db.rpc('tutor_followup_connector', {
       p_owner: c.userId, p_connector_hash: await tutorGrantHash(connectorSecret),
-      p_grant_operation_id: grantOperationId, p_command: {operation: 'followups', turnId, markSeen},
+      p_grant_operation_id: grantOperationId, p_command: {operation: 'followups', turnId, markSeen: true},
     })
     if (error) throw new Error(unavailable)
     return data as {followups: {id: string; body: string; createdAt: string}[]; unseen: number}
   }
 
-  async function readTurn(id: unknown) {
-    const turn = await execute(id,'get')
-    if (turn?.status!=='pending') return turn
-    // The learner's extra messages on this turn come with it; a failure to read them must not hide the turn.
-    const extra = await followups(id,true).catch(()=>null)
-    const learnerFollowUps = extra?.followups?.map(item=>({text:item.body,postedAt:item.createdAt}))
-    return {...turn,...(learnerFollowUps?.length?{learnerFollowUps}:{}),instructions:studyInstructions}
+  async function followupFields(id: unknown) {
+    const extra = await readFollowups(id).catch(()=>null)
+    return {
+      ...tutorFollowupFields(extra?.followups),
+      instructions:extra ? studyInstructions : studyInstructions+' The follow-ups could not be loaded. Retry get(what=tutor_followups, id=<handoff ID>) before replying.',
+    }
   }
 
   return {
@@ -107,16 +106,17 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
         const pending=await request(null,null)
         return [{type:'text' as const,text:JSON.stringify({pending,instructions:'Read the pending handoff with get(what=tutor_turn, id=<returned id>).'})}]
       }
-      const turn=await readTurn(id)
+      const turn=await execute(id,'get')
       const rows=turn?.status==='pending'&&turn.hasAttachments===true
         ?await tutorImageRows(c.db,{turnId:tutorHandoffIds(id).turnId,ownerId:c.userId}):[]
-      return tutorTurnContent(c.db,turn,rows,attachmentId=>String(id)+'.'+attachmentId)
+      return tutorTurnContent(c.db,turn,rows,attachmentId=>String(id)+'.'+attachmentId,
+        turn?.status==='pending'?()=>followupFields(id):undefined)
     },
     async attachment(id:unknown) {
       if(typeof id!=='string')throw new Error('Tutor image is unavailable.')
       const at=id.lastIndexOf('.'),handoff=id.slice(0,at),attachmentId=id.slice(at+1)
       if(!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(attachmentId))throw new Error('Tutor image is unavailable.')
-      const turn=await readTurn(handoff)
+      const turn=await execute(handoff,'get')
       if(turn?.status!=='pending'&&turn?.status!=='completed')throw new Error('Tutor image is unavailable.')
       const {turnId}=tutorHandoffIds(handoff)
       const [row]=await tutorImageRows(c.db,{turnId,ownerId:c.userId,attachmentId})
@@ -143,11 +143,12 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
         return JSON.stringify({pending: await request(null, null),
           instructions: 'If one handoff is pending, read it with get(what=tutor_turn, id=<returned id>). If several are pending, ask the learner for the handoff ID shown in Lemma.'})
       }
-      return JSON.stringify(await readTurn(id))
+      const turn=await execute(id,'get')
+      return JSON.stringify(turn?.status==='pending'?{...turn,...await followupFields(id)}:turn)
     },
     /** N228: the follow-up messages on the handoff's turn (marks them seen). */
     async followups(id: unknown) {
-      return JSON.stringify(await followups(id,true))
+      return JSON.stringify(await readFollowups(id))
     },
     /** N228: the thread's questionnaires with the learner's answers, for the tutor to judge. */
     async questionnaires(id: unknown) {
@@ -170,12 +171,6 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
       const patch = cmd.patch ?? {}
       if (['operation', 'turnId', 'operationId', 'expectedVersion'].some(key => Object.hasOwn(patch, key))) {
         throw new Error('Invalid tutor command fields.')
-      }
-      if (cmd.operation === 'reply') {
-        const waiting = await followups(cmd.target?.id, false).catch(()=>null)
-        if (waiting && waiting.unseen > 0) {
-          throw new Error('The learner posted '+waiting.unseen+(waiting.unseen===1?' more message':' more messages')+' while you were writing. Read '+(waiting.unseen===1?'it':'them')+' with get(what=tutor_followups, id=<handoff ID>), answer '+(waiting.unseen===1?'it':'them')+' in your reply and send it again.')
-        }
       }
       return execute(cmd.target?.id, cmd.operation, {
         ...patch,

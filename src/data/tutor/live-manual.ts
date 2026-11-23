@@ -364,7 +364,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
     active()
     if(error)throw new TutorRpcError(String(error.code??''),error.code==='40001'
      ?'The tutor has just replied. Send this as your next answer.'
-     :error.code==='22023'?'Wait for the tutor to reply before posting more.':'Your message was not saved. It is still in the box.')
+     :error.code==='22023'?'Wait for the tutor to reply before posting more.':'Could not confirm your message. It is still in the box.')
     return (data as {followup:TutorFollowUp}).followup
    },
   },

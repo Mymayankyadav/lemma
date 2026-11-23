@@ -16,7 +16,7 @@ const questions = [
   {id: 'q2', kind: 'mcq', prompt: 'Is every continuous surjection a quotient map?', options: ['Yes', 'No']},
   {id: 'q3', kind: 'msq', prompt: 'Which are always quotient maps?', options: ['Open surjections', 'Closed surjections']},
 ];
-function connector(result: {data?: unknown; error?: {code: string}} = {data: {status: 'created'}}) {
+function connector(result: {data?: unknown; error?: {code: string; message?: string}} = {data: {status: 'created'}}) {
   const rpc = vi.fn().mockResolvedValue({data: result.data ?? null, error: result.error ?? null});
   const c = {userId: owner, db: {rpc, from: () => {throw Error('no table reads');}}} as unknown as Context;
   return {tutor: tutorConnector(c, secret), rpc};
@@ -85,6 +85,8 @@ describe('follow-up messages on a waiting turn', () => {
     expect(turn.instructions).toContain(FOLLOWUP_NOTE);
     const call = rpc.mock.calls.find(([fn]) => fn === 'tutor_followup_connector')!;
     expect(call[1].p_command).toEqual({operation: 'followups', turnId, markSeen: true});
+    const [summary] = await tutor.content(handoff);
+    expect(summary.type === 'text' && JSON.parse(summary.text).learnerFollowUps).toEqual(turn.learnerFollowUps);
   });
   it('leave the turn as it was when there are none, and never hide the turn if they cannot be read', async () => {
     const quiet = routed({unseen: 0, followups: []});
@@ -93,12 +95,24 @@ describe('follow-up messages on a waiting turn', () => {
     const tutor = tutorConnector({userId: owner, db: {...failing, from: () => {throw Error('no');}}} as unknown as Context, secret);
     expect(JSON.parse(await tutor.read(handoff)).snapshot.question).toBe('17');
   });
-  it('refuses a reply while the learner has posted messages the tutor has not read, and allows it once they are read', async () => {
-    const unread = routed({unseen: 1, followups: [{id: 'a', body: 'x', createdAt: '2026-11-23T10:00:00Z'}]});
-    await expect(unread.tutor.write(replyInput)).rejects.toThrow(/posted 1 more message while you were writing/);
-    expect(unread.rpc.mock.calls.every(([fn]) => fn === 'tutor_followup_connector')).toBe(true);
+  it('reports an unread-message refusal from the reply transaction', async () => {
+    const message = 'The learner posted 1 more message while you were writing. Read the follow-ups with get(what=tutor_followups, id=<handoff ID>).';
+    const unread = connector({error: {code: 'P2281', message}});
+    await expect(unread.tutor.write(replyInput)).rejects.toThrow(message);
+    expect(unread.rpc.mock.calls.map(([name]) => name)).toEqual(['tutor_connector_command']);
     const clear = routed({unseen: 0, followups: []});
     await expect(clear.tutor.write(replyInput)).resolves.toMatchObject({status: 'completed'});
-    expect(JSON.parse(await unread.tutor.followups(handoff))).toMatchObject({unseen: 1});
+    expect(clear.rpc.mock.calls.map(([name]) => name)).toEqual(['tutor_connector_command']);
+  });
+  it('fails the reply if the database cannot check the follow-ups', async () => {
+    const failing = connector({error: {code: 'XX000'}});
+    await expect(failing.tutor.write(replyInput)).rejects.toThrow(/unavailable/);
+    expect(failing.rpc.mock.calls.map(([name]) => name)).toEqual(['tutor_connector_command']);
+  });
+  it('does not mark unseen follow-ups when reading only an attachment or when attachments fail', async () => {
+    const {tutor, rpc} = connector({data: {turnId, status: 'pending', hasAttachments: true}});
+    await expect(tutor.attachment(handoff + '.' + randomUUID())).rejects.toThrow('no table reads');
+    await expect(tutor.content(handoff)).rejects.toThrow('no table reads');
+    expect(rpc.mock.calls.map(([name]) => name)).toEqual(['tutor_connector_command', 'tutor_connector_command']);
   });
 });

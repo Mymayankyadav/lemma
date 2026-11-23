@@ -1,7 +1,7 @@
 import {McpServer,createMcpHandler,z} from './deps.ts'
 import type {Db} from './db.ts'
 import {tutorGrantHash} from '../_shared/tutor-connector.ts'
-import {tutorImageRows,tutorTurnContent} from './tutor-images.ts'
+import {tutorFollowupFields,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
 
 const uuid=z.string().uuid()
 const base={turnId:uuid,operationId:uuid}
@@ -41,13 +41,14 @@ export async function serveTutor(req:Request,db:Db):Promise<Response>{
  if(active.data!==true)return new Response(null,{status:401})
  const handler=createMcpHandler(()=>{
   const server=new McpServer({name:'lemma-checkpoint-tutor',version:'1.0'},
-   {instructions:'Answer the specified pending question with its selected context. A claim lasts five minutes. Suggestions wait for the learner to review.'})
+   {instructions:'Answer the specified pending question with its selected context and any learnerFollowUps. A claim lasts five minutes. Suggestions wait for the learner to review.'})
   for(const [name,operation] of tools){
    server.registerTool(name,{description:operation==='get'
     ?'Read the granted turn with any drawings and photos in composition order.'
     :name.replaceAll('_',' '),inputSchema:tutorInputSchemas[operation],annotations:{readOnlyHint:operation==='get'}},async(args:Record<string,unknown>)=>{
     const {data,error}=await db.rpc('tutor_grant_command',{p_token_hash:digest,p_command:{...args,operation}})
     const pending=operation==='get'&&data?.status==='pending'
+    if(error?.code==='P2281')return {isError:true,content:[{type:'text' as const,text:'The learner posted more messages. Use get_tutor_turn to read them before replying.'}]}
     if(error||pending&&(typeof args.turnId!=='string'||data.turnId!==args.turnId.toLowerCase())) {
      return {isError:true,content:[{type:'text' as const,text:'Turn, grant or claim unavailable, changed, or invalid. Read the turn before retrying.'}]}
     }
@@ -56,7 +57,10 @@ export async function serveTutor(req:Request,db:Db):Promise<Response>{
      // The RPC matched the bearer to this exact turn's primary key. Its attachment
      // rows carry the corresponding owner via the (user_id, turn_id) foreign key.
      const rows=await tutorImageRows(db,{turnId:data.turnId})
-     return {content:await tutorTurnContent(db,data,rows)}
+     return {content:await tutorTurnContent(db,data,rows,undefined,async()=>{
+      const {data:extra,error:followupError}=await db.rpc('tutor_grant_followups',{p_token_hash:digest,p_turn:data.turnId})
+      return followupError?{followupWarning:'Follow-ups could not be loaded. Read the turn again before replying.'}:tutorFollowupFields(extra?.followups)
+     })}
     } catch {
      return {isError:true,content:[{type:'text' as const,text:'Tutor images are unavailable. Read the turn again before replying.'}]}
     }
