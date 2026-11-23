@@ -76,6 +76,9 @@ export function TutorComposer(props: Props) {
   const [editMenu,setEditMenu]=useState(false);
   const [answerError,setAnswerError]=useState('');
   const [shown, setShown] = useState(false);
+  /** N227 (Owner): the keyboard icon in the answer box keeps the keys up and the answer selected while the chat scrolls. */
+  const [pinned, setPinned] = useState(false);
+  const composerRoot = useRef<HTMLDivElement>(null);
   const [view, setView] = useState('abc');
   const [lastMath, setLastMath] = useState('∀∃');
   const composition = useRef(false);
@@ -509,6 +512,37 @@ export function TutorComposer(props: Props) {
     }
   }
 
+  /**
+   * N227 (Owner: "auto close and open the keyboard when input is not selected or selected respectively"): the keys open
+   * when the answer is selected (focusAnswer) and close when the learner touches the chat or the header instead. With
+   * the keyboard icon pressed they stay, and the answer keeps its selection, so the learner can scroll back to the
+   * question while typing. Drawing surfaces (scratch pad, equation mode, Draw symbol) are not closed this way.
+   */
+  useEffect(() => {
+    const root = composerRoot.current, page = root?.closest<HTMLElement>('.lemma-tutor');
+    if (!props.ink || !shown || !root || !page) return;
+    const down = (event: globalThis.PointerEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target || root.contains(target) || target.closest('[role="dialog"]')) return;
+      if (pinned) {
+        // Keep the answer selected; controls in the chat (Copy, links, Make a card) still work.
+        if (!target.closest('button,a[href],input,textarea,select,summary,[contenteditable="true"]')) event.preventDefault();
+        return;
+      }
+      if (scratch || equationMode || assist.drawing) return;
+      assist.pause();
+      setShown(false);
+    };
+    page.addEventListener('pointerdown', down, true);
+    return () => page.removeEventListener('pointerdown', down, true);
+  }, [props.ink, shown, pinned, scratch, equationMode, assist.drawing, assist.pause]);
+  function pinKeys() {
+    haptic('snap');
+    if (pinned) {setPinned(false); return;}
+    setPinned(true);
+    keys();
+    fieldElement()?.focus({preventScroll: true});
+  }
   function keys() {
     setScratch(false);
     setShown(true);
@@ -592,7 +626,7 @@ export function TutorComposer(props: Props) {
       event.preventDefault();
       if (writingGhost || writingEdit || writingWords.length) {dismissWriting(); return;}
       if(assist.drawing)assist.stop();
-      else setShown(false);
+      else {setPinned(false); setShown(false);}
     }
     if (readOnly) return;
     const key = event.key.toLowerCase();
@@ -839,7 +873,7 @@ export function TutorComposer(props: Props) {
   }
   // N221: in the Android app Hide keyboard sits in the band under the keys, where Gboard's ⌄ is; browsers keep it in the strip.
   const hideButton = (className: string) => <button className={className} type="button" aria-label="Hide keyboard"
-    onPointerDown={keepSelection} onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>;
+    onPointerDown={keepSelection} onClick={() => {haptic('snap'); setPinned(false); setShown(false);}}><ChevronDown aria-hidden="true"/></button>;
   const scratchButton = props.ink && <button className="sbtn" type="button" aria-label="Scratch" aria-pressed={scratch}
     disabled={editingDisabled || props.ink.draft.queuedText !== undefined} onPointerDown={keepSelection} onClick={pencil}><PenLine aria-hidden="true"/></button>;
   const nextSlotButton = <button type="button" className="sbtn" aria-label="Next □" disabled={editingDisabled} onPointerDown={keepSelection}
@@ -854,7 +888,7 @@ export function TutorComposer(props: Props) {
     onClick={()=>{haptic('snap');selectSurface(surface === 'equation' ? 'keys' : 'equation');}}><Radical aria-hidden="true"/></button>;
   const keysButton = <button className="sbtn" type="button" aria-label="Keys" onPointerDown={keepSelection}
     onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></button>;
-  return <div className="keyboard-composer" data-keyboard={shown ? 'math' : 'hidden'} data-symbols={shown && Boolean(notation[view]) || undefined}>
+  return <div ref={composerRoot} className="keyboard-composer" data-keyboard={shown ? 'math' : 'hidden'} data-symbols={shown && Boolean(notation[view]) || undefined}>
     {props.value.includes('$') && !props.ink && <div className="composer-preview"><MathText source={tutorAnswerParts(props.value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
     {answerError && <p className="composer-status" role="alert">{answerError}</p>}
     {recoveryIssue && <div className="composer-status" role={recoveryIssue==='loading'?'status':'alert'}>
@@ -880,6 +914,8 @@ export function TutorComposer(props: Props) {
         onLostPointerCapture={event => {if (event.target === event.currentTarget && swipe.current) stopSwipe();}}>
       <div className="field">
         {/* N227 (Owner: "remove the pencil icon from the input box"): the scratch pad opens from the strip's pencil. */}
+        {props.ink && <IconButton label="Keep keyboard open" type="button" aria-pressed={pinned} disabled={editingDisabled}
+          onPointerDown={keepSelection} onClick={pinKeys}><Keyboard aria-hidden="true"/></IconButton>}
         {!props.ink && <IconButton label="Keys" type="button" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
               onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
         {props.ink ? <TutorAnswerEditor editor={richField} value={props.value} images={props.ink.draft.photos}

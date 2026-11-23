@@ -304,3 +304,32 @@ test('a symbol written by hand for an equation in the answer replaces it as an e
   await expect(answer).toContainText('Take');
   await expect(answer).toContainText('here');
 });
+
+test('the keys follow the answer: a touch on the chat closes them, unless the keyboard icon keeps them up', async ({page}) => {
+  // N227 (Owner: "auto close and open the keyboard when input is not selected or selected respectively"; "an icon of
+  // keyboard … keep the keyboard on and input selected as this allows user to scroll through the chat while typing").
+  const {answer, keyboard} = await openAnswer(page);
+  await expect(keyboard).toBeVisible();
+  const chat = page.getByRole('log', {name: 'Conversation'});
+  await chat.click({position: {x: 12, y: 12}});
+  await expect(keyboard).toHaveCount(0);
+  await answer.click();
+  await expect(keyboard).toBeVisible();
+
+  const keep = page.getByRole('button', {name: 'Keep keyboard open', exact: true});
+  await keep.click();
+  await expect(keep).toHaveAttribute('aria-pressed', 'true');
+  await chat.click({position: {x: 12, y: 12}});
+  const box = (await chat.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -200);
+  await expect(keyboard).toBeVisible();
+  await expect(answer).toBeFocused();
+  await page.keyboard.type('still here');
+  await expect(answer).toContainText('still here');
+
+  await keep.click();
+  await expect(keep).toHaveAttribute('aria-pressed', 'false');
+  await chat.click({position: {x: 12, y: 12}});
+  await expect(keyboard).toHaveCount(0);
+});
