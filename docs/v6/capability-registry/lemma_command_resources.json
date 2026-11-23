@@ -678,6 +678,26 @@
       }
     },
     {
+      "resource": "atlas_graph_maintenance",
+      "command_fn": "atlas_graph_maintenance_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "set_level",
+          "delete_empty",
+          "reclassify_link",
+          "link_batch"
+        ],
+        "fields": [
+          "level",
+          "to_id",
+          "old_kind",
+          "new_kind",
+          "links"
+        ]
+      }
+    },
+    {
       "resource": "atlas_links",
       "command_fn": "atlas_command",
       "mcp_ok": true,

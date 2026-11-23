@@ -523,6 +523,15 @@
      ]
     },
     {
+     "resource": "atlas_graph_maintenance",
+     "operations": [
+      "set_level",
+      "delete_empty",
+      "reclassify_link",
+      "link_batch"
+     ]
+    },
+    {
      "resource": "atlas_links",
      "operations": [
       "approve",

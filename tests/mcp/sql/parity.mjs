@@ -99,7 +99,7 @@ async function mcpPage(resource,id,userId=owner){
 }
 // N94 (#1231, #1237): command-only resources are verified on the rows their
 // operations change, so they have no table inventory of their own.
-const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','session_progress','account_controls']);
+const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','session_progress','account_controls','atlas_graph_maintenance']);
 const docsBase=new URL('../../../docs/v6/capability-registry/',import.meta.url);
 /** The legacy mcp_commit allowlist (`allowed` in tools/control.ts) is a real MCP write path. */
 async function legacyMcpFields(){
@@ -1952,6 +1952,77 @@ try{
  }
  await checkSessionProgressParity(db,{owner,other});
  mark('session_progress','save');
+ // N226: all operations through the registered, owner-bound MCP dispatcher,
+ // with receipts, optimistic versions, a single journal action and Undo.
+ {
+  await role(null);
+  const idA='aaaaaaaa-0000-4000-8000-000000000310';
+  const idB='aaaaaaaa-0000-4000-8000-000000000311';
+  const idC='aaaaaaaa-0000-4000-8000-000000000312';
+  await q("insert into public.concepts(id,user_id,subject_id,slug,name) values "+
+    "($1,$4,$5,'n226-a','N226 Atlas A'),($2,$4,$5,'n226-b','N226 Atlas B'),"+
+    "($3,$4,$5,'n226-c','N226 Atlas C')",[idA,idB,idC,owner,n169Subject]);
+  const version=async id=>Number((await q('select version from public.concepts where id=$1',[id]))[0].version);
+  // Edit levels atomically and preserve the original through Undo.
+  await role('service_role');
+  const lev=command('atlas_graph_maintenance','set_level',
+   {target:{id:idA},expectedVersion:await version(idA),patch:{level:'system'}});
+  const lv=status(await mcp(lev),'atlas_graph_maintenance','set_level');
+  assert.deepEqual(await mcp(lev),lv,'Atlas level receipt replay differs');
+  assert.equal((await q('select level from public.concepts where id=$1',[idA]))[0].level,'system');
+  await as(owner);assert.equal(Number((await undo(lv.actionNo)).undone),Number(lv.actionNo));
+  await role(null);assert.equal((await q('select level from public.concepts where id=$1',[idA]))[0].level,'planet');
+  mark('atlas_graph_maintenance','set_level');
+  // Batch insertion is all-or-nothing; the version of one source bumps once.
+  await role('service_role');
+  const beforeVersion=await version(idA);
+  const batch=command('atlas_graph_maintenance','link_batch',{target:{id:idA},
+    expectedVersion:beforeVersion,patch:{links:[{to_id:idB,kind:'prereq'},{to_id:idC,kind:'related'}]}});
+  const batchReceipt=status(await mcp(batch),'atlas_graph_maintenance','link_batch');
+  assert.deepEqual(await mcp(batch),batchReceipt,'Atlas link batch was not idempotent');
+  assert.equal((await q('select count(*)::int n from public.concept_links where user_id=$1 and from_id=$2',[owner,idA]))[0].n,2);
+  assert.equal(await version(idA),beforeVersion+1,'Batch must increment the source version once');
+  assert.equal((await mcp({...batch,patch:{links:[{to_id:idB,kind:'related'}]}})).status,'conflict');
+  await as(owner);assert.equal(Number((await undo(batchReceipt.actionNo)).undone),Number(batchReceipt.actionNo));
+  await role(null);assert.equal((await q('select count(*)::int n from public.concept_links where user_id=$1 and from_id=$2',[owner,idA]))[0].n,0);
+  mark('atlas_graph_maintenance','link_batch');
+  // Atomic change of one existing kind, with original kind restored by Undo.
+  await q("insert into public.concept_links(user_id,from_id,to_id,kind) values($1,$2,$3,'related')",[owner,idA,idB]);
+  await role('service_role');
+  const rec=command('atlas_graph_maintenance','reclassify_link',{target:{id:idA},
+    expectedVersion:await version(idA),patch:{to_id:idB,old_kind:'related',new_kind:'prereq'}});
+  const recDone=status(await mcp(rec),'atlas_graph_maintenance','reclassify_link');
+  assert.equal((await q('select kind from public.concept_links where from_id=$1 and to_id=$2',[idA,idB]))[0].kind,'prereq');
+  await as(owner);assert.equal(Number((await undo(recDone.actionNo)).undone),Number(recDone.actionNo));
+  await role(null);
+  assert.equal((await q('select kind from public.concept_links where from_id=$1 and to_id=$2',[idA,idB]))[0].kind,'related');
+  mark('atlas_graph_maintenance','reclassify_link');
+  // Only a genuinely unreferenced shell can be removed, and removal is undoable.
+  await role('service_role');
+  const del=command('atlas_graph_maintenance','delete_empty',{target:{id:idC},expectedVersion:await version(idC),patch:{}});
+  const delDone=status(await mcp(del),'atlas_graph_maintenance','delete_empty');
+  assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[idC]))[0].n,0);
+  await as(owner);assert.equal(Number((await undo(delDone.actionNo)).undone),Number(delDone.actionNo));
+  await role(null);
+  assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[idC]))[0].n,1);
+  mark('atlas_graph_maintenance','delete_empty');
+  // Evidence-bearing concept merges must refuse instead of cascading away attempts.
+  await q("insert into public.instruction_events(user_id,concept_id,origin) values($1,$2,'tutor')",[owner,idB]);
+  await role('service_role');
+  const merging=command('concepts','merge',{target:{id:idB},expectedVersion:await version(idB),
+    patch:{keep_id:idA,keep_version:await version(idA)}});
+  const blocked=await mcp(merging).then(x=>x,e=>({status:'error',reason:String(e)}));
+  assert.notEqual(blocked.status,'ok','Evidence-bearing Atlas merge was accepted');
+  assert.equal((await q('select count(*)::int n from public.instruction_events where user_id=$1 and concept_id=$2',[owner,idB]))[0].n,1,
+    'Merge silently removed an instructional record');
+  assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[idB]))[0].n,1,
+    'Merge deleted a concept with direct learning evidence');
+  // Other owner's command must not mutate this graph.
+  await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) result',
+   [other,'chatgpt',JSON.stringify(command('atlas_graph_maintenance','set_level',
+    {target:{id:idA},expectedVersion:await version(idA),patch:{level:'galaxy'}}))]),
+   /not found for owner/i,'Cross-owner maintenance was allowed');
+ }
  await role('service_role');
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
