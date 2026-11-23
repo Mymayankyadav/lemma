@@ -63,3 +63,60 @@ for (const surface of surfaces) {
     });
   }
 }
+
+// N228 (Owner: "add landscape mode too in both scratch pads (when in full screen) which means they are rotated before
+// sending to the model"): on a portrait screen the paper can be turned a quarter either way; its strokes stay upright in
+// the paper's own frame, so what is read and sent is upright.
+for (const surface of surfaces) {
+  test(`${surface.name}: landscape turns the paper a quarter either way and keeps what is drawn upright`, async ({page}) => {
+    await page.setViewportSize({width: 393, height: 873});
+    await page.goto(url);
+    await page.getByRole('button', {name: 'Write a question'}).click();
+    await page.getByRole('textbox', {name: 'Your answer', exact: true}).focus();
+    await surface.open(page);
+    await page.getByRole('button', {name: 'Full screen', exact: true}).click();
+    const frame = page.getByRole('dialog', {name: surface.frame});
+    const canvas = frame.locator('svg[data-ink-canvas]');
+    const points = async () => (await canvas.locator('path').last().getAttribute('d'))!.replace(/[ML]/g, ' ').trim().split(/\s+/).map(Number);
+
+    // Portrait: a swipe to the right is a stroke with growing x.
+    const turn = frame.getByRole('button', {name: 'Landscape', exact: true});
+    await expect(turn).toBeVisible();
+    const draw = async (dx: number, dy: number) => {
+      const box = (await frame.locator('.tutor-paper-full').boundingBox())!;
+      const x = box.x + box.width / 2, y = box.y + box.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x + dx / 2, y + dy / 2, {steps: 5});
+      await page.mouse.move(x + dx, y + dy, {steps: 5});
+      await page.mouse.up();
+    };
+    await draw(80, 0);
+    let [x1, y1, x2, y2] = (await points()).slice(0, 4).concat((await points()).slice(-2));
+    expect(x2 - x1).toBeGreaterThan(20);
+    expect(Math.abs(y2 - y1)).toBeLessThan(6);
+
+    // Landscape: the surface is a quarter turn, as wide as the screen is tall. A swipe DOWN the screen is now along the
+    // paper's own x axis, so it is stored as growing x and the same y: upright, as it looked to the writer.
+    await turn.click();
+    await expect(frame.locator('.tutor-paper-full')).toHaveAttribute('data-turn', '90');
+    const rotated = (await frame.locator('.tutor-paper-full').boundingBox())!;
+    expect(rotated.width).toBeCloseTo(393, 0);
+    expect(rotated.height).toBeCloseTo(873, 0);
+    await draw(0, 80);
+    const down = await points();
+    expect(down.at(-2)! - down[0]).toBeGreaterThan(20);
+    expect(Math.abs(down.at(-1)! - down[1])).toBeLessThan(6);
+    // The other way round, the same swipe runs the other way along the paper.
+    await frame.getByRole('button', {name: 'Landscape, other way', exact: true}).click();
+    await expect(frame.locator('.tutor-paper-full')).toHaveAttribute('data-turn', '270');
+    await draw(0, 80);
+    const up = await points();
+    expect(up.at(-2)! - up[0]).toBeLessThan(-20);
+    expect(Math.abs(up.at(-1)! - up[1])).toBeLessThan(6);
+    // Back to portrait, and the strokes are all still there.
+    await frame.getByRole('button', {name: 'Portrait', exact: true}).click();
+    await expect(frame.locator('.tutor-paper-full')).not.toHaveAttribute('data-turn', /.*/);
+    await expect(canvas.locator('path')).toHaveCount(3);
+  });
+}

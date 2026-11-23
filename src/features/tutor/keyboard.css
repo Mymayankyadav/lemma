@@ -393,3 +393,17 @@
 @supports not (width: 1cqw) {
   .lemma-tutor .tutor-paper-full .tutor-equation-sheet {width: max(100vw, 160dvh); height: max(62.5vw, 100dvh);}
 }
+
+/* N228 (Owner: landscape in full screen): the whole surface turned a quarter on a portrait screen. It is laid out as a
+   landscape screen (as wide as the screen is tall) and turned about its top-left corner into place. */
+.lemma-tutor .tutor-paper-full {position: relative;}
+.lemma-tutor .tutor-paper-full[data-turn] {position: absolute; top: 0; left: 0; width: 100dvh; height: 100vw; transform-origin: 0 0;}
+.lemma-tutor .tutor-paper-full[data-turn="90"] {transform: translateX(100vw) rotate(90deg);}
+.lemma-tutor .tutor-paper-full[data-turn="270"] {transform: translateY(100dvh) rotate(-90deg);}
+.lemma-tutor .tutor-paper-rotate {
+  position: absolute; z-index: 2; inset-block-end: var(--v7-space-3); inset-inline-end: var(--v7-space-3);
+  display: grid; place-items: center; inline-size: 40px; block-size: 40px; padding: 0; border-radius: 9999px; cursor: pointer;
+  background: color-mix(in srgb, var(--v7-role-surface-overlay) 88%, transparent); border: 1px solid var(--v7-role-border-subtle);
+  color: var(--v7-role-text-secondary); box-shadow: var(--v7-shadow-1);
+}
+.lemma-tutor .tutor-paper-rotate svg {inline-size: 20px; block-size: 20px;}

@@ -67,8 +67,9 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   const sheet = useRef<HTMLDivElement>(null);
   const paper = useRef<HTMLDivElement>(null);
   const size = () => {
-    const box = sheet.current?.getBoundingClientRect();
-    return box?.width && box.height ? {width: box.width, height: box.height} : {width: PAD_PAPER.width, height: PAD_PAPER.height};
+    // Layout size, not the bounding box: a paper turned in landscape has its width and height swapped on screen.
+    const el = sheet.current;
+    return el?.offsetWidth && el.offsetHeight ? {width: el.offsetWidth, height: el.offsetHeight} : {width: PAD_PAPER.width, height: PAD_PAPER.height};
   };
   /** The canvas stretches its 640 × 400 paper over the sheet; read the writing in the sheet's own proportions. */
   const asWritten = (strokes: PadStrokes): PadStrokes => {
