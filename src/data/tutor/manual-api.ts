@@ -1,4 +1,5 @@
 import type {TutorComposerDraft,TutorContextSelection,TutorTurn} from './turn-model'
+import type {QuestionnaireAnswers,TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
 
 type PendingTurn=Extract<TutorTurn,{status:'awaiting-tutor'}>
 type CompletedTurn=Extract<TutorTurn,{status:'completed'}>
@@ -46,4 +47,20 @@ export type ManualTutor={
  stopGrants?:(turnId:string,version:number)=>Promise<void>
  cancel?:(turnId:string,version:number)=>Promise<void>
  proposeCard?:(turnId:string,version:number,front:string,back:string)=>Promise<void>
+ /** N228: the tutor's quick questionnaires on this thread, and the learner's answers to them. */
+ questionnaires?:TutorQuestionnaireApi
+ /** N228: more messages on the turn that is waiting for the tutor. */
+ followups?:TutorFollowUpApi
+}
+export type TutorFollowUp={id:string;turnId:string;body:string;createdAt:string;seen:boolean}
+export type TutorFollowUpApi={
+ list:()=>Promise<readonly TutorFollowUp[]>
+ /** messageId is the message's own id: a retry is the same message. */
+ add:(turnId:string,messageId:string,body:string)=>Promise<TutorFollowUp>
+}
+export type QuestionnaireSave={status:'saved'|'submitted'|'conflict';questionnaire:TutorQuestionnaire}
+export type TutorQuestionnaireApi={
+ list:()=>Promise<readonly TutorQuestionnaire[]>
+ /** answers null only marks it opened. expectedVersion is the version the answers were based on (0 before any save). */
+ save:(id:string,expectedVersion:number,answers:QuestionnaireAnswers|null,submit:boolean)=>Promise<QuestionnaireSave>
 }

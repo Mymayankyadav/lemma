@@ -312,6 +312,9 @@ test('a signed-in learner can retry connector delivery, receive the next questio
   if(!resource.startsWith('rpc/tutor_'))
    return route.fulfill({json:liveTutorFixtureResponse(payload,resource,request.headers().accept)})
   const args=request.postDataJSON()
+  // N228: the tutor's questionnaires on this thread (none in this fixture).
+  if(resource==='rpc/tutor_questionnaire_state')return route.fulfill({json:[]})
+  if(resource==='rpc/tutor_followup_state')return route.fulfill({json:[]})
   if(resource==='rpc/tutor_owner_grant_active'){
    expect(args).toMatchObject({p_turn_id:thread.head.pendingTurnId,p_grant_id:grantId})
    return route.fulfill({json:true})
@@ -370,7 +373,9 @@ test('a signed-in learner can retry connector delivery, receive the next questio
  expect(starts).toHaveLength(1)
  await connection.getByRole('button',{name:'Close',exact:true}).click()
  await answer(page).fill(secondAnswer)
- await expect(send(page)).toBeDisabled()
+ // N228 (Owner: "allow posting of messages even when tutor is not"): Send stays on while the question waits; a message
+ // then joins the waiting question (tests/e2e/v7-tutor-followups.spec.ts). Here it is left in the box and sent after the reply.
+ await expect(send(page)).toBeEnabled()
  replyAvailable=true
  await expect(transcript(page).getByRole('article',{name:'Tutor reply'})).toContainText(tutorQuestion,{timeout:10000})
  await expect(transcript(page).getByText(tutorQuestion,{exact:true})).toBeInViewport()

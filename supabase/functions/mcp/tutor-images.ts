@@ -38,15 +38,23 @@ export async function downloadTutorImage(db:Db,row:TutorImageRow) {
 
 type TutorContentBlock={type:'text';text:string}|Awaited<ReturnType<typeof tutorImageBlock>>;
 
+export function tutorFollowupFields(followups?: readonly {body: string; createdAt: string}[]) {
+  return followups?.length ? {learnerFollowUps: followups.map(item => ({text: item.body, postedAt: item.createdAt}))} : {};
+}
+
 export async function tutorTurnContent(
   db:Db,turn:{snapshot?:{question?:unknown}}|null,rows:readonly TutorImageRow[],referenceId:(id:string)=>string=id=>id,
+  details?:()=>Promise<Record<string,unknown>>,
 ):Promise<TutorContentBlock[]> {
   const content=rows.length?{...turn,attachments:rows.map(row=>({id:referenceId(row.id),kind:row.kind,mimeType:row.mime_type}))}:turn;
   const question=typeof turn?.snapshot?.question==='string'?turn.snapshot.question:'';
   const images=new Map(rows.map(row=>[row.id,row]));
   const parts=tutorAnswerParts(question,images.keys());
+  // Details can acknowledge follow-ups. Load the images first so a failed download acknowledges nothing.
+  const summary=async (value:object|null)=>({type:'text' as const,text:JSON.stringify(details?{...value,...await details()}:value)});
   if(!parts.some(part=>part.type==='image')) {
-    return [{type:'text',text:JSON.stringify(content)},...await Promise.all(rows.map(row=>downloadTutorImage(db,row)))];
+    const blocks=await Promise.all(rows.map(row=>downloadTutorImage(db,row)));
+    return [await summary(content),...blocks];
   }
 
   const labels=new Map<string,string>(),counts={drawing:0,photo:0};
@@ -57,7 +65,6 @@ export async function tutorTurnContent(
     return {...part,id:referenceId(part.id),label:labels.get(part.id)};
   });
   const blocks:TutorContentBlock[]=[
-    {type:'text',text:JSON.stringify({...content,answerParts})},
     {type:'text',text:'Learner answer in composition order:'},
   ];
   const seen=new Set<string>();
@@ -69,5 +76,5 @@ export async function tutorTurnContent(
       seen.add(part.id);
     }
   }
-  return blocks;
+  return [await summary({...content,answerParts}),...blocks];
 }

@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState, type CSSProperties, type ReactNode} from 'react';
-import {Download, LoaderCircle, RotateCcw, ScanText, Trash2, Undo2} from 'lucide-react';
+import {Download, LoaderCircle, Maximize2, Minimize2, RotateCcw, ScanText, Trash2, Undo2} from 'lucide-react';
 import {MathText} from '../../../ui/MathText';
 import {InkCanvas} from '../../../ui/v7/ink/InkCanvas';
 import {clearPadInk, initializePadInk, PAD_PAPER, undoPadInk, type PadInkHistory, type PadStrokes} from '../../../ui/v7/ink/ink';
@@ -7,6 +7,7 @@ import {haptic} from '../../../ui/v7/haptics';
 import {EQUATION_MODEL_BYTES} from './equationModel';
 import {equationModelCached, prepareEquationModel, recognizeEquation} from './equationRecognizer';
 import {symbolById} from './symbolCatalog';
+import {FullscreenPaper} from '../FullscreenPaper';
 
 type Reading =
   | {phase: 'idle' | 'ask' | 'reading'}
@@ -49,6 +50,10 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   const [reading, setReading] = useState<Reading>({phase: 'idle'});
   /** A stroke is being drawn: the floating tools step aside. */
   const [stroking, setStroking] = useState(false);
+  /** The paper holds all the strokes it can (N228). */
+  const [full, setFull] = useState(false);
+  /** N228 (Owner: "full screen scratch pad editing for both scratch and equation"): the strip and the paper fill the screen. */
+  const [fullscreen, setFullscreen] = useState(false);
   /** How much taller than the keys the learner has dragged the paper (kept while the composer is open). */
   const [extra, setExtra] = useState(() => equationExtra);
   useEffect(() => {equationExtra = extra;}, [extra]);
@@ -62,8 +67,9 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   const sheet = useRef<HTMLDivElement>(null);
   const paper = useRef<HTMLDivElement>(null);
   const size = () => {
-    const box = sheet.current?.getBoundingClientRect();
-    return box?.width && box.height ? {width: box.width, height: box.height} : {width: PAD_PAPER.width, height: PAD_PAPER.height};
+    // Layout size, not the bounding box: a paper turned in landscape has its width and height swapped on screen.
+    const el = sheet.current;
+    return el?.offsetWidth && el.offsetHeight ? {width: el.offsetWidth, height: el.offsetHeight} : {width: PAD_PAPER.width, height: PAD_PAPER.height};
   };
   /** The canvas stretches its 640 × 400 paper over the sheet; read the writing in the sheet's own proportions. */
   const asWritten = (strokes: PadStrokes): PadStrokes => {
@@ -133,7 +139,8 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   const clampExtra = (value: number) => Math.max(0, Math.min(maxExtra(), value));
   const busy = reading.phase !== 'idle';
   const shownSymbols = symbols.enabled && inked ? symbols.ids.slice(0, busy ? 2 : 4) : [];
-  return <section className="tutor-equation" aria-label="Equation mode">
+  return <FullscreenPaper active={fullscreen} onExit={() => setFullscreen(false)} label="Equation mode, full screen">
+  <section className="tutor-equation" aria-label="Equation mode" data-fullscreen={fullscreen || undefined}>
     <div className="strip tutor-equation-strip">
       {leading}
       <div className="tutor-equation-candidates" role="group" aria-label="Equation suggestions" aria-live="polite">
@@ -189,8 +196,10 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
       <div className="tutor-equation-paper" ref={paper}>
         <div className="tutor-equation-sheet" ref={sheet}>
           <InkCanvas history={history} onChange={change} mode={disabled ? 'hand' : 'pen'} width={3} label="Write an equation" panTouches={2}
-            onStroke={() => setStroking(true)} onStrokeEnd={() => setStroking(false)}
+            onStroke={() => {setStroking(true); setFull(false);}} onStrokeEnd={() => setStroking(false)} onFull={() => setFull(true)}
             onPan={(dx, dy, _gesture, fingers) => {
+              // Three fingers scroll the chat; in full screen no chat is in view.
+              if (fullscreen && fingers && fingers >= 3) return;
               const view = fingers && fingers >= 3 ? paper.current?.closest('.lemma-tutor')?.querySelector<HTMLElement>('[role="log"]') : paper.current;
               if (!view) return;
               if (!(fingers && fingers >= 3)) view.scrollLeft -= dx;
@@ -198,6 +207,7 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
             }}/>
         </div>
       </div>
+      {full && <p className="tutor-equation-full" role="status">The paper is full. Read it, or clear it to keep writing.</p>}
       <div className="tutor-equation-float" role="group" aria-label="Paper tools" data-hidden={stroking || undefined}>
         <button type="button" className="tutor-equation-read" aria-label="Read equation" disabled={disabled || !inked || reading.phase === 'reading' || reading.phase === 'download'}
           onPointerDown={event => event.preventDefault()} onClick={() => {haptic('snap'); void read();}}><ScanText aria-hidden="true"/><span>Read</span></button>
@@ -205,7 +215,11 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
           onPointerDown={event => event.preventDefault()} onClick={() => change(undoPadInk(history))}><Undo2 aria-hidden="true"/></button>
         <button type="button" className="sbtn" aria-label="Clear writing" disabled={disabled || !inked}
           onPointerDown={event => event.preventDefault()} onClick={clearInk}><Trash2 aria-hidden="true"/></button>
+        <button type="button" className="sbtn" aria-label={fullscreen ? 'Exit full screen' : 'Full screen'} aria-pressed={fullscreen}
+          data-fullscreen-toggle="" onPointerDown={event => event.preventDefault()}
+          onClick={() => setFullscreen(on => !on)}>{fullscreen ? <Minimize2 aria-hidden="true"/> : <Maximize2 aria-hidden="true"/>}</button>
       </div>
     </div>
-  </section>;
+  </section>
+  </FullscreenPaper>;
 }
