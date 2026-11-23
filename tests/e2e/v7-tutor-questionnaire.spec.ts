@@ -1,7 +1,7 @@
 import {expect, test, type Page} from '@playwright/test';
 import type {SavedTutorTurn, TutorThreadView} from '../../src/data/tutor/manual-api';
 import type {QuestionnaireAnswers, TutorQuestionnaire} from '../../supabase/functions/_shared/tutor-questionnaire';
-import {liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
+import {blockTutorDraftWrites, liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
 
 // N228 (Owner): "Add the quick questionnaire that can contain short answer type MCQ or msq type questions, these tutor can
 // attach along with chat head show the option of open questionnaire in the reply row and use icon color to show if
@@ -155,4 +155,34 @@ test('offline edits and a cleared answer survive a reload after a newer save on 
   await opener(page).click();
   await expect(first).toHaveValue('');
   await expect(openMaps).toBeChecked();
+});
+
+test('a failed device backup stays visible when the questionnaire save fails', async ({page}) => {
+  const server = await liveQuestionnaire(page);
+  await opener(page).click();
+  await expect.poll(() => server.questionnaire.state).toBe('started');
+  const restoreWrites = await blockTutorDraftWrites(page, ':questionnaire:' + questionnaireId);
+  server.failing = true;
+
+  const answer = sheet(page).getByRole('textbox', {name: 'Answer to question 1'});
+  const status = sheet(page).getByRole('status');
+  const warning = sheet(page).getByRole('alert');
+  const text = 'I would check the open sets and their preimages.';
+  await answer.fill(text);
+  await expect(warning).toContainText('Device backup failed');
+  await expect(status).toHaveText('Your answers were not saved yet.');
+  await expect(warning).toContainText('Keep this questionnaire open');
+  await expect(answer).toHaveValue(text);
+  expect(server.questionnaire.answers).toEqual({});
+
+  // The same answer can reach the server while device storage is still full.
+  server.failing = false;
+  await sheet(page).getByRole('button', {name: 'Retry save'}).click();
+  await expect(status).toContainText('Saved.');
+  await expect(warning).toHaveCount(0);
+  expect(server.questionnaire.answers).toEqual({q1: text});
+  await restoreWrites();
+  await page.reload();
+  await opener(page).click();
+  await expect(answer).toHaveValue(text);
 });

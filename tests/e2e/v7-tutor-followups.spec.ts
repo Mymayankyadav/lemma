@@ -1,6 +1,6 @@
 import {expect, test, type Page} from '@playwright/test';
 import type {SavedTutorTurn, TutorThreadView} from '../../src/data/tutor/manual-api';
-import {liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
+import {blockTutorDraftWrites, liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
 
 // N228 (Owner: "allow posting of messages even when tutor is not"): the learner keeps posting while a turn waits.
 const url = '/lemma/?demo=0&flags=v7Shell,v6Shell,-tutorScratch#/p/logic/cp/CP1/tutor';
@@ -93,6 +93,39 @@ test('a committed follow-up with a lost response can be retried after reload and
   }}];
   await page.reload();
   await expect(tutor(page).getByRole('article', {name: 'Tutor reply'}).getByText('Here are answers to both questions.')).toBeVisible();
+  await expect(answer(page)).toHaveText(body);
+  await send(page).click();
+  await expect(answer(page)).toHaveText('');
+  expect(server.adds.map(add => add.p_message)).toEqual([server.followups[0].id, server.followups[0].id]);
+  await expect(tutor(page).locator('[data-followup]')).toHaveText([body]);
+});
+
+test('the composer requires a saved retry ID before a follow-up can reach the server', async ({page}) => {
+  const server = await waitingTurn(page);
+  const restoreWrites = await blockTutorDraftWrites(page, ':followup');
+  server.loseResponse = true;
+  const body = 'One more question about the converse.';
+  await answer(page).fill(body);
+
+  const warning = tutor(page).getByRole('alert').filter({hasText: /could not save the follow-up for retry/});
+  await send(page).click();
+  await expect(warning).toBeVisible();
+  await expect(answer(page)).toHaveText(body);
+  expect(server.adds).toHaveLength(0);
+
+  // The failed write left an in-memory ID. Another click still requires persistence.
+  await send(page).click();
+  await expect(send(page)).toBeEnabled();
+  await expect(warning).toBeVisible();
+  expect(server.adds).toHaveLength(0);
+
+  await restoreWrites();
+  await send(page).click();
+  await expect(tutor(page).getByText(/Could not confirm your message/)).toBeVisible();
+  await expect(warning).toHaveCount(0);
+  expect(server.followups).toHaveLength(1);
+
+  await page.reload();
   await expect(answer(page)).toHaveText(body);
   await send(page).click();
   await expect(answer(page)).toHaveText('');

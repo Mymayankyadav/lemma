@@ -82,6 +82,7 @@ function QuestionnaireSheet({questionnaire, api, backup, onChange, onClose}: {
   const [edits, setEdits] = useState(initial.edits);
   const latest = useRef(initial.edits);
   const [status, setStatus] = useState<Status>(Object.keys(initial.edits).length ? 'local' : 'idle');
+  const [backupFailed, setBackupFailed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const timer = useRef<number | undefined>(undefined);
@@ -91,12 +92,13 @@ function QuestionnaireSheet({questionnaire, api, backup, onChange, onClose}: {
   const submitted = current.state === 'complete';
   const answers = applyEdits(current.answers, edits);
 
-  function keep(next: Edits, acknowledged = false) {
+  function keep(next: Edits, checkStored = false) {
     latest.current = next;
     setEdits(next);
-    if (backup.write(id, next, acknowledged ? stored.current : undefined)) {
-      stored.current = Object.keys(next).length ? {edits: next} : null;
-    }
+    const hasEdits = Object.keys(next).length > 0;
+    const backedUp = backup.write(id, next, checkStored ? stored.current : undefined);
+    if (backedUp) stored.current = hasEdits ? {edits: next} : null;
+    setBackupFailed(hasEdits && !backedUp);
   }
 
   function adopt(next: TutorQuestionnaire) {
@@ -184,16 +186,22 @@ function QuestionnaireSheet({questionnaire, api, backup, onChange, onClose}: {
   const complete = questionnaireComplete(questionnaire.questions, answers);
   const remaining = questionnaire.questions.filter(question => !answered(question, answers)).length;
   const unsent = submitted && Object.entries(edits).some(([key, value]) => !sameAnswer(value, current.answers[key]));
-  const note = submitted ? (unsent ? 'Already submitted. Your unsent edits are shown here and kept on this device.' : 'Submitted. Your tutor can read your answers.')
+  const backupNote = backupFailed ? '' : ' They are kept on this device.';
+  const localNote = error ? error + backupNote : backupFailed ? 'Waiting to save…' : 'Kept on this device. Saving…';
+  const note = submitted ? (unsent ? 'Already submitted. Your unsent edits are shown here.' + backupNote : 'Submitted. Your tutor can read your answers.')
     : status === 'saving' ? 'Saving…'
     : status === 'saved' ? 'Saved. You can come back to it later.'
-    : status === 'local' ? (error ? error + ' They are kept on this device.' : 'Kept on this device; saving…')
+    : status === 'local' ? localNote
     : status === 'conflict' ? 'Answered on another device too. Check your answers and submit again.'
     : 'Answers save as you go. You can come back to it later.';
 
   return <Sheet open onClose={() => void close()} title={questionnaire.title}>
     <form className="tutor-questionnaire" onSubmit={event => {event.preventDefault(); if (complete && !submitted) void save(true);}}>
       <p className="tutor-questionnaire-note" role="status">{note}</p>
+      {backupFailed && (!submitted || unsent) && <p className="tutor-questionnaire-note" role="alert">
+        {submitted ? 'Device backup failed. Copy your unsent answers before closing or reloading.'
+          : 'Device backup failed. Keep this questionnaire open until your answers are saved.'}
+      </p>}
       <ol>
         {questionnaire.questions.map((question, at) => {
           const value = answers[question.id];
@@ -220,6 +228,10 @@ function QuestionnaireSheet({questionnaire, api, backup, onChange, onClose}: {
       </ol>
       {!submitted && <div className="tutor-questionnaire-actions">
         <Button variant="primary" type="submit" disabled={!complete || status === 'saving'}>Submit answers</Button>
+        {backupFailed && (error || status === 'conflict') && <Button type="button" onClick={() => {
+          keep(latest.current, true);
+          void save();
+        }}>Retry save</Button>}
         {!complete && <small>{remaining === 1 ? '1 question left' : remaining + ' questions left'}</small>}
       </div>}
     </form>

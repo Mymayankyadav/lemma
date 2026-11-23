@@ -131,7 +131,9 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   try {attachedSource=sourceDraft.text?JSON.parse(sourceDraft.text):undefined} catch {/* Restore only a saved selection. */}
   const [selectedLocal,setSelectedLocal]=useState('')
   const attachedLocal=useDraft(draftKey+':attached-local',live)
-  const draftWarning=question.unsaved||context.unsaved||attachedLocal.unsaved||sourceDraft.unsaved
+  const draftWarning=followupDraft.unsaved&&followupDraft.text
+    ?'Sending is paused because this device could not save the follow-up for retry. Keep this draft open and try Send again.'
+    :question.unsaved||context.unsaved||attachedLocal.unsaved||sourceDraft.unsaved
     ?'Some draft changes could not be saved on this device and may be lost on reload.':undefined
   const [preview,setPreview]=useState<ReturnType<typeof previewLocalTutorExcerpt>>()
   const [session,setSession]=useState<{api:ManualTutor; thread:TutorThreadView}>()
@@ -282,10 +284,11 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       // N228: the tutor has not replied yet. The message joins the waiting question (text only; pictures wait for the reply).
       if (hasImages) {setError('Pictures can be sent once the tutor has replied. Remove them to post this now.');return}
       if (!body || text.length>2000 || text.includes('□')) return
-      setBusy(true);setError('')
       const attempt=retry??{id:crypto.randomUUID(),turnId:waiting,body}
       const stored=JSON.stringify(attempt)
-      if(!retry)followupDraft.change(stored)
+      // A failed write still leaves the ID in memory. Require a durable ID before every send.
+      if(!followupDraft.change(stored)){setError('');return}
+      setBusy(true);setError('')
       try {
         const saved=await followupApi.add(attempt.turnId,attempt.id,attempt.body)
         setFollowups(list=>list.some(item=>item.id===saved.id)?list:[...list,saved])

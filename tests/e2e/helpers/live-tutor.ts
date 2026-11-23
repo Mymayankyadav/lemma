@@ -28,3 +28,20 @@ export function liveTutorFixtureResponse(payload:Record<string,unknown>,path:str
  if(accept?.includes('vnd.pgrst.object')&&Array.isArray(result))result=result[0]??null
  return result
 }
+
+export async function blockTutorDraftWrites(page:Page,suffix:string) {
+ const restore=await page.evaluateHandle(ending=>{
+  const setItem=Storage.prototype.setItem
+  Storage.prototype.setItem=function(key,value){
+   if(this===localStorage&&key.startsWith('lemma.tutor.draft:')&&key.endsWith(ending)){
+    throw new DOMException('Storage full','QuotaExceededError')
+   }
+   setItem.call(this,key,value)
+  }
+  return ()=>{Storage.prototype.setItem=setItem}
+ },suffix)
+ return async()=>{
+  await restore.evaluate(restoreStorage=>restoreStorage())
+  await restore.dispose()
+ }
+}
