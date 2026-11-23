@@ -12,7 +12,7 @@ Owner task: "Fix all the issues in lemma app of lemma repo on my github"
 Stage: Harden · Status: done · Needs: — · Assigned: chat-861823#po2z
 Done = Keep chat and drawing tools within the Android safe area. Toggle the Tutor header from the composer. Show image and context controls directly and keep session actions in the header. Restore compact Markdown lists and consistent spacing between learner and tutor messages. Let two fingers pan the scratch paper, retain ink during device rotation, resume or discard unfinished ink from its composer icon, and queue image answers while the tutor is responding. Support copying and deleting learner and tutor messages from selection mode. Record the changes in docs/current/N229.md.
 Tests: Tutor chat, mixed-message selection, transcript deletion database contract, header, file upload, image queue, scratchpad gestures, full-screen orientation, writing assistance and layout parity.
-Scope: src/features/tutor/**, src/data/tutor/**, src/ui/v7/ink/InkCanvas.tsx, supabase/migrations/20261218002600_n229_tutor_message_deletions.sql, tests/e2e/**, tests/unit/tutor/**, tests/mcp/sql/n193-tutor.mjs, docs/current/N229.md, NEXT.md.
+Scope: src/features/tutor/**, src/data/tutor/**, src/ui/v7/ink/InkCanvas.tsx, supabase/migrations/20261218002600_n229_tutor_message_deletions.sql, docs/v6/capability-registry/tutor_message_deletions.json, tests/e2e/**, tests/unit/tutor/**, tests/mcp/sql/n193-tutor.mjs, docs/current/N229.md, NEXT.md.
 Not: changing Android's system rotation policy.
 
 ## N228 Tutor quick questionnaires (short answer, one choice, several choices) in the reply row

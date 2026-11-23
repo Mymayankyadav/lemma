@@ -1,0 +1,34 @@
+{
+  "table": "tutor_message_deletions",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_delete_messages. Bound to the authenticated owner by tutor_delete_messages.",
+      "mcpPath": "Owner transcript visibility metadata. Tutor connector handoffs retain their turn records.",
+      "exportPolicy": "Included in the authenticated owner snapshot through lemma_export_private.additional_tables",
+      "deletionPolicy": "Removed with the owner, project, checkpoint, thread or turn"
+    },
+    "turn_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_delete_messages. Resolved and verified against the owner and checkpoint before the deletion is saved.",
+      "mcpPath": "Owner transcript visibility metadata. Tutor connector handoffs retain their turn records.",
+      "exportPolicy": "Included in the authenticated owner snapshot through lemma_export_private.additional_tables",
+      "deletionPolicy": "Removed with the owner, project, checkpoint, thread or turn"
+    },
+    "kind": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_delete_messages. Validated as question, reply or followup by tutor_delete_messages.",
+      "mcpPath": "Owner transcript visibility metadata. Tutor connector handoffs retain their turn records.",
+      "exportPolicy": "Included in the authenticated owner snapshot through lemma_export_private.additional_tables",
+      "deletionPolicy": "Removed with the owner, project, checkpoint, thread or turn"
+    },
+    "message_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_delete_messages. The selected question, tutor reply or follow-up ID, verified within the same owner thread.",
+      "mcpPath": "Owner transcript visibility metadata. Tutor connector handoffs retain their turn records.",
+      "exportPolicy": "Included in the authenticated owner snapshot through lemma_export_private.additional_tables",
+      "deletionPolicy": "Removed with the owner, project, checkpoint, thread or turn"
+    }
+  }
+}
