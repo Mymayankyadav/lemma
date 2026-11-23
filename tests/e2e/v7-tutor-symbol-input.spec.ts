@@ -1,6 +1,7 @@
 import {expect,test} from '@playwright/test';
 
-const prefix='/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch#';
+// N227 (Owner): with the scratch pad on, the strip's pencil opens Scratch; Draw symbol (Detexify) is the plain answer's.
+const prefix='/lemma/?demo=1&flags=v7Shell,v6Shell,-tutorScratch#';
 const tutor=prefix+'/p/real-analysis/cp/CP4/tutor';
 
 for(const [query,name,glyph] of [['infinty','Infinity','∞'],['upside-down A','For all','∀']]){

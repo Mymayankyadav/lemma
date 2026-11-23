@@ -2,7 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import manifest from '../../public/models/tutor-symbols/detypify-0.3.0-lemma-v1/manifest.json' with { type: 'json' };
 
-const base = '/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch#';
+// N227 (Owner): with the scratch pad on, the strip's pencil opens Scratch; Draw symbol (Detexify) is the plain answer's.
+const base = '/lemma/?demo=1&flags=v7Shell,v6Shell,-tutorScratch#';
 const tutorUrl = `${base}/p/real-analysis/cp/CP4/tutor`;
 const modelPath = `/lemma/models/tutor-symbols/${manifest.assetSetVersion}`;
 const runtimeFiles = Object.values(manifest.files).map(file => `${modelPath}/${file.path}`).sort();

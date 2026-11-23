@@ -88,7 +88,8 @@ test('the strip keeps Gboard\'s frame, an icon at each edge and three equal slot
   await decoderReady();
   const strip = page.locator('.kb .strip');
   const stripBox = (await strip.boundingBox())!;
-  const [draw, equation] = await Promise.all(['Draw symbol', 'Equation mode'].map(name =>
+  // N227: with the scratch pad on, the left edge's pencil is Scratch (it opened Draw symbol before).
+  const [draw, equation] = await Promise.all(['Scratch', 'Equation mode'].map(name =>
     keyboard.getByRole('button', {name, exact: true}).boundingBox()));
   expect(draw!.width).toBeCloseTo(equation!.width, 0);
   expect(draw!.x - stripBox.x).toBeLessThan(10);

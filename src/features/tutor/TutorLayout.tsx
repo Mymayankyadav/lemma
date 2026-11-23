@@ -22,9 +22,11 @@ type Props = {
   overview?: boolean; offline?: boolean; onOverview?: () => void; onQuestion?: () => void;
   onCloseSession?: () => void; onConnection?: () => void; onContext?: () => void;
   listenerSeenAt?:string|null; claimExpiresAt?:string; resumePrompt?:string;
+  /** N227: the title bar and session progress have stepped aside so more of the chat shows (useAutoHideHeader). */
+  headerHidden?: boolean;
 };
 
-export function TutorLayout({page, sequence, children, overview, offline, onOverview, onQuestion, onCloseSession, onConnection, onContext, listenerSeenAt, claimExpiresAt, resumePrompt}: Props) {
+export function TutorLayout({page, sequence, children, overview, offline, onOverview, onQuestion, onCloseSession, onConnection, onContext, listenerSeenAt, claimExpiresAt, resumePrompt, headerHidden = false}: Props) {
   const [panel, setPanel] = useState<'session' | 'plan' | 'timer' | 'checks' | 'practice'>();
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const {project, detail} = page, path = '/p/' + encodeURIComponent(project.project.slug);
@@ -57,13 +59,13 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
     setPanel(undefined);
     action();
   };
-  return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject}>
-    <header className="tutor-header">
+  return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject} data-header-hidden={headerHidden || undefined}>
+    <header className="tutor-header" inert={headerHidden}>
       <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
       <div className="tutor-header-title"><strong>{detail.view.title}</strong><TutorPresence presence={presence}/></div>
       <IconButton label="Session actions" onClick={() => setPanel('session')} aria-haspopup="dialog" data-v7-search-opener=""><Ellipsis aria-hidden="true"/></IconButton>
     </header>
-    {!overview&&<div className="tutor-session-progress" aria-label="Session parts">
+    {!overview&&<div className="tutor-session-progress" aria-label="Session parts" inert={headerHidden}>
       {['Checks','Learn','Practice','Close'].map((part,index)=><span key={part} aria-label={part} data-reached={index<2||undefined}/>)}
     </div>}
     <h1 className="v7-sr-only">{project.project.title} · {detail.view.code} · {detail.view.title}{offline && ' · Offline'}</h1>

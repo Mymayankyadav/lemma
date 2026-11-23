@@ -417,3 +417,17 @@
  color: var(--v7-role-selection-fg); font: 600 var(--v7-type-caption)/1 var(--v7-sans);}
 .lemma-tutor .composer-pill button:active {background: var(--v7-role-selection-subtle);}
 /* N227: the row under a reply: icon actions and the tutor's suggestions as small chips, in caption type. */
+
+/* N227 (Owner: "making more and more chat visible is important without eating the precious space"): the title bar,
+   session progress and On the table fold away while the learner reads or writes (useAutoHideHeader.ts). */
+.lemma-tutor :is(.tutor-header,.tutor-session-progress,.tutor-pinned) {
+ transition:max-height .22s var(--v7-ease-standard),min-height .22s var(--v7-ease-standard),margin .22s var(--v7-ease-standard),padding .22s var(--v7-ease-standard),opacity .16s var(--v7-ease-standard),visibility 0s;
+ max-height:96px;
+}
+.lemma-tutor[data-header-hidden] :is(.tutor-header,.tutor-session-progress,.tutor-pinned) {
+ max-height:0;min-height:0;margin-block:0;padding-block:0;opacity:0;overflow:hidden;pointer-events:none;
+ visibility:hidden;transition-delay:0s,0s,0s,0s,0s,.22s;
+}
+@media (prefers-reduced-motion:reduce) {
+ .lemma-tutor :is(.tutor-header,.tutor-session-progress,.tutor-pinned) {transition:none;}
+}
