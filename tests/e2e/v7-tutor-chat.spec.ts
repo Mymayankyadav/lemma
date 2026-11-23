@@ -373,7 +373,9 @@ test('a signed-in learner can retry connector delivery, receive the next questio
  expect(starts).toHaveLength(1)
  await connection.getByRole('button',{name:'Close',exact:true}).click()
  await answer(page).fill(secondAnswer)
- await expect(send(page)).toBeDisabled()
+ // N228 (Owner: "allow posting of messages even when tutor is not"): Send stays on while the question waits; a message
+ // then joins the waiting question (tests/e2e/v7-tutor-followups.spec.ts). Here it is left in the box and sent after the reply.
+ await expect(send(page)).toBeEnabled()
  replyAvailable=true
  await expect(transcript(page).getByRole('article',{name:'Tutor reply'})).toContainText(tutorQuestion,{timeout:10000})
  await expect(transcript(page).getByText(tutorQuestion,{exact:true})).toBeInViewport()
