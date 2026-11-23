@@ -244,8 +244,9 @@
 :where(html[data-v7]) .v7-atlas-sheet-meta {row-gap:var(--v7-space-2);}
 
 /* N227: the typed-links key in the Layers sheet: each kind's colour and dash, and its count. */
+:where(html[data-v7]) .v7-atlas-typed-key {grid-template-columns:minmax(0,1fr);gap:var(--v7-space-1);}
 :where(html[data-v7]) .v7-atlas-typed-key li {display:flex;align-items:center;gap:var(--v7-space-2);}
-:where(html[data-v7]) .v7-atlas-typed-key small {margin-inline-start:auto;color:var(--v7-role-text-secondary);font-variant-numeric:tabular-nums;}
+:where(html[data-v7]) .v7-atlas-typed-key small {margin-inline-start:auto;font-size:var(--v7-type-caption);color:var(--v7-role-text-secondary);font-variant-numeric:tabular-nums;}
 :where(html[data-v7]) .v7-atlas-typed-mark {flex:none;width:28px;height:12px;}
 :where(html[data-v7]) .v7-atlas-typed-mark path {fill:none;stroke-width:2.25;stroke-linecap:round;}
 :where(html[data-v7]) .v7-atlas-typed-proposed {color:var(--v7-role-text-secondary);font-size:var(--v7-type-caption);}

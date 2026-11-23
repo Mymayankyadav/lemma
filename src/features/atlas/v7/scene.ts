@@ -227,7 +227,7 @@ export class AtlasScene{
    const ux=(ex-sx)/length,uy=(ey-sy)/length,bend=Math.min(40,length*.18);
    ctx.globalAlpha=(link.proposed?.55:.95)*(dimmed&&!active?.5:1);
    ctx.strokeStyle=palette.kinds?.[link.kind]||palette.selection;
-   ctx.lineWidth=(link.kind==='equivalent'?2.25:1.75)*(active?1.3:1);
+   ctx.lineWidth=(link.kind==='equivalent'?2.75:2.25)*(active?1.3:1);
    ctx.setLineDash(style.dash as number[]);
    ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo((sx+ex)/2-uy*bend,(sy+ey)/2+ux*bend,ex,ey);ctx.stroke();
   }

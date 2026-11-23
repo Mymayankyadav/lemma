@@ -251,6 +251,8 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
  const result=dialog.getByRole('article',{name:'Imported reply'})
  await expect(result.getByRole('heading',{name:'Imported by you'})).toBeVisible()
  // N227: Make a card is an icon under the reply; its fields are in a sheet.
+ await expect(result.getByRole('group',{name:'Reply actions'}).getByRole('button').nth(0)).toHaveAccessibleName('Copy reply')
+ await expect(result.getByRole('group',{name:'Reply actions'}).getByRole('button').nth(3)).toHaveAccessibleName('Make a card')
  await result.getByRole('button',{name:'Make a card',exact:true}).click()
  const cardSheet=page.getByRole('dialog',{name:'Make a card'})
  await cardSheet.getByLabel('Front').fill('Is the converse always true?')

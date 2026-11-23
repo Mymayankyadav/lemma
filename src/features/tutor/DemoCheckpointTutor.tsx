@@ -22,6 +22,8 @@ import {MathText} from '../../ui/MathText'
 import {chatLink,studyPrompt} from '../../lib/chat'
 import {TutorChat,type SendOptions} from './TutorChat'
 import type {TutorPageContext} from './TutorLayout'
+import {ReplyActions} from './ReplyActions'
+import './replyActions.css'
 
 type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
 type Handoff = {text:string;requestId:string}
@@ -448,9 +450,9 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
             <p style={{whiteSpace:'pre-wrap'}}>{selection.excerpt}</p></li>
         })}</ul>
       </Disclosure>}
-      {/* N227 (Owner): under a reply, one quiet row for what belongs to this chat: Make a card as an icon, and what the
-          tutor suggested (a card, a change) as small chips. The row is where chat-specific things go later. */}
-      {(turn.finalReply.suggestions.length>0||(session?.api.proposeCard&&!recoveryOnly))&&<div className="tutor-reply-actions" role="group" aria-label="Reply actions">
+      {/* N227 (Owner): under a reply, one quiet row of icons for this chat: Copy, Good and Bad reply, Make a card, then
+          what the tutor suggested (a card, a change) as small chips. The row is where chat-specific things go later. */}
+      <ReplyActions id={turn.id} body={turn.finalReply.body}>
         {session?.api.proposeCard&&!recoveryOnly&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
         {turn.finalReply.suggestions.map(suggestion=><span key={suggestion.intentId} className="tutor-reply-chip" data-status={suggestion.status}>
           <span className="tutor-reply-chip-text">{suggestion.summary}</span>
@@ -458,7 +460,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
             ?<Link to={suggestion.kind==='card'||suggestion.kind==='card_edit'?'/proposals?card='+encodeURIComponent(suggestion.proposalId):'/proposals/'+encodeURIComponent(suggestion.proposalId)}>Review proposal</Link>
             :<small>{suggestion.status}</small>)}
         </span>)}
-      </div>}
+      </ReplyActions>
       {live&&!!scope.linkedSessions?.length&&<Disclosure label="Linked study sessions">
         <p>Open the session to record your own evidence or summary.</p>
         <ul>{scope.linkedSessions.map(study=><li key={study.number}><Link to={'/s/'+encodeURIComponent(scope.pathId)+'/'+study.number}>
