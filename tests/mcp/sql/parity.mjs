@@ -1928,9 +1928,12 @@ try{
   await atlasStep('atlas_links','approve',{target:{id:A(1)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(1))())==='approved');
   await atlasStep('atlas_links','reject',{target:{id:A(2)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(2))())==='rejected');
   // N224: command-only pending Atlas link through MCP (not owner autoapproval).
-  await role('service_role');
+  await role(null);
   const versions=await q('select id,version from public.concepts where id=$1 or id=$2 order by id',[n169Concept,n170Concept2]);
   const vm=new Map(versions.map(r=>[r.id,r.version]));
+  assert.ok(Number.isInteger(vm.get(n169Concept))&&Number.isInteger(vm.get(n170Concept2)),
+   'N225 owner concept version inventory must not be read under service-role RLS');
+  await role('service_role');
   const typedPatch={from_id:n169Concept,to_id:n170Concept2,kind:'equivalent',
    confidence:0.94,rationale:'The same mathematical concept',
    from_version:vm.get(n169Concept),to_version:vm.get(n170Concept2)};
@@ -1941,8 +1944,10 @@ try{
    'stale concept version accepted for proposed link: '+JSON.stringify(staleProposal));
   assert.match(JSON.stringify(staleProposal),/version conflict/i,
    'stale version must be a specific conflict, not an unclassified error');
+  await role(null);
   assert.equal((await q("select count(*)::int n from public.atlas_links where user_id=$1 and kind='equivalent'",[owner]))[0].n,0,
    'stale proposal wrote an Atlas relationship before version validation');
+  await role('service_role');
   const typedRequest=command('atlas_link_proposals','create',{patch:typedPatch});
   const typedReceipt=status(await mcp(typedRequest),'atlas_link_proposals','create');
   const typedId=typedReceipt.changed[0].id;
