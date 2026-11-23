@@ -1949,7 +1949,7 @@ try{
   assert.notEqual(staleProposal.status,'ok',
    'stale concept version accepted for proposed link: '+JSON.stringify(staleProposal));
   assert.match(JSON.stringify(staleProposal),/version conflict/i,
-   'stale version must be a specific conflict, not an unclassified error');
+   'stale version must be a specific conflict, not an unclassified error: '+JSON.stringify(staleProposal));
   await role(null);
   assert.equal((await q("select count(*)::int n from public.atlas_links where user_id=$1 and kind='equivalent'",[owner]))[0].n,0,
    'stale proposal wrote an Atlas relationship before version validation');
