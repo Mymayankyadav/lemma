@@ -52,10 +52,10 @@ const editPreview = (page: Page) => page.locator('[data-writing-aid-edit]');
 const ghostPreview = (page: Page) => page.locator('[data-writing-aid-ghost]');
 const undoButton = (page: Page) => page.getByRole('button', {name: 'Undo suggestion', exact: true});
 const floating = (page: Page) => page.locator('.writing-aid-floating');
-// N221 (Owner): the strip's right end is Equation mode now; Refresh suggestions is one of the Answer actions.
+// N221 (Owner): the strip's right end is Equation mode now; Refresh suggestions is in Session actions.
 const refreshSuggestions = async (page: Page) => {
-  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
-  await page.getByRole('dialog', {name: 'Answer actions', exact: true}).getByRole('button', {name: 'Refresh suggestions', exact: true}).click();
+  await page.getByRole('button', {name: 'Session actions', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Study session', exact: true}).getByRole('button', {name: 'Refresh suggestions', exact: true}).click();
 };
 const dismissButton = (page: Page) => page.getByRole('button', {name: 'Dismiss suggestion', exact: true});
 const ghostClipping = (page: Page) => page.locator('.writing-editor-mirror').evaluate(node => {
@@ -77,8 +77,8 @@ async function storedModel(page: Page) {
 }
 
 async function useFasterTyping(page: Page) {
-  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
-  await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+  await page.getByRole('button', {name: 'Session actions', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Study session', exact: true})
     .getByRole('button', {name: 'Writing assistance', exact: true}).click();
   await page.getByRole('dialog', {name: 'Writing assistance', exact: true})
     .getByRole('radio', {name: /^Faster typing\b/}).check();
@@ -219,8 +219,8 @@ test('learned writing preferences can be paused and forgotten without changing t
   await expect.poll(async () => (await offeredWords(page)).length).toBe(3);
   await refreshSuggestions(page);
   await expect.poll(async () => Object.keys((await storedModel(page))?.model.weights ?? {}).length).toBeGreaterThan(0);
-  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
-  await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+  await page.getByRole('button', {name: 'Session actions', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Study session', exact: true})
     .getByRole('button', {name: 'Writing assistance', exact: true}).click();
   const settings = page.getByRole('dialog', {name: 'Writing assistance', exact: true});
   const personalize = settings.getByRole('switch', {name: 'Personalize suggestions', exact: true});
@@ -235,8 +235,8 @@ test('learned writing preferences can be paused and forgotten without changing t
   await expect(answer).toHaveJSProperty('textContent', 'I think the re');
   await page.reload();
   await expect(answer).toHaveJSProperty('textContent', 'I think the re');
-  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
-  await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+  await page.getByRole('button', {name: 'Session actions', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Study session', exact: true})
     .getByRole('button', {name: 'Writing assistance', exact: true}).click();
   await expect(personalize).not.toBeChecked();
   await personalize.click();
@@ -490,8 +490,8 @@ test('the writing switches and full Off setting persist while manual typing and 
   const answer = await openAnswer(page);
   await typeDraft(page, answer, 'We wrote teh');
   await expect(editPreview(page)).toBeVisible();
-  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
-  await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+  await page.getByRole('button', {name: 'Session actions', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Study session', exact: true})
     .getByRole('button', {name: 'Writing assistance', exact: true}).click();
   const settings = page.getByRole('dialog', {name: 'Writing assistance', exact: true});
   const spelling = settings.getByRole('switch', {name: 'Spelling corrections', exact: true});
@@ -504,8 +504,8 @@ test('the writing switches and full Off setting persist while manual typing and 
   await typeDraft(page, answer, 'Let eps');
   await expect(editPreview(page)).toBeVisible();
 
-  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
-  await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+  await page.getByRole('button', {name: 'Session actions', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Study session', exact: true})
     .getByRole('button', {name: 'Writing assistance', exact: true}).click();
   await settings.getByRole('radio', {name: /^Off\b/}).check();
   await expect(spelling).toBeDisabled();
@@ -518,7 +518,7 @@ test('the writing switches and full Off setting persist while manual typing and 
   await expect(wordStrip(page).locator('button:enabled')).toHaveCount(0);
   await expect(floating(page)).toHaveCount(0);
   await answer.press('Tab');
-  await expect(page.getByRole('button', {name: 'Edit answer', exact: true})).toBeFocused();
+  await expect(page.getByRole('button', {name: 'Keep keyboard open', exact: true})).toBeFocused();
   await page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: 'Space', exact: true}).click();
   await page.getByRole('group', {name: 'Quick math symbols'}).getByRole('button', {name: '∈', exact: true}).click();
   await expect(answer).toHaveJSProperty('textContent', 'Let eps ∈');
@@ -532,8 +532,8 @@ test('Off stops recording typing and retires an unfinished acceptance timer', as
   await typeDraft(page, answer, 'We wrote teh');
   await editPreview(page).click();
   await expect(answer).toHaveJSProperty('textContent', 'We wrote the');
-  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
-  await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+  await page.getByRole('button', {name: 'Session actions', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Study session', exact: true})
     .getByRole('button', {name: 'Writing assistance', exact: true}).click();
   await page.getByRole('dialog', {name: 'Writing assistance', exact: true})
     .getByRole('radio', {name: /^Off\b/}).check();
@@ -610,8 +610,8 @@ test('the default demo textarea supports visible edits, refresh, swipe and Balan
   await undoButton(page).click();
   await expect(answer).toHaveValue('could you restate');
 
-  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
-  await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+  await page.getByRole('button', {name: 'Session actions', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Study session', exact: true})
     .getByRole('button', {name: 'Writing assistance', exact: true}).click();
   const settings = page.getByRole('dialog', {name: 'Writing assistance', exact: true});
   await expect(settings.getByRole('radio', {name: /^Balanced\b/})).toBeChecked();

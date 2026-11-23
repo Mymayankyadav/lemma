@@ -7,16 +7,28 @@ type SavedReply=Omit<CompletedTurn['finalReply'],'suggestions'> & {nextQuestion?
   intentId:string;summary:string;status:string;proposalId?:string;kind?:string
 }[]}
 
-export type SavedTutorTurn=
+export type SavedTutorTurn=(
  | (PendingTurn & {claimExpiresAt?:string})
  | (Omit<PendingTurn,'status'> & {status:'cancelled'})
  | (Omit<CompletedTurn,'finalReply'> & {finalReply:SavedReply})
+) & {questionDeleted?:true;replyDeleted?:true}
 
 export type ConnectorDelivery={turnId:string;grantId:string;expiresAt:string;reference:string}
 
 export type ConnectorSubmission=
  | {kind:'submitted';turnId:string;delivery?:ConnectorDelivery}
  | {kind:'turn-pending'}
+
+export type TutorMessageRef={id:string;kind:'question'|'reply'|'followup'}
+export const tutorMessageKey=({kind,id}:TutorMessageRef)=>kind+':'+id
+export function withTutorMessageDeletions(turns:readonly SavedTutorTurn[],removed:ReadonlySet<string>):readonly SavedTutorTurn[] {
+ if(!removed.size)return turns
+ return turns.map(turn=>{
+  const questionDeleted=turn.questionDeleted||removed.has(tutorMessageKey({kind:'question',id:turn.id}))||undefined
+  const replyDeleted=turn.replyDeleted||(turn.status==='completed'&&removed.has(tutorMessageKey({kind:'reply',id:turn.finalReply.messageId})))||undefined
+  return {...turn,questionDeleted,replyDeleted}
+ })
+}
 
 export type TutorThreadView={
  head:{threadId:string|null;lastSequence:number;pendingTurnId:string|null}
@@ -47,6 +59,7 @@ export type ManualTutor={
  stopGrants?:(turnId:string,version:number)=>Promise<void>
  cancel?:(turnId:string,version:number)=>Promise<void>
  proposeCard?:(turnId:string,version:number,front:string,back:string)=>Promise<void>
+ deleteMessages?:(messages:readonly TutorMessageRef[])=>Promise<void>
  /** N228: the tutor's quick questionnaires on this thread, and the learner's answers to them. */
  questionnaires?:TutorQuestionnaireApi
  /** N228: more messages on the turn that is waiting for the tutor. */

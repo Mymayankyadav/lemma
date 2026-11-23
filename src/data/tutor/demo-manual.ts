@@ -1,4 +1,5 @@
 import { getDemoProfile, getMode } from '../mode'
+import {tutorMessageKey,withTutorMessageDeletions,type TutorMessageRef} from './manual-api'
 import {
   finalizeTutorTurn, previewManualTutorImport, submitTutorTurn,
   type TutorComposerDraft, type TutorReplyDraft, type TutorThreadHead, type TutorTurn,
@@ -12,6 +13,7 @@ type DemoThread = Readonly<{
   head: TutorThreadHead
   turns: readonly TutorTurn[]
   recoveredDrafts: readonly TutorReplyDraft[]
+  deletedMessages?: readonly string[]
 }>
 
 function assertDemo() {
@@ -75,7 +77,18 @@ export async function openDemoManualTutor(scope: DemoCheckpointScope) {
 
   return {
     close: () => db.close(),
-    resume: () => transact('readonly', thread => ({ result: thread })),
+    resume: () => transact('readonly', thread => ({ result: {
+      ...thread, turns: withTutorMessageDeletions(thread.turns,new Set(thread.deletedMessages)),
+    } })),
+    deleteMessages: (messages: readonly TutorMessageRef[]) => transact('readwrite', thread => {
+      const valid = messages.every(message => thread.turns.some(turn =>
+        message.kind === 'question' ? turn.id === message.id :
+          message.kind === 'reply' && turn.status === 'completed' && turn.finalReply.messageId === message.id,
+      ))
+      if (!valid) throw new Error('One of the selected messages is unavailable.')
+      const deletedMessages = [...new Set([...(thread.deletedMessages ?? []), ...messages.map(tutorMessageKey)])]
+      return { result: undefined, next: { ...thread, deletedMessages } }
+    }),
     submit: (turnId: string, draft: TutorComposerDraft) =>
       transact<ReturnType<typeof submitTutorTurn> | { kind: 'duplicate-turn' }>('readwrite', thread => {
         if (thread.turns.some(turn => turn.id === turnId)) return { result: { kind: 'duplicate-turn' } }

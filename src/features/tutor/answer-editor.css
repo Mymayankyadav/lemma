@@ -24,10 +24,6 @@
   pointer-events: none;
 }
 .lemma-tutor .tutor-answer-editor:focus-visible {outline:none;box-shadow:none;}
-.lemma-tutor .field:has(:is(textarea,.tutor-answer-editor):focus-visible) {
-  outline:var(--v7-focus-width) solid var(--v7-role-focus-ring);
-  outline-offset:var(--v7-focus-gap);
-}
 .lemma-tutor .tutor-answer-chip {
   display: inline-flex;
   max-width: 100%;

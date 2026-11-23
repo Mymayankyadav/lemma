@@ -26,8 +26,8 @@ async function openComposer(page:Page) {
 }
 
 async function undoTyping(page:Page) {
- await tutor(page).getByRole('button',{name:'Edit answer',exact:true}).click()
- await tutor(page).getByRole('dialog',{name:'Answer actions',exact:true}).getByRole('button',{name:'Undo typing',exact:true}).click()
+ await tutor(page).getByRole('button',{name:'Session actions',exact:true}).click()
+ await tutor(page).getByRole('dialog',{name:'Study session',exact:true}).getByRole('button',{name:'Undo typing',exact:true}).click()
 }
 
 async function sessionActions(page:Page) {
@@ -42,6 +42,31 @@ async function openConnection(page:Page) {
  await actions.getByRole('button',{name:'Connection',exact:true}).click()
  return page.getByRole('dialog',{name:'Connection',exact:true})
 }
+
+test('numbered Markdown answers show compact markers beside inline maths',async({page})=>{
+ await page.goto(path('real-analysis',true,'/cp/CP4/tutor'))
+ await openComposer(page)
+ await answer(page).fill('1. $q^{-1}(U)$ is open.\n\n2. Check whether the converse holds for all continuous surjections.')
+ await send(page).click()
+ const list=transcript(page).getByLabel('Your saved answer').getByRole('list')
+ const items=list.getByRole('listitem')
+ await expect(items).toHaveCount(2)
+ await expect(items.first().locator('.katex')).toBeVisible()
+ const metrics=await list.evaluate(node=>{
+  const first=node.children[0],second=node.children[1]
+  const css=getComputedStyle(node),paragraph=first.querySelector('p')!
+  return {markers:css.listStyleType,gutter:parseFloat(css.paddingInlineStart),font:parseFloat(css.fontSize),
+    gap:second.getBoundingClientRect().top-first.getBoundingClientRect().bottom,
+    trailing:node.getBoundingClientRect().bottom-second.getBoundingClientRect().bottom,
+    paragraphMargin:getComputedStyle(paragraph).marginBlockEnd}
+ })
+ expect(metrics.markers).toBe('decimal')
+ expect(metrics.gutter).toBeGreaterThan(metrics.font)
+ expect(metrics.gutter).toBeLessThan(metrics.font*1.5)
+ expect(metrics.gap).toBeLessThan(6)
+ expect(metrics.trailing).toBeLessThan(2)
+ expect(metrics.paragraphMargin).toBe('0px')
+})
 
 test('Continue with tutor opens the current checkpoint and keeps demo turns after reloading',async({page})=>{
  await continueFromPath(page,'real-analysis')
@@ -67,6 +92,60 @@ test('Continue with tutor opens the current checkpoint and keeps demo turns afte
  await send(page).click()
  await expect(transcript(page)).toContainText('Take an arbitrary open cover of the interval.')
  await expect(transcript(page).getByRole('article',{name:'Imported reply'})).toHaveCount(1)
+})
+
+test('long-press selects tutor and learner messages for copy and durable deletion without a gap',async({page})=>{
+ await page.addInitScript(()=>Object.defineProperty(navigator,'clipboard',{value:{writeText:async(value:string)=>{
+  sessionStorage.setItem('last-tutor-copy',value)
+ }}}))
+ await page.goto(path('real-analysis',true,'/cp/CP4/tutor'))
+ await openComposer(page)
+ await answer(page).fill(firstAnswer)
+ await send(page).click()
+ const dialog=await openConnection(page)
+ await dialog.getByLabel('Paste reply').fill(nextQuestion)
+ await dialog.getByRole('button',{name:'Preview import'}).click()
+ await dialog.getByRole('button',{name:'Confirm import'}).click()
+ await dialog.getByRole('button',{name:'Close',exact:true}).click()
+ const secondAnswer='I choose a finite subcover.'
+ await answer(page).fill(secondAnswer)
+ await send(page).click()
+ const log=transcript(page)
+ const first=log.locator('[data-tutor-message^="question:"]').first()
+ const second=log.locator('[data-tutor-message^="question:"]').last()
+ const reply=log.locator('[data-tutor-message^="reply:"]')
+ const bar=tutor(page).getByRole('group',{name:'Selected messages'})
+ await expect(second).toHaveText(secondAnswer)
+ await reply.hover()
+ await page.mouse.down()
+ await expect(bar).toContainText('1 selected')
+ await page.mouse.up()
+ await expect(reply).toHaveAttribute('aria-checked','true')
+ await second.click()
+ await expect(bar).toContainText('2 selected')
+ await expect(log.locator('.tutor-details')).toBeHidden()
+ await expect.poll(async()=>{
+  const [top,middle,bottom]=await Promise.all([first.boundingBox(),reply.boundingBox(),second.boundingBox()])
+  return top&&middle&&bottom?[Math.round(middle.y-top.y-top.height),Math.round(bottom.y-middle.y-middle.height)]:[]
+ }).toEqual([16,16])
+ await bar.getByRole('button',{name:'Copy',exact:true}).click()
+ expect(await page.evaluate(()=>sessionStorage.getItem('last-tutor-copy'))).toBe(nextQuestion+'\n\n'+secondAnswer)
+ await expect(bar).toBeHidden()
+ await reply.press('Space')
+ await second.press('Space')
+ await bar.getByRole('button',{name:'Delete',exact:true}).click()
+ const confirm=page.getByRole('dialog',{name:'Delete selected messages?'})
+ await confirm.getByRole('button',{name:'Cancel'}).click()
+ await expect(reply).toBeVisible()
+ await bar.getByRole('button',{name:'Delete',exact:true}).click()
+ await confirm.getByRole('button',{name:'Delete',exact:true}).click()
+ await expect(log).toContainText(firstAnswer)
+ await expect(log).not.toContainText(nextQuestion)
+ await expect(log).not.toContainText(secondAnswer)
+ await page.reload({waitUntil:'domcontentloaded'})
+ await expect(log).toContainText(firstAnswer)
+ await expect(log).not.toContainText(nextQuestion)
+ await expect(log).not.toContainText(secondAnswer)
 })
 
 test('Tutor hides main navigation and keeps conversation and draft through Back, Search and Appearance',async({page})=>{
@@ -153,8 +232,7 @@ test('demo chat warns when context or an excerpt cannot be saved with an already
  },[draftKey+':context',draftKey+':attached-local'])
  const warning=/draft.*may be lost on reload/i
  await expect(tutor(page).getByRole('alert').filter({hasText:warning})).toHaveCount(0)
- await tutor(page).getByRole('button',{name:'Edit answer',exact:true}).click()
- await page.getByRole('dialog',{name:'Answer actions',exact:true}).getByRole('button',{name:'Context',exact:true}).click()
+ await tutor(page).getByRole('button',{name:'Attach context',exact:true}).click()
  const context=page.getByRole('dialog',{name:'Context for your tutor'})
  const alert=context.getByRole('alert').filter({hasText:warning})
  const objective=context.getByRole('checkbox',{name:'Include this checkpoint’s objective'})

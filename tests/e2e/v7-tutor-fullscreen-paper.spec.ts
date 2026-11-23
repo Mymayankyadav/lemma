@@ -11,6 +11,43 @@ const surfaces = [
 ];
 
 for (const surface of surfaces) {
+  test(`${surface.name}: keeps controls inside the insets as Android rotates`, async ({page}) => {
+    await page.setViewportSize({width: 393, height: 873});
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded',()=>{
+        document.documentElement.dataset.nativeApp='';
+        document.documentElement.style.setProperty('--safe-area-inset-top', '34px');
+        document.documentElement.style.setProperty('--safe-area-inset-left', '26px');
+        document.documentElement.style.setProperty('--safe-area-inset-right', '20px');
+      },{once:true});
+    });
+    await page.goto(url);
+    await page.getByRole('button', {name: 'Write a question'}).click();
+    await page.getByRole('textbox', {name: 'Your answer', exact: true}).focus();
+    await surface.open(page);
+    await page.getByRole('button', {name: 'Full screen', exact: true}).click();
+    const frame=page.getByRole('dialog',{name:surface.frame});
+    await expect(frame).toBeVisible();
+    await expect(frame.getByRole('button',{name:'Landscape',exact:true})).toHaveCount(0);
+    const exit=frame.getByRole('button',{name:'Exit full screen',exact:true});
+    expect((await exit.boundingBox())!.y).toBeGreaterThanOrEqual(34);
+    const canvas=frame.locator('svg[data-ink-canvas]');
+    const before=(await frame.locator('.tutor-paper-full').boundingBox())!;
+    await page.mouse.move(120,250);
+    await page.mouse.down();
+    await page.mouse.move(182,282,{steps:5});
+    await page.mouse.up();
+    const saved=await canvas.locator('path').getAttribute('d');
+    await page.setViewportSize({width:844,height:390});
+    const after=(await frame.locator('.tutor-paper-full').boundingBox())!;
+    expect(before.width).toBeLessThan(before.height);
+    expect(after.width).toBeGreaterThan(after.height);
+    expect(after.x).toBeGreaterThanOrEqual(26);
+    expect(after.x+after.width).toBeLessThanOrEqual(824);
+    await expect(canvas.locator('path')).toHaveAttribute('d',saved!);
+    await exit.click();
+    await expect(frame).toHaveCount(0);
+  });
   for (const size of [{width: 393, height: 873}, {width: 844, height: 390}]) {
     test(`${surface.name} fills the screen at ${size.width}×${size.height}, keeps its drawing both ways, and Escape leaves`, async ({page}) => {
       await page.setViewportSize(size);

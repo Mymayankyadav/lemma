@@ -3,7 +3,11 @@
   --subject: var(--v7-role-subject-topology);
   --subject-subtle: var(--v7-role-subject-topology-subtle);
   --cell: 54px;
+  --tutor-safe-top: max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));
+  --tutor-composer-tool-size: calc(var(--v7-type-body) * 1.375);
+  --tutor-composer-send-size: calc(var(--v7-type-body) * 1.125);
 }
+:root[data-native-app] .lemma-tutor {--tutor-safe-top:max(24px,env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));}
 .lemma-tutor .kb {
   --kb: light-dark(
     color-mix(in srgb, var(--v7-role-surface-muted) 75%, var(--v7-role-surface-muted-hover)),
@@ -29,7 +33,10 @@
   flex-direction: column;
   height: var(--tutor-visual-height, 100dvh);
   max-width: min(100%, calc(720px + 2 * var(--v7-page-margin)));
-  padding: 0 var(--v7-page-margin);
+  padding:0 var(--v7-page-margin);
+  padding-top:var(--tutor-safe-top);
+  padding-left:max(var(--v7-page-margin),env(safe-area-inset-left,0px),var(--safe-area-inset-left,0px));
+  padding-right:max(var(--v7-page-margin),env(safe-area-inset-right,0px),var(--safe-area-inset-right,0px));
 }
 /* The connectivity notice is in flow and can wrap. Allocate the remaining
    viewport height to Tutor without assuming a fixed notice height. */
@@ -52,7 +59,6 @@
 .lemma-tutor .msg{overflow-wrap:anywhere;animation:tutor-rise .28s var(--v7-ease-standard) both}
 @keyframes tutor-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .lemma-tutor .msg p{margin:0 0 12px} .lemma-tutor .msg p:last-child{margin-bottom:0}
-.lemma-tutor .msg ul,.lemma-tutor .msg ol{margin:0 0 12px;padding-left:22px} .lemma-tutor .msg li{margin:4px 0}
 .lemma-tutor .msg code{font:400 var(--v7-type-supporting) ui-monospace,monospace}
 .lemma-tutor .msg.a b{font-weight:600;color:var(--v7-role-text-primary)}
 .lemma-tutor .msg.u{align-self:flex-end;max-width:84%;background:var(--v7-role-selection-subtle);color:var(--v7-role-text-primary);padding:10px 15px;border-radius:var(--v7-radius-3) var(--v7-radius-3) var(--v7-radius-1) var(--v7-radius-3);font:400 var(--v7-type-body)/1.5 var(--v7-sans)}
@@ -61,9 +67,7 @@
 .lemma-tutor .note.strong{color:var(--v7-role-text-secondary)}
 .lemma-tutor .note button{border:0;background:var(--v7-role-surface-muted);border-radius:9999px;padding:6px 12px;font:600 var(--v7-type-caption) var(--v7-sans);letter-spacing:0;text-transform:none;color:var(--v7-role-text-primary)}
 /* ── composer ── */
-.lemma-tutor .composer{flex:none;padding:6px 0 8px}
-.lemma-tutor .field{display:flex;align-items:center;gap:6px;min-height:56px;background:var(--v7-role-surface-raised);border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-4);padding:4px 6px 4px 18px;box-shadow:var(--v7-shadow-1);transition:border-color .15s}
-.lemma-tutor .field:focus-within{border-color:var(--v7-role-action-bg)}
+.lemma-tutor .composer{flex:none;padding:4px 0 6px}
 .lemma-tutor .composer textarea{flex:1;min-width:0;height:44px;max-height:120px;border:0;background:transparent;padding:11px 0;color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/1.4 var(--v7-sans);resize:none;caret-color:var(--v7-role-action-bg);overflow-y:auto;outline:none}
 .lemma-tutor .composer textarea:focus-visible{outline:none;box-shadow:none}
 .lemma-tutor textarea::placeholder{color:var(--v7-role-text-disabled)}
@@ -210,6 +214,15 @@
 .lemma-tutor .msg.a .bd {white-space: normal;}
 .lemma-tutor .msg.u .bd {white-space: normal;}
 .lemma-tutor .msg.u .bd p {white-space: pre-wrap;}
+/* The app's reset removes list markers. Restore them and use a compact gutter within chat bubbles. */
+.lemma-tutor .msg .lemma-math ol {list-style: decimal outside;}
+.lemma-tutor .msg .lemma-math ul {list-style: disc outside;}
+.lemma-tutor .msg .lemma-math :is(ol,ul) {margin:0 0 .5em; padding-inline-start:1.35em;}
+.lemma-tutor .msg .lemma-math :is(ol,ul):last-child {margin-block-end:0;}
+.lemma-tutor .msg .lemma-math li {margin:0;}
+.lemma-tutor .msg .lemma-math li + li {margin-block-start:.2em;}
+.lemma-tutor .msg .lemma-math li > p {margin:0 0 .3em; white-space:normal;}
+.lemma-tutor .msg .lemma-math li > p:last-child {margin-block-end:0;}
 .lemma-tutor .keyboard-composer {display:flex; flex-direction:column; flex:none; min-height:0;padding-bottom:var(--v7-safe-bottom,env(safe-area-inset-bottom));container:tutor-composer / inline-size;}
 .lemma-tutor .composer .send {padding: 0;}
 .lemma-tutor .composer-preview {max-height: 100px; overflow: auto; padding: 0 16px 8px;}
@@ -316,7 +329,6 @@
 .lemma-tutor .tbar .v7-button > span:first-child {display:flex;flex-direction:column;justify-content:center;align-items:center;gap:var(--v7-space-1);font-size:var(--v7-type-caption);line-height:1.2;white-space:nowrap;}
 .lemma-tutor .tbar .v7-button svg {width:16px;height:16px;}
 .lemma-tutor .tbar .v7-button[aria-pressed="true"] {color:var(--v7-role-selection-fg);background:var(--v7-role-selection-subtle);}
-.lemma-tutor [data-tutor-send]:not(:disabled) {background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
 .lemma-tutor .tutor-ink-tools {
  display:flex;gap:var(--v7-space-1);align-items:center;overflow-x:auto;padding:var(--v7-space-1) 0;margin-bottom:var(--v7-space-1);scrollbar-width:thin;
 }
@@ -357,8 +369,6 @@
   .lemma-tutor .keyboard-composer[data-keyboard="math"] :is(.composer textarea,.tutor-answer-editor) {max-height:44px;}
 }
 
-/* N220 · the header clears the status bar on phones that draw under it. */
-.lemma-tutor .tutor-header {padding-top:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-1));}
 /* N220 · session parts: the second line wraps instead of being cut ("after Lear…"). */
 .lemma-tutor .seg-r {padding:6px;}
 .lemma-tutor .seg-r small {white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;}
@@ -369,24 +379,30 @@
 .lemma-tutor .tutor-session-actions > .v7-button {justify-content:flex-start;min-height:var(--v7-button);padding-inline:var(--v7-space-4);}
 .lemma-tutor .tutor-session-actions > .v7-button > span:first-child {justify-content:flex-start;gap:var(--v7-space-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .lemma-tutor .tutor-session-actions > .v7-button:disabled {opacity:1;background:transparent;color:var(--v7-role-text-disabled);}
-/* N220 · the answer composer reads like a chat app's input: the text on top, its tools and Send on one row beneath. */
-.lemma-tutor .writing-composer-card {border-radius:var(--v7-radius-4);}
+/* The measured icon ink is close to the text height. Keep the glyphs independent of the touch area. */
 .lemma-tutor .writing-composer-card .field {
- display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"editor editor editor editor" "tool more . send";
- align-items:center;gap:2px var(--v7-space-1);min-height:0;padding:var(--v7-space-1) var(--v7-space-2) var(--v7-space-2);
+ display:grid;grid-template-columns:minmax(0,1fr);
+ padding:2px 4px;
 }
-.lemma-tutor .writing-composer-card .field > :is(.writing-editor-wrap,.tutor-answer-editor) {grid-area:editor;padding-inline:var(--v7-space-2);}
-.lemma-tutor .writing-composer-card .field > .v7-icon-button:first-child {grid-area:tool;}
-.lemma-tutor .writing-composer-card .field > .v7-icon-button[aria-label="Edit answer"] {grid-area:more;}
-.lemma-tutor .writing-composer-card .field > [data-tutor-send] {grid-area:send;}
-.lemma-tutor .writing-composer-card .field > .v7-icon-button {width:var(--v7-touch);height:var(--v7-touch);min-width:var(--v7-touch);min-height:var(--v7-touch);padding:0;border-radius:var(--v7-round);}
-.lemma-tutor .writing-composer-card .field > .v7-icon-button:not([data-tutor-send]) {border:1px solid var(--v7-role-border-subtle);color:var(--v7-role-text-secondary);}
-.lemma-tutor .writing-composer-card .field > .v7-icon-button[aria-pressed="true"] {background:var(--v7-role-selection-subtle);border-color:transparent;color:var(--v7-role-selection-fg);}
-.lemma-tutor .writing-composer-card .field > [data-tutor-send]:disabled {background:var(--v7-role-surface-muted);color:var(--v7-role-text-disabled);opacity:1;}
+.lemma-tutor .writing-composer-card .field > :is(.writing-editor-wrap,.tutor-answer-editor) {margin-inline:var(--v7-space-3);}
+.lemma-tutor .tutor-composer-tools {display:flex;flex-wrap:wrap;align-items:center;}
+.lemma-tutor .tutor-composer-photos {display:contents;}
+.lemma-tutor .tutor-composer-tools .v7-icon-button {position:relative;flex:none;inline-size:var(--v7-touch);block-size:var(--v7-touch);padding:0;
+ border:0;border-radius:var(--v7-round);background:transparent;color:var(--v7-role-text-secondary);}
+.lemma-tutor .tutor-composer-tools .v7-icon-button svg {inline-size:var(--tutor-composer-tool-size);block-size:var(--tutor-composer-tool-size);}
+.lemma-tutor .tutor-composer-tools .v7-icon-button:disabled {color:var(--v7-role-text-disabled);}
+.lemma-tutor .tutor-composer-tools .v7-icon-button[aria-pressed="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
+.lemma-tutor .tutor-composer-tools [data-tutor-send] {margin-inline-start:auto;isolation:isolate;color:var(--v7-role-text-on-action);}
+.lemma-tutor .tutor-composer-tools [data-tutor-send]::before {content:"";position:absolute;z-index:-1;inset:5px;border-radius:inherit;background:var(--v7-role-action-bg);}
+.lemma-tutor .tutor-composer-tools [data-tutor-send] svg {inline-size:var(--tutor-composer-send-size);block-size:var(--tutor-composer-send-size);}
+.lemma-tutor .tutor-composer-tools [data-tutor-send]:disabled::before {background:var(--v7-role-surface-muted);}
+.lemma-tutor .tutor-composer-tools [data-unfinished-drawing] {color:var(--v7-role-selection-fg);}
+.lemma-tutor .tutor-composer-tools [data-unfinished-drawing]::after {content:"";position:absolute;inset-block-start:8px;inset-inline-end:7px;
+ width:6px;height:6px;border-radius:50%;background:currentColor;}
 
 /* N221 (Owner report) · the session header is the app's detail header: edge to edge, 52 px, Back and actions at the
    screen's sides and the title centred at body size, instead of a narrower bar with a small title. */
-.lemma-tutor .tutor-header {display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--v7-space-2);min-height:52px;
+.lemma-tutor .tutor-header {display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--v7-space-2);min-height:52px;padding-top:var(--v7-space-1);
  margin-inline:calc(var(--v7-page-margin) * -1);padding-inline:var(--v7-space-2);padding-bottom:var(--v7-space-1);
  border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);background:var(--v7-role-surface-page);}
 .lemma-tutor .tutor-header-title {justify-content:center;gap:var(--v7-space-2);}
@@ -407,27 +423,26 @@
 .tutor-context-label {display: flex; justify-content: space-between; align-items: baseline; font: 500 var(--v7-type-caption)/1.2 var(--v7-sans); color: var(--v7-role-text-secondary);}
 .tutor-context-label small {font-variant-numeric: tabular-nums; color: var(--v7-role-text-tertiary);}
 .tutor-context textarea.v7-field {width: 100%; margin-bottom: var(--v7-space-2);}
-/* N227: an unfinished drawing is a small pill at the answer's top edge, in the kit's caption type, not a line of text. */
-.lemma-tutor .composer-pill {
- align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; margin: 0 16px 6px; padding: 2px 4px 2px 12px;
- border: 1px solid var(--v7-role-border-subtle); border-radius: 9999px; background: var(--v7-role-surface-muted);
- color: var(--v7-role-text-secondary); font: 500 var(--v7-type-caption)/1.2 var(--v7-sans);
-}
-.lemma-tutor .composer-pill button {min-height: 28px; padding: 0 10px; border: 0; border-radius: 9999px; background: transparent;
- color: var(--v7-role-selection-fg); font: 600 var(--v7-type-caption)/1 var(--v7-sans);}
-.lemma-tutor .composer-pill button:active {background: var(--v7-role-selection-subtle);}
-/* N227: the row under a reply: icon actions and the tutor's suggestions as small chips, in caption type. */
-
-/* N227 (Owner: "making more and more chat visible is important without eating the precious space"): the title bar,
-   session progress and On the table fold away while the learner reads or writes (useAutoHideHeader.ts). */
-.lemma-tutor :is(.tutor-header,.tutor-session-progress,.tutor-pinned) {
- transition:max-height .22s var(--v7-ease-standard),min-height .22s var(--v7-ease-standard),margin .22s var(--v7-ease-standard),padding .22s var(--v7-ease-standard),opacity .16s var(--v7-ease-standard),visibility 0s;
- max-height:96px;
-}
 .lemma-tutor[data-header-hidden] :is(.tutor-header,.tutor-session-progress,.tutor-pinned) {
- max-height:0;min-height:0;margin-block:0;padding-block:0;opacity:0;overflow:hidden;pointer-events:none;
- visibility:hidden;transition-delay:0s,0s,0s,0s,0s,.22s;
+ display:none;
 }
-@media (prefers-reduced-motion:reduce) {
- .lemma-tutor :is(.tutor-header,.tutor-session-progress,.tutor-pinned) {transition:none;}
+.lemma-tutor .chat {--tutor-message-gap:16px;gap:var(--tutor-message-gap);}
+.lemma-tutor .turn .ans + .msg.a {margin-block-start:calc(var(--tutor-message-gap) - 8px);}
+.lemma-tutor .chat[data-selecting] .tutor-details,
+.lemma-tutor .keyboard-composer[hidden] {display:none;}
+.lemma-tutor .msg[data-tutor-message]:focus-visible {outline:2px solid var(--v7-role-selection-fg);outline-offset:2px;}
+.lemma-tutor .msg[role="checkbox"] {position:relative;cursor:pointer;user-select:none;}
+.lemma-tutor .msg.a[role="checkbox"] {align-self:flex-end;max-width:calc(100% - 32px);padding:10px 14px;border-radius:var(--v7-radius-3);}
+.lemma-tutor .msg[data-selected] {background:color-mix(in srgb,var(--v7-role-selection-subtle) 78%,var(--v7-role-selection-fg));}
+.lemma-tutor .tutor-message-check {position:absolute;inset-inline-start:-28px;inset-block-start:50%;transform:translateY(-50%);display:grid;place-items:center;
+ inline-size:20px;block-size:20px;border:1px solid var(--v7-role-border-default);border-radius:50%;}
+.lemma-tutor .msg[data-selected] .tutor-message-check {background:var(--v7-role-selection-fg);color:var(--v7-role-surface-page);border-color:transparent;}
+.lemma-tutor .tutor-selection-bar {flex:none;display:flex;align-items:center;gap:2px;margin-block:4px calc(4px + var(--v7-safe-bottom,env(safe-area-inset-bottom)));
+ padding:2px 6px;background:var(--v7-role-surface-raised);border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);}
+.lemma-tutor .tutor-selection-count {flex:1;color:var(--v7-role-text-primary);font:500 var(--v7-type-supporting)/1.25 var(--v7-sans);}
+.lemma-tutor .tutor-selection-bar .v7-button {padding-inline:8px;}
+.lemma-tutor .tutor-selection-bar svg {width:18px;height:18px;}
+.lemma-tutor .tutor-selection-confirm {display:flex;justify-content:flex-end;gap:var(--v7-space-2);}
+@media (pointer:coarse) {
+ .lemma-tutor .msg[data-tutor-message] {-webkit-touch-callout:none;user-select:none;}
 }

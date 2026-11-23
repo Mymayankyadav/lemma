@@ -6,6 +6,15 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N229 Simplify Tutor chat and fix Android full-screen drawing
+
+Owner task: "Fix all the issues in lemma app of lemma repo on my github"
+Stage: Harden · Status: done · Needs: — · Assigned: chat-861823#po2z
+Done = Keep chat and drawing tools within the Android safe area. Toggle the Tutor header from the composer. Show image and context controls directly and keep session actions in the header. Restore compact Markdown lists and consistent spacing between learner and tutor messages. Let two fingers pan the scratch paper, retain ink during device rotation, resume or discard unfinished ink from its composer icon, and queue image answers while the tutor is responding. Support copying and deleting learner and tutor messages from selection mode. Record the changes in docs/current/N229.md.
+Tests: Tutor chat, mixed-message selection, transcript deletion database contract, header, file upload, image queue, scratchpad gestures, full-screen orientation, writing assistance and layout parity.
+Scope: src/features/tutor/**, src/data/tutor/**, src/ui/v7/ink/InkCanvas.tsx, supabase/migrations/20261218002600_n229_tutor_message_deletions.sql, tests/e2e/**, tests/unit/tutor/**, tests/mcp/sql/n193-tutor.mjs, docs/current/N229.md, NEXT.md.
+Not: changing Android's system rotation policy.
+
 ## N228 Tutor quick questionnaires (short answer, one choice, several choices) in the reply row
 
 Owner task: "Add the quick questionnaire that can contain short answer type MCQ or msq type questions, these tutor can attach along with chat head show the option of open questionare in the reply row and use icon color to show if questionare is complete, student had started it but not completed and student has not seen, maintain data so that it can filled later on and nothing is lost. Modify MCP and data contracts accordingly. Use a new pr for this one. Add a note too won tutor is aware of this option, can use it judge the students for different purposes."

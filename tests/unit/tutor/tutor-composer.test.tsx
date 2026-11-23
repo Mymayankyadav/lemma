@@ -50,17 +50,23 @@ function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = 
   onChange?: (value: string) => void; hintLevel?: number; pending?: boolean; ink?: TutorInkState;
 }) {
   const [value, setValue] = useState(initial);
-  return <TutorComposer value={value} onChange={text => {setValue(text); onChange(text);}} onSend={onSend} onAsk={onAsk}
+  const [sessionActionsOpen, setSessionActionsOpen] = useState(false);
+  const [answerActions, setAnswerActions] = useState<HTMLDivElement | null>(null);
+  return <>
+    <button onClick={() => setSessionActionsOpen(true)}>Session actions</button>
+    <dialog open={sessionActionsOpen}><div ref={setAnswerActions}/></dialog>
+    <TutorComposer value={value} onChange={text => {setValue(text); onChange(text);}} onSend={onSend} onAsk={onAsk}
     canSend={!pending} ink={ink} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
-    onContext={() => {}}
-    notationContext={['What is the preimage f⁻¹(B)?']}/>;
+    onContext={() => {}} sessionActionsOpen={sessionActionsOpen} onCloseActions={() => setSessionActionsOpen(false)}
+    answerActions={answerActions} notationContext={['What is the preimage f⁻¹(B)?']}/>
+  </>;
 }
 const button = (name: string, group: ParentNode = host) => [...group.querySelectorAll('button')]
   .find(node => (node.getAttribute('aria-label') ?? node.textContent) === name)!;
 const field = () => host.querySelector('textarea')!;
 const click = (name: string, group?: ParentNode) => act(async () => button(name, group).click());
 const answerAction = async (name: string) => {
-  await click('Edit answer');
+  await click('Session actions');
   await click(name, host.querySelector('dialog[open]')!);
 };
 const keyboard = () => host.querySelector('.rows')!;
@@ -222,14 +228,14 @@ test('keeps the draft and suspends help requests while the tutor is responding',
   const onAsk = vi.fn();
   await act(async () => root.render(<Harness initial="Unfinished □" onAsk={onAsk} hintLevel={3}/>));
   await click('Keys');
-  await click('Edit answer');
+  await click('Session actions');
   expect(button('Hint 3/4').disabled).toBe(false);
   await click('Ask about notation');
   expect(onAsk.mock.calls).toEqual([['notation']]);
   expect(field().value).toBe('Unfinished □');
   await act(async () => root.render(<Harness onAsk={onAsk} hintLevel={3} pending/>));
   expect(host.querySelector('[aria-label="Answer keyboard"]')).not.toBeNull();
-  await click('Edit answer');
+  await click('Session actions');
   expect(button('Ask about notation')).toBeUndefined();
   expect(button('Hint 3/4').disabled).toBe(true);
   expect(onAsk).toHaveBeenCalledTimes(1);
@@ -479,6 +485,6 @@ test('prunes image-dependent undo when cached bytes expire but keeps the latest 
   await act(async () => root.render(<Harness initial={initial} ink={inkFixture({photos:[]})}/>));
   await answerAction('Undo typing');
   expect(richField().textContent).toBe('Draft ');
-  await click('Edit answer');
+  await click('Session actions');
   expect(button('Undo typing',host.querySelector('dialog[open]')!).disabled).toBe(true);
 });

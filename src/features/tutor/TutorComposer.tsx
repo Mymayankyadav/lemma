@@ -1,5 +1,6 @@
 import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
-import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, MoveRight, Paperclip, Camera, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
+import {createPortal} from 'react-dom';
+import {ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, HelpCircle, Keyboard, MoveRight, Paperclip, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
 import {isFlagOn} from '../../flags';
 import {TutorInkTray,type TutorInkState} from './TutorInk';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
@@ -44,6 +45,10 @@ const ANSWER_CLIPBOARD = 'application/x-lemma-tutor-answer';
 const MAX_ANSWER_LENGTH = 2000;
 const IMAGE_REFERENCE_LENGTH = imageReference('00000000-0000-0000-0000-000000000000').length;
 
+export function keepsKeyboardOpenFor(target: Element) {
+  return target.closest('[role="dialog"],[data-tutor-session-actions]') !== null;
+}
+
 interface Props {
   value: string;
   onChange: (text: string) => void;
@@ -55,16 +60,23 @@ interface Props {
   pending: boolean;
   onContext: () => void;
   hasContext: boolean;
+  headerHidden?: boolean;
+  onToggleHeader?: () => void;
+  sessionActionsOpen: boolean;
+  onCloseActions: () => void;
+  answerActions: HTMLElement | null;
   notationContext?: readonly string[];
   ink?: TutorInkState;
   canQueueImage?: boolean;
   inputScopeKey?: string;
+  suspended?: boolean;
 }
 
 /** N221: where the learner writes: the keys, Draw symbol, equation mode or the scratch pad. */
 type Surface = 'keys' | 'symbol' | 'equation' | 'scratch';
 
 export function TutorComposer(props: Props) {
+  const editMenu = props.sessionActionsOpen;
   const field = useRef<HTMLTextAreaElement>(null);
   const richField = useRef<HTMLDivElement>(null);
   const fieldElement = () => richField.current ?? field.current;
@@ -72,9 +84,11 @@ export function TutorComposer(props: Props) {
   const drawingOccurrence = useRef<number | null>(null);
   const focusAfterSymbol = useRef(false);
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
-  const [scratch,setScratch]=useState(false),[photo,setPhoto]=useState(false);
-  const [editMenu,setEditMenu]=useState(false);
+  const [scratch,setScratch]=useState(false);
   const [answerError,setAnswerError]=useState('');
+  const [photoActions, setPhotoActions] = useState<HTMLDivElement | null>(null);
+  const pendingDrawingTap = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(pendingDrawingTap.current), []);
   const [shown, setShown] = useState(false);
   /** N227 (Owner): the keyboard icon in the answer box keeps the keys up and the answer selected while the chat scrolls. */
   const [pinned, setPinned] = useState(false);
@@ -121,12 +135,13 @@ export function TutorComposer(props: Props) {
   const readOnly = props.readOnly || inkDraft?.queuedText !== undefined;
   const imageIssue = tutorInkIssue(props.value, props.ink);
   const recoveryIssue = imageIssue ?? (props.ink?.status === 'failed' ? 'failed' : undefined);
-  const uncommitted = props.ink?.ready && inkDraft && (inkDraft.inlineImages || hasImage) && Boolean(inkDraft.strokes.length ||
-    (inkDraft.editingDrawing && refs.includes(inkDraft.editingDrawing.id)));
+  const unfinishedId = inkDraft?.editingDrawing && refs.includes(inkDraft.editingDrawing.id) ? inkDraft.editingDrawing.id : null;
+  const unfinished = props.ink?.ready && Boolean(inkDraft?.strokes.length || unfinishedId);
+  const uncommitted = unfinished && (inkDraft?.inlineImages || hasImage);
   const queue=props.canQueueImage&&hasImage;
   // N228: while the tutor has not replied, a message joins the waiting question as text; pictures wait for the reply.
   const followUp = props.pending && props.canSend;
-  const blocked = readOnly || !queue&&!props.canSend || incomplete || composing || scratch || uncommitted || Boolean(imageIssue) || followUp&&hasImage;
+  const blocked = readOnly || !queue&&!props.canSend || incomplete || composing || scratch || uncommitted || Boolean(imageIssue);
   const editingDisabled = readOnly || composing;
   const inputPrefs = useTutorInputPreferences();
   const scopeKey = props.inputScopeKey ?? 'tutor-preview';
@@ -147,7 +162,7 @@ export function TutorComposer(props: Props) {
 
   const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, revision.current, cursor]);
   const writingRequest = {cursor, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
-    surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || editMenu || aidSettings || !shown};
+    surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown};
   const writing = useWritingAid(writingRequest);
   const aidVisible = dismissedAid !== aidSignature && !editingDisabled;
   const writingWords = aidVisible ? writing.words : [];
@@ -157,10 +172,6 @@ export function TutorComposer(props: Props) {
   const ghostSuffix = writingGhost?.insert;
   const suggestionUndoable = !hideSuggestionUndo && Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
   const refreshable = writingWords.length > 0 || Boolean(writingEdit || writingGhost);
-  /** N221: whether the strip offered suggestions when Answer actions opened (the menu pauses the writing aid). */
-  const [menuRefreshable, setMenuRefreshable] = useState(false);
-  /** Refresh suggestions was chosen in the menu: it applies once the menu has closed and the strip shows them again. */
-  const refreshAfterMenu = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** N220: a word is being typed (a collapsed caret right after a letter), so the strip is the word suggestions'. */
   // N221: and has suggestions to show; with none, the strip keeps the maths symbols instead of empty slots, as Gboard
   // keeps its toolbar.
@@ -196,7 +207,7 @@ export function TutorComposer(props: Props) {
 
   useEffect(() => {
     const reportVisibility = () => {
-      const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && !editMenu && document.visibilityState !== 'hidden';
+      const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && document.visibilityState !== 'hidden';
       writing.shown('words', visible && slots === 'words' ? writingWords : []);
       writing.shown('edit', visible && shownEdit && !suggestionUndoable ? [shownEdit] : []);
       writing.shown('ghost', visible && writingGhost ? [writingGhost] : []);
@@ -204,7 +215,7 @@ export function TutorComposer(props: Props) {
     reportVisibility();
     document.addEventListener('visibilitychange', reportVisibility);
     return () => document.removeEventListener('visibilitychange', reportVisibility);
-  }, [writing.shown, writingWords, slots, shownEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, suggestionUndoable]);
+  }, [writing.shown, writingWords, slots, shownEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, suggestionUndoable]);
 
   // N221: load N219's lexicon for the n-gram and touch decoder when the keyboard opens, and let the tutor's question
   // (with the checkpoint's title and step) favour its own words while the learner answers it.
@@ -525,7 +536,7 @@ export function TutorComposer(props: Props) {
     if (!props.ink || !shown || !root || !page) return;
     const down = (event: globalThis.PointerEvent) => {
       const target = event.target instanceof Element ? event.target : null;
-      if (!target || root.contains(target) || target.closest('[role="dialog"]')) return;
+      if (!target || root.contains(target) || keepsKeyboardOpenFor(target)) return;
       if (pinned) {
         // Keep the answer selected; controls in the chat (Copy, links, Make a card) still work.
         if (!target.closest('button,a[href],input,textarea,select,summary,[contenteditable="true"]')) event.preventDefault();
@@ -723,6 +734,31 @@ export function TutorComposer(props: Props) {
     setEditingImageId(id);
     setScratch(true);
   }
+  function resumeDrawing() {
+    const position = unfinishedId ? imageRanges(history.current.present.text).find(image => image.id === unfinishedId)?.start : undefined;
+    openDrawing(unfinishedId, position ?? null);
+  }
+  function discardUnfinishedDrawing() {
+    const ink = props.ink;
+    if (editingDisabled || !ink) return;
+    setAnswerError('');
+    void ink.update(current => unfinishedId
+      ? {...current, editingDrawing: undefined}
+      : {...current, strokes: [], drawingId: undefined}).catch(() => setAnswerError('Could not save the drawing removal on this device.'));
+  }
+  function tapUnfinishedDrawing(event: React.MouseEvent<HTMLButtonElement>) {
+    if (event.detail === 0) {resumeDrawing(); return;}
+    if (pendingDrawingTap.current !== undefined) {
+      window.clearTimeout(pendingDrawingTap.current);
+      pendingDrawingTap.current = undefined;
+      discardUnfinishedDrawing();
+      return;
+    }
+    pendingDrawingTap.current = window.setTimeout(() => {
+      pendingDrawingTap.current = undefined;
+      resumeDrawing();
+    }, 280);
+  }
   function closeDrawing() {
     setScratch(false);
     setEditingImageId(null);
@@ -817,13 +853,6 @@ export function TutorComposer(props: Props) {
     if (writingGhost) writing.refresh('ghost', [writingGhost]);
     haptic('snap');
   }
-  useEffect(() => {
-    if (!refreshAfterMenu.current || editMenu || !refreshable) return;
-    clearTimeout(refreshAfterMenu.current);
-    refreshAfterMenu.current = null;
-    refreshWriting();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editMenu, refreshable, writingWords, writingEdit, writingGhost]);
   function stopSwipe() {
     swipe.current = null;
     setSwipeProgress(0);
@@ -890,7 +919,7 @@ export function TutorComposer(props: Props) {
     onClick={()=>{haptic('snap');selectSurface(surface === 'equation' ? 'keys' : 'equation');}}><Radical aria-hidden="true"/></button>;
   const keysButton = <button className="sbtn" type="button" aria-label="Keys" onPointerDown={keepSelection}
     onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></button>;
-  return <div ref={composerRoot} className="keyboard-composer" data-keyboard={shown ? 'math' : 'hidden'} data-symbols={shown && Boolean(notation[view]) || undefined}>
+  return <div ref={composerRoot} className="keyboard-composer" hidden={props.suspended} data-keyboard={shown && !props.suspended ? 'math' : 'hidden'} data-symbols={shown && !props.suspended && Boolean(notation[view]) || undefined}>
     {props.value.includes('$') && !props.ink && <div className="composer-preview"><MathText source={tutorAnswerParts(props.value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
     {answerError && <p className="composer-status" role="alert">{answerError}</p>}
     {recoveryIssue && <div className="composer-status" role={recoveryIssue==='loading'?'status':'alert'}>
@@ -902,24 +931,12 @@ export function TutorComposer(props: Props) {
       {!props.ink && imageIssue==='unavailable' && !editingDisabled &&
         <Button small type="button" onClick={()=>change(padEdit(removeTutorImageReferences(props.value)))}>Remove image references</Button>}
     </div>}
-    {/* N227 (Owner: "extremely annoying text that comes in a way an actual tutor question"): a small pill by the answer,
-        not a line in the conversation's type, and a tap reopens the drawing to insert or discard it. */}
-    {!scratch && uncommitted && <div className="composer-pill" role="status">
-      <span>Unfinished drawing</span>
-      <button type="button" disabled={editingDisabled || props.ink?.draft.queuedText !== undefined} onPointerDown={keepSelection}
-        onClick={() => {haptic('snap'); selectSurface('scratch');}}>Open</button>
-    </div>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
     <form className="composer" onSubmit={event => {event.preventDefault(); send();}}>
       <div className="writing-composer-card" data-can-swipe={Boolean(writingGhost) || undefined}
         onPointerDownCapture={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={stopSwipe}
         onLostPointerCapture={event => {if (event.target === event.currentTarget && swipe.current) stopSwipe();}}>
       <div className="field">
-        {/* N227 (Owner: "remove the pencil icon from the input box"): the scratch pad opens from the strip's pencil. */}
-        {props.ink && <IconButton label="Keep keyboard open" type="button" aria-pressed={pinned} disabled={editingDisabled}
-          onPointerDown={keepSelection} onClick={pinKeys}><Keyboard aria-hidden="true"/></IconButton>}
-        {!props.ink && <IconButton label="Keys" type="button" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
-              onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
         {props.ink ? <TutorAnswerEditor editor={richField} value={props.value} images={props.ink.draft.photos}
           placeholder={followUp ? 'Add to your question…' : props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
           composing={composing} ghost={ghostSuffix} marked={writingEdit ? {start: writingEdit.start, end: writingEdit.end} : undefined} onSelection={remember} onChip={chipAction} onMath={openEquation} onFocus={event=>{
@@ -968,34 +985,44 @@ export function TutorComposer(props: Props) {
           }}
           onDrop={event => event.preventDefault()}
           onKeyDown={keyDown}/></div>}
-        <IconButton label="Edit answer" type="button" aria-haspopup="dialog" onPointerDown={keepSelection} onClick={()=>{assist.pause();setMenuRefreshable(refreshable);setEditMenu(true);}}><Ellipsis aria-hidden="true"/></IconButton>
-        <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !props.value.trim()&&!hasImage}
-          onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
+        <div className="tutor-composer-tools">
+          {props.ink ? <IconButton label="Keep keyboard open" aria-pressed={pinned} disabled={editingDisabled}
+            onPointerDown={keepSelection} onClick={pinKeys}><Keyboard aria-hidden="true"/></IconButton>
+            : <IconButton label="Keys" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
+              onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
+          {props.ink && <div className="tutor-composer-photos" ref={setPhotoActions}/>}
+          <IconButton label="Attach context" aria-haspopup="dialog" aria-pressed={props.hasContext} disabled={inkDraft?.queuedText!==undefined}
+            onPointerDown={keepSelection} onClick={props.onContext}><Paperclip aria-hidden="true"/></IconButton>
+          {!scratch && unfinished && <IconButton label="Unfinished drawing" title="Open unfinished drawing. Double-tap to discard."
+            data-unfinished-drawing="" disabled={editingDisabled} onPointerDown={keepSelection} onClick={tapUnfinishedDrawing}><PenLine aria-hidden="true"/></IconButton>}
+          {props.onToggleHeader && <IconButton label={props.headerHidden?'Show header':'Hide header'} data-tutor-header-toggle=""
+            aria-pressed={props.headerHidden} onPointerDown={keepSelection} onClick={props.onToggleHeader}>
+            {props.headerHidden?<EyeOff aria-hidden="true"/>:<Eye aria-hidden="true"/>}
+          </IconButton>}
+          <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !props.value.trim()&&!hasImage}
+            onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
+        </div>
       </div>
       </div>
     </form>
-    <Sheet open={editMenu} onClose={()=>setEditMenu(false)} title="Answer actions">
-      <div className="tutor-session-actions">
-        {isFlagOn('writingAidSettings') && <Button onClick={() => {setEditMenu(false); setAidSettings(true);}}><SlidersHorizontal aria-hidden="true"/>Writing assistance</Button>}
-        {menuRefreshable && <Button disabled={editingDisabled} onClick={() => {
-          setEditMenu(false);
-          if (refreshAfterMenu.current) clearTimeout(refreshAfterMenu.current);
-          refreshAfterMenu.current = setTimeout(() => {refreshAfterMenu.current = null;}, 2000);
+    {editMenu && props.answerActions && createPortal(<>
+        {isFlagOn('writingAidSettings') && <Button onClick={() => {props.onCloseActions(); setAidSettings(true);}}><SlidersHorizontal aria-hidden="true"/>Writing assistance</Button>}
+        {refreshable && <Button disabled={editingDisabled} onClick={() => {
+          refreshWriting();
+          props.onCloseActions();
+          requestAnimationFrame(() => fieldElement()?.focus({preventScroll:true}));
         }}>
           <RefreshCw aria-hidden="true"/>Refresh suggestions</Button>}
-        <Button disabled={!props.canSend||editingDisabled} onClick={()=>{setEditMenu(false);props.onAsk('hint');}}>
+        <Button disabled={!props.canSend||editingDisabled} onClick={()=>{props.onCloseActions();props.onAsk('hint');}}>
           <HelpCircle aria-hidden="true"/>Hint {Math.max(1,Math.min(4,props.hintLevel??1))}/4
         </Button>
-        <Button disabled={!props.canSend||editingDisabled} onClick={()=>{setEditMenu(false);props.onAsk('stuck');}}><ArrowDown aria-hidden="true"/>Stuck</Button>
-        {!props.pending&&<Button disabled={!props.canSend||editingDisabled} onClick={()=>{setEditMenu(false);props.onAsk('notation');}}>
+        <Button disabled={!props.canSend||editingDisabled} onClick={()=>{props.onCloseActions();props.onAsk('stuck');}}><ArrowDown aria-hidden="true"/>Stuck</Button>
+        {!props.pending&&<Button disabled={!props.canSend||editingDisabled} onClick={()=>{props.onCloseActions();props.onAsk('notation');}}>
           <HelpCircle aria-hidden="true"/>Ask about notation
         </Button>}
-        {props.ink&&<Button disabled={editingDisabled || props.ink.draft.queuedText!==undefined} onClick={()=>{assist.stop();drawingSelection.current=history.current.present;setEditMenu(false);setPhoto(true);}}><Camera aria-hidden="true"/>Photo</Button>}
-        <Button disabled={inkDraft?.queuedText!==undefined} onClick={()=>{setEditMenu(false);props.onContext();}}><Paperclip aria-hidden="true"/>Context</Button>
-        <Button disabled={!history.current.past.length||editingDisabled} onClick={()=>{setEditMenu(false);undo();}}><Undo2 aria-hidden="true"/>Undo typing</Button>
-        <Button disabled={!history.current.future.length||editingDisabled} onClick={()=>{setEditMenu(false);undo(true);}}><Redo2 aria-hidden="true"/>Redo typing</Button>
-      </div>
-    </Sheet>
+        <Button disabled={!history.current.past.length||editingDisabled} onClick={()=>{props.onCloseActions();undo();}}><Undo2 aria-hidden="true"/>Undo typing</Button>
+        <Button disabled={!history.current.future.length||editingDisabled} onClick={()=>{props.onCloseActions();undo(true);}}><Redo2 aria-hidden="true"/>Redo typing</Button>
+      </>, props.answerActions)}
     {/* N221 (Owner): an equation in the answer is edited here: its rendering updates as the LaTeX changes. */}
     <Sheet open={Boolean(equationEdit)} onClose={closeEquation} title="Equation">
       {equationEdit && <div className="tutor-equation-edit">
@@ -1017,7 +1044,8 @@ export function TutorComposer(props: Props) {
       </div>}
     </Sheet>
     <Sheet open={aidSettings} onClose={() => setAidSettings(false)} title="Writing assistance"><WritingAidSettings showTitle={false}/></Sheet>
-    {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoOpen={photo} onClosePhoto={()=>setPhoto(false)}
+    {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoActions={photoActions} photoDisabled={editingDisabled}
+      onPickPhoto={()=>{remember();assist.stop();drawingSelection.current=history.current.present;}}
       editingImageId={editingImageId} canMigrate={!readOnly} onInsertEquation={insertEquation}
       leading={<IconButton label="Keys" type="button" onPointerDown={keepSelection} onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></IconButton>} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
     {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}

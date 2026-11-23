@@ -170,8 +170,7 @@ for(const entry of ['chat','Pad'] as const){
   await expect(tutor.getByRole('alert').filter({hasText:warning})).toHaveCount(0)
 
   if(chat){
-   await tutor.getByRole('button',{name:'Edit answer',exact:true}).click()
-   await tutor.getByRole('dialog',{name:'Answer actions',exact:true}).getByRole('button',{name:'Context',exact:true}).click()
+   await tutor.getByRole('button',{name:'Attach context',exact:true}).click()
   }
   const context=chat?page.getByRole('dialog',{name:'Context for your tutor'}):tutor
   await context.getByText('Add a page from '+short,{exact:true}).click()

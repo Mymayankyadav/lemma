@@ -58,16 +58,16 @@ for(const [width,height,scale] of [[320,640,100],[390,844,160],[844,390,100]])te
  else expect(boxes.chat.bottom).toBeLessThanOrEqual(boxes.composer.top+1);
  expect(boxes.field.bottom).toBeLessThanOrEqual(boxes.keys.top+1);
  // N227: Scratch moved from the answer box to the keyboard strip's pencil; it keeps the same 44 px target.
- for(const [scope,label] of [['.kb .strip','Scratch'],['.composer','Edit answer'],['.composer','Send']] as const){
+ for(const [scope,label] of [['.kb .strip','Scratch'],['.composer','Upload image'],['.composer','Send']] as const){
   const button=page.locator(scope).getByRole('button',{name:label,exact:true});
   await expect(button).toBeVisible();const box=(await button.boundingBox())!;
   expect(box.width).toBeGreaterThanOrEqual(44);expect(box.height).toBeGreaterThanOrEqual(44);
  }
  const last=page.getByRole('button',{name:'New line',exact:true});await last.scrollIntoViewIfNeeded();
  const lastBox=(await last.boundingBox())!;expect(lastBox.y+lastBox.height).toBeLessThanOrEqual(height+1);
- await page.getByRole('button',{name:'Edit answer',exact:true}).click();
- const actions=page.getByRole('dialog',{name:'Answer actions',exact:true});
- for(const label of ['Photo','Hint 1/4','Stuck','Context','Undo typing','Redo typing'])await expect(actions.getByRole('button',{name:label,exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Session actions',exact:true}).click();
+ const actions=page.getByRole('dialog',{name:'Study session',exact:true});
+ for(const label of ['Hint 1/4','Stuck','Undo typing','Redo typing'])await expect(actions.getByRole('button',{name:label,exact:true})).toBeVisible();
  await actions.getByRole('button',{name:'Close',exact:true}).click();
  await openScratch(page);
  await expect(page.getByRole('img',{name:'Draw your answer'})).toBeVisible();
@@ -79,11 +79,11 @@ test('Scratch-enabled Tutor retains typing undo, redo, context and connection',a
  await page.getByRole('button',{name:'Write a question'}).click();
  const answer=page.getByRole('textbox',{name:'Your answer'});
  await answer.fill('Finite subcover');
- await page.getByRole('button',{name:'Edit answer',exact:true}).click();
+ await page.getByRole('button',{name:'Session actions',exact:true}).click();
  await page.getByRole('button',{name:'Undo typing'}).click();await expect(answer).toHaveJSProperty('textContent','');
- await page.getByRole('button',{name:'Edit answer',exact:true}).click();
+ await page.getByRole('button',{name:'Session actions',exact:true}).click();
  await page.getByRole('button',{name:'Redo typing'}).click();await expect(answer).toHaveJSProperty('textContent','Finite subcover');
- await page.getByRole('button',{name:'Edit answer',exact:true}).click();await page.getByRole('button',{name:'Context',exact:true}).click();
+ await page.getByRole('button',{name:'Attach context',exact:true}).click();
  await expect(page.getByRole('dialog',{name:'Context for your tutor'})).toBeVisible();await page.keyboard.press('Escape');
  await page.getByRole('button',{name:'Session actions'}).click();
  await expect(page.getByRole('button',{name:'Copy prompt',exact:true})).toBeVisible();
