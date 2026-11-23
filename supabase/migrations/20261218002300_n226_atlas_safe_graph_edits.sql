@@ -22,7 +22,9 @@ begin
     not exists(select 1 from auth.users where id=old.user_id) then
    return old;
  end if;
- if exists(select 1 from public.attempt_tags where user_id=old.user_id and concept_id=old.id)
+ if exists(select 1 from public.attempts a where a.user_id=old.user_id and old.id=any(a.cued))
+ or exists(select 1 from public.items i where i.user_id=old.user_id and old.id=any(i.cued))
+ or exists(select 1 from public.attempt_tags where user_id=old.user_id and concept_id=old.id)
  or exists(select 1 from public.instruction_events where user_id=old.user_id and concept_id=old.id)
  or exists(select 1 from public.assumptions where user_id=old.user_id and concept_id=old.id)
  or exists(select 1 from public.recheck_decisions where user_id=old.user_id and concept_id=old.id)

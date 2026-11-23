@@ -2032,6 +2032,98 @@ try{
    assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[source]))[0].n,1);
  }
 
+
+ // N226 reviewer: cue-only references are still learning facts. Both existing
+ // legacy merge and new delete_empty must refuse physical removal.
+ {
+  await role(null);
+  const subject='aaaaaaaa-0000-4000-8000-000000000001';
+  for(const mode of ['attempts','items']){
+   const prefix='n226-cue-'+mode;
+   const a=(await q('insert into public.concepts(user_id,subject_id,name,slug) values($1,$2,$3,$4) returning id,version',
+    [owner,subject,'Cue source '+mode,prefix+'-source']))[0];
+   const b=(await q('insert into public.concepts(user_id,subject_id,name,slug) values($1,$2,$3,$4) returning id,version',
+    [owner,subject,'Cue target '+mode,prefix+'-target']))[0];
+   if(mode==='attempts')
+    await q('insert into public.attempts(user_id,cued) values($1,array[$2::uuid])',[owner,a.id]);
+   else
+    await q("insert into public.items(user_id,origin,text,fingerprint,cued) values($1,'user_supplied',$2,$3,array[$4::uuid])",
+     [owner,'N226 cue-only item','n226-cue-array-only',a.id]);
+   await role('service_role');
+   await assert.rejects(mcp(command('atlas_graph_edits','delete_empty',{
+    target:{id:a.id},expectedVersion:a.version,patch:{}})),/learning evidence or semantic links/i,
+    'delete_empty dropped '+mode+'.cued');
+   await assert.rejects(mcp(command('concepts','merge',{
+    target:{id:a.id},expectedVersion:a.version,patch:{keep_id:b.id,keep_version:b.version}})),
+    /learning evidence or semantic links/i,'legacy merge dropped '+mode+'.cued');
+   await role(null);
+   assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[a.id]))[0].n,1);
+   assert.equal((await q('select count(*)::int n from public.'+mode+' where user_id=$1 and $2::uuid=any(cued)',
+    [owner,a.id]))[0].n,1,'historical cue reference was erased');
+  }
+ }
+
+ // N226 reviewer: all rejection paths must preserve the original graph.
+ {
+  await role(null);
+  const subject='aaaaaaaa-0000-4000-8000-000000000001';
+  const p=(await q("insert into public.concepts(user_id,subject_id,name,slug,level) values($1,$2,'N226 parent','n226-parent-level','system') returning id,version",
+   [owner,subject]))[0];
+  const c=(await q("insert into public.concepts(user_id,subject_id,name,slug,level,parent_id) values($1,$2,'N226 child','n226-child-level','planet',$3) returning id,version",
+   [owner,subject,p.id]))[0];
+  await role('service_role');
+  await assert.rejects(mcp(command('atlas_graph_edits','change_level',{
+   target:{id:p.id},expectedVersion:p.version,patch:{level:'moon'}})),/above child levels/i);
+  await assert.rejects(mcp(command('atlas_graph_edits','change_level',{
+   target:{id:c.id},expectedVersion:c.version,patch:{level:'galaxy'}})),/below parent level/i);
+  await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+   [other,'chatgpt',JSON.stringify(command('atlas_graph_edits','delete_empty',{
+    target:{id:p.id},expectedVersion:p.version,patch:{}}))]),/not found for owner/i);
+  await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+   [other,'chatgpt',JSON.stringify(command('atlas_graph_edits','link_batch',{patch:{links:[
+    {from_id:p.id,to_id:c.id,kind:'related',from_version:p.version,to_version:c.version}
+   ]}}))]),/source missing or version conflict/i);
+  await role(null);
+  assert.equal((await q('select level from public.concepts where id=$1',[p.id]))[0].level,'system');
+  assert.equal((await q('select level from public.concepts where id=$1',[c.id]))[0].level,'planet');
+
+  const a=(await q("insert into public.concepts(user_id,subject_id,name,slug) values($1,$2,'N226 cycle source','n226-cycle-source') returning id,version",
+   [owner,subject]))[0];
+  const b=(await q("insert into public.concepts(user_id,subject_id,name,slug) values($1,$2,'N226 cycle target','n226-cycle-target') returning id,version",
+   [owner,subject]))[0];
+  await q("insert into public.concept_links(user_id,from_id,to_id,kind) values($1,$2,$3,'related'),($1,$3,$2,'prereq')",
+   [owner,a.id,b.id]);
+  await role('service_role');
+  await assert.rejects(mcp(command('atlas_graph_edits','reclassify_link',{
+   target:{id:a.id},expectedVersion:a.version,patch:{to_id:b.id,from_kind:'related',to_kind:'prereq'}
+  })),/cycle/i,'reclassifying a cycle must reject');
+  await role(null);
+  assert.equal((await q('select kind from public.concept_links where from_id=$1 and to_id=$2',
+   [a.id,b.id]))[0].kind,'related');
+
+  const nodes=[];
+  for(const suffix of ['a','b','c'])nodes.push((await q(
+   'insert into public.concepts(user_id,subject_id,name,slug) values($1,$2,$3,$4) returning id,version',
+   [owner,subject,'N226 batch '+suffix,'n226-cycle-batch-'+suffix]))[0]);
+  const [x,y,z]=nodes;
+  const links=[
+   {from_id:x.id,to_id:y.id,kind:'related',from_version:x.version,to_version:y.version},
+   {from_id:y.id,to_id:z.id,kind:'prereq',from_version:y.version,to_version:z.version},
+   {from_id:z.id,to_id:y.id,kind:'prereq',from_version:z.version,to_version:y.version}
+  ];
+  const failed=command('atlas_graph_edits','link_batch',{patch:{links}});
+  await role('service_role');
+  await assert.rejects(mcp(failed),/cycle/i,'third edge must roll back entire batch');
+  await role(null);
+  assert.equal((await q('select count(*)::int n from public.concept_links where user_id=$1 and from_id=any($2::uuid[])',
+   [owner,nodes.map(n=>n.id)]))[0].n,0,'partial batch edges persisted');
+  assert.equal((await q('select count(*)::int n from public.command_receipts where user_id=$1 and operation_id=$2',
+   [owner,failed.operationId]))[0].n,0,'failed batch produced a receipt');
+  for(const node of nodes)
+   assert.equal((await q('select version from public.concepts where id=$1',[node.id]))[0].version,
+    node.version,'failed batch bumped an endpoint version');
+ }
+
  await checkSessionProgressParity(db,{owner,other});
  mark('session_progress','save');
  await role('service_role');
