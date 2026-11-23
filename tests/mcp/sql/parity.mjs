@@ -1993,9 +1993,14 @@ try{
   await atlasStep('atlas_links','reject',{target:{id:rejectedId},expectedVersion:1,patch:{}},
     async()=>(await q('select status from public.atlas_links where id=$1',[rejectedId]))[0].status==='rejected');
   // atlasStep undoes the rejection, so reject again without undo for the resubmission fixture.
+  await role(null);
+  const restored=(await q('select version,status from public.atlas_links where id=$1',[rejectedId]))[0];
+  assert.equal(restored.status,'proposed','Undo must restore a proposed link before re-rejection');
   await role('service_role');
-  await mcp(command('atlas_links','reject',{target:{id:rejectedId},expectedVersion:1,patch:{}}));
+  await mcp(command('atlas_links','reject',{target:{id:rejectedId},expectedVersion:restored.version,patch:{}}));
+  await role(null);
   const oldVersion=(await q('select version from public.atlas_links where id=$1',[rejectedId]))[0].version;
+  await role('service_role');
   const unchanged=await mcp(command('atlas_link_proposals','create',{
     patch:{...typedPatch,expected_rejected_version:oldVersion}})).then(x=>x,e=>({error:String(e)}));
   assert.match(JSON.stringify(unchanged),/unchanged/i);
@@ -2034,6 +2039,7 @@ try{
    'neither historical link decision may change on a failed resubmission');
   await role('service_role');
   mark('atlas_link_proposals','create');
+  await role(null);
   const conceptVersion=Number((await q('select version from public.concepts where id=$1',[n169Concept]))[0].version);
   await atlasStep('atlas_concepts','update',{target:{id:n169Concept},expectedVersion:conceptVersion,patch:{kind:'technique'}},
    async()=>(await q('select kind from public.concepts where id=$1',[n169Concept]))[0].kind==='technique');
