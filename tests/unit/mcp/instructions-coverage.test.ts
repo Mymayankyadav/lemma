@@ -12,6 +12,11 @@ describe('N160 the model is told how to reach every area',()=>{
   const missing=manifest.resources.filter(r=>r.mcp_ok&&!INSTRUCTIONS.includes(r.resource)).map(r=>r.resource);
   expect(missing,'add these resources to INSTRUCTIONS in supabase/functions/mcp/rules.ts').toEqual([]);
  });
+ it('requires linked-concept tags to be suggested and confirmed without fabricating performance',()=>{
+   expect(INSTRUCTIONS).toContain('atlas_tag_suggestions');
+   expect(INSTRUCTIONS).toMatch(/confirm before saving an attempt/);
+   expect(INSTRUCTIONS).toMatch(/never infer performance/);
+ });
  it('names every extra read and the redo and move rules',()=>{
   for(const token of ['calendar_overlaps','what=today','what=progress','what=export','what=connection','what=devices','source_upload','redo:true','set {project}','uploaded:true'])
    expect(INSTRUCTIONS,token).toContain(token);

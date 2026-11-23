@@ -6,6 +6,24 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N225 Finish Atlas MCP typed-link proposal draft with repository checks
+
+Owner task: "Complete your draft pr and please follow rules of repo to pass scope of the repo."
+Stage: Build · Status: done · Needs: — · Assigned: chat-947#b6q8
+Done = PR #1831 provides an additive, audited, owner-scoped MCP command for proposed Atlas V3 typed links; ChatGPT/Claude can read complete paginated graph data, request advisory attempt tags, and approved cross-subject aliases influence shared V3 ability without automatically certifying mastery. Registry documentation, SQL parity, unit tests, version and owner guards pass repository checks. Independent review is required before deployment.
+Tests: tests/mcp/sql/{parity,command-manifest-mirror,registries}.mjs; tests/unit/adaptive/atlas-mcp-worker.test.ts; tests/unit/mcp/incident-1173-budget.test.ts.
+Scope: supabase/migrations/20261218002200_n199_atlas_mcp_proposals.sql; supabase/functions/mcp/{server.ts,machine-reads.ts,tools/read.ts,tools/atlas-worker-read.ts}; supabase/functions/_shared/adaptive/{atlas,measure}.ts; src/data/adaptive/live.ts; tests/mcp/sql/parity.mjs; tests/unit/adaptive/atlas-mcp-worker.test.ts; tests/unit/mcp/machine-reads.test.ts; docs/v6/capability-registry/lemma_command_resources.json; docs/mcp/capability-map.json; supabase/functions/mcp/rules.ts; docs/current/N225.md; NEXT.md.
+Not: production deployment without review; autonomous approvals, merges, evidence or tiers; protected CI/rules changes; provider API keys.
+
+## N226 Atlas V3 evidence-safe operations and atomic MCP graph editing
+
+Owner task: "Complete the whole job like all X nothing should remain deploy full e2e solution"
+Stage: Build · Status: done · Needs: N225 · Assigned: chat-947#b6q8
+Done = The Atlas V3 graph never silently deletes learning evidence during a merge, duplicate concepts with evidence can be retained and aliased, and authenticated ChatGPT/Claude MCP can change concept levels with hierarchy validation, remove truly empty orphan concepts, reclassify an existing prerequisite/related link atomically, and create up to 50 version-checked links in one audited transaction. App and MCP operations preserve existing owner checks and Undo. Full SQL and unit regression tests pass before independent Supabase review.
+Tests: tests/mcp/sql/parity.mjs, tests/mcp/sql/registries.mjs, tests/mcp/sql/command-manifest-mirror.mjs; tests/unit/mcp/{capability-map,instructions-coverage}.test.ts.
+Scope: supabase/migrations/20261218002300_n226_atlas_safe_graph_edits.sql; docs/current/N226.md; NEXT.md; docs/v6/capability-registry/{lemma_command_resources,atlas_graph_edits}.json; docs/mcp/capability-map.json; supabase/functions/mcp/rules.ts; tests/mcp/sql/parity.mjs; tests/unit/mcp/instructions-coverage.test.ts.
+Not: losing any learner evidence, altering study results, auto-approving V3 suggestions, modifying protected CI paths, bypassing owner review, or adding a model API key.
+
 ## N224 One suggestion strip, equation mode as paper, the rich answer on, and the Owner's phone review
 
 Owner task: "Auto eq doesn't work in the chat box. I have realised that eq composer it's actually the right idea to just keep the drawing by hand and remove all these symbols bs so the scratch pad can become bigger, i think the slowness might have been caused by multiple triggers caused by handwriting as it progress we can use manual trigger if it is faster not for detexify. Another thing i see no suggestion card as this when I wrote eps and all. I can see that there might be lot of this going around that's why it's impossible be seen the what comes first like auto eq and this custom shortcut in the input, first integrate all this in one hood remove grey text prediction. These will default and no settings are needed for them as they non intrusive remove those confusing settings in the main settings. The grey text will come as proof assist option later. But keep this in mind while implementing."
@@ -15,15 +33,6 @@ Done = Equations in an answer are rendered TeX chips stored as $…$; a tap open
 Tests: tests/e2e/v7-tutor-inline-math.spec.ts (rewritten for N224); tests/unit/tutor/{answer-math-chips,equation-composer,typed-equation}.test.*; tests/unit/insights/progress-today.test.ts; writing-aid preferences without the settings flag; the Gboard strip test asserts the new frame; specs that test the plain answer, the settings or the grey text pin their flags; renamed controls reached by their new names.
 Scope: src/features/tutor/**; src/features/{atlas,checkpoint,insights,project,settings}/** (the review items); src/data/{api.ts,demo/adapter.ts,demo/stress.ts} (one-day insights); src/flags.ts (tutorScratch on; writingAidSettings and proofAssistGhost off); src/ui/v7/ink/InkCanvas.tsx (panTouches); tests/e2e/{v7-tutor-inline-math,v7-tutor-gboard-layout,tutor-writing-aid,v7-tutor-chat,v7-tutor-live,v7-tutor-local-excerpt,v7-tutor-scratchpad,v7-tutor-inline-editor,v7-feature-parity,v7-ui-plan-v2,v7-tutor-equation-recognition}.spec.ts; tests/e2e/v7-scenes.ts; tests/unit/{flags,pad/pad-tutor-handoff,tutor/*,insights/progress-today}.test.*; docs/current/N224.md.
 Not: Equation Assist in the Pad by default; a language model for grey text (the later proof assist); WASM threads without cross-origin isolation.
-
-## N225 Finish Atlas MCP typed-link proposal draft with repository checks
-
-Owner task: "Complete your draft pr and please follow rules of repo to pass scope of the repo."
-Stage: Build · Status: done · Needs: — · Assigned: chat-947#b6q8
-Done = PR #1831 provides an additive, audited, owner-scoped MCP command for proposed Atlas V3 typed links; ChatGPT/Claude can read complete paginated graph data, request advisory attempt tags, and approved cross-subject aliases influence shared V3 ability without automatically certifying mastery. Registry documentation, SQL parity, unit tests, version and owner guards pass repository checks. Independent review is required before deployment.
-Tests: tests/mcp/sql/{parity,command-manifest-mirror,registries}.mjs; tests/unit/adaptive/atlas-mcp-worker.test.ts; tests/unit/mcp/incident-1173-budget.test.ts.
-Scope: supabase/migrations/20261218002200_n199_atlas_mcp_proposals.sql; supabase/functions/mcp/{server.ts,machine-reads.ts,tools/read.ts,tools/atlas-worker-read.ts}; supabase/functions/_shared/adaptive/{atlas,measure}.ts; src/data/adaptive/live.ts; tests/mcp/sql/parity.mjs; tests/unit/adaptive/atlas-mcp-worker.test.ts; tests/unit/mcp/machine-reads.test.ts; docs/v6/capability-registry/lemma_command_resources.json; docs/mcp/capability-map.json; supabase/functions/mcp/rules.ts; docs/current/N225.md; NEXT.md.
-Not: production deployment without review; autonomous approvals, merges, evidence or tiers; protected CI/rules changes; provider API keys.
 
 ## N223 Equations inline, equation mode in the keys' place and one way to write by hand
 

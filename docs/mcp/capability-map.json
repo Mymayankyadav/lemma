@@ -560,6 +560,15 @@
             "approve",
             "reject"
           ]
+        },
+        {
+          "resource": "atlas_graph_edits",
+          "operations": [
+            "change_level",
+            "delete_empty",
+            "reclassify_link",
+            "link_batch"
+          ]
         }
       ],
       "note": "N172 consolidated Atlas v3 first pass; production cutover, conversion approvals and remaining simulation acceptance gates are recorded in docs/current/N172.md."
