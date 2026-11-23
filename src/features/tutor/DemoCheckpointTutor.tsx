@@ -23,6 +23,8 @@ import {chatLink,studyPrompt} from '../../lib/chat'
 import {TutorChat,type SendOptions} from './TutorChat'
 import type {TutorPageContext} from './TutorLayout'
 import {ReplyActions} from './ReplyActions'
+import {QuestionnaireButton,type QuestionnaireBackup} from './TutorQuestionnaire'
+import type {TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
 import './replyActions.css'
 
 type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
@@ -126,6 +128,36 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     ?'Some draft changes could not be saved on this device and may be lost on reload.':undefined
   const [preview,setPreview]=useState<ReturnType<typeof previewLocalTutorExcerpt>>()
   const [session,setSession]=useState<{api:ManualTutor; thread:TutorThreadView}>()
+  // N228: the tutor's quick questionnaires on this thread, shown in each reply's row.
+  const questionnaireApi=session?.api.questionnaires
+  const [questionnaires,setQuestionnaires]=useState<readonly TutorQuestionnaire[]>([])
+  useEffect(()=>{
+    if(!questionnaireApi){setQuestionnaires([]);return}
+    let current=true
+    void questionnaireApi.list().then(list=>{if(current)setQuestionnaires(list)},()=>undefined)
+    return ()=>{current=false}
+  },[questionnaireApi,session?.thread.readAt])
+  const replaceQuestionnaire=useCallback((next:TutorQuestionnaire)=>setQuestionnaires(list=>list.map(item=>item.id===next.id?next:item)),[])
+  const questionnaireBackup=useMemo<QuestionnaireBackup>(()=>{
+    const key=(id:string)=>draftKey+':questionnaire:'+id
+    return {
+      read(id){
+        try {
+          const kept:unknown=JSON.parse(localStorage.getItem(key(id))??'null')
+          return kept&&typeof kept==='object'&&typeof (kept as {base?:unknown}).base==='number'&&typeof (kept as {answers?:unknown}).answers==='object'
+            ?kept as ReturnType<QuestionnaireBackup['read']>:null
+        } catch {return null}
+      },
+      write(id,base,answers){
+        try {
+          const value=JSON.stringify({base,answers})
+          if(live)writeTutorLocal({ownerId:ownerId!,generation:generation!},key(id),value)
+          else localStorage.setItem(key(id),value)
+        } catch {/* The server copy still holds every saved answer. */}
+      },
+      clear(id){try{localStorage.removeItem(key(id))}catch{/* Nothing to keep. */}},
+    }
+  },[draftKey,live,ownerId,generation])
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
   const questionId=useId(),copyId=useId(),selectionId=useId()
@@ -454,6 +486,8 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
           what the tutor suggested (a card, a change) as small chips. The row is where chat-specific things go later. */}
       <ReplyActions id={turn.id} body={turn.finalReply.body}>
         {session?.api.proposeCard&&!recoveryOnly&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
+        {questionnaireApi&&questionnaires.filter(item=>item.turnId===turn.id).map(item=><QuestionnaireButton key={item.id} questionnaire={item}
+          api={questionnaireApi} backup={questionnaireBackup} onChange={replaceQuestionnaire}/>)}
         {turn.finalReply.suggestions.map(suggestion=><span key={suggestion.intentId} className="tutor-reply-chip" data-status={suggestion.status}>
           <span className="tutor-reply-chip-text">{suggestion.summary}</span>
           {suggestion.proposalId&&(suggestion.status==='pending'

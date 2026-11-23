@@ -1,0 +1,55 @@
+{
+  "table": "tutor_questionnaire_responses",
+  "version": 1,
+  "columns": {
+    "questionnaire_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_questionnaire_save (open, save, submit; version-checked)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_questionnaire_connector list (read only)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_questionnaire_save (open, save, submit; version-checked)",
+      "mcpPath": "Derived server-side from the connector secret",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "answers": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_questionnaire_save (open, save, submit; version-checked)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_questionnaire_connector list (read only)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_questionnaire_save (open, save, submit; version-checked)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_questionnaire_connector list (read only)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "opened_at": {
+      "classification": "derived",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_questionnaire_save (open, save, submit; version-checked)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_questionnaire_connector list (read only)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_questionnaire_save (open, save, submit; version-checked)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_questionnaire_connector list (read only)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "submitted_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_questionnaire_save (open, save, submit; version-checked)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_questionnaire_connector list (read only)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    }
+  }
+}

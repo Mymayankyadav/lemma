@@ -35,8 +35,9 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
   const register=(n:string,description:string,schema:any,readOnly:boolean,fn:(a:any,ctx:Context)=>Promise<string>)=>{
     m.registerTool(n,{description,inputSchema:lean(schema),annotations:readOnly?noop:write},async(a:any,toolContext)=>{
       try{
-        if(n==='get'&&(a.what==='tutor_turn'||a.what==='tutor_next'||a.what==='tutor_attachment')){
+        if(n==='get'&&(a.what==='tutor_turn'||a.what==='tutor_next'||a.what==='tutor_attachment'||a.what==='tutor_questionnaires')){
           if(!tutor)throw Error('Tutor connector unavailable.');
+          if(a.what==='tutor_questionnaires')return {content:[{type:'text' as const,text:await tutor.questionnaires(a.id)}]};
           if(a.what==='tutor_attachment')return {content:await tutor.attachment(a.id)};
           if(a.what==='tutor_turn')return {content:await tutor.content(a.id)};
           return {content:[{type:'text' as const,text:await tutor.next(a.id,toolContext.mcpReq.signal)}]};
@@ -81,6 +82,9 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
       if(args.command.resource==='tutor_turns'){
         if(!tutor)throw Error('Tutor connector unavailable.');
         receipt=await tutor.write(args);
+      }else if(args.command.resource==='tutor_questionnaires'){
+        if(!tutor)throw Error('Tutor connector unavailable.');
+        receipt=await tutor.attachQuestionnaire(args);
       }else receipt=await study(c,args);
       return {content:[{type:'text' as const,text:JSON.stringify(receipt)}]};
     }catch(err){

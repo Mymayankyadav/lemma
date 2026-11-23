@@ -4,7 +4,8 @@ import {tutorConnectorGrantHash} from '../../../supabase/functions/_shared/tutor
 import {unresolvedTutorImageIds,type TutorAttachment} from './attachment-types'
 import {tutorLocalScopeActive,writeTutorLocal} from './local-storage'
 import type {TutorComposerDraft,TutorContextSelection} from './turn-model'
-import type {ConnectorDelivery,ManualTutor,TutorThreadView} from './manual-api'
+import type {ConnectorDelivery,ManualTutor,QuestionnaireSave,TutorThreadView} from './manual-api'
+import type {TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
 
 type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string;readOnly?:boolean}
 type Command={operation:string;operationId:string;connectorOperationId?:string;attachments?:readonly TutorAttachment[];[key:string]:unknown}
@@ -348,6 +349,23 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   },
   async proposeCard(turnId,version,front,back){
    if((await dispatch(write('suggest_card',turnId,version,{front,back}),true)).status!=='proposed')throw new Error('Card proposal was not saved.')
+  },
+  questionnaires:{
+   async list(){
+    active()
+    const {data,error}=await client.rpc('tutor_questionnaire_state',target)
+    active()
+    if(error)throw new Error('Could not open the tutor\'s questionnaires.')
+    return Array.isArray(data)?data as TutorQuestionnaire[]:[]
+   },
+   async save(id,expectedVersion,answers,submit){
+    writable()
+    const {data,error}=await client.rpc('tutor_questionnaire_save',{p_owner:scope.ownerId,p_questionnaire:id,
+     p_expected_version:expectedVersion,p_answers:answers,p_submit:submit})
+    active()
+    if(error)throw new TutorRpcError(String(error.code??''),error.code==='22023'?'Answer every question before submitting.':'Your answers were not saved yet.')
+    return data as QuestionnaireSave
+   },
   },
  }
 }
