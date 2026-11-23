@@ -161,9 +161,17 @@ begin
    raise exception 'Concept version conflict: refresh graph before proposing';end if;
  if v_stored_from_hash<>v_from_hash or v_stored_to_hash<>v_to_hash then
    raise exception 'Concept content hash mismatch: refresh graph before proposing';end if;
+ -- Legacy uniqueness is directional. Check both orientations before
+ -- selecting a rejected row, so approved reverse links cannot be hidden.
+ if exists(select 1 from public.atlas_links l
+   where l.user_id=v_owner and l.kind=v_kind
+     and l.status in ('proposed','approved')
+     and ((l.from_id=v_from and l.to_id=v_to) or
+       (v_kind in ('equivalent','analogous','contrasts') and l.from_id=v_to and l.to_id=v_from)))
+ then raise exception 'Typed Atlas relationship already exists; review it rather than duplicating it';end if;
  select * into v_old from public.atlas_links l
- where l.user_id=v_owner and l.kind=v_kind and
- ((l.from_id=v_from and l.to_id=v_to) or
+ where l.user_id=v_owner and l.kind=v_kind and l.status='rejected'
+ and ((l.from_id=v_from and l.to_id=v_to) or
   (v_kind in ('equivalent','analogous','contrasts') and l.from_id=v_to and l.to_id=v_from))
  order by case when l.from_id=v_from then 0 else 1 end limit 1 for update;
  if found then

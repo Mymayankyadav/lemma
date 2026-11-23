@@ -2012,6 +2012,26 @@ try{
   assert.ok((await q("select count(*)::int n from public.action_changes where table_name='atlas_links' and row_pk->>'id'=$1",[rejectedId]))[0].n>=2,
     'rejection history must remain in audit journal');
   await role('service_role');
+  // Reviewer regression: a rejected forward link must not mask an approved reverse.
+  await role(null);
+  const symA=(await q("insert into public.concepts(user_id,subject_id,slug,name,blurb) values($1,$2,'n225-symmetric-a','Symmetric A','Original') returning id,version,name,blurb",[owner,n169Subject]))[0];
+  const symB=(await q("insert into public.concepts(user_id,subject_id,slug,name,blurb) values($1,$2,'n225-symmetric-b','Symmetric B','Original') returning id,version,name,blurb",[owner,n169Subject]))[0];
+  const hA=contentHash(symA),hB=contentHash(symB);
+  await q("insert into public.atlas_links(id,user_id,from_id,to_id,kind,status,origin,from_hash,to_hash) values($1,$2,$3,$4,'equivalent','rejected','tutor','stale','stale'),($5,$2,$4,$3,'equivalent','approved','tutor',$6,$7)",
+    [A(7),owner,symA.id,symB.id,A(8),hB,hA]);
+  await role('service_role');
+  await assert.rejects(mcp(command('atlas_link_proposals','create',{patch:{
+    from_id:symA.id,to_id:symB.id,kind:'equivalent',confidence:0.9,
+    rationale:'Candidate reconsidered after changing its description',
+    from_hash:hA,to_hash:hB,from_version:symA.version,
+    to_version:symB.version,expected_rejected_version:1
+  }})),/already exists/i,'approved reverse link must block rejected forward resubmission');
+  await role(null);
+  const symStatus=await q('select id,status from public.atlas_links where id=$1 or id=$2',[A(7),A(8)]);
+  assert.deepEqual(new Map(symStatus.map(r=>[r.id,r.status])),
+   new Map([[A(7),'rejected'],[A(8),'approved']]),
+   'neither historical link decision may change on a failed resubmission');
+  await role('service_role');
   mark('atlas_link_proposals','create');
   const conceptVersion=Number((await q('select version from public.concepts where id=$1',[n169Concept]))[0].version);
   await atlasStep('atlas_concepts','update',{target:{id:n169Concept},expectedVersion:conceptVersion,patch:{kind:'technique'}},
