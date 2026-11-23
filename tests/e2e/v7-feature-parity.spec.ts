@@ -1,4 +1,5 @@
 import {expect,test,type Page} from '@playwright/test';
+import {openScratch} from './helpers/scratch';
 import {at,NOW} from './v7-scenes';
 
 const go=async(page:Page,route:string,flags='')=>{
@@ -56,8 +57,9 @@ for(const [width,height,scale] of [[320,640,100],[390,844,160],[844,390,100]])te
  if(width>height)expect(boxes.chat.right).toBeLessThanOrEqual(boxes.composer.left+1);
  else expect(boxes.chat.bottom).toBeLessThanOrEqual(boxes.composer.top+1);
  expect(boxes.field.bottom).toBeLessThanOrEqual(boxes.keys.top+1);
- for(const label of ['Scratch','Edit answer','Send']){
-  const button=page.locator('.composer').getByRole('button',{name:label,exact:true});
+ // N227: Scratch moved from the answer box to the keyboard strip's pencil; it keeps the same 44 px target.
+ for(const [scope,label] of [['.kb .strip','Scratch'],['.composer','Edit answer'],['.composer','Send']] as const){
+  const button=page.locator(scope).getByRole('button',{name:label,exact:true});
   await expect(button).toBeVisible();const box=(await button.boundingBox())!;
   expect(box.width).toBeGreaterThanOrEqual(44);expect(box.height).toBeGreaterThanOrEqual(44);
  }
@@ -67,7 +69,7 @@ for(const [width,height,scale] of [[320,640,100],[390,844,160],[844,390,100]])te
  const actions=page.getByRole('dialog',{name:'Answer actions',exact:true});
  for(const label of ['Photo','Hint 1/4','Stuck','Context','Undo typing','Redo typing'])await expect(actions.getByRole('button',{name:label,exact:true})).toBeVisible();
  await actions.getByRole('button',{name:'Close',exact:true}).click();
- await page.getByRole('button',{name:'Scratch',exact:true}).click();
+ await openScratch(page);
  await expect(page.getByRole('img',{name:'Draw your answer'})).toBeVisible();
  await expect(page.getByRole('group',{name:'Answer keyboard'})).toHaveCount(0);
 });

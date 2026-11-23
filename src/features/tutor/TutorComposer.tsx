@@ -1,5 +1,5 @@
 import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
-import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, MoveRight, Paperclip, Camera, Pencil, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
+import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, MoveRight, Paperclip, Camera, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
 import {isFlagOn} from '../../flags';
 import {TutorInkTray,type TutorInkState} from './TutorInk';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
@@ -840,6 +840,10 @@ export function TutorComposer(props: Props) {
   // N221: in the Android app Hide keyboard sits in the band under the keys, where Gboard's ⌄ is; browsers keep it in the strip.
   const hideButton = (className: string) => <button className={className} type="button" aria-label="Hide keyboard"
     onPointerDown={keepSelection} onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>;
+  const scratchButton = props.ink && <button className="sbtn" type="button" aria-label="Scratch" aria-pressed={scratch}
+    disabled={editingDisabled || props.ink.draft.queuedText !== undefined} onPointerDown={keepSelection} onClick={pencil}><PenLine aria-hidden="true"/></button>;
+  const nextSlotButton = <button type="button" className="sbtn" aria-label="Next □" disabled={editingDisabled} onPointerDown={keepSelection}
+    onClick={() => {haptic('key'); nextSlot();}}><MoveRight aria-hidden="true"/></button>;
   const drawButton = <button className="sbtn" type="button" aria-label="Draw symbol" disabled={editingDisabled} onPointerDown={keepSelection}
     onClick={()=>{haptic('snap');selectSurface('symbol');}}><PenLine aria-hidden="true"/></button>;
   const surface: Surface = scratch ? 'scratch' : equationMode ? 'equation' : assist.drawing ? 'symbol' : 'keys';
@@ -862,17 +866,21 @@ export function TutorComposer(props: Props) {
       {!props.ink && imageIssue==='unavailable' && !editingDisabled &&
         <Button small type="button" onClick={()=>change(padEdit(removeTutorImageReferences(props.value)))}>Remove image references</Button>}
     </div>}
-    {!scratch && uncommitted && <p className="composer-status" role="status">Insert or discard your unfinished drawing before sending.</p>}
+    {/* N227 (Owner: "extremely annoying text that comes in a way an actual tutor question"): a small pill by the answer,
+        not a line in the conversation's type, and a tap reopens the drawing to insert or discard it. */}
+    {!scratch && uncommitted && <div className="composer-pill" role="status">
+      <span>Unfinished drawing</span>
+      <button type="button" disabled={editingDisabled || props.ink?.draft.queuedText !== undefined} onPointerDown={keepSelection}
+        onClick={() => {haptic('snap'); selectSurface('scratch');}}>Open</button>
+    </div>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
     <form className="composer" onSubmit={event => {event.preventDefault(); send();}}>
       <div className="writing-composer-card" data-can-swipe={Boolean(writingGhost) || undefined}
         onPointerDownCapture={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={stopSwipe}
         onLostPointerCapture={event => {if (event.target === event.currentTarget && swipe.current) stopSwipe();}}>
       <div className="field">
-        {props.ink
-          ? <IconButton label="Scratch" type="button" aria-pressed={scratch} disabled={editingDisabled || props.ink.draft.queuedText!==undefined}
-              onPointerDown={keepSelection} onClick={pencil}><Pencil aria-hidden="true"/></IconButton>
-          : <IconButton label="Keys" type="button" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
+        {/* N227 (Owner: "remove the pencil icon from the input box"): the scratch pad opens from the strip's pencil. */}
+        {!props.ink && <IconButton label="Keys" type="button" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
               onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
         {props.ink ? <TutorAnswerEditor editor={richField} value={props.value} images={props.ink.draft.photos}
           placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
@@ -995,8 +1003,8 @@ export function TutorComposer(props: Props) {
             Gboard's wide space bar. N223 (Owner: the pencil at the left edge, "the symbols suggested should live inside
             the suggestion strip", no useless symbols beside the next words): Gboard's frame in every state, Draw symbol
             at the left and Equation mode at the right, the slots between them for one kind of suggestion at a time. */}
-        {incomplete ? <button type="button" className="sbtn" aria-label="Next □" disabled={editingDisabled} onPointerDown={keepSelection}
-          onClick={() => {haptic('key'); nextSlot();}}><MoveRight aria-hidden="true"/></button> : drawButton}
+        {/* N227 (Owner): with the scratch pad, the strip's pencil opens it (Draw symbol lives on in equation mode). */}
+        {props.ink ? scratchButton : incomplete ? nextSlotButton : drawButton}
         {slots === 'equation' && <div className="sugg equation-words" role="group" aria-label="Equation suggestions">
           {/* Best in the middle, as the words and symbols (and Gboard). */}
           {[equationReadings[1], equationReadings[0], equationReadings[2]].map((reading, index) => reading
@@ -1008,8 +1016,9 @@ export function TutorComposer(props: Props) {
         {symbolSlots.length > 0 && <SymbolWords options={symbolSlots} disabled={editingDisabled} onAccept={acceptSymbol}/>}
         <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting} hidden={slots !== 'words'}/>
         {slots === 'quick' && <div className="sugg tutor-quick-math" role="group" aria-label="Quick math symbols">
-          {['∀', '∈', '⇒'].map(symbol => <button key={symbol} type="button" className="qsym" aria-label={symbol}
+          {['∀', '∈', ...(props.ink && incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="qsym" aria-label={symbol}
             disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
+          {props.ink && incomplete && nextSlotButton}
         </div>}
         {equationButton}
         {hideButton('sbtn')}

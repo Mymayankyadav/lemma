@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useRef, useState, type CSSProperties, type ReactNode} from 'react';
 import {Download, LoaderCircle, RotateCcw, ScanText, Trash2, Undo2} from 'lucide-react';
 import {MathText} from '../../../ui/MathText';
 import {InkCanvas} from '../../../ui/v7/ink/InkCanvas';
@@ -13,6 +13,9 @@ type Reading =
   | {phase: 'download'; loaded: number}
   | {phase: 'result'; latex: string}
   | {phase: 'error'; message: string};
+
+/** The paper's dragged extra height, remembered while the app runs. */
+let equationExtra = 0;
 
 export type EquationSymbols = {
   /** Draw single symbols is on: the drawing is also read as one symbol, on the device, as it is drawn. */
@@ -44,6 +47,12 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
 }) {
   const [history, setHistory] = useState<PadInkHistory>(() => initializePadInk()!);
   const [reading, setReading] = useState<Reading>({phase: 'idle'});
+  /** A stroke is being drawn: the floating tools step aside. */
+  const [stroking, setStroking] = useState(false);
+  /** How much taller than the keys the learner has dragged the paper (kept while the composer is open). */
+  const [extra, setExtra] = useState(() => equationExtra);
+  useEffect(() => {equationExtra = extra;}, [extra]);
+  const resize = useRef<{pointer: number; y: number; extra: number} | null>(null);
   /** The reader is on this device (cached, or it read something this session). */
   const ready = useRef<boolean | null>(null);
   /** The learner agreed to the one-time download; a later Read does not ask again while it finishes. */
@@ -120,6 +129,8 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   }
 
   const inked = history.strokes.length > 0;
+  const maxExtra = () => Math.max(0, Math.round(window.innerHeight * 0.32));
+  const clampExtra = (value: number) => Math.max(0, Math.min(maxExtra(), value));
   const busy = reading.phase !== 'idle';
   const shownSymbols = symbols.enabled && inked ? symbols.ids.slice(0, busy ? 2 : 4) : [];
   return <section className="tutor-equation" aria-label="Equation mode">
@@ -152,21 +163,48 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
       </div>
       {trailing}
     </div>
-    <div className="tutor-equation-head">
-      <span className="tutor-equation-note">{inked ? (symbols.enabled ? 'Symbols appear as you write' : 'Tap Read for the equation') : ''}</span>
-      <div className="tutor-equation-tools">
+    {/* N227 (Owner: "these options waste the row; float them and hide them while drawing"; "expandable as in the
+        scratch pad"): the paper takes the whole place. Read, Undo and Clear float in its corner and step aside while a
+        stroke is drawn; a grip on its top edge drags it taller. Two fingers scroll the paper, three the chat. */}
+    <div className="tutor-equation-body" style={{'--equation-extra': extra + 'px'} as CSSProperties}>
+      <div className="tutor-equation-grip" role="separator" tabIndex={0} aria-orientation="horizontal" aria-label="Resize writing paper"
+        aria-valuenow={Math.round(extra)} aria-valuemin={0} aria-valuemax={Math.round(maxExtra())}
+        onPointerDown={event => {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          resize.current = {pointer: event.pointerId, y: event.clientY, extra};
+        }}
+        onPointerMove={event => {
+          const drag = resize.current;
+          if (drag?.pointer === event.pointerId) setExtra(clampExtra(drag.extra + drag.y - event.clientY));
+        }}
+        onLostPointerCapture={() => {resize.current = null;}}
+        onKeyDown={event => {
+          const step = event.key === 'ArrowUp' ? 32 : event.key === 'ArrowDown' ? -32 : 0;
+          if (!step) return;
+          event.preventDefault();
+          setExtra(current => clampExtra(current + step));
+        }}><span aria-hidden="true"/></div>
+      <div className="tutor-equation-paper" ref={paper}>
+        <div className="tutor-equation-sheet" ref={sheet}>
+          <InkCanvas history={history} onChange={change} mode={disabled ? 'hand' : 'pen'} width={3} label="Write an equation" panTouches={2}
+            onStroke={() => setStroking(true)} onStrokeEnd={() => setStroking(false)}
+            onPan={(dx, dy, _gesture, fingers) => {
+              const view = fingers && fingers >= 3 ? paper.current?.closest('.lemma-tutor')?.querySelector<HTMLElement>('[role="log"]') : paper.current;
+              if (!view) return;
+              if (!(fingers && fingers >= 3)) view.scrollLeft -= dx;
+              view.scrollTop -= dy;
+            }}/>
+        </div>
+      </div>
+      <div className="tutor-equation-float" role="group" aria-label="Paper tools" data-hidden={stroking || undefined}>
         <button type="button" className="tutor-equation-read" aria-label="Read equation" disabled={disabled || !inked || reading.phase === 'reading' || reading.phase === 'download'}
           onPointerDown={event => event.preventDefault()} onClick={() => {haptic('snap'); void read();}}><ScanText aria-hidden="true"/><span>Read</span></button>
         <button type="button" className="sbtn" aria-label="Undo stroke" disabled={disabled || !history.undo.length}
           onPointerDown={event => event.preventDefault()} onClick={() => change(undoPadInk(history))}><Undo2 aria-hidden="true"/></button>
         <button type="button" className="sbtn" aria-label="Clear writing" disabled={disabled || !inked}
           onPointerDown={event => event.preventDefault()} onClick={clearInk}><Trash2 aria-hidden="true"/></button>
-      </div>
-    </div>
-    <div className="tutor-equation-paper" ref={paper}>
-      <div className="tutor-equation-sheet" ref={sheet}>
-        <InkCanvas history={history} onChange={change} mode={disabled ? 'hand' : 'pen'} width={3} label="Write an equation" panTouches={2}
-          onPan={(dx, dy) => {const view = paper.current; if (view) {view.scrollLeft -= dx; view.scrollTop -= dy;}}}/>
       </div>
     </div>
   </section>;

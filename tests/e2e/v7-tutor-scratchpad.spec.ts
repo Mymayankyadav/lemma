@@ -1,4 +1,5 @@
 import {expect,test,type Page} from '@playwright/test';
+import {openScratch} from './helpers/scratch';
 
 const url='/lemma/?demo=1&flags=v7Shell,tutorScratch#/p/real-analysis/cp/CP4/tutor';
 const paper=(page:Page)=>page.getByRole('region',{name:'Drawing paper'});
@@ -12,7 +13,6 @@ const actions=async(page:Page)=>{
   await expect(menu).toBeVisible();
   return menu;
 };
-const scratch=(page:Page)=>page.getByRole('button',{name:'Scratch',exact:true});
 const conversation=(page:Page)=>page.getByRole('log',{name:'Conversation'});
 const answerField=(page:Page)=>page.getByRole('textbox',{name:'Your answer',exact:true});
 const send=(page:Page)=>page.getByRole('button',{name:'Send',exact:true});
@@ -41,7 +41,7 @@ async function holdInkOpen(page:Page) {
 }
 
 async function insertTestDrawing(page:Page) {
-  await scratch(page).click();
+  await openScratch(page);
   const box=(await paper(page).boundingBox())!;
   await page.mouse.move(box.x+22,box.y+38);
   await page.mouse.down();
@@ -141,7 +141,7 @@ test('One finger draws and a three-finger swipe scrolls without leaving ink',asy
   await connection.getByRole('button',{name:'Confirm import'}).click();
   await expect(conversation(page)).toContainText('Step 12.');
   if (await connection.isVisible()) await page.keyboard.press('Escape');
-  await scratch(page).click();
+  await openScratch(page);
   const log=conversation(page);
   await expect.poll(()=>log.evaluate(e=>e.scrollHeight-e.clientHeight)).toBeGreaterThan(100);
   const client=await context.newCDPSession(page);
@@ -166,7 +166,7 @@ test('One finger draws and a three-finger swipe scrolls without leaving ink',asy
 
 test('Stylus, eraser drag, history and resize preserve the drawing',async({page,context})=>{
   await open(page);
-  await scratch(page).click();
+  await openScratch(page);
   const client=await context.newCDPSession(page);
   const box=(await paper(page).boundingBox())!;
   const x=box.x+35,y=box.y+40;
@@ -221,7 +221,7 @@ test('Stylus, eraser drag, history and resize preserve the drawing',async({page,
     };
   }))).toBe(true);
   await page.reload();
-  await scratch(page).click();
+  await openScratch(page);
   await expect(ink(page)).toHaveAttribute('d',path!);
   const reloadedSettings=await actions(page);
   await expect(reloadedSettings.getByRole('button',{name:'Pen width 7'})).toHaveAttribute('aria-pressed','true');
@@ -249,7 +249,7 @@ test('Drawings are inserted inline, reopen for editing and send in reference ord
   };
 
   for(let index=1;index<=3;index++){
-    await scratch(page).click();
+    await openScratch(page);
     expect((await conversation(page).boundingBox())!.height).toBeGreaterThanOrEqual(300);
     await expect(paper(page)).toHaveCSS('border-top-width','0px');
     await draw(35*index);
@@ -284,7 +284,7 @@ test('Drawings are inserted inline, reopen for editing and send in reference ord
 test('Legacy canvas and photo drafts reopen as inline references',async({page})=>{
   await open(page);
   await answerField(page).fill('My earlier explanation.');
-  await scratch(page).click();
+  await openScratch(page);
   const box=(await paper(page).boundingBox())!;
   await page.mouse.move(box.x+22,box.y+38);
   await page.mouse.down();
@@ -327,7 +327,7 @@ test('Legacy canvas and photo drafts reopen as inline references',async({page})=
 
 test('A failed device save leaves the drawing editable and publishes no reference',async({page})=>{
   await open(page);
-  await scratch(page).click();
+  await openScratch(page);
   const box=(await paper(page).boundingBox())!;
   await page.mouse.move(box.x+22,box.y+38);
   await page.mouse.down();
@@ -362,7 +362,7 @@ for (const [width,height,scale] of [[320,640,100],[390,844,160]]) {
     await page.setViewportSize({width,height});
     await page.addInitScript(size=>document.addEventListener('DOMContentLoaded',()=>{document.documentElement.style.fontSize=size+'%';}),scale);
     await open(page);
-    await scratch(page).click();
+    await openScratch(page);
     await paper(page).scrollIntoViewIfNeeded();
     const panel=page.getByRole('region',{name:'Scratch pad'});
     const scrollWidth=await panel.evaluate(e=>e.scrollWidth-e.clientWidth);

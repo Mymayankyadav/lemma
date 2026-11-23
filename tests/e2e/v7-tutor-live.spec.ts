@@ -1,4 +1,5 @@
 import {expect,test,type Page} from '@playwright/test'
+import {openScratch} from './helpers/scratch';
 import type {TutorThreadView} from '../../src/data/tutor/manual-api'
 import {liveTutorFixtureResponse,prepareLiveTutor} from './helpers/live-tutor'
 
@@ -92,7 +93,7 @@ test('Account deletion removes only that owner’s tutor ink and fences a delaye
  await page.evaluate(()=>{location.hash='/p/logic/cp/CP1/tutor'})
  await expect(page).toHaveURL(/#\/p\/logic\/cp\/CP1\/tutor$/)
  await page.getByRole('button',{name:'Write a question',exact:true}).click()
- await page.getByRole('button',{name:'Scratch',exact:true}).click()
+ await openScratch(page)
  await expect(page.getByRole('button',{name:'Pen',exact:true})).toBeEnabled()
  await page.evaluate(()=>{
   const open=IDBFactory.prototype.open
@@ -249,10 +250,12 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
  await dialog.getByRole('button',{name:'Confirm import'}).click()
  const result=dialog.getByRole('article',{name:'Imported reply'})
  await expect(result.getByRole('heading',{name:'Imported by you'})).toBeVisible()
- await result.getByRole('button',{name:'Make a card from this reply',exact:true}).click()
- await result.getByLabel('Front').fill('Is the converse always true?')
- await result.getByLabel('Back').fill('It needs a separate proof.')
- await result.getByRole('button',{name:'Propose card'}).click()
+ // N227: Make a card is an icon under the reply; its fields are in a sheet.
+ await result.getByRole('button',{name:'Make a card',exact:true}).click()
+ const cardSheet=page.getByRole('dialog',{name:'Make a card'})
+ await cardSheet.getByLabel('Front').fill('Is the converse always true?')
+ await cardSheet.getByLabel('Back').fill('It needs a separate proof.')
+ await cardSheet.getByRole('button',{name:'Propose card'}).click()
  await expect(result.getByRole('link',{name:'Review proposal'})).toHaveAttribute('href',new RegExp('/proposals[?]card='+proposalId+'$'))
  await result.getByRole('link',{name:'Review proposal'}).click()
  await expect(page.locator('[data-proposal="'+proposalId+'"]')).toContainText('Is the converse always true?')
@@ -297,7 +300,7 @@ test('global hold keeps owner history and receipt recovery available without sub
  await expect(draft).toHaveJSProperty('readOnly',true)
  await expect(tutor.getByRole('region',{name:'Pending tutor submission'})).toContainText('Never submitted question')
  await expect(tutor.getByRole('button',{name:'Send',exact:true})).toBeDisabled()
- await expect(tutor.getByRole('button',{name:'Make a card from this reply',exact:true})).toHaveCount(0)
+ await expect(tutor.getByRole('button',{name:'Make a card',exact:true})).toHaveCount(0)
  await tutor.getByRole('button',{name:'Check saved receipt'}).click()
  await expect(tutor.getByRole('alert')).toContainText('No saved receipt was found')
  expect(receipts).toContain(committed.operationId);expect(receipts).toContain(unconfirmed.operationId)

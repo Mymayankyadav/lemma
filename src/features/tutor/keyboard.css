@@ -264,7 +264,7 @@
 /* Equation mode: only the keys' place changes, and it keeps their four rows. The strip keeps its frame (Keys at the
    left, Equation mode at the right) and offers readings. N223 (Owner: "keep the drawing by hand and remove all these
    symbols so the scratch pad can become bigger"): under the strip, one slim row with Read, Undo and Clear, then paper. */
-.lemma-tutor .tutor-equation {display: grid; position: relative; grid-template-rows: auto 36px calc(var(--cell) * 4 - 36px);}
+.lemma-tutor .tutor-equation {display: grid; position: relative; grid-template-rows: auto auto;}
 .lemma-tutor .kb .strip.tutor-equation-strip {display: flex; align-items: center;}
 .lemma-tutor .kb .strip.tutor-equation-strip > .sbtn {flex: none; width: max(var(--v7-touch), 10.4vw);}
 .lemma-tutor .tutor-equation-candidates {
@@ -297,29 +297,40 @@
 .lemma-tutor :is(.tutor-equation-ask, .tutor-equation-retry) svg {width: 16px; height: 16px;}
 .lemma-tutor .tutor-equation-retry {display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 9999px; background: transparent; color: inherit;}
 .lemma-tutor .tutor-equation-reading.preferred {font-weight: 600; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v7-role-selection-fg) 35%, transparent);}
-/* The slim row: what the paper does on the left, Read (the whole equation, on request) and the ink tools on the right. */
-.lemma-tutor .tutor-equation-head {display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0;
-  padding: 0 calc(var(--cap-gap-x, 1.3vw) / 2 + .56vw);}
-.lemma-tutor .tutor-equation-note {min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--v7-role-text-tertiary); font: 400 var(--v7-type-caption)/1.2 var(--v7-sans);}
-.lemma-tutor .tutor-equation-tools {flex: none; display: flex; align-items: center; gap: 2px;}
-.lemma-tutor .tutor-equation-tools .sbtn {width: 34px; height: 34px; min-width: 0; min-height: 0; border-radius: 9999px; color: var(--v7-role-text-secondary);}
-.lemma-tutor .tutor-equation-tools .sbtn svg {width: 17px; height: 17px;}
-.lemma-tutor .tutor-equation-tools .sbtn:disabled {opacity: .4;}
+/* The paper fills the rest, inside the keys' margins: a sheet wider and taller than its window with faint writing lines,
+   scrolled both ways. */
+.lemma-tutor .tutor-equation-body {position: relative; display: grid; height: calc(var(--cell) * 4 + var(--equation-extra, 0px)); min-height: 0;}
+.lemma-tutor .tutor-equation-paper {
+  position: relative; min-height: 0; margin: 10px calc(var(--cap-gap-x, 1.3vw) / 2 + .56vw) 4px; overflow: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; border: 1px solid var(--v7-role-border-subtle); border-radius: 8px; background: var(--v7-role-surface-raised);
+}
+/* N227: the grip in the gap above the paper, as on the scratch pad; dragging it up makes the paper taller. */
+.lemma-tutor .tutor-equation-grip {
+  position: absolute; z-index: 2; top: -6px; left: 50%; transform: translateX(-50%); display: grid; place-items: center;
+  width: 64px; height: 22px; cursor: ns-resize; touch-action: none; user-select: none;
+}
+.lemma-tutor .tutor-equation-grip span {width: 36px; height: 4px; border-radius: 9999px; background: var(--v7-role-border-default);}
+.lemma-tutor .tutor-equation-grip:focus-visible {outline: 2px solid var(--v7-role-focus-ring); outline-offset: -2px; border-radius: 8px;}
+/* Read, Undo and Clear float in the paper's corner and step aside while a stroke is drawn. */
+.lemma-tutor .tutor-equation-float {
+  position: absolute; z-index: 1; top: 16px; right: calc(var(--cap-gap-x, 1.3vw) / 2 + .56vw + 6px); display: flex; align-items: center; gap: 2px;
+  padding: 3px; border: 1px solid var(--v7-role-border-subtle); border-radius: 9999px;
+  background: color-mix(in srgb, var(--v7-role-surface-overlay) 92%, transparent); box-shadow: var(--v7-shadow-1);
+  transition: opacity .15s ease;
+}
+.lemma-tutor .tutor-equation-float[data-hidden] {opacity: 0; pointer-events: none;}
+@media (prefers-reduced-motion: reduce) {.lemma-tutor .tutor-equation-float {transition: none;}}
+.lemma-tutor .tutor-equation-float .sbtn {width: 34px; height: 34px; min-width: 0; min-height: 0; border-radius: 9999px; color: var(--v7-role-text-secondary);}
+.lemma-tutor .tutor-equation-float .sbtn svg {width: 17px; height: 17px;}
+.lemma-tutor .tutor-equation-float .sbtn:disabled {opacity: .4;}
 .lemma-tutor .tutor-equation-read {
-  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px 0 10px; margin-inline-end: 4px; border: 0;
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px 0 10px; margin-inline-end: 2px; border: 0;
   border-radius: 9999px; background: var(--v7-role-selection-subtle); color: var(--v7-role-selection-fg);
   font: 600 var(--v7-type-caption)/1 var(--v7-sans);
 }
 .lemma-tutor .tutor-equation-read svg {width: 16px; height: 16px;}
 .lemma-tutor .tutor-equation-read:disabled {background: transparent; color: var(--v7-role-text-disabled);}
 .lemma-tutor .tutor-equation-read:not(:disabled):active {background: var(--key-down);}
-/* The paper fills the rest, inside the keys' margins: a sheet wider and taller than its window with faint writing lines,
-   scrolled both ways. */
-.lemma-tutor .tutor-equation-paper {
-  position: relative; min-height: 0; margin: 0 calc(var(--cap-gap-x, 1.3vw) / 2 + .56vw) 4px; overflow: auto; overscroll-behavior: contain;
-  scrollbar-width: thin; border: 1px solid var(--v7-role-border-subtle); border-radius: 8px; background: var(--v7-role-surface-raised);
-}
 .lemma-tutor .tutor-equation-sheet {
   width: max(250%, 40rem); height: 200%;
   background: repeating-linear-gradient(transparent 0 calc(var(--cell) * 1.1 - 1px),

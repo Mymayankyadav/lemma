@@ -78,7 +78,7 @@ test('symbol names, commands and short forms take the slots; next words come wit
   await page.keyboard.type('For eps');
   await expect(symbols.getByRole('button', {name: 'Insert ε (Epsilon)', exact: true})).toBeVisible();
   await expect(quick).toHaveCount(0);
-  await expect(keyboard.getByRole('button', {name: 'Draw symbol', exact: true})).toBeVisible();
+  await expect(keyboard.getByRole('button', {name: 'Scratch', exact: true})).toBeVisible();
   await page.keyboard.press('Backspace');
   await page.keyboard.press('Backspace');
   await page.keyboard.press('Backspace');
@@ -131,27 +131,101 @@ test('equation mode is paper in the keys\' place: symbols as they are drawn, the
   expect((await keyboard.boundingBox())!.height).toBeCloseTo(height, 0);
 });
 
-test('one tap on the composer\'s pencil opens the scratch pad, whose tools are one row with Keys first', async ({page}) => {
+test('the strip\'s pencil opens the scratch pad, the answer box has no pencil, and the pad\'s tools are one row', async ({page}) => {
+  // N227 (Owner): the scratch pad is wired to the pencil in the suggestion strip, and the pencil left the answer box.
   await openAnswer(page);
-  const pencil = page.getByRole('button', {name: 'Scratch', exact: true});
+  await expect(page.locator('.composer').getByRole('button', {name: 'Scratch', exact: true})).toHaveCount(0);
+  const keyboard = page.getByRole('group', {name: 'Answer keyboard', exact: true});
+  const pencil = keyboard.getByRole('button', {name: 'Scratch', exact: true});
+  const [pencilBox, stripBox] = [(await pencil.boundingBox())!, (await keyboard.locator('.strip').boundingBox())!];
+  expect(pencilBox.x - stripBox.x).toBeLessThan(10);
+  await expect(keyboard.getByRole('button', {name: 'Draw symbol', exact: true})).toHaveCount(0);
   await pencil.click();
   const pad = page.getByRole('region', {name: 'Scratch pad'});
   await expect(pad).toBeVisible();
+  await expect(page.getByRole('region', {name: 'Symbol recognition'})).toHaveCount(0);
   const tools = pad.getByRole('group', {name: 'Drawing tools'}).getByRole('button');
   await expect(tools.first()).toHaveAccessibleName('Keys');
   const rows = new Set(await tools.evaluateAll(nodes => nodes.map(node => Math.round(node.getBoundingClientRect().top))));
   expect(rows.size).toBe(1);
   expect(await pad.getByRole('region', {name: 'Drawing paper'}).evaluate(node => [node.scrollWidth > node.clientWidth, node.scrollHeight > node.clientHeight]))
     .toEqual([true, true]);
-  await pencil.click();
+  await tools.first().click();
   await expect(pad).toHaveCount(0);
-  await expect(page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: 'q', exact: true})).toBeVisible();
+  await expect(keyboard.getByRole('button', {name: 'q', exact: true})).toBeVisible();
+});
+
+test('equation mode: the paper takes the whole place, its tools float and step aside while drawing, and it grows', async ({page}) => {
+  // N227 (Owner: "these options waste the row"; "expandable as in the scratch pad").
+  const {keyboard} = await openAnswer(page);
+  await keyboard.getByRole('button', {name: 'Equation mode', exact: true}).click();
+  const panel = page.getByRole('region', {name: 'Equation mode'});
+  const paper = panel.locator('.tutor-equation-paper');
+  const tools = panel.getByRole('group', {name: 'Paper tools'});
+  const [paperBox, toolsBox] = [(await paper.boundingBox())!, (await tools.boundingBox())!];
+  // Floating over the paper's corner, not a row above it.
+  expect(toolsBox.y).toBeGreaterThanOrEqual(paperBox.y);
+  expect(toolsBox.x + toolsBox.width).toBeLessThanOrEqual(paperBox.x + paperBox.width);
+  // While a stroke is drawn the tools step aside; they return when it ends.
+  const start = [paperBox.x + 30, paperBox.y + paperBox.height - 30];
+  await page.mouse.move(start[0], start[1]);
+  await page.mouse.down();
+  await page.mouse.move(start[0] + 60, start[1] - 10, {steps: 4});
+  await expect(tools).toHaveCSS('opacity', '0');
+  await page.mouse.up();
+  await expect(tools).toHaveCSS('opacity', '1');
+  await expect(panel.getByRole('button', {name: 'Read equation', exact: true})).toBeEnabled();
+  // The grip on the paper's top edge drags it taller; the keyboard grows with it.
+  const before = (await keyboard.boundingBox())!.height;
+  const grip = panel.getByRole('separator', {name: 'Resize writing paper'});
+  const gripBox = (await grip.boundingBox())!;
+  await page.mouse.move(gripBox.x + gripBox.width / 2, gripBox.y + gripBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(gripBox.x + gripBox.width / 2, gripBox.y + gripBox.height / 2 - 80, {steps: 6});
+  await page.mouse.up();
+  await expect.poll(async () => (await paper.boundingBox())!.height).toBeGreaterThan(paperBox.height + 60);
+  expect((await keyboard.boundingBox())!.height).toBeGreaterThan(before + 60);
+  await grip.focus();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await expect.poll(async () => (await paper.boundingBox())!.height).toBeLessThan(paperBox.height + 20);
+});
+
+test('two fingers scroll the equation paper both ways; three scroll the chat', async ({page}) => {
+  // N227 (Owner: "three finger scroll is not working in it, add two finger scroll in eq composer").
+  const {keyboard} = await openAnswer(page);
+  await keyboard.getByRole('button', {name: 'Equation mode', exact: true}).click();
+  const paper = page.getByRole('region', {name: 'Equation mode'}).locator('.tutor-equation-paper');
+  const box = (await paper.boundingBox())!;
+  const client = await page.context().newCDPSession(page);
+  const swipe = async (fingers: number, dx: number, dy: number) => {
+    const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+    const points = (ox: number, oy: number) => Array.from({length: fingers}, (_, i) => ({x: cx - 40 + i * 40 + ox, y: cy + oy, id: i}));
+    await client.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: points(0, 0)});
+    for (let step = 1; step <= 6; step++) {
+      await client.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: points(dx * step / 6, dy * step / 6)});
+    }
+    await client.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
+  };
+  await swipe(2, -90, -50);
+  await expect.poll(() => paper.evaluate(node => [node.scrollLeft > 30, node.scrollTop > 20])).toEqual([true, true]);
+  // No stroke was drawn by the fingers.
+  await expect(page.getByRole('img', {name: 'Write an equation'}).locator('path')).toHaveCount(0);
+  const chat = page.getByRole('log', {name: 'Conversation'});
+  const [scrollLeft, scrollTop] = await paper.evaluate(node => [node.scrollLeft, node.scrollTop]);
+  // Room to scroll: the demo conversation is short.
+  await chat.evaluate(node => {const room = document.createElement('div'); room.style.height = '1200px'; room.style.flex = 'none'; node.prepend(room); node.scrollTop = node.scrollHeight;});
+  const chatBefore = await chat.evaluate(node => node.scrollTop);
+  await swipe(3, 0, 60);
+  await expect.poll(() => chat.evaluate(node => node.scrollTop)).toBeLessThan(chatBefore);
+  expect(await paper.evaluate(node => [node.scrollLeft, node.scrollTop])).toEqual([scrollLeft, scrollTop]);
 });
 
 async function writeOnPaper(page: Page, strokes: number[][][]) {
-  // Strokes are given in a 200 × 100 frame, scaled into the paper's window.
+  // Strokes are given in a 200 × 100 frame, scaled into the paper's window left of its floating tools (top right).
   const box = (await page.locator('.tutor-equation-paper').boundingBox())!;
-  const at = ([x, y]: number[]) => [box.x + 8 + x / 200 * (box.width - 16), box.y + 6 + y / 100 * (box.height - 12)] as const;
+  const at = ([x, y]: number[]) => [box.x + 8 + x / 200 * (box.width * .6 - 16), box.y + 6 + y / 100 * (box.height - 12)] as const;
   for (const [first, ...rest] of strokes) {
     await page.mouse.move(...at(first));
     await page.mouse.down();

@@ -6,6 +6,16 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N227 Equation mode tools float, finger scrolling and a resizable paper; the strip pencil opens the scratch pad; quieter chat notices; Atlas typed links
+
+Owner task: "Few fixes required. 1. These options just waste the important row space and can be executed as floating option that hides when drawing is happening, three finger scroll is not working in it, add three two finger scroll in eq composer. The area should be expandable as isln the scratch pad. Dragging the expand handle 2. Remove the symbol search using detexify which opens when I tap on the pencil icon in suggestion strip rather wire scratch pad to it and and therefore remove pencil icon from the input box. 3. In atlas add optional view for v3 type links and use color coding for it, sits inside the fiter menu."
+Owner task: "Extremely annoying text that comes in a way actual tutor question. Same goes for 'make a card..' just use icon for making cards and this menu below chat can be used later for tracking other things that are chat specific like opening cards suggested by the tutor in chat or quick questionare by tutor etc."
+Stage: Harden · Status: done · Needs: N224 · Assigned: chat-683106#krtq
+Done = Equation mode's Read, Undo and Clear float over the paper and hide during a stroke; a grip drags the paper taller; two fingers scroll the paper and three the chat. With ink on, the strip's pencil opens the scratch pad and the input box has no pencil. The unfinished-drawing sentence is a small pill; Make a card is an icon in a reply-actions row opening a sheet. The Atlas Layers sheet has an optional, colour- and dash-coded Typed links view with a key, kept on the device. Recorded in docs/current/N227.md.
+Tests: tests/e2e/v7-tutor-inline-math.spec.ts; tests/e2e/v7-atlas-typed-links.spec.ts; tests/unit/atlas/typed-links.test.ts; the scratch pad, live tutor, feature parity, UI plan v2, equation recognition and inline editor specs.
+Scope: src/features/tutor/**; src/features/atlas/v7/**; src/features/adaptive/panels/AtlasLayers.tsx; src/ui/v7/ink/InkCanvas.tsx; tests/e2e/{v7-tutor-inline-math,v7-atlas-typed-links,v7-tutor-live,v7-tutor-inline-editor,v7-ui-plan-v2,v7-tutor-equation-recognition,v7-tutor-scratchpad,v7-feature-parity}.spec.ts; tests/e2e/v7-scenes.ts; tests/e2e/helpers/scratch.ts; tests/unit/atlas/typed-links.test.ts; docs/current/N227.md; NEXT.md.
+Not: new dependencies; changing V3 link data or approvals; protected CI paths.
+
 ## N225 Finish Atlas MCP typed-link proposal draft with repository checks
 
 Owner task: "Complete your draft pr and please follow rules of repo to pass scope of the repo."

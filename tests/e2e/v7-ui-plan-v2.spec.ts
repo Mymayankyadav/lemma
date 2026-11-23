@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {openScratch} from './helpers/scratch';
 import {NOW,at} from './v7-scenes';
 import {liveTutorFixtureResponse,prepareLiveTutor} from './helpers/live-tutor';
 import type {TutorThreadView} from '../../src/data/tutor/manual-api';
@@ -80,7 +81,7 @@ test('Tutor opens in reading mode and sends an image-only answer',async({page})=
   await page.getByRole('textbox',{name:'Your answer',exact:true}).click();
   await expect(page.getByRole('group',{name:'Answer keyboard'})).toBeVisible();
   expect((await chat.boundingBox())?.height).toBeGreaterThanOrEqual(420);
-  await page.getByRole('button',{name:'Scratch',exact:true}).click();
+  await openScratch(page);
   const canvas=page.getByRole('img',{name:'Draw your answer'});
   const box=(await canvas.boundingBox())!;
   await page.mouse.move(box.x+30,box.y+30);
@@ -146,7 +147,7 @@ test('Tutor reloads an offline image queue and attaches it once after reconnecti
   const removePhoto=answer.getByRole('button',{name:'Remove photo',exact:true});
   const removeDrawing=answer.getByRole('button',{name:'Remove drawing',exact:true});
   await expect(removePhoto).toBeVisible();
-  await page.getByRole('button',{name:'Scratch',exact:true}).click();
+  await openScratch(page);
   const canvas=page.getByRole('img',{name:'Draw your answer'});
   const box=(await canvas.boundingBox())!;
   await page.mouse.move(box.x+25,box.y+30);

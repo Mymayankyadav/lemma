@@ -16,7 +16,8 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
   onStroke,onStrokeEnd,onPan,panTouches=3}: {
   history:PadInkHistory;onChange:(history:PadInkHistory)=>void;mode?:'pen'|'eraser'|'hand';
   width?:number;accent?:boolean;label:string;className?:string;onStroke?:()=>void;onStrokeEnd?:()=>void;
-  onPan?:(dx:number,dy:number,gesture:'hand'|'touch')=>void;
+  /** `fingers` is how many touch the paper in a touch pan (N227: two scroll the paper, three the chat). */
+  onPan?:(dx:number,dy:number,gesture:'hand'|'touch',fingers?:number)=>void;
   /** How many fingers pan instead of drawing (N221: the equation paper pans with two). */
   panTouches?:number;
 }) {
@@ -76,7 +77,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
       if (multiTouch.current) {
         // One pointer event updates one contact. Its delta divided by the count
         // is the change of the gesture's centroid.
-        if (size>=panTouches && !active.current) onPan?.((at.x-previous.x)/size,(at.y-previous.y)/size,'touch');
+        if (size>=panTouches && !active.current) onPan?.((at.x-previous.x)/size,(at.y-previous.y)/size,'touch',size);
         return;
       }
     }

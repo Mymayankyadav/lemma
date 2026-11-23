@@ -25,6 +25,7 @@ import {isFlagOn} from '../../../flags';
 import {matchesFilter,type AtlasFilter} from './filters';
 import {rememberRoomItem} from '../../../ui/v7/room';
 import {ConceptFacets} from '../../adaptive/panels/ConceptFacets';
+import {typedEdges} from './typedLinks';
 import {AtlasLayerContent,AtlasLayers,usedBridges} from '../../adaptive/panels/AtlasLayers';
 import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 
@@ -127,6 +128,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
 }
 
 /** R2 · F12: past this many concepts or links the map becomes a hairball on a phone, so the list is the default. */
+const TYPED_LINKS_KEY='lemma.atlas.typed-links';
 export function atlasTooDense(stars:number,edges:number):boolean{return stars>250||edges>600;}
 /** v7 Atlas (PLAN §6.12): a seeded, searchable star map with a list view for assistive technology. */
 export default function AtlasV7(){
@@ -135,6 +137,9 @@ export default function AtlasV7(){
  const room=isFlagOn('v7Room'),home=useHome();
  const [subset,setSubset]=useState<'All'|'Tonight'|'Shaky'|'Demonstrated'>('All');
  const [stale,setStale]=useState(false),[layers,setLayers]=useState(false);
+ // N227: Atlas V3's typed links on the map, an optional view kept per device.
+ const [typedOn,setTypedOn]=useState(()=>{try{return localStorage.getItem(TYPED_LINKS_KEY)==='1';}catch{return false;}});
+ const showTyped=(on:boolean)=>{setTypedOn(on);try{localStorage.setItem(TYPED_LINKS_KEY,on?'1':'0');}catch{/* the view still changes */}};
  const [mapFrame,setMapFrame]=useState<'initial'|'here'|'all'>('initial'),allSky=mapFrame==='all';
  const [panning,setPanning]=useState(false);
  const query=useAtlas(),navigate=useNavigate(),location=useLocation(),[params,setParams]=useSearchParams();
@@ -149,6 +154,7 @@ export default function AtlasV7(){
   requestedLayer==='bridges'&&usedBridges(atlasModel.data).length?'bridges':'map';
  const reduced=useReducedMotion();
  const model=useMemo(()=>query.data?buildAtlasModel({...query.data,concepts:query.data.concepts.map(c=>({...c,kind:atlasModel.data?.model.index[c.id]?.kind??c.kind,facets:atlasModel.data?.facets[c.id],gap:atlasModel.data?{p:Math.max(.05,...(atlasModel.data.facets[c.id]??[]).map(f=>f.gap)),lastAt:(d=>d?.length?new Date(d[d.length-1].at).toISOString():null)(atlasModel.data.model.direct[c.id])}:undefined}))}):null,[query.data,atlasModel.data]);
+ const typed=useMemo(()=>model&&atlasModel.data?typedEdges(model.stars,atlasModel.data.links??[]):[],[model,atlasModel.data]);
  const focusCluster=useMemo(()=>{
   if(!model)return null;
   const resume=home.data?.resume;
@@ -334,7 +340,7 @@ export default function AtlasV7(){
   {atlasView==='map'&&(mapVisible||layout?.model===model)&&<section className="v7-atlas-map" aria-label="Atlas map" aria-describedby="v7-atlas-map-summary" data-covered={!mapVisible||undefined} inert={!mapVisible} aria-hidden={!mapVisible||undefined}>
    <p id="v7-atlas-map-summary" className="v7-sr-only">{summary}. The map is visual; use List view to browse concepts with assistive technology.</p>
    {layout?.model===model?<AtlasMap ref={map} model={model} layout={layout.result} source={layout.source} selected={selected} reduced={reduced} paused={!mapVisible}
-     focusCluster={allSky?null:focusCluster} focusSelected={mapFrame==='initial'} highlighted={highlighted}
+     focusCluster={allSky?null:focusCluster} focusSelected={mapFrame==='initial'} highlighted={highlighted} typedLinks={typedOn?typed:undefined}
      insets={{top:64,right:8,bottom:selectedStar?PEEK:0,left:8}} labelMargin={{top:56,right:optionsShown?72:12,bottom:selectedStar?PEEK+16:8,left:8}}
      onSelect={index=>select(index,index!==null)} onPan={setPanning}/>
     :layoutError?<div className="v7-atlas-state" role="alert"><p>Couldn't arrange the map. The List view still works.</p>
@@ -360,7 +366,7 @@ export default function AtlasV7(){
    <Button onClick={()=>setDialog('new')}>New concept</Button>
   </section>:null}
   <AtlasLayers subset={subset} onSubset={setSubset} subjects={atlasView==='map'?model.clusters.filter(cluster=>view!=='list'||listedClusters.has(cluster.index)).map(cluster=>({id:cluster.index,name:cluster.name})):[]} onSubject={id=>{setLayers(false);if(view==='map')map.current?.flyToCluster(id);else{setShown(rows.length);requestAnimationFrame(()=>document.getElementById('atlas-subject-'+id)?.scrollIntoView({block:'start'}));}}} open={layers} onClose={()=>setLayers(false)} view={atlasView} onView={setAtlasView} filter={atlasFilter}
-   onFilter={setAtlasFilter} kind={atlasKind} onKind={setAtlasKind} stale={stale} onStale={setStale} model={atlasModel.data}
+   onFilter={setAtlasFilter} kind={atlasKind} onKind={setAtlasKind} stale={stale} onStale={setStale} model={atlasModel.data} typedLinks={typed} typedOn={typedOn} onTyped={showTyped}
    legend={<ul className="v7-atlas-key">
     {legendOrder.map(state=><li key={state}><StarMark state={state} subjectClassName={subjectClass('Other')}/>{stateLabel[state]}</li>)}
     <li><svg viewBox="0 0 20 20" className="v7-atlas-mark" aria-hidden="true"><path d="M2 10h12M10 6l5 4-5 4" className="v7-atlas-mark-link"/></svg>Needs (prerequisite)</li>
