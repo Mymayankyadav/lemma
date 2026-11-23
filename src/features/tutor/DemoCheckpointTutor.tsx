@@ -25,6 +25,7 @@ import type {TutorPageContext} from './TutorLayout'
 import {ReplyActions} from './ReplyActions'
 import {QuestionnaireButton,type QuestionnaireBackup} from './TutorQuestionnaire'
 import type {TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
+import type {TutorFollowUp} from '../../data/tutor/manual-api'
 import './replyActions.css'
 
 type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
@@ -137,6 +138,14 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     void questionnaireApi.list().then(list=>{if(current)setQuestionnaires(list)},()=>undefined)
     return ()=>{current=false}
   },[questionnaireApi,session?.thread.readAt])
+  // N228 (Owner: "allow posting of messages even when tutor is not"): extra messages on the turn waiting for the tutor.
+  const followupApi=session?.api.followups
+  const [followups,setFollowups]=useState<readonly TutorFollowUp[]>([])
+  const loadFollowups=useCallback(async()=>{
+    if(!followupApi){setFollowups([]);return}
+    try{setFollowups(await followupApi.list())}catch{/* They are shown when the thread reloads. */}
+  },[followupApi])
+  useEffect(()=>{void loadFollowups()},[loadFollowups,session?.thread.readAt])
   const replaceQuestionnaire=useCallback((next:TutorQuestionnaire)=>setQuestionnaires(list=>list.map(item=>item.id===next.id?next:item)),[])
   const questionnaireBackup=useMemo<QuestionnaireBackup>(()=>{
     const key=(id:string)=>draftKey+':questionnaire:'+id
@@ -249,6 +258,22 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     if(session?.thread.offline&&hasImages&&!readOnly) {
       await ink.update(current=>current===inkDraft?{...current,queuedText:text}:current).catch(()=>{});
       return;
+    }
+    const waiting=session?.thread.head.pendingTurnId
+    if (waiting && followupApi && session && !busy && !readOnly && !session.thread.offline && session.thread.canSubmit!==false && !session.thread.outbox?.length) {
+      // N228: the tutor has not replied yet. The message joins the waiting question (text only; pictures wait for the reply).
+      if (hasImages) {setError('Pictures can be sent once the tutor has replied. Remove them to post this now.');return}
+      if (!text.trim() || text.length>2000 || text.includes('□')) return
+      setBusy(true);setError('')
+      try {
+        const saved=await followupApi.add(waiting,crypto.randomUUID(),text)
+        setFollowups(list=>list.some(item=>item.id===saved.id)?list:[...list,saved])
+        question.clearIfUnchanged(text)
+      } catch (err) {
+        await refresh(session.api).catch(()=>{})
+        setError(err instanceof Error?err.message:'Your message was not saved. It is still in the box.')
+      } finally {setBusy(false)}
+      return
     }
     if (!session || busy || readOnly || session.thread.offline || session.thread.canSubmit===false ||
       session.thread.head.pendingTurnId || session.thread.outbox?.length || !text.trim()&&!hasImages || text.length>2000 ||
@@ -467,7 +492,9 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     {page&&loadEarlier}
     {allTurns.map(turn=>turn.status==='completed'?<article key={turn.id} className={page?"turn":undefined} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
       {page&&<div className="ans"><div className="msg u"><div className="bd"><TutorAnswer question={turn.snapshot.question}
-        attachments={turn.snapshot.attachments} owner={ownerId??''}/></div></div></div>}
+        attachments={turn.snapshot.attachments} owner={ownerId??''}/></div></div>
+        {followups.filter(item=>item.turnId===turn.id).map(item=><div key={item.id} className="msg u" data-followup=""><div className="bd">
+          <TutorAnswer question={item.body} attachments={undefined} owner={ownerId??''}/></div></div>)}</div>}
       <div className={page?"msg a":undefined} data-latest-reply={page&&turn.id===lastReplyId?true:undefined}>
       <h3 className={page?"who":undefined}>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':page?'Tutor · Q'+turn.sequence:'Tutor reply'}</h3>
       {!page&&turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>The connector reports {turn.finalReply.provenance.reportedHost} as its host (unverified).</p>}
@@ -505,7 +532,9 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     </article>:page?<div key={turn.id} className="ans">
       <div className="msg u"><div className="bd"><TutorAnswer question={turn.snapshot.question}
         attachments={turn.snapshot.attachments} owner={ownerId??''}/></div></div>
-      <span className="ctag">{turn.status==='cancelled'?'Cancelled':'Saved'}</span>
+      {followups.filter(item=>item.turnId===turn.id).map(item=><div key={item.id} className="msg u" data-followup=""><div className="bd">
+        <TutorAnswer question={item.body} attachments={undefined} owner={ownerId??''}/></div></div>)}
+      <span className="ctag">{turn.status==='cancelled'?'Cancelled':followups.some(item=>item.turnId===turn.id&&item.seen)?'Tutor has read your messages':'Saved'}</span>
     </div>:null)}
     {!page&&allTurns.filter(t=>t.status==='cancelled').map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
     {!page&&loadEarlier}
@@ -517,7 +546,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   if(page)return <TutorChat page={page} turns={allTurns} draft={ink.draft.queuedText??question.text} onChange={question.change}
     onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread?.offline&&!readOnly&&!pending&&!thread.outbox?.length)} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
     draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
-    canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&!pending&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
+    canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&(!pending||!!followupApi)&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
     listenerSeenAt={thread?.listenerSeenAt} resumePrompt={delivery
       ? 'Continue my Lemma tutor session. Use get(what=tutor_turn, id='+delivery.reference+').'
       : 'Continue my Lemma tutor session. Use get(what=tutor_turn) to find my answer.'}

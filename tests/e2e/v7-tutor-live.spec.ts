@@ -202,6 +202,7 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
    expect([args.p_owner,args.p_slug,args.p_checkpoint]).toEqual([owner,'logic',cpId])
    // N228: the tutor's questionnaires on this thread (none in this fixture).
    if(path==='rpc/tutor_questionnaire_state')return route.fulfill({json:[]})
+   if(path==='rpc/tutor_followup_state')return route.fulfill({json:[]})
    if(path==='rpc/tutor_thread_state')return route.fulfill({json:thread})
    const c=args.p_command
    if(c.operation==='start'){

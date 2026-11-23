@@ -49,6 +49,14 @@ export type ManualTutor={
  proposeCard?:(turnId:string,version:number,front:string,back:string)=>Promise<void>
  /** N228: the tutor's quick questionnaires on this thread, and the learner's answers to them. */
  questionnaires?:TutorQuestionnaireApi
+ /** N228: more messages on the turn that is waiting for the tutor. */
+ followups?:TutorFollowUpApi
+}
+export type TutorFollowUp={id:string;turnId:string;body:string;createdAt:string;seen:boolean}
+export type TutorFollowUpApi={
+ list:()=>Promise<readonly TutorFollowUp[]>
+ /** messageId is the message's own id: a retry is the same message. */
+ add:(turnId:string,messageId:string,body:string)=>Promise<TutorFollowUp>
 }
 export type QuestionnaireSave={status:'saved'|'submitted'|'conflict';questionnaire:TutorQuestionnaire}
 export type TutorQuestionnaireApi={

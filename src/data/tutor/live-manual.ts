@@ -4,7 +4,7 @@ import {tutorConnectorGrantHash} from '../../../supabase/functions/_shared/tutor
 import {unresolvedTutorImageIds,type TutorAttachment} from './attachment-types'
 import {tutorLocalScopeActive,writeTutorLocal} from './local-storage'
 import type {TutorComposerDraft,TutorContextSelection} from './turn-model'
-import type {ConnectorDelivery,ManualTutor,QuestionnaireSave,TutorThreadView} from './manual-api'
+import type {ConnectorDelivery,ManualTutor,QuestionnaireSave,TutorFollowUp,TutorThreadView} from './manual-api'
 import type {TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
 
 type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string;readOnly?:boolean}
@@ -349,6 +349,24 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   },
   async proposeCard(turnId,version,front,back){
    if((await dispatch(write('suggest_card',turnId,version,{front,back}),true)).status!=='proposed')throw new Error('Card proposal was not saved.')
+  },
+  followups:{
+   async list(){
+    active()
+    const {data,error}=await client.rpc('tutor_followup_state',target)
+    active()
+    if(error)throw new Error('Could not open your extra messages.')
+    return Array.isArray(data)?data as TutorFollowUp[]:[]
+   },
+   async add(turnId,messageId,body){
+    writable()
+    const {data,error}=await client.rpc('tutor_followup_add',{...target,p_turn:turnId,p_message:messageId,p_body:body})
+    active()
+    if(error)throw new TutorRpcError(String(error.code??''),error.code==='40001'
+     ?'The tutor has just replied. Send this as your next answer.'
+     :error.code==='22023'?'Wait for the tutor to reply before posting more.':'Your message was not saved. It is still in the box.')
+    return (data as {followup:TutorFollowUp}).followup
+   },
   },
   questionnaires:{
    async list(){

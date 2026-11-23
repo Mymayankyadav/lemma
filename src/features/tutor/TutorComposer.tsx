@@ -124,7 +124,9 @@ export function TutorComposer(props: Props) {
   const uncommitted = props.ink?.ready && inkDraft && (inkDraft.inlineImages || hasImage) && Boolean(inkDraft.strokes.length ||
     (inkDraft.editingDrawing && refs.includes(inkDraft.editingDrawing.id)));
   const queue=props.canQueueImage&&hasImage;
-  const blocked = readOnly || !queue&&!props.canSend || incomplete || composing || scratch || uncommitted || Boolean(imageIssue);
+  // N228: while the tutor has not replied, a message joins the waiting question as text; pictures wait for the reply.
+  const followUp = props.pending && props.canSend;
+  const blocked = readOnly || !queue&&!props.canSend || incomplete || composing || scratch || uncommitted || Boolean(imageIssue) || followUp&&hasImage;
   const editingDisabled = readOnly || composing;
   const inputPrefs = useTutorInputPreferences();
   const scopeKey = props.inputScopeKey ?? 'tutor-preview';
@@ -919,7 +921,7 @@ export function TutorComposer(props: Props) {
         {!props.ink && <IconButton label="Keys" type="button" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
               onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
         {props.ink ? <TutorAnswerEditor editor={richField} value={props.value} images={props.ink.draft.photos}
-          placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
+          placeholder={followUp ? 'Add to your question…' : props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
           composing={composing} ghost={ghostSuffix} marked={writingEdit ? {start: writingEdit.start, end: writingEdit.end} : undefined} onSelection={remember} onChip={chipAction} onMath={openEquation} onFocus={event=>{
             if (event.target === event.currentTarget) focusAnswer();
           }} onKeyDown={keyDown}
@@ -937,7 +939,7 @@ export function TutorComposer(props: Props) {
           onDrop={event=>event.preventDefault()}
         /> : <div className="writing-editor-wrap">{(ghostSuffix || writingEdit) && <div className="writing-editor-mirror" aria-hidden="true">
           <span>{writingEdit ? <>{props.value.slice(0, writingEdit.start)}<span data-writing-aid-source="">{props.value.slice(writingEdit.start, writingEdit.end)}</span>{props.value.slice(writingEdit.end)}</> : props.value}</span>{ghostSuffix}
-        </div>}<textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
+        </div>}<textarea ref={field} aria-label="Your answer" placeholder={followUp ? 'Add to your question…' : props.pending ? 'Draft your next answer…' : 'Write your answer…'}
           inputMode="none" rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
           value={compositionText ?? props.value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={focusAnswer}
           onPointerDown={() => {
