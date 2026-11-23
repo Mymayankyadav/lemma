@@ -1,0 +1,18 @@
+/* N227: the actions under a tutor reply (Copy, the thumbs, Make a card and the tutor's suggestions) and the Make a card sheet. Loaded by
+   DemoCheckpointTutor itself, because the Pad's checkpoint tutor and the sheet both render outside .lemma-tutor. */
+.tutor-card-draft {display: grid; gap: var(--v7-space-2);}
+.tutor-card-draft label {display: grid; gap: var(--v7-space-1); font: 500 var(--v7-type-caption)/1.2 var(--v7-sans); color: var(--v7-role-text-secondary);}
+.tutor-card-draft .v7-field {width: 100%; font: 400 var(--v7-type-body)/1.4 var(--v7-sans); color: var(--v7-role-text-primary);}
+.tutor-card-draft .v7-button {justify-self: start;}
+.tutor-reply-actions {display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: var(--v7-space-1) 0 0 calc(var(--v7-space-2) * -1);}
+/* Fainter than the reply's text, as in the Owner's reference; a chosen thumb takes the selection colour. */
+.tutor-reply-actions .v7-icon-button {color: var(--v7-role-text-tertiary); padding: var(--v7-space-2);}
+.tutor-reply-actions .v7-icon-button svg {width: 18px; height: 18px; stroke-width: 1.75;}
+.tutor-reply-actions .v7-icon-button[aria-pressed="true"] {color: var(--v7-role-selection-fg); background: transparent;}
+.tutor-reply-actions .v7-icon-button[aria-pressed="true"] svg {fill: currentColor; fill-opacity: .18;}
+.tutor-reply-note {color: var(--v7-role-text-tertiary); font: 400 var(--v7-type-caption)/1.2 var(--v7-sans);}
+.tutor-reply-chip {display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: 28px; padding: 0 10px;
+ border-radius: 9999px; background: var(--v7-role-surface-muted); color: var(--v7-role-text-secondary); font: 500 var(--v7-type-caption)/1.2 var(--v7-sans);}
+.tutor-reply-chip-text {min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+.tutor-reply-chip small {font: inherit; color: var(--v7-role-text-tertiary);}
+.tutor-reply-chip a {color: var(--v7-role-link-fg); font-weight: 600; white-space: nowrap;}

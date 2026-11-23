@@ -1,4 +1,5 @@
 import type {LayoutResult} from './layout';
+import {TYPED_LINK_STYLE,type TypedEdge} from './typedLinks';
 import type {AtlasModel,StarState} from './model';
 import {roomLabelSpot} from './roomLabels';
 
@@ -12,6 +13,8 @@ export interface Insets{top:number; right:number; bottom:number; left:number}
 export interface ScenePalette{
  night:boolean; sky:string; grid:string; dust:string; text:string; textSecondary:string; mark:string;
  link:string; selection:string; focus:string; warning:string; subjects:string[]; sans:string;
+ /** N227: each Atlas V3 typed-link kind's colour. */
+ kinds?:Partial<Record<TypedEdge['kind'],string>>;
 }
 export const MIN_ZOOM=.2,MAX_ZOOM=4;
 /** Below this only constellation names and the largest stars are labelled. */
@@ -59,6 +62,8 @@ export class AtlasScene{
  highlighted:ReadonlySet<number>|null=null;
  camera:Camera={x:0,y:0,k:1};
  selected:number|null=null;
+ /** N227: Atlas V3 typed links, drawn when the Layers sheet's Typed links is on. */
+ typedLinks:readonly TypedEdge[]=[];
  private ctx:Ctx;
  private width=1; private height=1; private dpr=1;
  private insets:Insets={top:0,right:0,bottom:0,left:0};
@@ -211,6 +216,22 @@ export class AtlasScene{
     ctx.fillStyle=ctx.strokeStyle;ctx.fill();
    }
   }
+  // N227: typed links as gentle arcs in their kind's colour and dash, so they never sit on a prerequisite line; proposed
+  // links are fainter than approved ones.
+  for(const link of this.typedLinks){
+   const ax=layout.x[link.from],ay=layout.y[link.from],bx=layout.x[link.to],by=layout.y[link.to];
+   if(Math.max(ax,bx)<x0||Math.min(ax,bx)>x1||Math.max(ay,by)<y0||Math.min(ay,by)>y1)continue;
+   const [sx,sy]=this.toScreen(ax,ay),[ex,ey]=this.toScreen(bx,by),length=Math.hypot(ex-sx,ey-sy);
+   if(length<4)continue;
+   const style=TYPED_LINK_STYLE[link.kind],active=selected!==null&&(link.from===selected||link.to===selected);
+   const ux=(ex-sx)/length,uy=(ey-sy)/length,bend=Math.min(40,length*.18);
+   ctx.globalAlpha=(link.proposed?.55:.95)*(dimmed&&!active?.5:1);
+   ctx.strokeStyle=palette.kinds?.[link.kind]||palette.selection;
+   ctx.lineWidth=(link.kind==='equivalent'?2.75:2.25)*(active?1.3:1);
+   ctx.setLineDash(style.dash as number[]);
+   ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo((sx+ex)/2-uy*bend,(sy+ey)/2+ux*bend,ex,ey);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
   ctx.setLineDash([]);
   // Stars in view.
   const visible:number[]=[];

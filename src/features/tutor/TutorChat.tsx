@@ -1,3 +1,4 @@
+import {useAutoHideHeader} from './useAutoHideHeader';
 import {authGeneration,authOwner} from '../../data/authBoundary';
 import {getDemoProfile,getMode} from '../../data/mode';
 import {useLayoutEffect, useRef, useState, type ReactNode} from 'react';
@@ -99,7 +100,8 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
     void onSend(text, options);
   }
   const openConnection = () => setPanel('connection');
-  return <TutorLayout page={page} sequence={latestReply?.sequence ?? 0} offline={offline} overview={overview} listenerSeenAt={listenerSeenAt} resumePrompt={resumePrompt}
+  const headerHidden = useAutoHideHeader(chat, !overview);
+  return <TutorLayout page={page} sequence={latestReply?.sequence ?? 0} offline={offline} overview={overview} headerHidden={headerHidden} listenerSeenAt={listenerSeenAt} resumePrompt={resumePrompt}
     onContext={()=>setPanel('context')} claimExpiresAt={last?.status==='awaiting-tutor'?last.claimExpiresAt:undefined}
     onOverview={!overview ? () => setView('overview') : undefined}
     onQuestion={!overview && question ? () => {
@@ -108,7 +110,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
       if (element && reply) element.scrollTop += reply.getBoundingClientRect().top - element.getBoundingClientRect().top;
     } : undefined}
     onCloseSession={() => setPanel('close')} onConnection={openConnection}>
-    {!overview && question && <button className="tutor-pinned" type="button" aria-haspopup="dialog" onClick={()=>setPanel('question')}>
+    {!overview && question && <button className="tutor-pinned" type="button" aria-haspopup="dialog" inert={headerHidden} onClick={()=>setPanel('question')}>
       <span>On the table</span><strong>{question}</strong>
     </button>}
     <div className="chat" ref={chat} role="log" aria-label="Conversation" aria-live="polite"

@@ -1,4 +1,5 @@
 import {expect, test, type Page} from '@playwright/test';
+import {openScratch} from './helpers/scratch';
 
 // N221 (Owner task): handwritten equation recognition in the scratch pad. The model (Pix2Text MFR, MIT, 118 MB) only
 // downloads when the learner asks; these tests never download it: Hugging Face is answered by the test.
@@ -24,7 +25,7 @@ test('Recognize equation asks before its one-time download and keeps the drawing
   });
   await page.goto(url);
   await page.getByRole('button', {name: 'Write a question'}).click();
-  await page.getByRole('button', {name: 'Scratch', exact: true}).click();
+  await openScratch(page);
   await expect(recognize(page)).toBeDisabled();
   await drawOnePlusOne(page);
   await expect(recognize(page)).toBeEnabled();
@@ -52,7 +53,7 @@ test('a model file that does not match its checksum is refused', async ({page, c
     route.fulfill({status: 200, body: 'not the model', headers: {'access-control-allow-origin': '*'}}));
   await page.goto(url);
   await page.getByRole('button', {name: 'Write a question'}).click();
-  await page.getByRole('button', {name: 'Scratch', exact: true}).click();
+  await openScratch(page);
   await drawOnePlusOne(page);
   await recognize(page).click();
   const sheet = page.getByRole('dialog', {name: 'Recognize equation'});

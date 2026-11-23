@@ -7,6 +7,7 @@ import {KINDS} from '../../../../supabase/functions/_shared/adaptive/kc';
 import type {AtlasReadModel} from '../../../../supabase/functions/_shared/adaptive/atlas';
 import type {AtlasFilter} from '../../atlas/v7/filters';
 import type {ReactNode} from 'react';
+import {TYPED_LINK_KINDS,TYPED_LINK_STYLE,typedLinkCounts,type TypedEdge} from '../../atlas/v7/typedLinks';
 
 export type AtlasLayer = 'map' | 'themes' | 'bridges';
 
@@ -17,13 +18,17 @@ export function usedBridges(model?: Pick<AtlasReadModel,'links'|'bridges'>) {
   return model.bridges.filter(bridge => bridge.strength.u>0 && pairs.delete(bridge.from + '/' + bridge.to));
 }
 
-export function AtlasLayers({open,onClose,view,onView,filter,onFilter,kind,onKind,stale,onStale,model,legend,subset,onSubset,subjects,onSubject}: {
+export function AtlasLayers({open,onClose,view,onView,filter,onFilter,kind,onKind,stale,onStale,model,legend,subset,onSubset,subjects,onSubject,
+  typedLinks=[],typedOn=false,onTyped}: {
   subset:'All'|'Tonight'|'Shaky'|'Demonstrated';onSubset:(subset:'All'|'Tonight'|'Shaky'|'Demonstrated')=>void;
   subjects:{id:number;name:string}[];onSubject:(id:number)=>void;
   open:boolean;onClose:()=>void;view:AtlasLayer;onView:(view:AtlasLayer)=>void;
   filter:AtlasFilter;onFilter:(filter:AtlasFilter)=>void;kind:string;onKind:(kind:string)=>void;
   stale:boolean;onStale:(stale:boolean)=>void;model?:AtlasReadModel;legend:ReactNode;
+  /** N227: Atlas V3's typed links on the map (an optional view) and their colour key. */
+  typedLinks?:readonly TypedEdge[];typedOn?:boolean;onTyped?:(on:boolean)=>void;
 }) {
+  const counts = typedLinkCounts(typedLinks);
   const layers = [
     {value:'map',label:'Constellations',icon:Network,enabled:true},
     {value:'themes',label:'Themes',icon:Milestone,enabled:!!model?.themes.length},
@@ -46,6 +51,18 @@ export function AtlasLayers({open,onClose,view,onView,filter,onFilter,kind,onKin
       <div className="v7-atlas-row">{['any',...KINDS].map(value=>
         <Chip key={value} selected={kind===value} onClick={()=>onKind(value)}>{value[0].toUpperCase()+value.slice(1)}</Chip>)}</div>
       <Switch label="Only stale concepts" checked={stale} onChange={onStale}/>
+      {onTyped&&<>
+        <Switch label={'Typed links'+(typedLinks.length?' · '+typedLinks.length:'')} checked={typedOn&&typedLinks.length>0}
+          disabled={!typedLinks.length} onChange={onTyped}/>
+        {!typedLinks.length&&<p className="v7-meta">No typed links between these concepts yet.</p>}
+        {typedOn&&typedLinks.length>0&&<ul className="v7-atlas-key v7-atlas-typed-key" aria-label="Typed links">
+          {TYPED_LINK_KINDS.filter(kind=>counts.get(kind)).map(kind=><li key={kind}>
+            <svg viewBox="0 0 28 12" className="v7-atlas-typed-mark" aria-hidden="true"><path d="M2 6h24" style={{stroke:'var('+TYPED_LINK_STYLE[kind].token+')',
+              strokeDasharray:TYPED_LINK_STYLE[kind].dash.join(' ')||undefined}}/></svg>
+            {TYPED_LINK_STYLE[kind].label}<small>{counts.get(kind)}</small></li>)}
+          {typedLinks.some(link=>link.proposed)&&<li className="v7-atlas-typed-proposed">Fainter lines are proposed, not yet approved.</li>}
+        </ul>}
+      </>}
       <section aria-label="Key"><h3 className="v7-eyebrow">Key</h3>{legend}</section>
     </div>
   </Sheet>;

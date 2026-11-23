@@ -16,11 +16,14 @@ import {addLocalTutorExcerpt,LOCAL_TUTOR_EXCERPT_LIMIT,previewLocalTutorExcerpt}
 import {openDemoManualTutor} from '../../data/tutor/demo-manual'
 import {subscribeTutorLocalCleanup,tutorLocalScopeActive,tutorOwnerDeleted,tutorStorageOwner,writeTutorLocal} from '../../data/tutor/local-storage'
 import {isFlagOn} from '../../flags'
-import {Button,Sheet} from '../../ui/v7/components'
+import {Button,IconButton,Sheet} from '../../ui/v7/components'
+import {SquarePlus} from 'lucide-react'
 import {MathText} from '../../ui/MathText'
 import {chatLink,studyPrompt} from '../../lib/chat'
 import {TutorChat,type SendOptions} from './TutorChat'
 import type {TutorPageContext} from './TutorLayout'
+import {ReplyActions} from './ReplyActions'
+import './replyActions.css'
 
 type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
 type Handoff = {text:string;requestId:string}
@@ -447,17 +450,22 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
             <p style={{whiteSpace:'pre-wrap'}}>{selection.excerpt}</p></li>
         })}</ul>
       </Disclosure>}
-      {turn.finalReply.suggestions.map(suggestion=><p key={suggestion.intentId}>
-        {suggestion.summary} {suggestion.proposalId&&(suggestion.status==='pending'
-          ?<Link to={suggestion.kind==='card'||suggestion.kind==='card_edit'?'/proposals?card='+encodeURIComponent(suggestion.proposalId):'/proposals/'+encodeURIComponent(suggestion.proposalId)}>Review proposal</Link>
-          :<span>{suggestion.status}</span>)}
-      </p>)}
+      {/* N227 (Owner): under a reply, one quiet row of icons for this chat: Copy, Good and Bad reply, Make a card, then
+          what the tutor suggested (a card, a change) as small chips. The row is where chat-specific things go later. */}
+      <ReplyActions id={turn.id} body={turn.finalReply.body}>
+        {session?.api.proposeCard&&!recoveryOnly&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
+        {turn.finalReply.suggestions.map(suggestion=><span key={suggestion.intentId} className="tutor-reply-chip" data-status={suggestion.status}>
+          <span className="tutor-reply-chip-text">{suggestion.summary}</span>
+          {suggestion.proposalId&&(suggestion.status==='pending'
+            ?<Link to={suggestion.kind==='card'||suggestion.kind==='card_edit'?'/proposals?card='+encodeURIComponent(suggestion.proposalId):'/proposals/'+encodeURIComponent(suggestion.proposalId)}>Review proposal</Link>
+            :<small>{suggestion.status}</small>)}
+        </span>)}
+      </ReplyActions>
       {live&&!!scope.linkedSessions?.length&&<Disclosure label="Linked study sessions">
         <p>Open the session to record your own evidence or summary.</p>
         <ul>{scope.linkedSessions.map(study=><li key={study.number}><Link to={'/s/'+encodeURIComponent(scope.pathId)+'/'+study.number}>
           Session {study.number} · {study.goal}</Link></li>)}</ul>
       </Disclosure>}
-      {session?.api.proposeCard&&!recoveryOnly&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
       <ReplyEditor live={live} draftKey={draftKey+':reply:'+turn.id} busy={busy} completed onConfirm={async()=>false}/>
       </div>
     </article>:page?<div key={turn.id} className="ans">
@@ -529,16 +537,19 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
 }
 
 function CardSuggestion({disabled,onPropose}:{disabled:boolean;onPropose:(front:string,back:string)=>Promise<boolean>}) {
-  const [front,setFront]=useState(''),[back,setBack]=useState('')
-  // N223 (Owner: "no idea where the draft card came from"): a flashcard from this reply, proposed for review like the
-  // tutor's own; the fields stack at full width.
-  return <Disclosure label="Make a card from this reply">
-    <div className="tutor-card-draft">
-      <label>Front<textarea className="v7-field" rows={2} disabled={disabled} value={front} maxLength={1500} onChange={e=>setFront(e.target.value)}/></label>
-      <label>Back<textarea className="v7-field" rows={3} disabled={disabled} value={back} maxLength={3000} onChange={e=>setBack(e.target.value)}/></label>
-      <Button disabled={disabled||!front.trim()} onClick={()=>void onPropose(front,back).then(saved=>{if(saved){setFront('');setBack('')}})}>Propose card</Button>
-    </div>
-  </Disclosure>
+  const [front,setFront]=useState(''),[back,setBack]=useState(''),[open,setOpen]=useState(false)
+  // N227 (Owner: "just use an icon for making cards"): a flashcard from this reply, proposed for review like the tutor's
+  // own, written in a sheet.
+  return <>
+    <IconButton label="Make a card" title="Make a card from this reply" disabled={disabled} onClick={()=>setOpen(true)}><SquarePlus aria-hidden="true"/></IconButton>
+    <Sheet open={open} onClose={()=>setOpen(false)} title="Make a card">
+      <div className="tutor-card-draft">
+        <label>Front<textarea className="v7-field" rows={2} disabled={disabled} value={front} maxLength={1500} onChange={e=>setFront(e.target.value)}/></label>
+        <label>Back<textarea className="v7-field" rows={3} disabled={disabled} value={back} maxLength={3000} onChange={e=>setBack(e.target.value)}/></label>
+        <Button variant="primary" disabled={disabled||!front.trim()} onClick={()=>void onPropose(front,back).then(saved=>{if(saved){setFront('');setBack('');setOpen(false)}})}>Propose card</Button>
+      </div>
+    </Sheet>
+  </>
 }
 
 function ReplyEditor({draftKey,live,busy,completed,readOnly=false,onConfirm}:{

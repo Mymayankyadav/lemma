@@ -1,4 +1,5 @@
 import {expect,type Page} from "@playwright/test";
+import {openScratch} from './helpers/scratch';
 // The v7 scenes shared by the screen captures (v7-screens.spec.ts) and the rendered design lint (v7-design-lint.spec.ts).
 // Audit seed, clock frozen at Mon 9 Nov 2026, 13:43 IST (en-IN, Asia/Kolkata), as in v7 PLAN §8.
 export const NOW=new Date("2026-11-09T13:43:00+05:30");
@@ -113,7 +114,7 @@ export const redesignShots: Shot[] = [
  }},
  {name:"tutor-scratch",hash:"/p/real-analysis/cp/CP4/tutor",flags:"tutorScratch",prepare:async page=>{
   await page.getByRole("button",{name:"Write a question"}).click();
-  await page.getByRole("button",{name:"Scratch",exact:true}).click();
+  await openScratch(page);
  }},
  {name:"settings-tutor",hash:"/settings?section=tutor"},
  {name:"review-done",hash:"/review/done"},
