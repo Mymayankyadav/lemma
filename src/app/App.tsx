@@ -1,8 +1,9 @@
 import {StudyUiRelease} from '../data/StudyUiRelease';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {lazy,Suspense} from 'react'
 import { createHashRouter, RouterProvider, Navigate } from 'react-router'
 import { LemmaError } from '../data/api'
+import { getMode } from '../data/mode'
 import AppShell from './AppShell'
 import AuthGate from './AuthGate'
 import ErrorBoundary from './ErrorBoundary'
@@ -22,11 +23,14 @@ const TimeLog=lazy(()=>import('../features/time-log/Page'))
 const FocusV7=lazy(()=>import('../features/focus/v7/FocusV7'))
 const WelcomeV7=lazy(()=>import('../features/sign-in/v7/WelcomeV7'))
 const NotFoundV7=lazy(()=>import('./v7/NotFoundV7'))
+// TanStack's online listener can miss the event that preceded a cold offline launch.
+onlineManager.setOnline(navigator.onLine!==false)
+const networkMode=getMode()==='demo'?'always':'online'
 const queryClient = new QueryClient({defaultOptions: {queries: {
- staleTime: 30_000, refetchOnWindowFocus: true,
+ networkMode, staleTime: 30_000, refetchOnWindowFocus: true,
  retry: (count, error) => !(error instanceof LemmaError && ['auth', 'not_found', 'invalid', 'not_implemented'].includes(error.code)) && count < 2,
  retryDelay: attempt=>Math.min(2_000,250*2**attempt),
-}, mutations: {retry: false}}})
+}, mutations: {networkMode, retry: false}}})
 const allowKit=import.meta.env.DEV||import.meta.env.MODE==='test'||import.meta.env.VITE_ALLOW_FLAG_OVERRIDES==='1';
 const router = createHashRouter([{element: <AuthGate><StudyUiRelease><AppShell /></StudyUiRelease></AuthGate>, errorElement: <RouteError />, children: [
  ...screenRoutes.filter(route=>route.path!=='/kit'||allowKit),

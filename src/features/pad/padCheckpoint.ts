@@ -1,5 +1,5 @@
 import {authGeneration, authOwner, authSignedOut, onAccountChange} from '../../data/authBoundary';
-import {supabaseUrl} from '../../data/env';
+import {readDeviceSession} from '../../data/deviceSession';
 import {getMode} from '../../data/mode';
 import {isPadUuid, PAD_DB_PREFIX, type AuthorizedPadScope} from './padDraftStore';
 
@@ -11,16 +11,9 @@ const build = () => document.querySelector<HTMLScriptElement>('script[type="modu
 /** Compare a previously verified sign-in on this device. Reading this opaque session
  * identifier never logs in the app, refreshes a token or authorizes a server request. */
 function deviceSession() {
-  if (getMode() !== 'live' || authSignedOut() || !supabaseUrl) return null;
-  try {
-    const project = new URL(supabaseUrl).hostname.split('.')[0];
-    const stored = JSON.parse(localStorage.getItem('sb-' + project + '-auth-token') ?? 'null');
-    if (!stored || !isPadUuid(stored.user?.id) || typeof stored.access_token !== 'string') return null;
-    const payload = stored.access_token.split('.')[1];
-    const claims = JSON.parse(atob(payload.replaceAll('-', '+').replaceAll('_', '/')));
-    if (claims.sub !== stored.user.id || !isPadUuid(claims.session_id) || (authOwner() && authOwner() !== claims.sub)) return null;
-    return {ownerId: stored.user.id as string, sessionId: claims.session_id as string};
-  } catch {return null;}
+  if (getMode() !== 'live' || authSignedOut()) return null;
+  const session = readDeviceSession(), owner = authOwner();
+  return session && (!owner || owner === session.ownerId) ? session : null;
 }
 
 export function subscribeDevicePad(refresh: () => void) {

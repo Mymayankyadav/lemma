@@ -62,7 +62,7 @@ export function isOfflineKey(key:readonly unknown[]):key is OfflineKey {
  * Never let snake_case, kebab-case, dots or spaces bypass the offline allowlist. */
 const privateKey=(key:string):boolean=>{
  const normalized=key.replace(/[^a-z0-9]/gi,'').toLowerCase()
- return normalized==='auth'||normalized==='endpoint'||
+ return normalized==='auth'||normalized==='authscope'||normalized==='endpoint'||
   /(?:connector|secret|token|authorization|credential|subscription|pushkey|widgetkey|sessionkey|password|apikey|refreshkey|p256dh|authkey|privatekey|servicerolekey|accesskey|vapidkey)/.test(normalized)
 }
 const privateValue=/(?:\/functions\/v1\/mcp\/|\/mcp\/[^\s/]+|bearer\s+\S+|SENTINEL-SECRET|sb_secret_|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b)/i
@@ -92,7 +92,7 @@ function projectSlug(entry:OfflineEntry):string|null {
 }
 /** Oldest project/checkpoint entries go first; keep at most five project slugs. */
 export function boundOfflineEntries(entries:OfflineEntry[],now=Date.now(),maxBytes=OFFLINE_MAX_BYTES):OfflineEntry[]{
- const valid=entries.filter(e=>isOfflineKey(e.key)&&Number.isFinite(e.savedAt)&&e.savedAt<=now&&now-e.savedAt<=OFFLINE_MAX_AGE_MS)
+ const valid=entries.filter(e=>e&&Array.isArray(e.key)&&isOfflineKey(e.key)&&Number.isFinite(e.savedAt)&&e.savedAt<=now&&now-e.savedAt<=OFFLINE_MAX_AGE_MS)
   // Validate before redaction too: a tampered projection with a secret field
   // must be rejected, not silently normalized into an apparently valid record.
   .filter(e=>e.key[0]!=='settings'||isOfflineSettings(e.data))
@@ -240,11 +240,12 @@ export async function readOfflineSnapshot(userId:string,now=Date.now()):Promise<
   return handoff?mergeOfflineSnapshots(saved,handoff,now):saved
  }finally{db.close()}
 }
-export async function hydrateOfflineSnapshot(userId:string,client:QueryClient,now=Date.now()):Promise<number|null>{
- const snapshot=await readOfflineSnapshot(userId,now)
- if(!snapshot)return null
+export async function hydrateOfflineSnapshot(userId:string,client:QueryClient,now=Date.now(),
+ options:{canHydrate?:()=>boolean;acceptKey?:(key:OfflineKey)=>boolean}={}):Promise<number|null>{
+ const snapshot=await readOfflineSnapshot(userId,now).catch(()=>readOfflineHandoff(userId,now))
+ if(!snapshot||options.canHydrate?.()===false)return null
  for(const entry of snapshot.entries){
-  if(client.getQueryData(entry.key)===undefined)
+  if(options.acceptKey?.(entry.key)!==false&&client.getQueryData(entry.key)===undefined)
    client.setQueryData(entry.key,entry.data,{updatedAt:entry.savedAt})
  }
  return snapshot.savedAt

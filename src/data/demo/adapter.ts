@@ -975,7 +975,7 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   async getAuth() {
-    return { email: "demo@lemma.app" };
+    return { id: 'demo', email: "demo@lemma.app" };
   }
   async signIn() {}
   async signOut() {}

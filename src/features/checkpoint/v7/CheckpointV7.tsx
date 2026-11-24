@@ -18,6 +18,7 @@ import type {CheckpointView} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Margin} from '../../../app/v7/Margin';
 import {Button,IconButton,Skeleton} from '../../../ui/v7/components';
+import {useOnline} from '../../../ui/v7/savedCopy';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {isFlagOn} from '../../../flags';
 import {ProofEnd} from '../../../ui/v7/ProofEnd';
@@ -45,7 +46,7 @@ export default function CheckpointV7(){
  const query=useCheckpoint(slug,code),project=useProject(slug),settings=useSettings(),notify=useToast();
  const [more,setMore]=useState(false),navigate=useNavigate();
  const zone=ownerZone(settings.data),client=settings.data?.preferredChat??'claude';
- const detail=query.data,view=detail?.view;
+ const online=useOnline(),detail=query.data,view=detail?.view;
  const evidence=useMemo(()=>detail?groupEvidence(detail.events,detail.sessions,zone):[],[detail,zone]);
  const title=project.data?.project.title??slug,subject=kitSubject(project.data?.subject.name??''),klass=subjectClass(subject);
  const back='/p/'+encodeURIComponent(slug);
@@ -57,10 +58,12 @@ export default function CheckpointV7(){
  }
  const due=useQuery({queryKey:['checkpoint-review-count',view?.id],enabled:studyRepair&&!!view,
   queryFn:async()=>await getApi().getStudyTargetDue?.({kind:'checkpoint',id:view!.id})??0});
- if(query.isPending)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/><Skeleton/><Skeleton/></main>;
- if(query.error||!detail||!view)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/>
-  {query.error instanceof LemmaError&&query.error.code==='not_found'?<EmptyMoment title="This checkpoint doesn't exist." action={{label:'Back to the path',to:back}}/>
-   :<div role="alert" className="v7-learn-empty"><p>{navigator.onLine?'Could not open this checkpoint.':'You’re offline.'}</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}</main>;
+ const unavailable=query.error instanceof LemmaError&&['not_found','auth'].includes(query.error.code);
+ if(!detail||!view||unavailable)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/>
+  {!online?<EmptyMoment title="Connect to open this checkpoint." action={{label:'Back to the path',to:back}}/>
+   :query.isPending?<><Skeleton/><Skeleton/></>
+   :query.error instanceof LemmaError&&query.error.code==='not_found'?<EmptyMoment title="This checkpoint doesn't exist." action={{label:'Back to the path',to:back}}/>
+   :<div role="alert" className="v7-learn-empty"><p>Could not open this checkpoint.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}</main>;
  const step=currentStudyStep(view).index;
  const lockedAfter=detail.prereqs.map(code=>project.data?.checkpoints.find(cp=>cp.code===code)).find(cp=>cp&&cp.ui!=='done'&&cp.ui!=='revisit');
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Checkpoint">
