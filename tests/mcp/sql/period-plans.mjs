@@ -90,7 +90,28 @@ try{
  assert.equal(preview.status,'ok');assert.equal(preview.actionNo,null);
  assert.equal((await q('select count(*)::int n from public.period_plans'))[0].n,0);
  assert.equal((await q('select count(*)::int n from public.actions'))[0].n,before);
- assert.equal(preview.end_date,d1.slice(0,8)+String(Number(d1.slice(8))+6).padStart(2,'0'),'week ends six days later');
+ const expectedEnd=new Date(d1+'T00:00:00Z');
+ expectedEnd.setUTCDate(expectedEnd.getUTCDate()+6);
+ assert.equal(preview.end_date,expectedEnd.toISOString().slice(0,10),'week ends six days later');
+ // Pin independent calendar expectations, including the S0's November rollover.
+ // Exercise the public command, not a duplicate of its SQL date expression.
+ for(const [start,end] of [
+  ['2026-11-24','2026-11-30'],
+  ['2026-11-25','2026-12-01'],
+  ['2027-01-26','2027-02-01'],
+  ['2027-02-23','2027-03-01'],
+  ['2028-02-23','2028-02-29'],
+  ['2028-02-24','2028-03-01'],
+  ['2026-12-26','2027-01-01'],
+ ]){
+  const boundary=await plan('preview',{patch:{period:'week',start_date:start}});
+  assert.equal(boundary.status,'ok');
+  assert.equal(boundary.start_date,start);
+  assert.equal(boundary.end_date,end,'week calendar boundary: '+start);
+  assert.equal(boundary.actionNo,null);
+ }
+ assert.equal((await q('select count(*)::int n from public.period_plans'))[0].n,0,'boundary previews store no plans');
+ assert.equal((await q('select count(*)::int n from public.actions'))[0].n,before,'boundary previews write no actions');
  // 60 (A) + 150 (B) + 45 (C) + 60 (exam effort due the 4th) = 315 minutes, all placed.
  assert.equal(preview.planned_minutes,315);
  assert.deepEqual(preview.unplaced,[]);
