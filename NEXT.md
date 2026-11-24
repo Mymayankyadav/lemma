@@ -6,6 +6,15 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N230 Apple Pencil palm rejection in scratch pad and equation composer
+
+Owner task: "Ok create a new pr with astra 6 dot agents implementing support for ipencil with palm rejection in scratch pad and equation composer."
+Stage: Harden · Status: done · Needs: — · Assigned: chat-563902#p4nc
+Done = Pen input takes priority over active provisional touch ink or erasing. Resting palms cannot draw, erase or pan while a pen is down, including stationary pen contact, and rejected contacts stay rejected until lifted. Both Tutor papers retain existing finger-only drawing/navigation and interrupted-stroke recovery. Record simulated coverage and physical-iPad limitations.
+Tests: tests/unit/pad/ink-pencil.test.tsx; tests/e2e/v7-ink-pencil.spec.ts; existing ink and Tutor full-screen/gesture regression suites.
+Scope: src/ui/v7/ink/**; tests/unit/pad/**; tests/e2e/v7-ink-*.spec.ts; docs/current/N230.md; NEXT.md.
+Not: new dependencies, native Android changes, protected CI changes, treating simulated input as physical Apple Pencil validation, merge or deployment.
+
 ## N229 Simplify Tutor chat and fix Android full-screen drawing
 
 Owner task: "Fix all the issues in lemma app of lemma repo on my github"

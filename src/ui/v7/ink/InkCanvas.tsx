@@ -7,10 +7,10 @@ import {
 import './ink.css';
 
 type Contact = {x:number;y:number};
-type Interaction =
+type Interaction = {input:string} & (
   | {pointer:number;type:'pen';rect:DOMRect;turned:PadMatrix|null;stroke:PadPoint[];done:PadStroke[]}
   | {pointer:number;type:'eraser';rect:DOMRect;turned:PadMatrix|null;history:PadInkHistory}
-  | {pointer:number;type:'hand';at:Contact};
+  | {pointer:number;type:'hand';at:Contact});
 const contact = (event: PointerEvent<SVGSVGElement>):Contact => ({x:event.clientX,y:event.clientY});
 
 /** A stroke this long is simplified; one still this dense after that carries on as a new stroke (never cut off). */
@@ -60,6 +60,8 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
   const active = useRef<Interaction|null>(null);
   const touches = useRef(new Map<number,Contact>());
   const movedTouches = useRef(new Set<number>());
+  // Rejected palms stay rejected until they lift, even after the pen cooldown.
+  const palms = useRef(new Set<number>());
   const multiTouch = useRef(false);
   /** The paper's screen matrix while it is turned (landscape), to carry a screen pan into the paper's own axes. */
   const screen = useRef<PadMatrix|null>(null);
@@ -139,10 +141,27 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
 
   function start(event: PointerEvent<SVGSVGElement>) {
     if (event.button!==0 || (mode==='hand'&&!onPan)) return;
-    if (event.pointerType==='pen') lastPen.current=performance.now();
+    // A new down begins a new contact lifetime; the browser may reuse an ID
+    // whose prior up happened outside this surface.
+    palms.current.delete(event.pointerId);
+    if (event.pointerType==='pen') {
+      lastPen.current=performance.now();
+      // Pencil wins even when a palm touched first. Discard only the unfinished
+      // touch preview, including an eraser preview; committed history is untouched.
+      for (const id of touches.current.keys()) palms.current.add(id);
+      if (active.current?.input==='touch') {
+        palms.current.add(active.current.pointer);
+        reset();
+      }
+      touches.current.clear();
+      movedTouches.current.clear();
+      multiTouch.current=false;
+    }
+    if (event.pointerType==='touch' && (active.current?.input==='pen' || performance.now()-lastPen.current<PALM_MS)) {
+      palms.current.add(event.pointerId);
+      return;
+    }
     if (onPan && event.pointerType==='touch') {
-      // A palm resting beside the pen is neither a stroke nor a pan.
-      if (performance.now()-lastPen.current<PALM_MS) return;
       touches.current.set(event.pointerId,contact(event));
       event.currentTarget.setPointerCapture?.(event.pointerId);
       if (touches.current.size>=Math.max(panTouches,3)) beginTouchPan(event.currentTarget);
@@ -160,13 +179,13 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
     }
     event.currentTarget.setPointerCapture?.(event.pointerId);
     if (mode==='hand') {
-      active.current={pointer:event.pointerId,type:'hand',at:contact(event)};
+      active.current={input:event.pointerType,pointer:event.pointerId,type:'hand',at:contact(event)};
     } else if (mode==='eraser') {
-      const interaction={pointer:event.pointerId,type:'eraser' as const,rect,turned,history:latest.current.history};
+      const interaction={input:event.pointerType,pointer:event.pointerId,type:'eraser' as const,rect,turned,history:latest.current.history};
       active.current=interaction;
       erase(interaction,at);
     } else {
-      const interaction={pointer:event.pointerId,type:'pen' as const,rect,turned,stroke:[at],done:[]};
+      const interaction={input:event.pointerType,pointer:event.pointerId,type:'pen' as const,rect,turned,stroke:[at],done:[]};
       active.current=interaction;
       onStroke?.();
       paintLive(penPath(interaction),true);
@@ -175,6 +194,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
   }
 
   function move(event: PointerEvent<SVGSVGElement>) {
+    if (palms.current.has(event.pointerId)) return;
     if (event.pointerType==='pen') lastPen.current=performance.now();
     const previous=touches.current.get(event.pointerId);
     const at=contact(event);
@@ -216,6 +236,8 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
 
   /** `final` is a real pointerup: its own position is the stroke's last point (a cancel's is not). */
   function end(event: PointerEvent<SVGSVGElement>,final:boolean) {
+    if (event.pointerType==='pen') lastPen.current=performance.now();
+    palms.current.delete(event.pointerId);
     touches.current.delete(event.pointerId);
     if (touches.current.size<2) movedTouches.current.clear();
     if (!touches.current.size) multiTouch.current=false;
