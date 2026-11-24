@@ -1,0 +1,9 @@
+## Incident #1852 — week-end SQL test oracle crossed a month boundary
+
+Main at `e689318d` and CI's revert PR #1853 both failed `tests/mcp/sql/period-plans.mjs` with `week ends six days later`. The test built its expected date by adding six to the day-of-month text without carrying into the next month. On 24 November 2026 its tomorrow fixture was 25 November, so it expected the impossible `2026-11-31`. The unchanged public SQL command correctly returned `2026-12-01` using PostgreSQL date arithmetic. Neither the test nor the original period-plan migration was changed by the Apple Pencil merge #1851.
+
+The test now computes the dynamic expected date using explicit UTC calendar arithmetic. Exact equality remains required. Seven independent, literal start/end pairs exercise `period_plans_command` through its existing authenticated preview entry point: a same-month week, 30- and 31-day month rollovers, ordinary February, a leap-day endpoint, a leap-February rollover, and a year rollover. The added previews must also leave both plans and action history empty. All existing placement, cap, goal, commit, scheduled replan, undo and owner-isolation assertions remain.
+
+Validation: the untouched main test reproduced `actual 2026-12-01 / expected 2026-11-31`; the corrected complete SQL scenario passes with CI's pinned PGlite 0.5.13 against every repository migration. Repository lint and `git diff --check` pass. Hosted PR checks and the subsequent full main run remain the authority for landing and incident closure.
+
+This is a test-oracle repair only: no product code, migration, production data, protected CI rule, threshold, or release flag changes. The known impact is red main CI and its S0 merge freeze; this failure is not evidence that production weekly dates or Apple Pencil behavior are broken. CI owns merging, the bot revert and incident closure.
