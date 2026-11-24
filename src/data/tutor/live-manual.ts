@@ -4,7 +4,7 @@ import {tutorConnectorGrantHash} from '../../../supabase/functions/_shared/tutor
 import {unresolvedTutorImageIds,type TutorAttachment} from './attachment-types'
 import {tutorLocalScopeActive,writeTutorLocal} from './local-storage'
 import type {TutorComposerDraft,TutorContextSelection} from './turn-model'
-import type {ConnectorDelivery,ManualTutor,QuestionnaireSave,TutorFollowUp,TutorThreadView} from './manual-api'
+import {tutorMessageKey,withTutorMessageDeletions,type ConnectorDelivery,type ManualTutor,type QuestionnaireSave,type TutorFollowUp,type TutorThreadView} from './manual-api'
 import type {TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
 
 type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string;readOnly?:boolean}
@@ -30,6 +30,8 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  const scopeKey=JSON.stringify([scope.ownerId,scope.pathId,scope.checkpointId])
  const prefix='lemma.tutor.pending.v1:'+scopeKey+':',cacheKey='lemma.tutor.confirmed.v1:'+scopeKey
  const connectorPrefix='lemma.tutor.connector.v1:'+scopeKey+':'
+ const removedKey='lemma.tutor.draft:'+scopeKey+':removed-messages'
+ const acknowledgedRemovals=new Set<string>()
  let closed=false
  let readSequence=0,confirmedRead=0
  function active(){
@@ -71,13 +73,20 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  function cached():TutorThreadView|undefined {
   try {return JSON.parse(localStorage.getItem(cacheKey)??'null')??undefined} catch {return undefined}
  }
+ function removedMessages(){
+  let saved:unknown
+  try {saved=JSON.parse(localStorage.getItem(removedKey)??'null')}catch{/* The server also filters confirmed removals. */}
+  return new Set([...acknowledgedRemovals,...(Array.isArray(saved)?saved.filter((key):key is string=>typeof key==='string'):[])])
+ }
  function offlineState():TutorThreadView {
   const saved=cached()
   return {...saved,head:saved?.head??{threadId:null,lastSequence:0,pendingTurnId:null},
    turns:saved?.turns??[],recoveredDrafts:saved?.recoveredDrafts??[],canSubmit:false,canConnect:false,offline:true,outbox:outbox()}
  }
  function usable(thread:TutorThreadView):TutorThreadView {
-  return scope.readOnly?{...thread,canSubmit:false,canConnect:false}:thread
+  const removed=removedMessages()
+  const flags=scope.readOnly?{canSubmit:false,canConnect:false}:{}
+  return {...thread,...flags,turns:withTutorMessageDeletions(thread.turns,removed)}
  }
  function readTime(value:string){
   const fraction=/\.(\d+)(?:Z|[+-]\d{2}:?\d{2})$/.exec(value)?.[1]??''
@@ -222,7 +231,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    try {thread=await read(before)}
    catch (error){
     active()
-    if(before===undefined && error instanceof TypeError)return offlineState()
+    if(before===undefined && error instanceof TypeError)return usable(offlineState())
     throw error
    }
    if(before!==undefined)return usable(thread)
@@ -350,13 +359,22 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   async proposeCard(turnId,version,front,back){
    if((await dispatch(write('suggest_card',turnId,version,{front,back}),true)).status!=='proposed')throw new Error('Card proposal was not saved.')
   },
+  async deleteMessages(messages){
+   writable()
+   const {data,error}=await client.rpc('tutor_delete_messages',{...target,p_messages:messages})
+   active()
+   if(error||data!==true)throw new Error('Could not confirm the message deletion. Try again.')
+   for(const message of messages)acknowledgedRemovals.add(tutorMessageKey(message))
+   try {writeTutorLocal(scope,removedKey,JSON.stringify([...removedMessages()]))}catch{active()}
+  },
   followups:{
    async list(){
     active()
     const {data,error}=await client.rpc('tutor_followup_state',target)
     active()
     if(error)throw new Error('Could not open your extra messages.')
-    return Array.isArray(data)?data as TutorFollowUp[]:[]
+    const removed=removedMessages()
+    return Array.isArray(data)?(data as TutorFollowUp[]).filter(message=>!removed.has(tutorMessageKey({kind:'followup',id:message.id}))):[]
    },
    async add(turnId,messageId,body){
     writable()

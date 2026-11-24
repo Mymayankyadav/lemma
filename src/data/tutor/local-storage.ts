@@ -24,7 +24,7 @@ export function tutorStorageOwner(key:string):string|null {
    if(!Array.isArray(scope)||scope.length!==3||!scope.every(part=>typeof part==='string')||!scope[0])return null
    const valid=prefix==='lemma.tutor.confirmed.v1:'?suffix==='':
     (prefix==='lemma.tutor.pending.v1:'||prefix==='lemma.tutor.connector.v1:')?suffix.startsWith(':')&&suffix.length>1:
-     [':question',':context',':source',':attached-local',':ink',':followup'].includes(suffix)||
+     [':question',':context',':source',':attached-local',':ink',':followup',':removed-messages'].includes(suffix)||
      ([':input-assist',':writing-aid',':writing-aid-model'].includes(suffix)&&scope[1]==='input'&&scope[2]==='preferences')||
      (suffix.startsWith(':reply:')&&suffix.length>7)||
      // N228: a questionnaire's unsaved answers, kept until the server has them.

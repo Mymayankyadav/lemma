@@ -1,4 +1,3 @@
-.lemma-tutor .keyboard-composer .field {padding-inline-start: 6px;}
 
 /* The key cells stay contiguous. Inset caps leave a visual gap without losing taps. */
 .lemma-tutor .kb {overflow: visible;}
@@ -383,7 +382,9 @@
 .v7-sheet:has(.tutor-paper-full) {inset: 0; margin: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; border: 0; border-radius: 0;}
 .v7-sheet:has(.tutor-paper-full) > :is(.v7-grabber, .v7-sheet-header) {display: none;}
 .v7-sheet:has(.tutor-paper-full) > .v7-sheet-body {display: flex; flex: 1 1 auto; flex-direction: column; gap: 0; min-height: 0; overflow: hidden;
-  padding: var(--v7-safe-top) 0 var(--v7-safe-bottom);}
+  padding: var(--tutor-safe-top) max(env(safe-area-inset-right,0px),var(--safe-area-inset-right,0px))
+    var(--v7-safe-bottom) max(env(safe-area-inset-left,0px),var(--safe-area-inset-left,0px));}
+.lemma-tutor .tutor-paper-safe {position:relative;display:flex;flex:1 1 auto;min-height:0;overflow:hidden;container-type:size;}
 .lemma-tutor .tutor-paper-full {display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; touch-action: none;}
 .lemma-tutor .tutor-paper-full .tutor-equation {display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0;}
 .lemma-tutor .tutor-paper-full .tutor-equation-body {flex: 1 1 auto; height: auto; min-height: 0;}
@@ -397,9 +398,9 @@
 /* N228 (Owner: landscape in full screen): the whole surface turned a quarter on a portrait screen. It is laid out as a
    landscape screen (as wide as the screen is tall) and turned about its top-left corner into place. */
 .lemma-tutor .tutor-paper-full {position: relative;}
-.lemma-tutor .tutor-paper-full[data-turn] {position: absolute; top: 0; left: 0; width: 100dvh; height: 100vw; transform-origin: 0 0;}
-.lemma-tutor .tutor-paper-full[data-turn="90"] {transform: translateX(100vw) rotate(90deg);}
-.lemma-tutor .tutor-paper-full[data-turn="270"] {transform: translateY(100dvh) rotate(-90deg);}
+.lemma-tutor .tutor-paper-full[data-turn] {position:absolute;top:0;left:0;width:100cqh;height:100cqw;transform-origin:0 0;}
+.lemma-tutor .tutor-paper-full[data-turn="90"] {transform:translateX(100cqw) rotate(90deg);}
+.lemma-tutor .tutor-paper-full[data-turn="270"] {transform:translateY(100cqh) rotate(-90deg);}
 .lemma-tutor .tutor-paper-rotate {
   position: absolute; z-index: 2; inset-block-end: var(--v7-space-3); inset-inline-end: var(--v7-space-3);
   display: grid; place-items: center; inline-size: 40px; block-size: 40px; padding: 0; border-radius: 9999px; cursor: pointer;

@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState, type ReactNode} from 'react';
 import {RotateCw} from 'lucide-react';
 import {Sheet} from '../../ui/v7/components';
+import {isNative} from '../../platform/native';
 
 /** How the full-screen paper is turned: upright, or a quarter turn either way (landscape). Kept while the app runs. */
 type Turn = 0 | 90 | 270;
@@ -27,10 +28,8 @@ function usePortrait() {
  * surface needs: the page behind is inert and does not scroll, Tab stays inside, Escape and the Sheet's own close leave.
  * The drawing state stays in the component that owns it, so leaving keeps the drawing.
  *
- * Landscape: on a portrait screen the whole surface can be turned a quarter either way, so a phone held sideways has a
- * wide paper. The strokes are always kept in the paper's own upright frame (the canvas maps touches through its screen
- * matrix), so what is read or sent is upright as it was drawn: no turning is needed afterwards. On a screen already in
- * landscape the paper is upright and the toggle is not offered.
+ * Android supplies the viewport when the device rotates, including its system rotation suggestion. A browser with a
+ * portrait viewport can also turn the paper manually. The canvas keeps strokes upright in paper coordinates.
  * The surface is a new element in each place, so focus goes back to the full-screen toggle (data-fullscreen-toggle).
  */
 export function FullscreenPaper({active, onExit, label, children}: {active: boolean; onExit: () => void; label: string; children: ReactNode}) {
@@ -44,14 +43,15 @@ export function FullscreenPaper({active, onExit, label, children}: {active: bool
     }
     was.current = active;
   }, [active]);
-  const turned: Turn = portrait ? turn : 0;
+  const manualRotation = portrait && !(isNative() || document.documentElement.hasAttribute('data-native-app'));
+  const turned: Turn = manualRotation ? turn : 0;
   return <>
     <span ref={anchor} hidden/>
     {active
       ? <Sheet open onClose={onExit} title={label} hideTitle full containFocus>
-        <div className="tutor-paper-full" data-turn={turned || undefined}>
-          {children}
-          {portrait && <button type="button" className="tutor-paper-rotate" aria-label={TURN_LABEL[turned]} title={TURN_LABEL[turned]}
+        <div className="tutor-paper-safe">
+          <div className="tutor-paper-full" data-turn={turned || undefined}>{children}</div>
+          {manualRotation && <button type="button" className="tutor-paper-rotate" aria-label={TURN_LABEL[turned]} title={TURN_LABEL[turned]}
             data-turn-state={turned} onClick={() => {remembered = NEXT[turned]; setTurn(remembered);}}><RotateCw aria-hidden="true"/></button>}
         </div>
       </Sheet>

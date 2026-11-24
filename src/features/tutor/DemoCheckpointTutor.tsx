@@ -10,7 +10,7 @@ import {Link} from 'react-router'
 import {usePlanRelease} from '../../data/usePlanRelease'
 import {authGeneration,authOwner,onAccountChange} from '../../data/authBoundary'
 import type {TutorComposerDraft,TutorContextSelection} from '../../data/tutor/turn-model'
-import type {ManualTutor,TutorThreadView} from '../../data/tutor/manual-api'
+import {tutorMessageKey,withTutorMessageDeletions,type ManualTutor,type SavedTutorTurn,type TutorMessageRef,type TutorThreadView} from '../../data/tutor/manual-api'
 import {getDemoProfile,getMode} from '../../data/mode'
 import {addLocalTutorExcerpt,LOCAL_TUTOR_EXCERPT_LIMIT,previewLocalTutorExcerpt} from '../../data/tutor/local-excerpt'
 import {openDemoManualTutor} from '../../data/tutor/demo-manual'
@@ -21,6 +21,7 @@ import {SquarePlus} from 'lucide-react'
 import {MathText} from '../../ui/MathText'
 import {chatLink,studyPrompt} from '../../lib/chat'
 import {TutorChat,type SendOptions} from './TutorChat'
+import {TutorChatMessage} from './TutorMessageSelection'
 import type {TutorPageContext} from './TutorLayout'
 import {ReplyActions} from './ReplyActions'
 import {QuestionnaireButton,type QuestionnaireBackup} from './TutorQuestionnaire'
@@ -181,13 +182,24 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     }
   },[draftKey,live,ownerId,generation])
   const [busy,setBusy]=useState(false)
+  const [queueSaving,setQueueSaving]=useState(false)
   const [error,setError]=useState('')
   const questionId=useId(),copyId=useId(),selectionId=useId()
   const [copyStatus,setCopyStatus]=useState('')
   const excerpt=scope.objective
   const [history,setHistory]=useState<TutorThreadView['turns']>([])
+  const [deletedMessages,setDeletedMessages]=useState<ReadonlySet<string>>(()=>new Set())
   const [historyDrafts,setHistoryDrafts]=useState<TutorThreadView['recoveredDrafts']>([])
   const [historyCursor,setHistoryCursor]=useState<number|null>()
+  const loadedHistoryCursors=useRef(new Set<number>())
+  const rememberDeletions=useCallback((turns:TutorThreadView['turns'])=>{
+    const keys:string[]=[]
+    for(const turn of turns){
+      if(turn.questionDeleted)keys.push(tutorMessageKey({kind:'question',id:turn.id}))
+      if(turn.replyDeleted&&turn.status==='completed')keys.push(tutorMessageKey({kind:'reply',id:turn.finalReply.messageId}))
+    }
+    if(keys.length)setDeletedMessages(current=>keys.every(key=>current.has(key))?current:new Set([...current,...keys]))
+  },[])
   useEffect(()=>{setHistoryCursor(undefined)},[session?.thread.before])
   const [draftNext,setDraftNext]=useState(false)
   const [showLocal,setShowLocal]=useState(false)
@@ -201,11 +213,20 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   },[readOnly,padHandoff,onHandoffConsumed])
   const [connectionVersion,setConnectionVersion]=useState(0)
   const readVersion=useRef(0)
-  const refresh=useCallback(async(api:ManualTutor,reconcile=Boolean(connectorUrl))=>{
+  const refresh=useCallback(async(api:ManualTutor,reconcile=Boolean(connectorUrl),revalidateHistory=false)=>{
     const request=++readVersion.current
     const thread=await api.resume(undefined,reconcile,connectorUrl)
-    if(request===readVersion.current){setSession({api,thread});setError('')}
-  },[connectorUrl])
+    if(request!==readVersion.current)return
+    rememberDeletions(thread.turns)
+    setSession({api,thread});setError('')
+    // A deletion does not advance a turn's sequence. Re-read the pages already
+    // on screen, and keep confirmed flags even if an overlapping page is older.
+    if(revalidateHistory&&!thread.offline)for(const before of [...loadedHistoryCursors.current]){
+      const older=await api.resume(before)
+      if(request!==readVersion.current)return
+      if(older.head.threadId===thread.head.threadId)rememberDeletions(older.turns)
+    }
+  },[connectorUrl,rememberDeletions])
   useEffect(()=>{
     let active=true,api:ManualTutor|undefined
     async function connect() {
@@ -250,7 +271,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   useEffect(()=>{
     if(!live||!activeApi)return
     let active=true,refreshing=false
-    const update=()=>{if(!refreshing&&document.visibilityState!=='hidden'){refreshing=true;void refresh(activeApi,true).catch(()=>{
+    const update=()=>{if(!refreshing&&document.visibilityState!=='hidden'){refreshing=true;void refresh(activeApi,true,true).catch(()=>{
       if(active)setError('Could not refresh. Showing the last confirmed conversation.')
     }).finally(()=>{refreshing=false})}}
     window.addEventListener('focus',update);window.addEventListener('online',update);window.addEventListener('offline',update)
@@ -268,8 +289,16 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       setError('Insert or cancel the current drawing before sending.');return;
     }
     const hasImages=Boolean(inline?ids.length:inkDraft.strokes.length||inkDraft.photos.length);
-    if(session?.thread.offline&&hasImages&&!readOnly) {
-      await ink.update(current=>current===inkDraft?{...current,queuedText:text}:current).catch(()=>{});
+    if((session?.thread.offline||session?.thread.head.pendingTurnId)&&hasImages&&!readOnly&&!busy&&!options.keepDraft) {
+      setBusy(true);setQueueSaving(true);setError('');
+      try {
+        await ink.update(current=>current===inkDraft?{...current,queuedText:text}:current);
+        if(ink.snapshot().draft.queuedText!==text)throw new Error('The answer changed before it could be queued.');
+      } catch {
+        if(text!==question.text)question.change(text);
+        setError('Could not queue this answer. Your answer and images are still here.');
+        await ink.update(current=>current.queuedText===text?{...current,queuedText:undefined}:current).catch(()=>{});
+      } finally {setQueueSaving(false);setBusy(false);}
       return;
     }
     const body=text.trim()
@@ -365,14 +394,18 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
 
   const thread=session?.thread,last=thread?.turns.at(-1)
   const recoveryOnly=readOnly||Boolean(thread?.offline)
-  const allTurns=Array.from(new Map([...history,...(thread?.turns??[])].map(t=>[t.id,t])).values()).sort((a,b)=>a.sequence-b.sequence)
+  const allTurns=withTutorMessageDeletions(
+    Array.from(new Map([...history,...(thread?.turns??[])].map(t=>[t.id,t])).values()).sort((a,b)=>a.sequence-b.sequence),
+    deletedMessages,
+  )
+  const visibleFollowups=followups.filter(item=>!deletedMessages.has(tutorMessageKey({kind:'followup',id:item.id})))
   const recovered=Array.from(new Map([...historyDrafts,...(thread?.recoveredDrafts??[])].map(d=>[d.draftId??d.messageId,d])).values())
   const pending=last?.status==='awaiting-tutor'?last:null
   useEffect(()=>{
     const queued=ink.draft.queuedText;
     if(!scratchEnabled||!ink.ready||queued===undefined||tutorInkIssue(queued,ink)||!session||session.thread.offline||
       session.thread.head.pendingTurnId||session.thread.outbox?.length||readOnly||busy||connectorLoading)return;
-    // Reconnect sends the draft selected for offline delivery.
+    // Send the queued answer when the tutor is ready and the network is available.
     if(!error)void saveQuestion(queued);
   },[scratchEnabled,ink.status,ink.draft,session?.thread.offline,session?.thread.head.pendingTurnId,session?.thread.outbox?.length,busy,readOnly,error,connectorLoading])
   const localExcerpt=pending?.snapshot.localExcerpt
@@ -393,6 +426,16 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   async function copy() {
     try { await navigator.clipboard.writeText(handoff);setCopyStatus('Question copied.') }
     catch { setCopyStatus('Clipboard unavailable. Select and copy the text yourself.') }
+  }
+  async function deleteMessages(messages:readonly TutorMessageRef[]) {
+    if(!session?.api.deleteMessages||recoveryOnly||busy)throw new Error('Reconnect to the conversation and try again.')
+    setBusy(true)
+    try {
+      await session.api.deleteMessages(messages)
+      setDeletedMessages(current=>new Set([...current,...messages.map(tutorMessageKey)]))
+      await refresh(session.api).catch(()=>{})
+      void loadFollowups()
+    } finally {setBusy(false)}
   }
   const canConnect=Boolean(thread?.canConnect && !recoveryOnly && connectorUrl && session?.api.connectTurn)
   const delivery=thread?.connectorDelivery
@@ -508,25 +551,48 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       completed={false} readOnly={recoveryOnly} onConfirm={(body,id)=>confirm(body,pending.id,pending.version,id)}/>}
   </>
   const loadEarlier=session&&thread?.before!=null&&thread.before>0&&<Button onClick={()=>void action(async()=>{
-    const older=await session.api.resume(historyCursor??thread.before!)
+    const before=historyCursor??thread.before!
+    const older=await session.api.resume(before)
+    loadedHistoryCursors.current.add(before)
+    rememberDeletions(older.turns)
     setHistory(seen=>[...older.turns,...seen])
     setHistoryDrafts(seen=>[...older.recoveredDrafts,...seen])
     setHistoryCursor(older.before??null)
   })} disabled={busy||historyCursor===null}>Load earlier questions</Button>
   const lastReplyId=allTurns.filter(turn=>turn.status==='completed').at(-1)?.id
+  function learnerMessages(turn:SavedTutorTurn) {
+    const extra=visibleFollowups.filter(item=>item.turnId===turn.id)
+    if(turn.questionDeleted&&!extra.length)return null
+    const {question:answer,attachments}=turn.snapshot
+    return <div className="ans">
+      {!turn.questionDeleted&&<TutorChatMessage message={{kind:'question',id:turn.id}} text={tutorAnswerText(answer,attachments)}>
+        <TutorAnswer question={answer} attachments={attachments} owner={ownerId??''}/>
+      </TutorChatMessage>}
+      {extra.map(item=><TutorChatMessage key={item.id} message={{kind:'followup',id:item.id}} text={item.body}>
+        <TutorAnswer question={item.body} owner={ownerId??''}/>
+      </TutorChatMessage>)}
+      {turn.status!=='completed'&&<span className="ctag">{turn.status==='cancelled'?'Cancelled':extra.some(item=>item.seen)?'Tutor has read your messages':'Saved'}</span>}
+    </div>
+  }
   const transcript=<>
     {page&&loadEarlier}
-    {allTurns.map(turn=>turn.status==='completed'?<article key={turn.id} className={page?"turn":undefined} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
-      {page&&<div className="ans"><div className="msg u"><div className="bd"><TutorAnswer question={turn.snapshot.question}
-        attachments={turn.snapshot.attachments} owner={ownerId??''}/></div></div>
-        {followups.filter(item=>item.turnId===turn.id).map(item=><div key={item.id} className="msg u" data-followup=""><div className="bd">
-          <TutorAnswer question={item.body} attachments={undefined} owner={ownerId??''}/></div></div>)}</div>}
-      <div className={page?"msg a":undefined} data-latest-reply={page&&turn.id===lastReplyId?true:undefined}>
-      <h3 className={page?"who":undefined}>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':page?'Tutor · Q'+turn.sequence:'Tutor reply'}</h3>
-      {!page&&turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>The connector reports {turn.finalReply.provenance.reportedHost} as its host (unverified).</p>}
-      {!page&&<TutorAnswer question={turn.snapshot.question} attachments={turn.snapshot.attachments} owner={ownerId??''}/>}
-      <div className="bd"><MathText source={turn.finalReply.body}/></div>
-      </div>
+    {allTurns.map(turn=>{
+      const learner=page?learnerMessages(turn):null
+      if(turn.status!=='completed')return learner?<div key={turn.id}>{learner}</div>:null
+      if(turn.replyDeleted){
+        if(page)return learner?<article className="turn" key={turn.id} aria-label="Your messages">{learner}</article>:null
+        return !turn.questionDeleted?<TutorAnswer key={turn.id} question={turn.snapshot.question} attachments={turn.snapshot.attachments} owner={ownerId??''}/>:null
+      }
+      return <article key={turn.id} className={page?"turn":undefined} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
+      {learner}
+      {page?<TutorChatMessage message={{kind:'reply',id:turn.finalReply.messageId}} text={turn.finalReply.body} latest={turn.id===lastReplyId}>
+        <MathText source={turn.finalReply.body}/>
+      </TutorChatMessage>:<div>
+        <h3>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':'Tutor reply'}</h3>
+        {turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>The connector reports {turn.finalReply.provenance.reportedHost} as its host (unverified).</p>}
+        {!turn.questionDeleted&&<TutorAnswer question={turn.snapshot.question} attachments={turn.snapshot.attachments} owner={ownerId??''}/>}
+        <div className="bd"><MathText source={turn.finalReply.body}/></div>
+      </div>}
       <div className={page?"tutor-details":undefined}>
       {!!turn.finalReply.citations.length&&<Disclosure label="Selected citations">
         <ul>{turn.finalReply.citations.map((citation,index)=>{
@@ -541,7 +607,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         {session?.api.proposeCard&&!recoveryOnly&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
         {questionnaireApi&&questionnaires.filter(item=>item.turnId===turn.id).map(item=><QuestionnaireButton key={item.id} questionnaire={item}
           api={questionnaireApi} backup={questionnaireBackup} onChange={replaceQuestionnaire}/>)}
-        {turn.finalReply.suggestions.map(suggestion=><span key={suggestion.intentId} className="tutor-reply-chip" data-status={suggestion.status}>
+        {turn.finalReply.suggestions.filter(suggestion=>suggestion.status!=='rejected').map(suggestion=><span key={suggestion.intentId} className="tutor-reply-chip" data-status={suggestion.status}>
           <span className="tutor-reply-chip-text">{suggestion.summary}</span>
           {suggestion.proposalId&&(suggestion.status==='pending'
             ?<Link to={suggestion.kind==='card'||suggestion.kind==='card_edit'?'/proposals?card='+encodeURIComponent(suggestion.proposalId):'/proposals/'+encodeURIComponent(suggestion.proposalId)}>Review proposal</Link>
@@ -555,14 +621,9 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       </Disclosure>}
       <ReplyEditor live={live} draftKey={draftKey+':reply:'+turn.id} busy={busy} completed onConfirm={async()=>false}/>
       </div>
-    </article>:page?<div key={turn.id} className="ans">
-      <div className="msg u"><div className="bd"><TutorAnswer question={turn.snapshot.question}
-        attachments={turn.snapshot.attachments} owner={ownerId??''}/></div></div>
-      {followups.filter(item=>item.turnId===turn.id).map(item=><div key={item.id} className="msg u" data-followup=""><div className="bd">
-        <TutorAnswer question={item.body} attachments={undefined} owner={ownerId??''}/></div></div>)}
-      <span className="ctag">{turn.status==='cancelled'?'Cancelled':followups.some(item=>item.turnId===turn.id&&item.seen)?'Tutor has read your messages':'Saved'}</span>
-    </div>:null)}
-    {!page&&allTurns.filter(t=>t.status==='cancelled').map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
+      </article>
+    })}
+    {!page&&allTurns.filter(t=>t.status==='cancelled'&&!t.questionDeleted).map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
     {!page&&loadEarlier}
     {!!recovered.length&&<Disclosure label="Recoverable replies">
       {recovered.map((item,i)=><div key={item.draftId??item.messageId} className="v7-field-group">
@@ -570,14 +631,16 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       </div>)}
     </Disclosure>}  </>
   if(page)return <TutorChat page={page} turns={allTurns} draft={ink.draft.queuedText??question.text} onChange={editQuestion}
-    onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread?.offline&&!readOnly&&!pending&&!thread.outbox?.length)} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
+    onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread&&!readOnly&&!busy&&!connectorLoading&&!thread.outbox?.length&&
+      (pending&&thread.canSubmit!==false||thread.offline&&!pending))} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
     draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
     canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&(!pending||!!followupApi)&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
     listenerSeenAt={thread?.listenerSeenAt} resumePrompt={delivery
       ? 'Continue my Lemma tutor session. Use get(what=tutor_turn, id='+delivery.reference+').'
       : 'Continue my Lemma tutor session. Use get(what=tutor_turn) to find my answer.'}
     pendingStatus={recoveryOnly?'Offline · Saved conversation':!live?'Demo: import a reply to continue':claimed?'Replying…':'Waiting for '+clientName}
-    status={<>{ink.draft.queuedText!==undefined&&<p role="status">{tutorInkIssue(ink.draft.queuedText,ink)?'Queued answer needs its images.':'Answer queued · Sends when connected.'}
+    status={<>{queueSaving?<p role="status">Saving queued answer…</p>:ink.draft.queuedText!==undefined&&<p role="status">{tutorInkIssue(ink.draft.queuedText,ink)?'Queued answer needs its images.':
+      pending?'Answer queued. It will send after the tutor replies.':thread?.offline?'Answer queued. It will send when you reconnect.':'Answer queued.'}
       <Button small disabled={readOnly||busy||!ink.ready} onClick={()=>{
         const queued=ink.snapshot().draft.queuedText;
         if(queued===undefined||!question.change(queued))return;
@@ -598,7 +661,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         <label>Reference for this turn<input className="v7-field" value={delivery.reference} readOnly onFocus={e=>e.currentTarget.select()}/></label>
       </Disclosure>}
       {live&&pending?<Disclosure label="Manual handoff and recovery">{manualControls}</Disclosure>:manualControls}
-    </>} transcript={transcript}/>
+    </>} transcript={transcript} onDeleteMessages={session?.api.deleteMessages?deleteMessages:undefined}/>
   return <>
     <p>{scope.title}{live?'':'. This demo stays in this browser. Nothing is sent to a tutor.'}</p>
     {statusControls}

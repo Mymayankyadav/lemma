@@ -1,4 +1,4 @@
-import {useId,useState, type ReactNode} from 'react';
+import {useId,useState, type ReactNode, type Ref} from 'react';
 import {Link} from 'react-router';
 import {tutorPresence} from './presence';
 import {useToast} from '../../ui/Toast';
@@ -22,12 +22,16 @@ type Props = {
   overview?: boolean; offline?: boolean; onOverview?: () => void; onQuestion?: () => void;
   onCloseSession?: () => void; onConnection?: () => void; onContext?: () => void;
   listenerSeenAt?:string|null; claimExpiresAt?:string; resumePrompt?:string;
-  /** N227: the title bar and session progress have stepped aside so more of the chat shows (useAutoHideHeader). */
   headerHidden?: boolean;
+  sessionActionsOpen?: boolean; onSessionActions?: (open: boolean) => void;
+  answerActions?: Ref<HTMLDivElement>;
 };
 
-export function TutorLayout({page, sequence, children, overview, offline, onOverview, onQuestion, onCloseSession, onConnection, onContext, listenerSeenAt, claimExpiresAt, resumePrompt, headerHidden = false}: Props) {
-  const [panel, setPanel] = useState<'session' | 'plan' | 'timer' | 'checks' | 'practice'>();
+export function TutorLayout({page, sequence, children, overview, offline, onOverview, onQuestion, onCloseSession, onConnection, onContext, listenerSeenAt, claimExpiresAt, resumePrompt, headerHidden = false, sessionActionsOpen, onSessionActions, answerActions}: Props) {
+  const [localActionsOpen, setLocalActionsOpen] = useState(false);
+  const actionsOpen = sessionActionsOpen ?? localActionsOpen;
+  const setActionsOpen = onSessionActions ?? setLocalActionsOpen;
+  const [panel, setPanel] = useState<'plan' | 'timer' | 'checks' | 'practice'>();
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const {project, detail} = page, path = '/p/' + encodeURIComponent(project.project.slug);
   const notify=useToast();
@@ -56,14 +60,14 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
     finally {setBusy(false);}
   }
   const sessionAction = (action: () => void) => {
-    setPanel(undefined);
+    setActionsOpen(false);
     action();
   };
   return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject} data-header-hidden={headerHidden || undefined}>
     <header className="tutor-header" inert={headerHidden}>
       <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
       <div className="tutor-header-title"><strong>{detail.view.title}</strong><TutorPresence presence={presence}/></div>
-      <IconButton label="Session actions" onClick={() => setPanel('session')} aria-haspopup="dialog" data-v7-search-opener=""><Ellipsis aria-hidden="true"/></IconButton>
+      <IconButton label="Session actions" onClick={() => setActionsOpen(true)} aria-haspopup="dialog" aria-expanded={actionsOpen} data-tutor-session-actions="" data-v7-search-opener=""><Ellipsis aria-hidden="true"/></IconButton>
     </header>
     {!overview&&<div className="tutor-session-progress" aria-label="Session parts" inert={headerHidden}>
       {['Checks','Learn','Practice','Close'].map((part,index)=><span key={part} aria-label={part} data-reached={index<2||undefined}/>)}
@@ -79,16 +83,17 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
       {onCloseSession && <button className="seg-r" aria-haspopup="dialog" onClick={onCloseSession}><b>Close</b><small>at the end</small></button>}
     </nav>}
     {children}
-    <Sheet open={panel === 'session'} onClose={() => setPanel(undefined)} title="Study session">
+    <Sheet open={actionsOpen} onClose={() => setActionsOpen(false)} title="Study session">
       <p><strong>{project.project.title}</strong><br/>{detail.view.code} · {detail.view.title}{step.ordinal ? ' · Step ' + step.ordinal + ' of ' + step.total : ''}</p>
       {timerState&&<p>{timerState} · {clock}</p>}
+      {answerActions && <div className="tutor-session-actions" ref={answerActions}/>}
       <div className="tutor-session-actions">
         {onOverview && <Button small onClick={() => sessionAction(onOverview)}>Next up</Button>}
         {onQuestion && <Button small onClick={() => sessionAction(onQuestion)}>Latest question</Button>}
-        <Button small onClick={() => setPanel('plan')}>Learn plan</Button>
-        <Button small onClick={() => setPanel('checks')}>Checks{detail.view.dueCards > 0 ? ' · ' + detail.view.dueCards + ' due' : ''}</Button>
-        <Button small onClick={() => setPanel('practice')}>Practice</Button>
-        <Button small onClick={() => setPanel('timer')}>Study timer</Button>
+        <Button small onClick={() => sessionAction(() => setPanel('plan'))}>Learn plan</Button>
+        <Button small onClick={() => sessionAction(() => setPanel('checks'))}>Checks{detail.view.dueCards > 0 ? ' · ' + detail.view.dueCards + ' due' : ''}</Button>
+        <Button small onClick={() => sessionAction(() => setPanel('practice'))}>Practice</Button>
+        <Button small onClick={() => sessionAction(() => setPanel('timer'))}>Study timer</Button>
         {onContext && <Button small onClick={() => sessionAction(onContext)}>Context</Button>}
         {onConnection && <Button small onClick={() => sessionAction(onConnection)}>Connection</Button>}
         {resumePrompt&&<Button small onClick={()=>{

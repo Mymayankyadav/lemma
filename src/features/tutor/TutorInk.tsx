@@ -1,4 +1,5 @@
 import {useEffect,useId,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
+import {createPortal} from 'react-dom';
 import {ArrowUp,Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2,Maximize2,Minimize2} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {InkCanvas} from '../../ui/v7/ink/InkCanvas';
@@ -65,9 +66,9 @@ export function useTutorInk(scope:TutorInkScope,enabled:boolean) {
 }
 export type TutorInkState=ReturnType<typeof useTutorInk>;
 
-export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onCloseDrawing,onInsertEquation,leading,
+export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,onInsertImage,onCloseDrawing,onInsertEquation,leading,
   onMigrateImages,editingImageId,referencedImageIds,canInsertImage,canMigrate,answerLength}: {
-  ink:TutorInkState;shown:boolean;photoOpen:boolean;onClosePhoto:()=>void;
+  ink:TutorInkState;shown:boolean;photoActions:HTMLElement|null;photoDisabled:boolean;onPickPhoto:()=>void;
   onInsertImage:(id:string,replacesId?:string)=>boolean;onCloseDrawing:()=>void;
   /** N221: insert recognised LaTeX at the answer's caret. */
   onInsertEquation?:(latex:string)=>boolean;
@@ -90,6 +91,7 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
   const resize=useRef<{pointer:number;y:number;height:number}|null>(null);
   const paperId=useId(), hintId=useId();
   const paperOffset=useRef(0);
+  const paperLeft=useRef(0);
   const [paperHeight,setPaperHeight]=useState(0);
   const [full,setFull]=useState(false)
   /** N228 (Owner): the scratch pad fills the screen. */
@@ -155,6 +157,7 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
       return;
     }
     viewport.scrollTop=paperOffset.current;
+    viewport.scrollLeft=paperLeft.current;
     const measure=()=>setPaperHeight(Math.round(viewport.getBoundingClientRect().height));
     measure();
     if (typeof ResizeObserver==='undefined') return;
@@ -256,8 +259,7 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
         });
       }catch(error){if(inserted)rollbackImage(image.id);throw error;}
       if(!inserted){setError('This answer could not accept another image.');return;}
-      if(onInsertImage(image.id))onClosePhoto();
-      else rollbackImage(image.id);
+      if(!onInsertImage(image.id))rollbackImage(image.id);
     },'Could not add that photo.');
   }
   async function insertDrawing() {
@@ -279,6 +281,7 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
       if(!inserted)return;
       if(!onInsertImage(image.id,editingImageId??undefined)){rollbackImage(image.id);return;}
       paperOffset.current=0;
+      paperLeft.current=0;
       setMode('pen');
       await ink.update(current=>finishStagedDrawing(current,image.id)).catch(()=>{});
     },'Could not save the image on this device. Your drawing is still here. Try Insert drawing again.');
@@ -299,6 +302,7 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
       ? {...current,editingDrawing:undefined}
       : {...current,strokes:[],drawingId:undefined}).catch(()=>{});
     paperOffset.current=0;
+    paperLeft.current=0;
     setToolsOpen(false);
     onCloseDrawing();
   }
@@ -347,18 +351,20 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
           event.preventDefault();
         }}><span aria-hidden="true"/></div>
     <div ref={paper} id={paperId} className="tutor-scratch-paper" role="region" aria-label="Drawing paper" aria-describedby={hintId}
-      tabIndex={0} onScroll={event=>{paperOffset.current=event.currentTarget.scrollTop;}}>
+      tabIndex={0} onScroll={event=>{paperOffset.current=event.currentTarget.scrollTop;paperLeft.current=event.currentTarget.scrollLeft;}}>
       <InkCanvas history={history} onChange={saveInk} onStroke={()=>{setStarted(true);setFull(false)}} onStrokeEnd={()=>setStarted(false)} onFull={()=>setFull(true)}
-        onPan={(dx,dy,gesture)=>{
+        panTouches={2} onPan={(dx,dy,gesture,fingers)=>{
           const viewport=paper.current;
-          if (gesture==='hand') {if (viewport) {viewport.scrollLeft-=dx;viewport.scrollTop-=dy;} return;}
-          // Full screen has no chat in view to scroll.
-          if (fullscreen) return;
-          const chat=viewport?.closest('.lemma-tutor')?.querySelector<HTMLElement>('[role="log"]');
-          if (chat) chat.scrollTop-=dy;
+          if (gesture==='touch'&&fingers&&fingers>=3&&!fullscreen) {
+            const chat=viewport?.closest('.lemma-tutor')?.querySelector<HTMLElement>('[role="log"]');
+            if(chat)chat.scrollTop-=dy;
+          } else if(viewport) {
+            viewport.scrollLeft-=dx;
+            viewport.scrollTop-=dy;
+          }
         }} mode={canDraw&&!preparing?mode:'hand'} width={working.width} accent={working.accent} label="Draw your answer"/>
     </div>
-    <p id={hintId} className="tutor-scratch-hint">Three fingers to scroll chat</p>
+    <p id={hintId} className="tutor-scratch-hint">Two fingers to move paper · Three to scroll chat</p>
     </div>
     {full&&<p role="status" className="composer-status">The drawing is full. Insert it, or clear it, to keep drawing.</p>}
     {!editingImageId&&!canInsertImage&&<p role="status" className="composer-status">Shorten the answer to insert another image.</p>}
@@ -428,14 +434,13 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onC
     <input ref={camera} type="file" accept="image/*" capture="environment" hidden aria-label="Take photo file" onChange={event=>{
       const file=event.currentTarget.files?.[0];event.currentTarget.value='';if(file)void photo(file);
     }}/>
-    <Sheet open={photoOpen} onClose={onClosePhoto} title="Add a photo">
-      <Button onClick={()=>camera.current?.click()} disabled={queued||preparing||!canInsertImage||count>=TUTOR_ATTACHMENT_COUNT}><Camera aria-hidden="true"/>Take photo</Button>
-      <Button onClick={()=>picker.current?.click()} disabled={queued||preparing||!canInsertImage||count>=TUTOR_ATTACHMENT_COUNT}><ImagePlus aria-hidden="true"/>Choose photo</Button>
-      {!canInsertImage&&<p>Shorten the answer to insert another image.</p>}
-      {count>=TUTOR_ATTACHMENT_COUNT&&<p>Up to three images per answer.</p>}
-      {error&&<p role="alert">{error}</p>}
-    </Sheet>
-    {(error||ink.error)&&!photoOpen&&<p role="alert" className="composer-status">{error||ink.error}</p>}
+    {photoActions&&createPortal(<>
+      <IconButton label="Upload image" disabled={photoDisabled||!ink.ready||queued||preparing||!canInsertImage||count>=TUTOR_ATTACHMENT_COUNT}
+        onPointerDown={event=>event.preventDefault()} onClick={()=>{onPickPhoto();picker.current?.click();}}><ImagePlus aria-hidden="true"/></IconButton>
+      <IconButton label="Take photo" disabled={photoDisabled||!ink.ready||queued||preparing||!canInsertImage||count>=TUTOR_ATTACHMENT_COUNT}
+        onPointerDown={event=>event.preventDefault()} onClick={()=>{onPickPhoto();camera.current?.click();}}><Camera aria-hidden="true"/></IconButton>
+    </>,photoActions)}
+    {(error||ink.error)&&<p role="alert" className="composer-status">{error||ink.error}</p>}
   </>;
 }
 

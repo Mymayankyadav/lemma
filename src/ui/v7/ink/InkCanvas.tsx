@@ -59,6 +59,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
 }) {
   const active = useRef<Interaction|null>(null);
   const touches = useRef(new Map<number,Contact>());
+  const movedTouches = useRef(new Set<number>());
   const multiTouch = useRef(false);
   /** The paper's screen matrix while it is turned (landscape), to carry a screen pan into the paper's own axes. */
   const screen = useRef<PadMatrix|null>(null);
@@ -129,6 +130,13 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
 
   const local = (dx:number,dy:number):[number,number] => screen.current?paperDelta(screen.current,dx,dy):[dx,dy];
 
+  function beginTouchPan(svg: SVGSVGElement) {
+    multiTouch.current = true;
+    const matrix = svg.getScreenCTM?.();
+    screen.current = matrix && (Math.abs(matrix.b)>1e-6 || Math.abs(matrix.c)>1e-6) ? matrix : null;
+    if (active.current && touches.current.has(active.current.pointer)) reset();
+  }
+
   function start(event: PointerEvent<SVGSVGElement>) {
     if (event.button!==0 || (mode==='hand'&&!onPan)) return;
     if (event.pointerType==='pen') lastPen.current=performance.now();
@@ -137,11 +145,8 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
       if (performance.now()-lastPen.current<PALM_MS) return;
       touches.current.set(event.pointerId,contact(event));
       event.currentTarget.setPointerCapture?.(event.pointerId);
-      if (touches.current.size>=panTouches) {
-        multiTouch.current=true;
-        if (active.current && touches.current.has(active.current.pointer)) reset();
-      }
-      if (multiTouch.current) return;
+      if (touches.current.size>=Math.max(panTouches,3)) beginTouchPan(event.currentTarget);
+      if (multiTouch.current || touches.current.size>=panTouches) return;
     }
     if (active.current) return;
     const rect=event.currentTarget.getBoundingClientRect();
@@ -176,6 +181,11 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
     if (previous) {
       const size=touches.current.size;
       touches.current.set(event.pointerId,at);
+      if (!multiTouch.current && size===2 && panTouches===2 && (at.x!==previous.x || at.y!==previous.y)) {
+        // Two moving contacts pan; a stationary second finger leaves the first free to draw.
+        movedTouches.current.add(event.pointerId);
+        if (movedTouches.current.size===2) beginTouchPan(event.currentTarget);
+      }
       if (multiTouch.current) {
         // One pointer event updates one contact. Its delta divided by the count
         // is the change of the gesture's centroid.
@@ -207,6 +217,7 @@ export function InkCanvas({history,onChange,mode='pen',width=3,accent=false,labe
   /** `final` is a real pointerup: its own position is the stroke's last point (a cancel's is not). */
   function end(event: PointerEvent<SVGSVGElement>,final:boolean) {
     touches.current.delete(event.pointerId);
+    if (touches.current.size<2) movedTouches.current.clear();
     if (!touches.current.size) multiTouch.current=false;
     const interaction=active.current;
     if (!interaction||interaction.pointer!==event.pointerId) return;

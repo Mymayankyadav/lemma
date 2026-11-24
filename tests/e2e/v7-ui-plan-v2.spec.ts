@@ -92,9 +92,9 @@ test('Tutor opens in reading mode and sends an image-only answer',async({page})=
   await page.getByRole('button',{name:'Insert drawing',exact:true}).click();
   const answer=page.getByRole('textbox',{name:'Your answer',exact:true});
   await expect(answer.getByRole('button',{name:'Edit drawing',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Edit answer',exact:true}).click();
-  await page.getByRole('dialog',{name:'Answer actions'}).getByRole('button',{name:'Photo',exact:true}).click();
-  await page.getByLabel('Choose photo file',{exact:true}).setInputFiles(photoFixture);
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button',{name:'Upload image',exact:true}).click();
+  await (await chooser).setFiles(photoFixture);
   const removePhoto=answer.getByRole('button',{name:'Remove photo',exact:true});
   await expect(removePhoto).toBeVisible();
   await removePhoto.click();
@@ -108,11 +108,15 @@ test('Tutor opens in reading mode and sends an image-only answer',async({page})=
     image.getBoundingClientRect().width-(image.parentElement?.clientWidth??0))).toBeGreaterThan(0);
 });
 
-test('Tutor reloads an offline image queue and attaches it once after reconnecting',async({page})=>{
+for (const reason of ['offline', 'waiting for a reply'] as const) test(`Tutor reloads an image queue while ${reason} and attaches it once when ready`,async({page})=>{
   const {owner,cpId,threadId,payload}=await prepareLiveTutor(page);
+  const waiting=reason==='waiting for a reply';
+  const turnId='88888888-8888-4888-8888-888888888881';
   let disconnected=false, submissions=0;
   const uploads:string[]=[];
   let thread:TutorThreadView={head:{threadId:null,pendingTurnId:null,lastSequence:0},turns:[],recoveredDrafts:[],canSubmit:true,canConnect:false};
+  if(waiting)thread={...thread,head:{threadId,pendingTurnId:turnId,lastSequence:1},turns:[{id:turnId,threadId,sequence:1,version:1,
+    status:'awaiting-tutor',snapshot:{question:'The original question.',selectedContext:[]}}]};
   await page.route('**/storage/v1/object/tutor-ink/**',route=>{
     if(route.request().method()==='POST'){
       uploads.push(new URL(route.request().url()).pathname.split('/tutor-ink/')[1]);
@@ -124,6 +128,7 @@ test('Tutor reloads an offline image queue and attaches it once after reconnecti
     const request=route.request(),resource=new URL(request.url()).pathname.split('/rest/v1/')[1];
     if(resource==='rpc/tutor_thread_state')return disconnected
       ?route.fulfill({status:503,json:{message:'Offline fixture'}}):route.fulfill({json:thread});
+    if(resource==='rpc/tutor_followup_add')throw Error('An answer with images must wait for a new turn');
     if(resource==='rpc/tutor_owner_ink_command'){
       const data=request.postDataJSON(),images=data.p_attachments as TutorAttachment[];
       expect([data.p_owner,data.p_checkpoint]).toEqual([owner,cpId]);
@@ -132,18 +137,21 @@ test('Tutor reloads an offline image queue and attaches it once after reconnecti
       submissions++;
       const {operationId,question}=data.p_command;
       expect(referencedImageIds(question)).toEqual(images.map(image=>image.id));
-      thread={...thread,head:{threadId,pendingTurnId:operationId,lastSequence:1},
-        turns:[{id:operationId,threadId,sequence:1,status:'awaiting-tutor',version:1,snapshot:{question,selectedContext:[],attachments:images}}]};
+      const sequence=thread.head.lastSequence+1;
+      thread={...thread,head:{threadId,pendingTurnId:operationId,lastSequence:sequence},
+        turns:[...thread.turns,{id:operationId,threadId,sequence,status:'awaiting-tutor',version:1,snapshot:{question,selectedContext:[],attachments:images}}]};
       return route.fulfill({json:{status:'submitted',operationId,turnId:operationId}});
     }
     return route.fulfill({json:liveTutorFixtureResponse(payload,resource,request.headers().accept)});
   });
   await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads,tutorScratch#/p/logic/cp/CP1/tutor');
-  await page.getByRole('button',{name:'Write a question'}).click();
-  await page.getByRole('button',{name:'Edit answer',exact:true}).click();
-  await page.getByRole('dialog',{name:'Answer actions'}).getByRole('button',{name:'Photo',exact:true}).click();
-  await page.getByLabel('Choose photo file',{exact:true}).setInputFiles(photoFixture);
+  if(!waiting)await page.getByRole('button',{name:'Write a question'}).click();
+  else await expect(page.getByRole('log',{name:'Conversation'})).toContainText('The original question.');
   const answer=page.getByRole('textbox',{name:'Your answer',exact:true});
+  await answer.fill('My answer remains editable.');
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button',{name:'Upload image',exact:true}).click();
+  await (await chooser).setFiles(photoFixture);
   const removePhoto=answer.getByRole('button',{name:'Remove photo',exact:true});
   const removeDrawing=answer.getByRole('button',{name:'Remove drawing',exact:true});
   await expect(removePhoto).toBeVisible();
@@ -156,10 +164,13 @@ test('Tutor reloads an offline image queue and attaches it once after reconnecti
   await page.mouse.up();
   await page.getByRole('button',{name:'Insert drawing',exact:true}).click();
   await expect(removeDrawing).toBeVisible();
-  disconnected=true;
-  await page.evaluate(()=>dispatchEvent(new Event('offline')));
+  if(!waiting){
+    disconnected=true;
+    await page.evaluate(()=>dispatchEvent(new Event('offline')));
+  }
   await page.getByRole('button',{name:'Queue answer'}).click();
   await expect(page.getByText('Answer queued',{exact:false})).toBeVisible();
+  if(waiting)await expect(page.getByText(/It will send after the tutor replies/)).toBeVisible();
   await expect(removePhoto).toBeDisabled();
   await expect(removeDrawing).toBeDisabled();
   await expect(answer).toHaveAttribute('contenteditable','false');
@@ -172,12 +183,50 @@ test('Tutor reloads an offline image queue and attaches it once after reconnecti
   await expect(answer.locator('[data-image-id]')).toHaveCount(2);
   await expect(removePhoto).toBeEnabled();
   await expect(removeDrawing).toBeEnabled();
-  await page.getByRole('button',{name:'Queue answer'}).click();
+  // Exercise an actual abort, then delay delivery of the next transaction's
+  // commit event to the app. Only the commit event may acknowledge queue success.
+  await page.evaluate(()=>{
+    const put=IDBObjectStore.prototype.put;
+    let writes=0;
+    IDBObjectStore.prototype.put=function(value,key){
+      const request=put.call(this,value,key);
+      if(this.name!=='drafts'||this.transaction.db.name!=='lemma-tutor-ink'||typeof value?.queuedText!=='string')return request;
+      const tx=this.transaction;
+      if(++writes===1)tx.abort();
+      else if(writes===2){
+        const complete=tx.oncomplete;
+        tx.oncomplete=event=>{
+          window.addEventListener('release-tutor-queue-commit',()=>complete?.call(tx,event),{once:true});
+          document.documentElement.dataset.tutorQueueCommitHeld='true';
+        };
+      }
+      return request;
+    };
+  });
+  const queue=page.getByRole('button',{name:'Queue answer'});
+  const acknowledgement=page.getByText('Answer queued',{exact:false});
+  await queue.click();
+  await expect(page.getByText('Could not queue this answer.',{exact:false})).toBeVisible();
+  await expect(acknowledgement).toHaveCount(0);
+  await expect(answer).toContainText('My answer remains editable.');
+  await expect(removePhoto).toBeEnabled();
+  await expect(removeDrawing).toBeEnabled();
+  await queue.click();
+  await expect(page.locator('html')).toHaveAttribute('data-tutor-queue-commit-held','true');
+  await expect(page.getByRole('status').filter({hasText:'Saving queued answer'})).toBeVisible();
+  await expect(acknowledgement).toHaveCount(0);
+  expect(submissions).toBe(0);
+  expect(uploads).toHaveLength(0);
+  await page.evaluate(()=>dispatchEvent(new Event('release-tutor-queue-commit')));
+  await expect(acknowledgement).toBeVisible();
   await page.reload();
   await expect(page.getByText('Answer queued',{exact:false})).toBeVisible();
   await expect(removePhoto).toBeDisabled();
   await expect(removeDrawing).toBeDisabled();
   expect(submissions).toBe(0);
+  expect(uploads).toHaveLength(0);
+  if(waiting)thread={...thread,head:{...thread.head,pendingTurnId:null},turns:[{...thread.turns[0],status:'completed',version:2,
+    finalReply:{turnId,messageId:'reply',body:'Here is my reply.',provenance:{kind:'manual-import',label:'Imported by you'},citations:[],suggestions:[]}}]};
   disconnected=false;
   await page.evaluate(()=>dispatchEvent(new Event('online')));
   await expect.poll(()=>submissions).toBe(1);

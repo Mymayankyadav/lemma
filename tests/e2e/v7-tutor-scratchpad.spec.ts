@@ -154,6 +154,16 @@ test('One finger draws and a three-finger swipe scrolls without leaving ink',asy
   await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await expect(ink(page)).toHaveCount(1);
   await log.evaluate(e=>{e.scrollTop=0;});
+  const twoContacts=(delta=0)=>contacts(2,25-delta).map(point=>({...point,x:point.x-delta}));
+  await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:twoContacts()});
+  await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:twoContacts(18)});
+  await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:twoContacts(35)});
+  await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  const offset=await paper(page).evaluate(e=>[e.scrollLeft,e.scrollTop]);
+  expect(offset[0]).toBeGreaterThan(12);
+  expect(offset[1]).toBeGreaterThan(12);
+  expect(await log.evaluate(e=>e.scrollTop)).toBe(0);
+  await expect(ink(page)).toHaveCount(1);
   await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:contacts(1)});
   await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:contacts(1,5)});
   await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:contacts(3,25)});
@@ -162,6 +172,32 @@ test('One finger draws and a three-finger swipe scrolls without leaving ink',asy
   await expect.poll(()=>log.evaluate(e=>e.scrollTop)).toBeGreaterThan(20);
   await expect(ink(page)).toHaveCount(1);
   await expect(canvas(page).locator('path[opacity]')).toHaveCount(0);
+});
+
+test('the unfinished drawing icon reopens the paper and a double tap discards it',async({page})=>{
+  await open(page);
+  await openScratch(page);
+  const box=(await paper(page).boundingBox())!;
+  await page.mouse.move(box.x+30,box.y+35);
+  await page.mouse.down();
+  await page.mouse.move(box.x+96,box.y+58,{steps:4});
+  await page.mouse.up();
+  await expect(ink(page)).toHaveCount(1);
+  await tool(page,'Keys').click();
+  const draft=page.locator('.composer').getByRole('button',{name:'Unfinished drawing',exact:true});
+  await expect(draft).toBeVisible();
+  await expect(page.getByText('Unfinished drawing',{exact:true})).toHaveCount(0);
+  await draft.click();
+  await expect(ink(page)).toHaveCount(1);
+  await tool(page,'Keys').click();
+  await draft.dblclick();
+  await expect(draft).toHaveCount(0);
+  await openScratch(page);
+  await expect(ink(page)).toHaveCount(0);
+  await page.reload();
+  await page.getByRole('button',{name:'Write a question'}).click();
+  await openScratch(page);
+  await expect(ink(page)).toHaveCount(0);
 });
 
 test('Stylus, eraser drag, history and resize preserve the drawing',async({page,context})=>{

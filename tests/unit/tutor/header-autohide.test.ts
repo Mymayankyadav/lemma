@@ -1,16 +1,17 @@
 import {describe, expect, it} from 'vitest';
-import {flingSpeed, REVEAL_SPEED} from '../../../src/features/tutor/useAutoHideHeader';
+import {keepsKeyboardOpenFor} from '../../../src/features/tutor/TutorComposer';
 
-// N227 (Owner: "reappear only after upward scroll (make only after scroll speed only)").
-describe('the fling that brings the tutor header back', () => {
-  it('measures the finger over the last 200 ms only, positive when it moves down', () => {
-    expect(flingSpeed([])).toBe(0);
-    expect(flingSpeed([{y: 100, t: 0}])).toBe(0);
-    // A slow drag that speeds up at the end counts only its quick end.
-    const slowThenQuick = [{y: 0, t: 0}, {y: 20, t: 400}, {y: 40, t: 800}, {y: 160, t: 900}];
-    expect(flingSpeed(slowThenQuick)).toBeCloseTo(1.2);
-    expect(flingSpeed(slowThenQuick)).toBeGreaterThanOrEqual(REVEAL_SPEED);
-    expect(flingSpeed([{y: 0, t: 0}, {y: 30, t: 150}, {y: 60, t: 300}])).toBeLessThan(REVEAL_SPEED);
-    expect(flingSpeed([{y: 200, t: 0}, {y: 100, t: 100}])).toBeLessThan(0);
+describe('the Tutor header actions', () => {
+  it('keeps suggestions available when opening or using the header menu', () => {
+    const header = document.createElement('header');
+    header.innerHTML = '<button data-tutor-session-actions><svg></svg></button><button aria-label="Back"></button>';
+    expect(keepsKeyboardOpenFor(header.querySelector('svg')!)).toBe(true);
+    expect(keepsKeyboardOpenFor(header.querySelector('[aria-label="Back"]')!)).toBe(false);
+    const sheet = document.createElement('dialog');
+    expect(keepsKeyboardOpenFor(sheet.appendChild(document.createElement('button')))).toBe(true);
+    const menu = document.createElement('div');
+    menu.setAttribute('role', 'dialog');
+    const action = menu.appendChild(document.createElement('button'));
+    expect(keepsKeyboardOpenFor(action)).toBe(true);
   });
 });

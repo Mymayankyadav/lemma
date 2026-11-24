@@ -1,8 +1,8 @@
 import {expect, test, type Page} from '@playwright/test';
 
-// N227 (Owner: "The header can disappear after few down scroll or inactivity and reappear only after upward scroll
-// (make only after scroll speed only) … making more and more chat visible is important without eating the precious space").
 const url = '/lemma/?demo=1&flags=v7Shell,tutorScratch#/p/real-analysis/cp/CP4/tutor';
+const hideHeader = (page: Page) => page.getByRole('button', {name: 'Hide header', exact: true});
+const showHeader = (page: Page) => page.getByRole('button', {name: 'Show header', exact: true});
 
 async function openChat(page: Page, tall = true) {
   await page.setViewportSize({width: 393, height: 873});
@@ -16,77 +16,58 @@ async function openChat(page: Page, tall = true) {
     node.prepend(room);
     node.scrollTop = node.scrollHeight;
   });
-  return {chat, header: page.locator('.tutor-header'), back: page.getByRole('button', {name: 'Back', exact: true})};
+  return {chat, back: page.getByRole('button', {name: 'Back', exact: true})};
 }
 
-const hidden = (page: Page) => page.locator('main.lemma-tutor[data-header-hidden]');
-
-test('a short scroll down folds the header away for more chat; only a fast scroll up brings it back', async ({page}) => {
+test('the composer eye hides and restores the header while keeping the chat below the system bar', async ({page}) => {
   const {chat, back} = await openChat(page);
+  await page.evaluate(() => document.documentElement.style.setProperty('--safe-area-inset-top', '36px'));
   await expect(back).toBeVisible();
   const before = (await chat.boundingBox())!.height;
-  const box = (await chat.boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.wheel(0, -100);
-  await page.mouse.wheel(0, 200);
-  await expect(hidden(page)).toHaveCount(1);
+  await hideHeader(page).click();
   await expect(back).not.toBeVisible();
-  // The chat takes the room the header gave back.
+  await expect(page.getByRole('button', {name: 'Session actions'})).not.toBeVisible();
   await expect.poll(async () => (await chat.boundingBox())!.height).toBeGreaterThan(before + 40);
-  // Headless Chromium halves wheel deltas: 200 here is one real notch (deltaY 100).
-  // A slow scroll up (single notches apart) leaves it hidden.
-  await page.mouse.wheel(0, -200);
-  await page.waitForTimeout(400);
-  await page.mouse.wheel(0, -200);
-  await page.waitForTimeout(400);
-  await expect(hidden(page)).toHaveCount(1);
-  // A fast one (two notches at once) brings it back.
-  await page.mouse.wheel(0, -200);
-  await page.mouse.wheel(0, -200);
-  await expect(hidden(page)).toHaveCount(0);
+  expect((await chat.boundingBox())!.y).toBeGreaterThanOrEqual(36);
+  await expect(showHeader(page)).toBeVisible();
+  await showHeader(page).click();
   await expect(back).toBeVisible();
-  // Keys: End folds it, Home brings it back.
-  await chat.focus();
-  await page.keyboard.press('End');
-  await expect(hidden(page)).toHaveCount(1);
-  await page.keyboard.press('Home');
-  await expect(hidden(page)).toHaveCount(0);
 });
 
-test('with a finger, a swipe up folds the header; only a quick fling down brings it back', async ({page}) => {
-  const {chat} = await openChat(page);
+test('wheel, touch and navigation keys leave header visibility in the learner’s control', async ({page}) => {
+  const {chat, back} = await openChat(page);
   const box = (await chat.boundingBox())!;
+  const x = box.x + box.width / 2, y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.wheel(0, -300);
+  await page.mouse.wheel(0, 300);
+  await chat.evaluate(node => {node.tabIndex = 0; node.focus();});
+  await page.keyboard.press('End');
+  await expect(back).toBeVisible();
+
+  await hideHeader(page).click();
   const client = await page.context().newCDPSession(page);
-  const swipe = async (dy: number, steps: number, pause: number) => {
-    const x = box.x + box.width / 2, y = box.y + box.height / 2;
-    await client.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y}]});
-    for (let step = 1; step <= steps; step++) {
-      await client.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x, y: y + dy * step / steps}]});
-      if (pause) await page.waitForTimeout(pause);
-    }
-    await client.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
-  };
-  await swipe(-80, 4, 0);
-  await expect(hidden(page)).toHaveCount(1);
-  // Slowly dragging back down keeps the chat roomy.
-  await swipe(120, 8, 120);
-  await expect(hidden(page)).toHaveCount(1);
-  await swipe(160, 4, 0);
-  await expect(hidden(page)).toHaveCount(0);
+  await client.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y}]});
+  await client.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x, y: y + 160}]});
+  await client.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
+  await chat.focus();
+  await page.keyboard.press('Home');
+  await expect(back).not.toBeVisible();
+  await showHeader(page).click();
+  await expect(back).toBeVisible();
 });
 
-test('the header folds away after a while without input, but never when the chat is too short to scroll', async ({page}) => {
+test('idle chat keeps the header visible and a short chat can still hide it', async ({page}) => {
   await page.clock.install();
   const {back} = await openChat(page);
-  await expect(back).toBeVisible();
   await page.clock.fastForward(7000);
-  await expect(hidden(page)).toHaveCount(1);
+  await expect(back).toBeVisible();
 
   const short = await page.context().newPage();
-  await short.clock.install();
   const {back: shortBack, chat} = await openChat(short, false);
   expect(await chat.evaluate(node => node.scrollHeight - node.clientHeight)).toBeLessThan(8);
-  await short.clock.fastForward(7000);
-  await expect(hidden(short)).toHaveCount(0);
+  await hideHeader(short).click();
+  await expect(shortBack).not.toBeVisible();
+  await showHeader(short).click();
   await expect(shortBack).toBeVisible();
 });
