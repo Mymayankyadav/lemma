@@ -8,6 +8,7 @@ import {useDeckTree,useProjects,useUpdateProject} from '../../../data/hooks';
 import type {ProjectStatus,ProjectSummary} from '../../../data/types';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {Button,Skeleton} from '../../../ui/v7/components';
+import {useOnline} from '../../../ui/v7/savedCopy';
 import {RowMenu} from '../../../ui/v7/RowMenu';
 import {StatusBadge} from '../../../ui/v7/Status';
 import {Emblem} from '../../../ui/v7/Emblem';
@@ -73,6 +74,7 @@ function PathCard({project,due,pinnedCount,selected}:{project:ProjectSummary;due
 
 /** PLAN §6.8: the Paths hub. Search, status chips, path cards with cover, meter and chips, and "Start a new path". */
 export default function PathsV7({embedded=false,selected}:{embedded?:boolean;selected?:string}={}){
+ const online=useOnline();
  const studyRepair=useStudyUi();
  const projects=useProjects(),decks=useDeckTree(),location=useLocation(),navigate=useNavigate();
  const [filter,setFilter]=useState<PathFilter>('active'),[query,setQuery]=useState(''),[limit,setLimit]=useState(PAGE);
@@ -94,9 +96,9 @@ export default function PathsV7({embedded=false,selected}:{embedded?:boolean;sel
    {pathFilters.map(item=><button key={item} type="button" role="radio" aria-checked={filter===item} className="v7-filter-chip"
     onClick={()=>{setFilter(item);setLimit(PAGE);}}>{filterWord[item]}{counts[item]>0?' '+counts[item]:''}</button>)}
   </div>}
-  {projects.isPending&&<><Skeleton/><Skeleton/></>}
-  {projects.isError&&<div role="alert" className="v7-paths-empty"><p>Erratum: your paths didn’t load. Try again.</p><Button onClick={()=>{void projects.refetch();}}>Try again</Button></div>}
-  {projects.isSuccess&&<>
+  {!projects.data&&(!online?<p className="v7-paths-empty">Connect to load Paths on this device.</p>
+   :projects.isPending?<><Skeleton/><Skeleton/></>:<div role="alert" className="v7-paths-empty"><p>Erratum: your paths didn’t load. Try again.</p><Button onClick={()=>{void projects.refetch();}}>Try again</Button></div>)}
+  {projects.data&&<>
    <p className="v7-sr-only" aria-live="polite">{visible.length} {visible.length===1?'path':'paths'} shown</p>
    {visible.length===0?(all.length===0
      ?<EmptyMoment art="paths" title="Every proof starts somewhere" action={{label:'Start a new path',to:'/projects/new'}}>Start a path and your tutor will plan it with you.</EmptyMoment>

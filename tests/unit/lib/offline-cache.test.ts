@@ -94,11 +94,12 @@ describe('AND-8 strict offline snapshot',()=>{
   const client=new QueryClient()
   client.setQueryData(['settings'],settings,{updatedAt:now})
   client.setQueryData(['home'],{title:'Today',authToken:'SENTINEL-SECRET-TOKEN'},{updatedAt:now})
+  client.setQueryData(['checkpoint','analysis','CP4'],{view:{title:'Compactness'},authScope:{generation:1,ownerId:'owner'}},{updatedAt:now})
   client.setQueryData(['review-items','all'],[{front:'sensitive card face'}],{updatedAt:now})
   client.setQueryData(['auth'],{access_token:'SENTINEL-SECRET'},{updatedAt:now})
   const snapshot=snapshotFromClient(client,now)
-  expect(snapshot.entries.map(e=>e.key[0]).sort()).toEqual(['home','settings'])
-  expect(JSON.stringify(snapshot)).not.toMatch(/SENTINEL-SECRET|sensitive card face|access_token|connectorUrl/)
+  expect(snapshot.entries.map(e=>e.key[0]).sort()).toEqual(['checkpoint','home','settings'])
+  expect(JSON.stringify(snapshot)).not.toMatch(/SENTINEL-SECRET|sensitive card face|access_token|connectorUrl|authScope/)
  })
 })
 
@@ -136,6 +137,20 @@ describe('AND-8 rapid full-page navigation handoff',()=>{
    removeItem:key=>{values.delete(key)},clear:()=>values.clear(),key:index=>[...values.keys()][index]??null,
    get length(){return values.size}} as Storage;
  }
+ it('rechecks the owner when an asynchronous snapshot read completes',async()=>{
+  const client=new QueryClient(),owner='startup-fence-fixture'
+  stageOfflineHandoff(owner,['home'],{title:'Previous owner'},now,now)
+  let current=true
+  try{
+   const restore=hydrateOfflineSnapshot(owner,client,now,{canHydrate:()=>current})
+   current=false
+   expect(await restore).toBeNull()
+   expect(client.getQueryData(['home'])).toBeUndefined()
+  }finally{
+   clearOfflineHandoff(owner)
+   client.clear()
+  }
+ })
  it('retains separately visited routes across reloads without exposing another owner',()=>{
   const storage=memoryStorage();
   stageOfflineHandoff('owner-a',['home'],{title:'Today'},now-3000,now,storage);

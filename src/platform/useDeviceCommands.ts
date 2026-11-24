@@ -4,13 +4,15 @@ import {getApi} from '../data';
 import {getDeviceCommandApi} from '../data/device-commands';
 import {getStudyApi} from '../data/study';
 import {announceFocusChange} from '../app/v7/focus';
+import {useOnline} from '../ui/v7/savedCopy';
 import {isNative} from './native';
 import {deviceKey,startDeviceCommandRunner} from './deviceCommands';
 
 /** N160 (area 28): lets chat open a screen or drive the timer on this device. One call in V7Shell. */
 export function useDeviceCommands():void{
- const navigate=useNavigate();
+ const navigate=useNavigate(),online=useOnline();
  useEffect(()=>{
+  if(!online)return;
   const api=getDeviceCommandApi();
   if(api.mode==='demo')return;
   const lemma=getApi();
@@ -27,5 +29,5 @@ export function useDeviceCommands():void{
      return null;
     }},
   },{key:deviceKey(),label:isNative()?'Android app':'Web browser',platform:isNative()?'android':'web'});
- },[navigate]);
+ },[navigate,online]);
 }

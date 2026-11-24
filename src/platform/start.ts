@@ -1,5 +1,6 @@
 import {deviceToken} from '../data/study/live';
 import {authGeneration,authOwner,publishAuth} from '../data/authBoundary';
+import {readDeviceSession} from '../data/deviceSession';
 /**
  * N123 · the Android app's start-up: loaded with a dynamic import from main.tsx only when `isNative()`, so none of
  * this (or any `@capacitor/*` module) is in the web bundle's first load.
@@ -256,7 +257,8 @@ async function connectSession(): Promise<void> {
         {tone: 'danger', duration: 15_000, action: {label: 'Retry', onClick: retry}});
       },
     });
-    db.auth.onAuthStateChange((_event, session) => {
+    db.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION' && !session && readDeviceSession()) return;
       publishAuth(session?.user?{id:session.user.id,email:session.user.email}:null);
       cached = null; resetPushRegistration(); dismissFailure?.(); dismissFailure = undefined;
       const ownerId = session?.user.id ?? null;

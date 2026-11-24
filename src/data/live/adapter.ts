@@ -1,4 +1,5 @@
 import type { LemmaApi } from '../api'
+import {isAuthSessionMissingError} from '@supabase/supabase-js'
 import { textKind } from '../../pdf/text-source'
 import { liveClient } from './client'
 import {authGeneration, authOwner} from '../authBoundary'
@@ -220,9 +221,13 @@ export class LiveAdapter implements LemmaApi {
   }
  }
  async getAuth(...args: Parameters<LemmaApi['getAuth']>): ReturnType<LemmaApi['getAuth']> {
-  const {data,error} = await liveClient().auth.getUser()
-  if (error && !/missing|session/i.test(error.message)) fail(error)
-  return data.user?.email ? {email:data.user.email} : null
+  // This is the app's display identity. Owner-scoped reads and writes continue
+  // to use owner(db) and RLS, including after the SDK refreshes this session.
+  const {data,error} = await liveClient().auth.getSession()
+  if (isAuthSessionMissingError(error)) return null
+  if (error) fail(error)
+  const user=data.session?.user
+  return user?.email ? {id:user.id,email:user.email} : null
  }
  async signIn(...args: Parameters<LemmaApi['signIn']>): ReturnType<LemmaApi['signIn']> {
   const db=liveClient()

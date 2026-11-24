@@ -1,6 +1,7 @@
-import {onAccountChange,authSignedOut} from './authBoundary';
+import {onAccountChange,authGeneration,authSignedOut} from './authBoundary';
+import {readDeviceSession} from './deviceSession'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { subscribeOwnerChanges, clearOwnerChangesCursor } from './sync'
 import {LemmaError,type LemmaApi,type NoteStatusGuard} from './api'
 import { getApi } from './index'
@@ -77,13 +78,16 @@ function useOwnerFeed(owner: string | null | undefined) {
  }, [owner, client])
 }
 export function useAuth(...args: Parameters<LemmaApi['getAuth']>) {
- const client=useQueryClient();
+ const client=useQueryClient()
+ const [savedOwner]=useState(()=>readDeviceSession()?.ownerId)
  useEffect(()=>onAccountChange(user=>{
-  void client.cancelQueries();client.removeQueries({predicate:query=>query.queryKey[0]!=='auth'});clearOwnerChangesCursor();
-  client.setQueryData(['auth'],user?.email?{email:user.email}:null);
- }),[client]);
+  if (!user || authGeneration()!==1 || user.id!==savedOwner) {
+   void client.cancelQueries();client.removeQueries({predicate:query=>query.queryKey[0]!=='auth'});clearOwnerChangesCursor();
+  }
+  client.setQueryData(['auth'],user?.email?{id:user.id,email:user.email}:null);
+ }),[client,savedOwner]);
  const auth = useQuery({ ...queryDefaults, enabled:true,queryKey: ['auth'], queryFn: () => getApi().getAuth() })
- useOwnerFeed(auth.isSuccess ? auth.data?.email ?? null : undefined)
+ useOwnerFeed(auth.isSuccess ? auth.data?.id ?? null : undefined)
  return auth
 }
 export function useReviewLog(...args: Parameters<LemmaApi['getReviewLog']>) {
