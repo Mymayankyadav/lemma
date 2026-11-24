@@ -1,8 +1,9 @@
 import {useEffect,useId,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {ArrowUp,Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2,Maximize2,Minimize2} from 'lucide-react';
+import {ArrowUp,Camera,ChevronDown,ChevronUp,Ellipsis,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2,Maximize2,Minimize2} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
-import {InkCanvas} from '../../ui/v7/ink/InkCanvas';
+import {InkCanvas,type InkCanvasHandle} from '../../ui/v7/ink/InkCanvas';
+import {PaperEraserControl,PencilOnlyControl,usePaperInput} from './PaperInputTools';
 import {FullscreenPaper} from './FullscreenPaper';
 import {clearPadInk,initializePadInk,replacePadStrokes,undoPadInk,type PadInkHistory,type PadStrokes} from '../../ui/v7/ink/ink';
 import {rasterizeInk,reencodePhoto} from '../../ui/v7/ink/images';
@@ -95,6 +96,10 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
   const [paperHeight,setPaperHeight]=useState(0);
   const [full,setFull]=useState(false)
   /** N228 (Owner): the scratch pad fills the screen. */
+  const input=usePaperInput();
+  const canvas=useRef<InkCanvasHandle>(null);
+  const [pendingDot,setPendingDot]=useState(false);
+  const flushDot=()=>canvas.current?.flushPendingDot()??history;
   const [fullscreen,setFullscreen]=useState(false)
   const [started,setStarted]=useState(false),[error,setError]=useState(''),[preparing,setPreparing]=useState(false);
   const pending=useRef(false),migration=useRef(false);
@@ -115,12 +120,13 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
   const [reading,setReading]=useState<Reading|null>(null);
   const readingRun=useRef(0);
   async function readEquation(){
+    const source=flushDot().strokes;
     const run=++readingRun.current;
     const cached=await equationModelCached().catch(()=>false);
     if(run!==readingRun.current)return;
     setReading({phase:cached?'reading':'download',loaded:0});
     try{
-      const latex=await recognizeEquation(working.strokes,working.width,loaded=>{
+      const latex=await recognizeEquation(source,working.width,loaded=>{
         if(run===readingRun.current)setReading(current=>current&&current.phase==='download'?{...current,loaded}:current);
       });
       if(run===readingRun.current)setReading({phase:'result',latex});
@@ -129,6 +135,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     }
   }
   async function openReading(){
+    flushDot();
     const run=++readingRun.current;
     setReading({phase:'reading'});
     const cached=await equationModelCached().catch(()=>false);
@@ -263,9 +270,11 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     },'Could not add that photo.');
   }
   async function insertDrawing() {
-    if(!canDraw||!working.strokes.length||started||(!editingImageId&&!canInsertImage))return;
+    if(!canDraw||started||(!editingImageId&&!canInsertImage))return;
+    const source=flushDot().strokes;
+    if(!source.length)return;
     await prepare(async()=>{
-      const vector={strokes:working.strokes,width:working.width,accent:working.accent};
+      const vector={strokes:source,width:working.width,accent:working.accent};
       const blob=await rasterizeInk(vector.strokes,vector.width,vector.accent);
       const image:TutorImageDraft={id:crypto.randomUUID(),kind:'drawing',mimeType:'image/png',blob,ink:vector};
       let inserted=false;
@@ -298,6 +307,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     if (next) saveInk(replacePadStrokes(history,next),redo.slice(0,-1));
   }
   function discardDrawing() {
+    canvas.current?.discardPendingDot();
     void edit(current=>editingImageId
       ? {...current,editingDrawing:undefined}
       : {...current,strokes:[],drawingId:undefined}).catch(()=>{});
@@ -311,21 +321,23 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     <div className="tutor-ink-tools" role="group" aria-label="Drawing tools">
       {leading}
       <IconButton label="Pen" disabled={!canDraw||preparing} aria-pressed={mode==='pen'} onClick={()=>setMode('pen')}><Pencil aria-hidden="true"/></IconButton>
-      <IconButton label="Eraser" disabled={!canDraw||preparing} aria-pressed={mode==='eraser'} onClick={()=>setMode('eraser')}><Eraser aria-hidden="true"/></IconButton>
+      <PaperEraserControl kind={input.eraserKind} active={mode==='eraser'} disabled={!canDraw||preparing}
+        onSelect={()=>setMode('eraser')} onKind={input.setEraserKind}/>
+      {input.isIPad&&<PencilOnlyControl enabled={input.enabled} onToggle={input.toggle}/>}
       <IconButton label="Hand" aria-pressed={mode==='hand'} onClick={()=>setMode('hand')}><Hand aria-hidden="true"/></IconButton>
-      <IconButton label="Undo stroke" disabled={!canDraw||preparing||!history.undo.length} onClick={()=>saveInk(undoPadInk(history),[...redo,history.strokes])}><Undo2 aria-hidden="true"/></IconButton>
-      <IconButton label="Recognize equation" aria-haspopup="dialog" disabled={preparing||!working.strokes.length||!onInsertEquation}
+      <IconButton label="Undo stroke" disabled={!canDraw||preparing||(!history.undo.length&&!pendingDot)} onClick={()=>{const current=flushDot();saveInk(undoPadInk(current),[...(pendingDot?[]:redo),current.strokes]);}}><Undo2 aria-hidden="true"/></IconButton>
+      <IconButton label="Recognize equation" aria-haspopup="dialog" disabled={preparing||(!working.strokes.length&&!pendingDot)||!onInsertEquation}
         onClick={()=>{void openReading();}}><ScanText aria-hidden="true"/></IconButton>
       <IconButton label="Scratch pad actions" aria-haspopup="dialog" onClick={()=>setToolsOpen(true)}><Ellipsis aria-hidden="true"/></IconButton>
       <IconButton label={editingImageId?'Update drawing':'Insert drawing'} className="tutor-insert-drawing"
-        disabled={!canDraw||preparing||started||!working.strokes.length||(!editingImageId&&!canInsertImage)}
+        disabled={!canDraw||preparing||started||(!working.strokes.length&&!pendingDot)||(!editingImageId&&!canInsertImage)}
         onClick={()=>{void insertDrawing();}}><ArrowUp aria-hidden="true"/></IconButton>
     </div>
     {/* N221 (Owner): below the one row of tools, the rest is paper. It is wider and taller than the pad and scrolls
         both ways with the Hand; the resize grip sits on its top edge and the hint inside it, so neither takes a row. */}
     <div className="tutor-scratch-sheet">
       <button type="button" className="tutor-paper-expand" aria-label={fullscreen?'Exit full screen':'Full screen'} title={fullscreen?'Exit full screen':'Full screen'}
-        data-fullscreen-toggle="" aria-pressed={fullscreen} onClick={()=>setFullscreen(on=>!on)}
+        data-fullscreen-toggle="" aria-pressed={fullscreen} onClick={()=>{flushDot();setFullscreen(on=>!on);}}
       >{fullscreen?<Minimize2 aria-hidden="true"/>:<Maximize2 aria-hidden="true"/>}</button>
       <div className="tutor-scratch-resize" role="separator" tabIndex={0} aria-label="Resize scratch pad"
         aria-orientation="horizontal" aria-controls={paperId} aria-valuenow={Math.round(paperHeight/window.innerHeight*100)}
@@ -352,7 +364,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
         }}><span aria-hidden="true"/></div>
     <div ref={paper} id={paperId} className="tutor-scratch-paper" role="region" aria-label="Drawing paper" aria-describedby={hintId}
       tabIndex={0} onScroll={event=>{paperOffset.current=event.currentTarget.scrollTop;paperLeft.current=event.currentTarget.scrollLeft;}}>
-      <InkCanvas history={history} onChange={saveInk} onStroke={()=>{setStarted(true);setFull(false)}} onStrokeEnd={()=>setStarted(false)} onFull={()=>setFull(true)}
+      <InkCanvas apiRef={canvas} onPendingDot={setPendingDot} pencilOnly={input.isIPad&&input.enabled} pencilTipEraser={input.isIPad} eraserKind={input.eraserKind} history={history} onChange={saveInk} onStroke={()=>{setStarted(true);setFull(false)}} onStrokeEnd={()=>setStarted(false)} onFull={()=>setFull(true)}
         panTouches={2} onPan={(dx,dy,gesture,fingers)=>{
           const viewport=paper.current;
           if (gesture==='touch'&&fingers&&fingers>=3&&!fullscreen) {
@@ -370,7 +382,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     {!editingImageId&&!canInsertImage&&<p role="status" className="composer-status">Shorten the answer to insert another image.</p>}
   </section>;
   return <>
-    {shown&&(!editingAsset||editingAsset.ink)&&<FullscreenPaper active={fullscreen} onExit={()=>setFullscreen(false)} label="Scratch pad, full screen">{pad}</FullscreenPaper>}
+    {shown&&(!editingAsset||editingAsset.ink)&&<FullscreenPaper active={fullscreen} onExit={()=>{flushDot();setFullscreen(false);}} label="Scratch pad, full screen">{pad}</FullscreenPaper>}
     <Sheet open={Boolean(reading)&&shown} onClose={closeReading} title="Recognize equation">
       <div className="tutor-equation-reading" aria-live="polite">
         {reading?.phase==='ask'&&<>
@@ -410,8 +422,8 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     </Sheet>
     <Sheet open={toolsOpen&&shown} onClose={()=>setToolsOpen(false)} title="Scratch pad actions">
       <div className="tutor-session-actions">
-        <Button small disabled={!canDraw||preparing||!redo.length} onClick={()=>{redoStroke();setToolsOpen(false);}}><Redo2 aria-hidden="true"/>Redo stroke</Button>
-        <Button small disabled={!canDraw||preparing||!history.strokes.length} onClick={()=>{saveInk(clearPadInk(history));setToolsOpen(false);}}><Trash2 aria-hidden="true"/>Clear scratch pad</Button>
+        <Button small disabled={!canDraw||preparing||pendingDot||!redo.length} onClick={()=>{redoStroke();setToolsOpen(false);}}><Redo2 aria-hidden="true"/>Redo stroke</Button>
+        <Button small disabled={!canDraw||preparing||(!history.strokes.length&&!pendingDot)} onClick={()=>{const current=flushDot();saveInk(clearPadInk(current));setToolsOpen(false);}}><Trash2 aria-hidden="true"/>Clear scratch pad</Button>
         {editingImageId?draft.editingDrawing?.id===editingImageId&&
           <Button small disabled={queued||preparing} onClick={discardDrawing}>Discard drawing edits</Button>
           :draft.strokes.length>0&&<Button small disabled={queued||preparing} onClick={discardDrawing}>Discard uninserted drawing</Button>}

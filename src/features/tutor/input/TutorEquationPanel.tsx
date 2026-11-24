@@ -1,12 +1,13 @@
 import {useEffect, useRef, useState, type CSSProperties, type ReactNode} from 'react';
-import {Download, LoaderCircle, Maximize2, Minimize2, RotateCcw, ScanText, Trash2, Undo2} from 'lucide-react';
+import {Download, LoaderCircle, Maximize2, Minimize2, Pencil, RotateCcw, ScanText, Trash2, Undo2} from 'lucide-react';
 import {MathText} from '../../../ui/MathText';
-import {InkCanvas} from '../../../ui/v7/ink/InkCanvas';
+import {InkCanvas,type InkCanvasHandle} from '../../../ui/v7/ink/InkCanvas';
 import {clearPadInk, initializePadInk, PAD_PAPER, undoPadInk, type PadInkHistory, type PadStrokes} from '../../../ui/v7/ink/ink';
 import {haptic} from '../../../ui/v7/haptics';
 import {EQUATION_MODEL_BYTES} from './equationModel';
 import {equationModelCached, prepareEquationModel, recognizeEquation} from './equationRecognizer';
 import {symbolById} from './symbolCatalog';
+import {PaperEraserControl,PencilOnlyControl,usePaperInput} from '../PaperInputTools';
 import {FullscreenPaper} from '../FullscreenPaper';
 
 type Reading =
@@ -53,6 +54,11 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   /** The paper holds all the strokes it can (N228). */
   const [full, setFull] = useState(false);
   /** N228 (Owner: "full screen scratch pad editing for both scratch and equation"): the strip and the paper fill the screen. */
+  const input=usePaperInput();
+  const canvas=useRef<InkCanvasHandle>(null);
+  const [pendingDot,setPendingDot]=useState(false);
+  const flushDot=()=>canvas.current?.flushPendingDot()??history;
+  const [tool,setTool]=useState<'pen'|'eraser'>('pen');
   const [fullscreen, setFullscreen] = useState(false);
   /** How much taller than the keys the learner has dragged the paper (kept while the composer is open). */
   const [extra, setExtra] = useState(() => equationExtra);
@@ -87,7 +93,7 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
   }, []);
 
   async function read(consent = false) {
-    const strokes = history.strokes;
+    const strokes = flushDot().strokes;
     if (!strokes.length || disabled) return;
     if (consent) consented.current = true;
     const current = ++run.current;
@@ -117,8 +123,9 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
     symbols.onInk(next.strokes, size());
   }
   function clearInk() {
+    const current=flushDot();
     run.current++;
-    setHistory(current => clearPadInk(current));
+    setHistory(clearPadInk(current));
     setReading({phase: 'idle'});
     symbols.onInk([], size());
     paper.current?.scrollTo({left: 0, top: 0});
@@ -134,17 +141,17 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
     clearInk();
   }
 
-  const inked = history.strokes.length > 0;
+  const inked = history.strokes.length > 0 || pendingDot;
   const maxExtra = () => Math.max(0, Math.round(window.innerHeight * 0.32));
   const clampExtra = (value: number) => Math.max(0, Math.min(maxExtra(), value));
   const busy = reading.phase !== 'idle';
-  const shownSymbols = symbols.enabled && inked ? symbols.ids.slice(0, busy ? 2 : 4) : [];
-  return <FullscreenPaper active={fullscreen} onExit={() => setFullscreen(false)} label="Equation mode, full screen">
+  const shownSymbols = symbols.enabled && inked && !pendingDot ? symbols.ids.slice(0, busy ? 2 : 4) : [];
+  return <FullscreenPaper active={fullscreen} onExit={() => {flushDot();setFullscreen(false);}} label="Equation mode, full screen">
   <section className="tutor-equation" aria-label="Equation mode" data-fullscreen={fullscreen || undefined}>
     <div className="strip tutor-equation-strip">
       {leading}
       <div className="tutor-equation-candidates" role="group" aria-label="Equation suggestions" aria-live="polite">
-        {reading.phase === 'result' && <button type="button" className="tutor-equation-reading preferred" aria-label={'Insert equation ' + reading.latex}
+        {!pendingDot && reading.phase === 'result' && <button type="button" className="tutor-equation-reading preferred" aria-label={'Insert equation ' + reading.latex}
           disabled={disabled} onPointerDown={event => event.preventDefault()} onClick={() => insert(reading.latex)}>
           <MathText source={'$' + reading.latex + '$'}/>
         </button>}
@@ -168,6 +175,7 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
             <RotateCcw aria-hidden="true"/></button></span>}
         {!inked && <span className="tutor-equation-hint">{replacing ? 'Write the equation again' : 'Write a symbol or an equation'}</span>}
       </div>
+      {input.isIPad&&<PencilOnlyControl enabled={input.enabled} onToggle={input.toggle}/>}
       {trailing}
     </div>
     {/* N227 (Owner: "these options waste the row; float them and hide them while drawing"; "expandable as in the
@@ -195,7 +203,7 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
         }}><span aria-hidden="true"/></div>
       <div className="tutor-equation-paper" ref={paper}>
         <div className="tutor-equation-sheet" ref={sheet}>
-          <InkCanvas history={history} onChange={change} mode={disabled ? 'hand' : 'pen'} width={3} label="Write an equation" panTouches={2}
+          <InkCanvas apiRef={canvas} onPendingDot={setPendingDot} pencilOnly={input.isIPad&&input.enabled} pencilTipEraser={input.isIPad} eraserKind={input.eraserKind} history={history} onChange={change} mode={disabled ? 'hand' : tool} width={3} label="Write an equation" panTouches={2}
             onStroke={() => {setStroking(true); setFull(false);}} onStrokeEnd={() => setStroking(false)} onFull={() => setFull(true)}
             onPan={(dx, dy, _gesture, fingers) => {
               // Three fingers scroll the chat; in full screen no chat is in view.
@@ -211,13 +219,16 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
       <div className="tutor-equation-float" role="group" aria-label="Paper tools" data-hidden={stroking || undefined}>
         <button type="button" className="tutor-equation-read" aria-label="Read equation" disabled={disabled || !inked || reading.phase === 'reading' || reading.phase === 'download'}
           onPointerDown={event => event.preventDefault()} onClick={() => {haptic('snap'); void read();}}><ScanText aria-hidden="true"/><span>Read</span></button>
-        <button type="button" className="sbtn" aria-label="Undo stroke" disabled={disabled || !history.undo.length}
-          onPointerDown={event => event.preventDefault()} onClick={() => change(undoPadInk(history))}><Undo2 aria-hidden="true"/></button>
+        {tool==='eraser'&&<button type="button" className="sbtn" aria-label="Pen" onClick={()=>setTool('pen')}><Pencil aria-hidden="true"/></button>}
+        <PaperEraserControl kind={input.eraserKind} active={tool==='eraser'} disabled={disabled}
+          onSelect={()=>setTool('eraser')} onKind={input.setEraserKind}/>
+        <button type="button" className="sbtn" aria-label="Undo stroke" disabled={disabled || (!history.undo.length&&!pendingDot)}
+          onPointerDown={event => event.preventDefault()} onClick={() => change(undoPadInk(flushDot()))}><Undo2 aria-hidden="true"/></button>
         <button type="button" className="sbtn" aria-label="Clear writing" disabled={disabled || !inked}
           onPointerDown={event => event.preventDefault()} onClick={clearInk}><Trash2 aria-hidden="true"/></button>
         <button type="button" className="sbtn" aria-label={fullscreen ? 'Exit full screen' : 'Full screen'} aria-pressed={fullscreen}
           data-fullscreen-toggle="" onPointerDown={event => event.preventDefault()}
-          onClick={() => setFullscreen(on => !on)}>{fullscreen ? <Minimize2 aria-hidden="true"/> : <Maximize2 aria-hidden="true"/>}</button>
+          onClick={() => {flushDot();setFullscreen(on => !on);}}>{fullscreen ? <Minimize2 aria-hidden="true"/> : <Maximize2 aria-hidden="true"/>}</button>
       </div>
     </div>
   </section>

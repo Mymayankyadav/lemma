@@ -9,10 +9,11 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 ## N230 Apple Pencil palm rejection in scratch pad and equation composer
 
 Owner task: "Ok create a new pr with astra 6 dot agents implementing support for ipencil with palm rejection in scratch pad and equation composer."
+Owner follow-up: iPad defaults to Apple Pencil-only ink, with a setting in both paper headers to allow finger drawing, tip double-tap for a one-stroke eraser, and responsive drawing. Long-press the eraser for stroke-wise and pixel-wise modes.
 Stage: Harden · Status: done · Needs: — · Assigned: chat-563902#p4nc
-Done = Pen input takes priority over active provisional touch ink or erasing. Resting palms cannot draw, erase or pan while a pen is down, including stationary pen contact, and rejected contacts stay rejected until lifted. Both Tutor papers retain existing finger-only drawing/navigation and interrupted-stroke recovery. Record simulated coverage and physical-iPad limitations.
-Tests: tests/unit/pad/ink-pencil.test.tsx; tests/e2e/v7-ink-pencil.spec.ts; existing ink and Tutor full-screen/gesture regression suites.
-Scope: src/ui/v7/ink/**; tests/unit/pad/**; tests/e2e/v7-ink-*.spec.ts; docs/current/N230.md; NEXT.md.
+Done = Both Tutor papers default to Pencil-only ink on iPad and share a persistent header opt-out; rejected palms cannot mark or erase, and finger navigation remains available. Two Pencil-tip taps arm the selected eraser for one Pencil stroke and normal drawing returns on lift/cancel. The eraser offers whole-stroke or swept partial erasing via long press and an accessible menu. Undo restores one eraser gesture. Finger mode and Android retain existing behaviors. Record automated validation and hardware limits.
+Tests: tests/unit/pad/{ink-pencil.test.tsx,pixel-eraser.test.ts}; tests/unit/tutor/**; tests/e2e/v7-ink-pencil.spec.ts; existing ink and Tutor full-screen/gesture regression suites.
+Scope: src/ui/v7/ink/**; src/features/tutor/**; tests/unit/{pad,tutor}/**; tests/e2e/v7-ink-*.spec.ts; docs/current/N230.md; NEXT.md.
 Not: new dependencies, native Android changes, protected CI changes, treating simulated input as physical Apple Pencil validation, merge or deployment.
 
 ## N229 Simplify Tutor chat and fix Android full-screen drawing

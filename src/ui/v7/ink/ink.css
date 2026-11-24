@@ -4,3 +4,7 @@
  border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);
 }
 :where(html[data-v7]) .v7-ink-canvas[data-mode="hand"] {touch-action:pan-y;}
+:where(html[data-v7]) .v7-ink-canvas[data-pencil-eraser] {
+ border-color:var(--v7-role-selection-fg);
+ cursor:crosshair;
+}
