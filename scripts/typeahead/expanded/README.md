@@ -46,12 +46,15 @@ Use `train.py` with `--candidate primary` for the 33,870,848-parameter model and
 
 Prepare the private Kaggle notebook script with `kaggle_run.py`. Pass prior allocated usage when reserving a later run. Set the Kaggle `--timeout` to the maximum wall seconds allowed by allocated GPU-hours divided by assigned device count. NvidiaTeslaT4 assigns two devices, including when training uses only one. Compare the script ledger with the complete Kaggle session duration and provider quota. Save the source archive SHA-256, branch commit and exact Kaggle version with the experiment. Export on a CPU notebook using both the prepared data and training notebooks as inputs.
 
+For audited comparisons, export each checkpoint against its own prepared pool and the same train-free case source.
+
 ```bash
 python export.py --checkpoint work/training/best.pt --data work/prepared \
+    --match-training-data --case-data work/shared-heldout --split validation \
     --out work/export --precision int8-weight-only --max-bytes 41943040
 ```
 
-Select quantization using a fixed validation set of at least 300 distinct contexts with lengths spanning 1 to the model's maximum. Freeze the chosen precision before checking a separate untouched test set. Role-adapted exports also verify the actual question/aids/draft layout. The exporter checks the native full context and cached model, float ONNX and the quantized graphs. The primary int8 graph shares one quantized weight between the embedding and output head. Prefill and incremental graphs share a verified external tensor file. Export qualification, browser/device qualification and UI replay qualification are independent. The candidate stays disabled until the applicable device and replay evidence passes.
+The seven matched 512-token exports use the same frozen 300 cases per split, with 150 prose and 150 role-marked question/aids/draft contexts. Browser cases exercise partial-word retokenization, whole-word cache reuse and the last predictable token of retained windows. The report records actual input lengths by layout and separate hashes for the checkpoint's training data, shared case data and ordered case list. Require those last two hashes to match across the seven arms. Use validation to select checkpoints and quantization, then evaluate the selected artifacts on the frozen test split. The exporter checks the native full context and cached model, float ONNX and the quantized graphs. The primary int8 graph shares one quantized weight between the embedding and output head. Prefill and incremental graphs share a verified external tensor file. Export qualification, browser/device qualification and UI replay qualification are independent. The candidate stays disabled until the applicable device and replay evidence passes.
 
 ## Frozen replay and calibration
 

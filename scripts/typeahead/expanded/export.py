@@ -418,9 +418,11 @@ def role_cases(data, context, minimum, split):
         using_whole_words += 1
     if using_whole_words < target_partial // 2:
         raise ValueError('Too few distinct whole-word candidate paths')
-    for fraction in (0., .5, .9):
+    saturated = stream.docs[ordered, 1] == context + 1
+    longest_first = np.concatenate((ordered[saturated], ordered[~saturated]))
+    for fraction, document_order in ((0., ordered), (.5, ordered), (1., longest_first)):
         stop = len(results) + math.ceil(max(0, minimum - target_partial - using_whole_words) / 3)
-        for doc_index in ordered:
+        for doc_index in document_order:
             start, length, first_gold = map(int, stream.docs[doc_index])
             partial = first_gold + round(fraction * (length - first_gold - 1))
             for candidate in (partial, first_gold):
@@ -489,6 +491,8 @@ def qualify(model, float_paths, packed, cases):
             by_length[length] += 1
             track = layouts[case.get('layout', 'prose')]
             track['contexts'] += 1
+            track['minInputLength'] = min(track.get('minInputLength', length), length)
+            track['maxInputLength'] = max(track['maxInputLength'], length)
             if 'previousIds' in case:
                 previous = case['previousIds']
                 stable = case['stablePrefix']
@@ -559,15 +563,38 @@ def qualify(model, float_paths, packed, cases):
     return report
 
 
+def context_source(data, common, context, split, adapted, require_common):
+    """Verify the checkpoint's own inputs and separately bind the common browser-case source."""
+    role_split = f'adapt-{context}-{split}'
+    role_files = [role_split + '.partial.jsonl']
+    if common is None:
+        if require_common:
+            raise ValueError('Audited export requires the frozen shared held-out case data')
+        streams = [split, role_split] if adapted else [split]
+        training_hash, tokenizer_hash = verify_prepared(data, streams, role_files if adapted else ())
+        return training_hash, tokenizer_hash, training_hash
+    training_hash, tokenizer_hash = verify_prepared(data, [split])
+    common_hash, common_tokenizer_hash = verify_prepared(common, [split, role_split], role_files)
+    prepared = json.loads((data / 'manifest.json').read_text())
+    shared = json.loads((common / 'manifest.json').read_text())
+    has_training = 'train' in shared['counts'] or any('train' in stats for stats in shared['adaptation'].values())
+    if has_training or prepared.get('sharedHeldoutSha256') != common_hash or tokenizer_hash != common_tokenizer_hash:
+        raise ValueError('Browser cases must come from the exact train-free shared held-out data')
+    for extension in ('tokens', 'index'):
+        filename = f'{split}.{extension}'
+        if prepared['files'][filename] != shared['files'][filename]:
+            raise ValueError('Browser case data differs from the checkpoint training pool holdout')
+    return training_hash, tokenizer_hash, common_hash
+
+
 def run(args):
     model_state = torch.load(args.checkpoint, map_location='cpu', weights_only=False)
     settings = model_state['settings']
     cfg = Config(**settings['config'])
     adapted = settings.get('adapt', False)
-    role_split = f'adapt-{cfg.context}-{args.split}'
-    streams = [args.split, role_split] if adapted else [args.split]
-    role_case_files = [role_split + '.partial.jsonl'] if adapted else []
-    data_hash, tokenizer_hash = verify_prepared(args.data, streams, role_case_files)
+    data_hash, tokenizer_hash, case_data_hash = context_source(
+        args.data, args.case_data, cfg.context, args.split, adapted, args.match_training_data,
+    )
     if args.match_training_data and settings.get('dataSha256') != data_hash:
         raise ValueError('Audited export must use the exact prepared pool that produced the checkpoint')
     expected_tokenizer = settings.get('tokenizerSha256')
@@ -586,9 +613,13 @@ def run(args):
     quantize(float_paths, packed, args.precision)
     graph_report = consolidate(packed)
     shutil.copyfile(args.data / 'tokenizer.json', packed / 'tokenizer.json')
-    cases = context_cases(args.data, cfg.context, args.contexts // 2 if adapted else args.contexts, args.split)
-    if adapted:
-        cases.extend(role_cases(args.data, cfg.context, args.contexts - args.contexts // 2, args.split))
+    mixed = args.case_data is not None or adapted
+    case_data = args.case_data or args.data
+    prose_count = args.contexts // 2 if mixed else args.contexts
+    cases = context_cases(case_data, cfg.context, prose_count, args.split)[:prose_count]
+    if mixed:
+        role_count = args.contexts - prose_count
+        cases.extend(role_cases(case_data, cfg.context, role_count, args.split)[:role_count])
     if len({case['ids'] for case in cases}) != len(cases):
         raise ValueError('Frozen exporter contexts must be distinct across layouts')
     context_file = args.out / 'cases.json'
@@ -619,7 +650,8 @@ def run(args):
                            track.get('wholeWordMatches', 0) / track['wholeWordCases'] >= .95)
                       for track in metrics['layouts'].values()))
     report = {'version': 1, 'checkpointSha256': file_hash(args.checkpoint), 'casesSha256': file_hash(context_file),
-              'dataSha256': data_hash, 'precision': args.precision, 'contextSplit': args.split,
+              'dataSha256': data_hash, 'trainingDataSha256': settings.get('dataSha256', data_hash),
+              'caseDataSha256': case_data_hash, 'precision': args.precision, 'contextSplit': args.split,
               'nativeDevice': 'CPU', 'onnxProvider': 'CPUExecutionProvider', 'graph': graph_report,
               'graphBytes': bytes_total, 'downloadBytes': download_bytes, 'exportParityPassed': passed, **metrics}
     (args.out / 'metrics.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
@@ -635,6 +667,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--data', type=Path, required=True)
+    parser.add_argument('--case-data', type=Path, help='Frozen train-free shared heldout for prose and browser-role cases')
     parser.add_argument('--match-training-data', action='store_true')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--precision', choices=('int8', 'int8-weight-only', 'int4', 'int4-int8-head'), required=True)

@@ -445,11 +445,12 @@ elif stage == 'export':
         entry = training['checkpointFiles'].get(checkpoint_file)
         if entry != {'sha256': file_hash(checkpoint), 'bytes': checkpoint.stat().st_size}:
             raise RuntimeError('Export checkpoint was not emitted by its immutable training run')
+    cases = ['--case-data', locate('shared-heldout'), '--match-training-data'] if require_audit else []
     # Export and qualify on CPU. A failing export makes the notebook fail.
     run([sys.executable, '-m', 'pip', 'install', '-q', 'onnx==1.20.1', 'onnxruntime==1.24.2', 'onnx-ir==1.1.0'])
     run(command('export', '--out', work / 'export', '--data', data,
                 '--checkpoint', checkpoint, '--precision', precision,
-                '--max-bytes', max_bytes, '--split', export_split, *(['--match-training-data'] if require_audit else [])))
+                '--max-bytes', max_bytes, '--split', export_split, *cases))
 else:
     raise ValueError(f"Unsupported notebook stage {stage}")
 '''
