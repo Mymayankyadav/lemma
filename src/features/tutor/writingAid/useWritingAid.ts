@@ -5,6 +5,7 @@ import {typeaheadFrozenProfile, typeaheadGhostProbe, typeaheadGraphTrial, typeah
 import {countPersonalTransition, learnSlateChoice, observeLocalCalibration, writingAidWeek} from './adaptation';
 import {isFlagOn} from '../../../flags';
 import {createNgramClient, type NgramClient} from './decoder/ngramClient';
+import {activeSubjectNgram, typeaheadNgramFingerprint} from './decoder/kn';
 import {prepareMainTypeaheadFallback} from './decoder/ngramSpatial';
 import {createNeuralClient, type NeuralClient} from './decoder/neuralClient';
 import type {NeuralReply} from './decoder/neural.worker';
@@ -27,8 +28,9 @@ interface Cycle {
   attempted: Record<WritingAidRefreshSurface, boolean>;
 }
 interface LearningScope {scopeKey: string; generation: string}
+type PredictionAssets = Readonly<{ngram?: string; subject?: string; neural?: string}>;
 interface Prediction {
-  assets?: {ngram?: string; neural?: string};
+  assets?: PredictionAssets;
   snapshot: WritingAidRequest;
   sequence: number;
   learningScope: LearningScope;
@@ -56,7 +58,7 @@ function censorRetention(value: PendingAcceptance | null): void {
 }
 
 export interface WritingAidView extends WritingAidSuggestions {
-  readonly assetHashes: Readonly<{ngram?: string; neural?: string}>;
+  readonly assetHashes: PredictionAssets;
   readonly rankedWords: readonly WritingAidProposal[];
   /** Indicate actual visibility; undisplayed candidates are never treated as rejections. */
   readonly shown: (surface: WritingAidRefreshSurface, displayed: readonly WritingAidProposal[], covered?: boolean) => void;
@@ -494,10 +496,10 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     const stillCurrent = () => !cancelled && learningScope === live.current.learningScope &&
       sameWritingAidRequest(snapshot, live.current.snapshot);
     const workerReply = worker?.predict(snapshot, model);
-    function report(pool: WritingAidPool, ngramSha?: string) {
+    function report(pool: WritingAidPool, assets: PredictionAssets = {}) {
       if (!stillCurrent()) return;
       const suggestions = selectWritingAidPool(pool, model, cycle.current.excluded);
-      setResult({snapshot, sequence, learningScope, pool, suggestions, assets: {ngram: ngramSha}});
+      setResult({snapshot, sequence, learningScope, pool, suggestions, assets});
       const client = neural.current;
       if (!client || !eligibleNeuralContext(snapshot)) return;
       const draft = snapshot.cursor.text.slice(0, snapshot.cursor.end);
@@ -521,7 +523,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         if (probe) ghostProbe.current = {snapshot, learningScope, reply};
         const updated = applyNeuralReply(pool, snapshot, reply);
         const selected = selectWritingAidPool(updated, model, cycle.current.excluded);
-        setResult({snapshot, sequence, learningScope, pool: updated, suggestions: selected, assets: {ngram: ngramSha, neural: reply.assetSha256}});
+        setResult({snapshot, sequence, learningScope, pool: updated, suggestions: selected, assets: {...assets, neural: reply.assetSha256}});
       }).catch(() => undefined);
     }
     const showFallback = async () => {
@@ -530,7 +532,9 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       if (!stillCurrent()) return;
       frame = window.requestAnimationFrame(() => {
         if (!stillCurrent()) return;
-        try {report(engine.predictWritingAidPool(snapshot, model));}
+        try {report(engine.predictWritingAidPool(snapshot, model), {
+          ngram: typeaheadNgramFingerprint(), subject: activeSubjectNgram(subject)?.fingerprint,
+        });}
         catch {setResult({snapshot, sequence, learningScope, suggestions: NO_WRITING_AID, pool: {words: [], edit: [], ghost: []}});}
       });
     };
@@ -540,7 +544,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         if (reply === 'unavailable') return showFallback();
         performance.clearMarks('lemma.typeahead.ngram');
         performance.mark('lemma.typeahead.ngram', {detail: {...worker?.diagnostics(), computeMs: reply.computeMs, elapsedMs: reply.elapsedMs, assetSha256: reply.assetSha256}});
-        report(reply.pool, reply.assetSha256);
+        report(reply.pool, {ngram: reply.assetSha256, subject: reply.subjectAssetSha256});
       }).catch(() => undefined);
     } else void showFallback().catch(() => undefined);
     return () => {cancelled = true; worker?.cancel(); if (frame !== undefined) window.cancelAnimationFrame(frame);};

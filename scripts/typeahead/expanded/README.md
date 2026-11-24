@@ -14,7 +14,7 @@ python corpus.py --sources work/sources/sources.json --out work/corpus \
     --replay-exclusions work/replay-exclusions.txt
 python subwords.py --corpus work/corpus-dev --out work/prepared-dev --adapt-contexts 512 1024
 python subwords.py --corpus work/corpus --out work/prepared --adapt-contexts 512 1024 \
-    --target-train-subwords 1000000000 --frozen-tokenizer work/prepared-dev/tokenizer.json
+    --frozen-tokenizer work/prepared-dev/tokenizer.json
 ```
 
 The exclusion file contains precomputed SHA-256 content fingerprints or canonical source-group hashes from an authorized replay, one per line. Group exact copies, publisher revisions and recognized near duplicates before assigning any split. The near-duplicate search uses bounded four-word shingles and verifies Jaccard similarity of at least 0.8 for candidates. It can miss paraphrases that share few shingles, so known paraphrase groups should share a source group ID. Coverage from inferred subjects uses keyword heuristics.
@@ -51,7 +51,7 @@ python export.py --checkpoint work/training/best.pt --data work/prepared \
     --out work/export --precision int8-weight-only --max-bytes 41943040
 ```
 
-The exporter records a fixed set of at least 300 distinct test contexts with lengths spanning 1 to the model's maximum. Role-adapted exports also verify the actual question/aids/draft layout. Use the validation split to select quantization. It checks the native full context and cached model, float ONNX and the quantized graphs. The primary int8 graph shares one quantized weight between the embedding and output head. Prefill and incremental graphs share a verified external tensor file. Export qualification, browser/device qualification and UI replay qualification are independent. The candidate stays disabled until the applicable device and replay evidence passes.
+Select quantization using a fixed validation set of at least 300 distinct contexts with lengths spanning 1 to the model's maximum. Freeze the chosen precision before checking a separate untouched test set. Role-adapted exports also verify the actual question/aids/draft layout. The exporter checks the native full context and cached model, float ONNX and the quantized graphs. The primary int8 graph shares one quantized weight between the embedding and output head. Prefill and incremental graphs share a verified external tensor file. Export qualification, browser/device qualification and UI replay qualification are independent. The candidate stays disabled until the applicable device and replay evidence passes.
 
 ## Frozen replay and calibration
 
@@ -90,3 +90,32 @@ development artifact, passing one subject at a time.
 The count stage checks the compressed size against available output bytes. The packing stage checks
 both the archive and extracted database hashes, opens the raw count database read-only, and uses
 local scratch for model probability rows. Its output includes the source corpus and count hashes.
+
+### Browser probability audit
+
+Run `node scripts/typeahead/expanded/audit_browser.mjs /tmp/typeahead-audit.json` with the existing
+Playwright and Vite dependencies. The verifier starts an isolated localhost server and Chromium.
+Use the installed Playwright browser or set `chromiumExecutable` to a local Chromium binary.
+
+```json
+{
+  "mode": "final",
+  "general": "./models/ngram-v2",
+  "latex": "./models/latex-v2",
+  "subjects": {"linear-algebra": "./models/subject-linear-algebra", "topology": "./models/subject-topology"},
+  "corpusManifest": "./corpus/manifest.json",
+  "groupAudit": "./group-audit.json",
+  "output": "./typeahead-audit-results.json"
+}
+```
+
+Paths are relative to the config file. Include every published subject shard. Keep the config and
+assets outside the repository. Use `diagnostic` mode to exercise preliminary assets without the final
+corpus gate. Supply a `mixture` file only if its separate held-out qualification passed. The report
+records which scopes activated a fit and checks the fallback where it did not activate.
+
+Chromium uses the product loader, parser and scorer to sum every stored sparse row and edge. Seeded
+stored and absent histories are also checked over the full vocabulary, along with the complete mixture
+support and LaTeX identifier allocation. The report records exact input hashes and byte counts, the
+verifier and source snapshot hashes, coverage, and worst errors. The verifier reads model assets
+and corpus metadata without opening replay events, labels or source documents.

@@ -12,7 +12,8 @@ export type NgramRequest = Readonly<{
 export type ComponentQuery = {componentId: number; cursorEnd: number; revision: number; word: string};
 export type ComponentReply = {componentId: number; subject?: string; probability?: ComponentProbabilities;
   assetSha256?: string; subjectAssetSha256?: string};
-export type NgramReply = Readonly<{id: number; pool: WirePool; computeMs: number; assetSha256?: string} | {id: number; failed: true}>;
+export type NgramReply = Readonly<{id: number; pool: WirePool; computeMs: number; assetSha256?: string;
+  subjectAssetSha256?: string} | {id: number; failed: true}>;
 type WorkerEndpoint = {
   onmessage: ((event: MessageEvent<NgramRequest | ComponentQuery>) => void) | null;
   postMessage: (reply: NgramReply | ComponentReply) => void;
@@ -48,7 +49,8 @@ worker.onmessage = async ({data}) => {
         subjectAssetSha256: activeSubjectNgram(data.request.subject)?.fingerprint};
     } : undefined);
     worker.postMessage({id: data.id, pool: {words: pool.words.map(withoutSnapshot), edit: pool.edit.map(withoutSnapshot),
-      ghost: pool.ghost.map(withoutSnapshot)}, computeMs: performance.now() - start, assetSha256: typeaheadNgramFingerprint()});
+      ghost: pool.ghost.map(withoutSnapshot)}, computeMs: performance.now() - start, assetSha256: typeaheadNgramFingerprint(),
+      subjectAssetSha256: activeSubjectNgram(data.request.subject)?.fingerprint});
   } catch {
     worker.postMessage({id: data.id, failed: true});
   }

@@ -8,7 +8,8 @@ type ReplayEvent = {eventId: string; answerId: string; prefix: string; target?: 
 type ReplayAnswer = {answerId: string; answer: string; route?: string; question?: string; subject?: string; aid?: AnswerAidDraft;
   documentGroup?: string};
 type GoldEvent = {eventId: string; exactInsertion: string; exactGhost?: string; kind: 'word' | 'symbol'};
-type RuntimeAsset = {ngram?: string; latex?: string; neural?: string; graphTrial?: string; ghostEligible: boolean};
+type RuntimeAsset = {ngram?: string; subject?: string; subjectPack?: string; latex?: string; neural?: string;
+  graphTrial?: string; ghostEligible: boolean; ngramAbsence?: 'empty' | 'ineligible' | 'no-current-model'};
 type Displayed = {text: string; family: string; start: number; end: number};
 type ComponentSample = {id: string; subject?: string; probability?: Record<string, number>; assetSha256?: string; subjectAssetSha256?: string};
 type GhostSample = {id: string; modelFingerprint?: string;
@@ -68,6 +69,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   test.setTimeout(eventInput || answerInput ? 1_800_000 : 60_000);
   const output = process.env.LEMMA_TYPEAHEAD_REPLAY_OUTPUT;
   const expectedNgram = process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NGRAM_SHA;
+  const expectedSubjectPacks = JSON.parse(process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_SUBJECT_SHA_JSON ?? '{}') as Record<string, string>;
   const expectedLatex = process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_LATEX_SHA;
   const captureOnly = process.env.LEMMA_TYPEAHEAD_REPLAY_CAPTURE_ONLY === '1';
   const ghostCalibration = process.env.LEMMA_TYPEAHEAD_REPLAY_GHOST_CALIBRATION === '1';
@@ -82,6 +84,8 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   const graphTrial = process.env.LEMMA_TYPEAHEAD_REPLAY_GRAPH_TRIAL === '1';
   const expectedNeural = process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NEURAL_FINGERPRINT;
   const modelAssets = new Set<string>();
+  const assetCounts = {ngram: 0, subject: 0, latex: 0, neural: 0, empty: 0, ineligible: 0, 'no-current-model': 0};
+  const subjectAssets = new Map<string, Set<string>>();
   const gold = new Map(input<GoldEvent>(process.env.LEMMA_TYPEAHEAD_REPLAY_GOLD, []).map(event => [event.eventId, event]));
   const components = [];
   const ghostCandidates = [];
@@ -123,18 +127,38 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     });
   }
 
-  async function observeAssets(): Promise<RuntimeAsset> {
+  async function observeAssets(answerId: string, text: string): Promise<RuntimeAsset> {
     const model = await page.locator('form.composer').evaluate(form => {
       const data = (form as HTMLElement).dataset;
-      return {ngram: data.typeaheadNgramSha, latex: data.typeaheadLatexSha, neural: data.typeaheadNeuralSha, graphTrial: data.typeaheadGraphTrial,
-        ghostEligible: data.typeaheadGhostEligible === '1'};
+      return {ngram: data.typeaheadNgramSha, subject: data.typeaheadSubject, subjectPack: data.typeaheadSubjectSha,
+        latex: data.typeaheadLatexSha, neural: data.typeaheadNeuralSha, graphTrial: data.typeaheadGraphTrial,
+        ngramEligible: data.typeaheadNgramEligible === '1', ghostEligible: data.typeaheadGhostEligible === '1'};
     });
-    if (expectedNgram) expect(model.ngram, 'active n-gram fingerprint during replay').toBe(expectedNgram);
+    const sample = contexts.get(answerId);
+    if (sample?.question && sample.subject) {
+      const expectedSubject = sample.subject.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '');
+      expect(model.subject, 'active Tutor subject for the frozen answer').toBe(expectedSubject);
+    }
+    if (expectedNgram && model.ngram) expect(model.ngram, 'active n-gram fingerprint during replay').toBe(expectedNgram);
     if (expectedLatex && model.latex) expect(model.latex, 'active LaTeX fingerprint during replay').toBe(expectedLatex);
-    if (model.ngram) modelAssets.add(model.ngram);
-    if (model.latex) modelAssets.add(model.latex);
-    if (model.neural) modelAssets.add(model.neural);
-    return model;
+    if (arm === 'corrected-v1') expect(model.subjectPack, 'corrected baseline must not use a subject pack').toBeUndefined();
+    if (model.ngram && model.subject && Object.hasOwn(expectedSubjectPacks, model.subject)) {
+      expect(model.subjectPack, 'active subject model fingerprint during replay').toBe(expectedSubjectPacks[model.subject]);
+    }
+    if (model.subject && model.subjectPack) {
+      const observed = subjectAssets.get(model.subject) ?? new Set<string>();
+      observed.add(model.subjectPack);
+      subjectAssets.set(model.subject, observed);
+    }
+    for (const [kind, hash] of [['ngram', model.ngram], ['subject', model.subjectPack], ['latex', model.latex], ['neural', model.neural]] as const) {
+      if (!hash) continue;
+      modelAssets.add(hash);
+      assetCounts[kind]++;
+    }
+    const {ngramEligible, ...assets} = model;
+    const ngramAbsence = model.ngram ? undefined : !text ? 'empty' : ngramEligible ? 'no-current-model' : 'ineligible';
+    if (ngramAbsence) assetCounts[ngramAbsence]++;
+    return {...assets, ngramAbsence};
   }
 
   async function measureComponents(id: string, target: string) {
@@ -230,7 +254,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     await expect.poll(() => exactDraft(answer)).toBe(event.prefix);
     await painted(page);
     const {slots, items} = await slate(page);
-    const assets = await observeAssets();
+    const assets = await observeAssets(event.answerId, event.prefix);
     if (!eventInput && event.eventId === 'blocked') {
       expect(items.some(item => /^(?:injective|surjective|bijective)\s*$/iu.test(item.text))).toBe(false);
     }
@@ -250,7 +274,8 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       const component = {eventId: event.eventId, answerId: event.answerId, documentGroup: context?.documentGroup,
         captureVersion: 'n238-mixture-v1', subjectAssetSha256: sampled?.subjectAssetSha256,
         subject: sampled?.subject ?? context?.subject ?? 'other',
-        probability: sampled?.assetSha256 === assets.ngram ? sampled?.probability ?? null : null, assetSha256: assets.ngram};
+        probability: sampled?.assetSha256 === assets.ngram && sampled?.subjectAssetSha256 === assets.subjectPack
+          ? sampled?.probability ?? null : null, assetSha256: assets.ngram, expectedAssetSha256: expectedNgram};
       components.push(component);
       retainPartial('components', component);
     }
@@ -287,8 +312,9 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     while (draft.length < sample.answer.length) {
       if (draft) await painted(page);
       const {slots, items} = await slate(page);
-      const assets = await observeAssets();
+      const assets = await observeAssets(sample.answerId, draft);
       if (assets.ngram) activeAssets.add(assets.ngram);
+      if (assets.subjectPack) activeAssets.add(assets.subjectPack);
       if (assets.latex) activeAssets.add(assets.latex);
       if (assets.neural) activeAssets.add(assets.neural);
       let best = -1, next = draft;
@@ -316,7 +342,6 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       await expect.poll(() => exactDraft(answer)).toBe(next);
       draft = next;
     }
-    await observeAssets();
     const counted = {answerId: sample.answerId, manualKeys: [...sample.answer].length, assistedKeys,
       costDefinition: 'full-answer-v1', assetSha256: [...activeAssets].sort()};
     keys.push(counted);
@@ -325,9 +350,16 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   await info.attach('typeahead-impressions.jsonl', {body: Buffer.from(lines(impressions)), contentType: 'application/x-ndjson'});
   await info.attach('typeahead-keys.jsonl', {body: Buffer.from(lines(keys)), contentType: 'application/x-ndjson'});
   if (editor) await drainCoverage();
+  if (expectedNgram) expect(modelAssets.has(expectedNgram), 'n-gram model was observed on at least one replay edit').toBe(true);
   if (expectedLatex) expect(modelAssets.has(expectedLatex), 'LaTeX model was observed on at least one replay edit').toBe(true);
+  for (const [subject, fingerprint] of Object.entries(expectedSubjectPacks)) {
+    expect(subjectAssets.get(subject)?.has(fingerprint), 'subject pack was observed on a replay edit in ' + subject).toBe(true);
+  }
+  const totalObservations = assetCounts.ngram + assetCounts.empty + assetCounts.ineligible + assetCounts['no-current-model'];
   const audit = {arm: arm ?? 'personal', graphTrial, captureOnly, ghostCalibration, assetSha256: [...modelAssets].sort(),
-    events: impressions.length, answers: keys.length};
+    subjectAssetSha256: Object.fromEntries([...subjectAssets].map(([subject, fingerprints]) => [subject, [...fingerprints].sort()])),
+    assetCounts, withoutCurrentFingerprint: {subject: totalObservations - assetCounts.subject, latex: totalObservations - assetCounts.latex,
+      neural: totalObservations - assetCounts.neural}, events: impressions.length, answers: keys.length};
   await info.attach('typeahead-models.json', {body: Buffer.from(JSON.stringify(audit)), contentType: 'application/json'});
   if (output) {
     writeFileSync(output + '.components.jsonl', lines(components));

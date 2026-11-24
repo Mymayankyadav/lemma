@@ -8,7 +8,8 @@ const STARTUP_TIMEOUT_MS = 18_000;
 const REQUEST_TIMEOUT_MS = 500;
 
 type Diagnostics = Readonly<{dropped: number; failures: number; timeouts: number; requests: number}>;
-type Reply = {pool: WritingAidPool; computeMs: number; elapsedMs: number; assetSha256?: string} | null | 'unavailable';
+type Reply = {pool: WritingAidPool; computeMs: number; elapsedMs: number; assetSha256?: string;
+  subjectAssetSha256?: string} | null | 'unavailable';
 type Waiter = {request: NgramRequest; resolve: (reply: Reply) => void; cancelled?: boolean; startedAt: number};
 
 export interface NgramClient {
@@ -74,7 +75,8 @@ export function createNgramClient(): NgramClient | undefined {
         words: data.pool.words.map(fields => ({...fields, snapshot})),
         edit: data.pool.edit.map(fields => ({...fields, snapshot})),
         ghost: data.pool.ghost.map(fields => ({...fields, snapshot})),
-      }, computeMs: data.computeMs, elapsedMs: performance.now() - waiter.startedAt, assetSha256: data.assetSha256});
+      }, computeMs: data.computeMs, elapsedMs: performance.now() - waiter.startedAt, assetSha256: data.assetSha256,
+      subjectAssetSha256: data.subjectAssetSha256});
     }
     send();
   });

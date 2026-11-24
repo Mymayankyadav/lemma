@@ -43,7 +43,9 @@ def mixture_records(path, asset_sha=None, capture_groups=None, expected_subject_
                 raise ValueError('Invalid or repeated capture identity')
             if capture_groups is not None and group in capture_groups:
                 raise ValueError('Mixture calibration and validation document groups overlap')
-            if record.get('captureVersion') != CAPTURE_VERSION or record.get('assetSha256') != asset_sha:
+            observed_asset = record.get('assetSha256')
+            missing_but_expected = observed_asset is None and record.get('probability') is None and record.get('expectedAssetSha256') == asset_sha
+            if record.get('captureVersion') != CAPTURE_VERSION or observed_asset != asset_sha and not missing_but_expected:
                 raise ValueError('Mixture capture version or general model fingerprint mismatch')
             event_ids.add(event)
             group_ids.add(group)

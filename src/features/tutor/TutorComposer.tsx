@@ -35,7 +35,7 @@ import {tutorHint} from './writingAid/answerAids';
 import {ACCEPTED_SPAN_LIMIT, addAuthoredSpan, moveAcceptedSpans} from './writingAid/authorship';
 import {insertionEligible} from './writingAid/eligibility';
 import {offerFamilies} from './writingAid/offerFamilies';
-import {eligibleGhostContext, writingAidProposalKey} from './writingAid/policy';
+import {canSuggestWritingAid, eligibleGhostContext, writingAidProposalKey} from './writingAid/policy';
 import {effectiveAidLevel, type AidRole, type TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids';
 import {typedEquationAt} from './input/typedEquation';
 import {useAutoeqReadings} from './input/useAutoeqReadings';
@@ -1252,6 +1252,9 @@ export function TutorComposer(props: Props) {
     <form className="composer"
       data-typeahead-ghost-eligible={replayDiagnostics ? Number(isFlagOn('proofAssistGhost') && eligibleGhostContext(writingRequest)) : undefined}
       data-typeahead-ngram-sha={replayDiagnostics ? writing.assetHashes.ngram : undefined}
+      data-typeahead-ngram-eligible={replayDiagnostics ? Number(canSuggestWritingAid(writingRequest)) : undefined}
+      data-typeahead-subject={replayDiagnostics ? props.aidSubject : undefined}
+      data-typeahead-subject-sha={replayDiagnostics ? writing.assetHashes.subject : undefined}
       data-typeahead-latex-sha={replayDiagnostics ? latexAssetSha256 : undefined}
       data-typeahead-neural-sha={replayDiagnostics ? writing.assetHashes.neural : undefined}
       data-typeahead-graph-trial={typeaheadGraphTrial() ? 'unqualified' : undefined} onSubmit={event => {event.preventDefault(); send();}}>

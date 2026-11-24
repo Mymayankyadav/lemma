@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 
 from corpus import SPLITS, build, file_hash, fingerprint, group_identity, group_preflight, publisher_reference, records, split_for, text_hash
-from fit import fit_calibration, fit_mixtures, mixture, PRIOR, threshold
+from fit import fit_calibration, fit_mixtures, mixture, mixture_records, PRIOR, threshold
 from ngram import SPECIAL, accumulate, build_models, compile_model, count_checkpoint, encode, entropy_cost, high_priority, key, pack_checkpoint, publish_checkpoint
 from replay_metrics import paired, summarize
 from replay_sample import boundary_cases, math_spans
@@ -241,6 +241,21 @@ class PipelineTests(unittest.TestCase):
             write(validation, 'heldout-group', {**row, 'subjectAssetSha256': 'e' * 64})
             with self.assertRaisesRegex(ValueError, 'fingerprint drift'):
                 fit_mixtures(calibration, validation, general_sha)
+
+    def test_browser_mixture_counts_missing_model_without_assigning_its_expected_hash(self):
+        with TemporaryDirectory() as temp:
+            path = Path(temp) / 'capture.jsonl'
+            digest = 'c' * 64
+            missing = {'subject': 'topology', 'eventId': 'event', 'documentGroup': 'document',
+                       'captureVersion': 'n238-mixture-v1', 'expectedAssetSha256': digest, 'probability': None}
+            path.write_text(json.dumps(missing) + '\n')
+            supported, _, coverage, _, _ = mixture_records(path, digest)
+            self.assertEqual(supported, [])
+            self.assertEqual(coverage['pooled']['missingComponents'], 1)
+            for changed in ({'assetSha256': 'd' * 64}, {'probability': {'general': .2, 'activeMixture': .2}}):
+                path.write_text(json.dumps({**missing, **changed}) + '\n')
+                with self.assertRaisesRegex(ValueError, 'model fingerprint mismatch'):
+                    mixture_records(path, digest)
 
     def test_offline_ghost_fit_never_infers_behavioral_outcomes(self):
         with TemporaryDirectory() as temp:
