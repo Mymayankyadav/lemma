@@ -1,6 +1,7 @@
 import type {CalibrationRow} from '../calibration';
 import type {DecoderAssetFile} from './assets';
 
+export type NeuralBackend = 'wasm' | 'webgpu' | 'webgpuJspi';
 export type NeuralTier = 'neural-v2' | 'neural-large-v2';
 export interface NeuralManifest {
   readonly version: 2;
@@ -13,7 +14,7 @@ export interface NeuralManifest {
   readonly files: Readonly<{tokenizer: DecoderAssetFile; prefill: DecoderAssetFile; incremental: DecoderAssetFile; weights?: DecoderAssetFile}>;
   readonly blendWeight?: number;
   readonly calibration?: readonly CalibrationRow[];
-  readonly qualification?: Readonly<{parity?: boolean; replay?: boolean; wasm?: boolean; webgpu?: boolean}>;
+  readonly qualification?: Readonly<{parity?: boolean; replay?: boolean; wasm?: boolean; webgpu?: boolean; webgpuJspi?: boolean}>;
 }
 const manifests = import.meta.glob<NeuralManifest>('../../../../../public/models/typeahead/*/manifest.json', {import: 'default'});
 
@@ -34,6 +35,32 @@ export async function neuralManifest(tier: NeuralTier): Promise<NeuralManifest |
   return model;
 }
 
-export function qualifiedNeuralTier(model: NeuralManifest | null, device: 'wasm' | 'webgpu', trial = false): boolean {
+export function qualifiedNeuralTier(model: NeuralManifest | null, device: NeuralBackend, trial = false): boolean {
   return model?.qualification?.parity === true && (trial || model.qualification.replay === true && model.qualification[device] === true);
+}
+
+
+const MiB = 1024 * 1024;
+export const TYPEAHEAD_RUNTIME_VERSION = '1.27.0';
+const COLD_RUNTIME_BYTES: Record<NeuralBackend, number> = {
+  wasm: 13_479_978,
+  webgpu: 24_254_953,
+  webgpuJspi: 15_046_878,
+};
+
+/** Charge the selected backend as a cold download and reserve the n-gram/subject/equation budget. */
+export function neuralFitsColdBudget(model: NeuralManifest, tier: NeuralTier, device: NeuralBackend): boolean {
+  const files = Object.values(model.files).filter((file): file is DecoderAssetFile => Boolean(file));
+  const assets = [...new Map(files.map(file => [file.sha256, file.bytes])).values()].reduce((sum, bytes) => sum + bytes, 0);
+  const limit = (tier === 'neural-v2' ? 68 : 76) * MiB;
+  return assets + COLD_RUNTIME_BYTES[device] + 29 * MiB <= limit;
+}
+
+export function selectNeuralBackend(model: NeuralManifest, tier: NeuralTier, gpuAvailable: boolean, supportsJspi: boolean,
+  trial: boolean): NeuralBackend | undefined {
+  const choices: readonly NeuralBackend[] = gpuAvailable
+    ? supportsJspi ? ['webgpuJspi', 'webgpu', 'wasm'] : ['webgpu', 'wasm']
+    : ['wasm'];
+  return choices.find(device => (device !== 'wasm' || tier === 'neural-v2') && qualifiedNeuralTier(model, device, trial) &&
+    (trial || neuralFitsColdBudget(model, tier, device)));
 }

@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {describe, expect, it, vi} from 'vitest';
 import {predictWritingAidPool} from '../../../src/features/tutor/writingAid/engine';
+import {neuralFitsColdBudget, selectNeuralBackend, type NeuralManifest} from '../../../src/features/tutor/writingAid/decoder/neuralManifest';
 import {exposureIdentity, visibleTime} from '../../../src/features/tutor/writingAid/visibleTime';
 import {resolveTypeaheadArm, usesExpandedNgram, usesNeural, usesPersonalization, usesTutorBias} from '../../../src/features/tutor/writingAid/replayArm';
 import {tutorHint, contextualWording, type AidRankingContext} from '../../../src/features/tutor/writingAid/answerAids';
@@ -314,4 +315,20 @@ it('ranks the known ambient set in the actual menu candidate pool and cannot sel
     setDecoderLexicon(null);
     vi.unstubAllEnvs();
   }
+});
+
+
+it('selects only a qualified cold backend and accounts for both WebGPU runtimes', () => {
+  const manifest: NeuralManifest = {version: 2, kind: 'neural', context: 512, layers: 8, heads: 8, headDim: 64, vocabSize: 16384,
+    files: {tokenizer: {path:'tokenizer.json', bytes:200_000, sha256:'a'.repeat(64)},
+      prefill: {path:'prefill.onnx', bytes:100_000, sha256:'b'.repeat(64)},
+      incremental: {path:'incremental.onnx', bytes:100_000, sha256:'c'.repeat(64)},
+      weights:{path:'weights.bin', bytes:19_470_000, sha256:'d'.repeat(64)}},
+    qualification:{parity:true,replay:true,webgpu:true,webgpuJspi:true,wasm:false}};
+  expect(neuralFitsColdBudget(manifest, 'neural-v2', 'webgpuJspi')).toBe(true);
+  expect(neuralFitsColdBudget(manifest, 'neural-v2', 'webgpu')).toBe(false);
+  expect(selectNeuralBackend(manifest, 'neural-v2', true, true, false)).toBe('webgpuJspi');
+  expect(selectNeuralBackend(manifest, 'neural-v2', true, false, false)).toBeUndefined();
+  expect(selectNeuralBackend(manifest, 'neural-v2', true, false, true)).toBe('webgpu');
+  expect(selectNeuralBackend({...manifest,qualification:{parity:true}}, 'neural-v2', true, true, false)).toBeUndefined();
 });

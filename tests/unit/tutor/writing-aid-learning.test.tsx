@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import {act} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -10,7 +11,9 @@ import {
 import {resetWritingAidPersonalization} from '../../../src/features/tutor/writingAid/personalization';
 import {currentWritingAidScope} from '../../../src/features/tutor/writingAid/preferences';
 import {useWritingAid, type WritingAidView} from '../../../src/features/tutor/writingAid/useWritingAid';
-import type {WritingAidRequest} from '../../../src/features/tutor/writingAid/policy';
+import {parseNgram, setNgramModel} from '../../../src/features/tutor/writingAid/decoder/kn';
+import {setDecoderLexicon} from '../../../src/features/tutor/writingAid/decoder/ngramSpatial';
+import {writingAidProposal, type WritingAidRequest} from '../../../src/features/tutor/writingAid/policy';
 
 vi.mock('../../../src/data/mode', () => ({getMode: () => 'demo', getDemoProfile: () => 'learning-test'}));
 const key = 'lemma.demo-tutor.writing-aid-model.v1:learning-test';
@@ -288,4 +291,48 @@ describe('local writing personalization', () => {
     await render(request('x <= y ', {mode: 'balanced', target: {...input.target, editorRevision: 4}}));
     expect(view.edit?.insert).toBe('≤');
   });
+});
+
+
+it.each([false, true])('labels a removal only when the retention window remained observable (hidden=%s)', async hidden => {
+  vi.stubEnv('VITE_FLAGS', 'typeaheadV2');
+  try {
+    const input = request('x');
+    await render(input);
+    const chosen = {...writingAidProposal(input, 'word', 0, 1, '$x$'), source: 'notation' as const};
+    await act(async () => {view.shown('words', [chosen]); view.feedback('accept', chosen);});
+    await render(request('$x$', {target: {...input.target, editorRevision: 2}}));
+    if (hidden) {
+      const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      await act(async () => {document.dispatchEvent(new Event('visibilitychange'));});
+      visibility.mockReturnValue('visible');
+    }
+    await render(request('', {anchor: null, target: {...input.target, editorRevision: 3}}));
+    const outcomes = storedModel().adaptation.calibration;
+    expect(outcomes['accept:notation:0:1']).toEqual({trials: 1, successes: 1});
+    expect(outcomes['retain:notation:0:1']).toEqual(hidden ? undefined : {trials: 1, successes: 0});
+  } finally {vi.unstubAllEnvs();}
+});
+
+it('labels a passively completed Unicode compound as one exact continuation', async () => {
+  vi.stubEnv('VITE_FLAGS', 'typeaheadV2');
+  setNgramModel(parseNgram(new Uint8Array(readFileSync('public/models/typeahead/ngram-v1/ngram.bin'))));
+  setDecoderLexicon({version: 1, entries: [{word: 'use', frequency: 180}]});
+  try {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(50_000);
+    const question = ['Use a non‑Archimedean example.'];
+    const input = request('Use non‑Arch', {question, mode:'balanced'});
+    await render(input);
+    const chosen = view.rankedWords.find(item => item.label === 'non‑Archimedean');
+    expect(chosen).toBeDefined();
+    await act(async () => view.shown('words', [chosen!]));
+    now.mockReturnValue(50_400);
+    await render(request('Use non‑Archimedean ', {question, mode:'balanced', target: {...input.target, editorRevision: 2}}));
+    expect(Object.entries(storedModel().adaptation.calibration)
+      .find(([key]) => key.startsWith('exact:'))?.[1]).toEqual({trials: 1, successes: 1});
+  } finally {
+    setNgramModel(null);
+    setDecoderLexicon(null);
+    vi.unstubAllEnvs();
+  }
 });

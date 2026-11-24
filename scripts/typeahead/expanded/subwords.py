@@ -3,10 +3,12 @@ import argparse
 from collections import Counter
 import json
 import re
+import sqlite3
+import shutil
 from pathlib import Path
 import unicodedata
 
-from corpus import PROSE, SPLITS, documents, file_hash, tutor_pair
+from corpus import PROSE, SPLITS, documents, file_hash, records, split_for, tutor_pair
 
 RESERVED = dict(pad=0, bos=1, eos=2, question=3, aids=4, draft=5)
 BYTE_OFFSET = len(RESERVED)
@@ -155,16 +157,18 @@ def accelerated_encoder(encoder):
     return encode
 
 
-def write_streams(corpus, out, encoder, target=None, word_target=None):
+def write_streams(corpus, out, encoder, target=None, word_target=None, splits=SPLITS):
     import numpy as np
     counts = {}
     encode = accelerated_encoder(encoder)
     mix = {'explanation': .6, 'proof': .3, 'learner': .1}
-    for split in SPLITS:
+    for split in splits:
         stats = Counter()
         word_registers = Counter()
         registers, subjects = Counter(), Counter()
-        with open(out / f'{split}.tokens', 'wb') as stream, open(out / f'{split}.index', 'wb') as index:
+        with (open(out / f'{split}.tokens', 'wb') as stream,
+              open(out / f'{split}.index', 'wb') as index,
+              (out / f'{split}.documents.jsonl').open('w') as trace):
             for document in documents(corpus, split):
                 register = document['register']
                 if split == 'train' and ((target and registers[register] >= target * mix[register]) or
@@ -176,6 +180,7 @@ def write_streams(corpus, out, encoder, target=None, word_target=None):
                 subjects[document['subject']] += len(ids)
                 np.asarray([stats['tokens'], len(ids)], dtype='<u8').tofile(index)
                 np.asarray(ids, dtype='<u2').tofile(stream)
+                trace.write(json.dumps({'id': document['id'], 'group': document['group']}, separators=(',', ':')) + '\n')
                 stats.update(tokens=len(ids), words=document['words'], documents=1)
         counts[split] = {**stats, 'registers': registers, 'wordRegisters': word_registers, 'subjects': subjects}
     return counts
@@ -230,11 +235,11 @@ def partial_role_contexts(corpus, out, encoder, context, split):
     return len(locations)
 
 
-def role_streams(corpus, out, encoder, context):
+def role_streams(corpus, out, encoder, context, splits=SPLITS):
     import numpy as np
     encode = accelerated_encoder(encoder)
     counts = {}
-    for split in SPLITS:
+    for split in splits:
         stats = Counter()
         with open(out / f'adapt-{context}-{split}.tokens', 'wb') as stream, open(
             out / f'adapt-{context}-{split}.index', 'wb',
@@ -263,8 +268,26 @@ def role_streams(corpus, out, encoder, context):
     return counts
 
 
+def shared_heldout_files(shared, out, tokenizer_hash, adapt_contexts):
+    manifest = json.loads((shared / 'manifest.json').read_text())
+    if manifest['files']['tokenizer.json']['sha256'] != tokenizer_hash or 'train' in manifest['counts']:
+        raise ValueError('Shared holdout has incompatible tokenizer or contains training documents')
+    files = []
+    for split in SPLITS[1:]:
+        files.extend(f'{split}.{ext}' for ext in ('tokens', 'index', 'documents.jsonl'))
+        files.extend(f'adapt-{context}-{split}.{ext}' for context in adapt_contexts
+                     for ext in ('tokens', 'index', 'partial.jsonl'))
+    for name in files:
+        expected = manifest['files'][name]
+        artifact = shared / name
+        if artifact.stat().st_size != expected['bytes'] or file_hash(artifact) != expected['sha256']:
+            raise ValueError(f'Shared holdout asset mismatch: {name}')
+        shutil.copyfile(artifact, out / name)
+    return manifest
+
+
 def prepare(corpus, out, sample_words, adapt_contexts=(), target=None, frozen_tokenizer=None,
-            word_target=None):
+            word_target=None, *, splits=SPLITS, shared_heldout=None):
     out.mkdir(parents=True, exist_ok=False)
     tokenizer = out / 'tokenizer.json'
     if frozen_tokenizer is None:
@@ -272,13 +295,20 @@ def prepare(corpus, out, sample_words, adapt_contexts=(), target=None, frozen_to
     else:
         tokenizer.write_bytes(frozen_tokenizer.read_bytes())
     encoder = Encoder(json.loads(tokenizer.read_text())['merges'])
-    counts = write_streams(corpus, out, encoder, target, word_target)
-    roles = {str(context): role_streams(corpus, out, encoder, context) for context in adapt_contexts}
+    active = ('train',) if shared_heldout else splits
+    counts = write_streams(corpus, out, encoder, target, word_target, active)
+    roles = {str(context): role_streams(corpus, out, encoder, context, active) for context in adapt_contexts}
+    if shared_heldout:
+        heldout = shared_heldout_files(shared_heldout, out, file_hash(tokenizer), adapt_contexts)
+        counts.update(heldout['counts'])
+        for context, values in roles.items():
+            values.update(heldout['adaptation'][context])
     files = {path.name: {'bytes': path.stat().st_size, 'sha256': file_hash(path)}
              for path in sorted(out.iterdir())}
     manifest = {'version': 1, 'corpus': file_hash(corpus / 'manifest.json'), 'counts': counts,
                 'tokenizerSampleWords': sample_words, 'files': files, 'adaptation': roles, 'targetTrainSubwords': target, 'targetTrainWords': word_target,
-                'shortfallTrainSubwords': max(0, target - counts['train'].get('tokens', 0)) if target else None}
+                'shortfallTrainSubwords': max(0, target - counts.get('train', {}).get('tokens', 0)) if target else None,
+                'sharedHeldoutSha256': file_hash(shared_heldout / 'manifest.json') if shared_heldout else None}
     (out / 'manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
     return manifest
 
@@ -296,6 +326,59 @@ def verify_prepared(directory, streams, role_case_files=()):
         if item is None or path.stat().st_size != item['bytes'] or file_hash(path) != item['sha256']:
             raise ValueError(f'Prepared input SHA-256 mismatch or missing entry: {name}')
     return file_hash(manifest_path), manifest['files']['tokenizer.json']['sha256']
+
+
+def audit_prepared_membership(full, development, reference, scratch):
+    """Prove identical held-out inputs and nested membership before training."""
+    from tempfile import TemporaryDirectory
+    pools = {'prepared-dev': development, 'prepared-reference': reference}
+    if full:
+        pools = {'prepared': full, **pools}
+    first = next(iter(pools))
+    manifests = {name: json.loads((path / 'manifest.json').read_text()) for name, path in pools.items()}
+    tokenizers = {manifest['files']['tokenizer.json']['sha256'] for manifest in manifests.values()}
+    if len(tokenizers) != 1:
+        raise ValueError('Controlled corpora must share an immutable tokenizer')
+    for split in SPLITS[1:]:
+        for ext in ('index', 'tokens', 'documents.jsonl'):
+            file = f'{split}.{ext}'
+            hashes = {manifest['files'][file]['sha256'] for manifest in manifests.values()}
+            if len(hashes) != 1:
+                raise ValueError(f'Controlled-corpus holdout differs for {file}')
+    result = {}
+    with TemporaryDirectory(prefix='lemma-prepared-membership-', dir=scratch) as temp:
+        with sqlite3.connect(Path(temp) / 'audit.sqlite') as db:
+            db.execute('CREATE TABLE included(id TEXT PRIMARY KEY, group_id TEXT NOT NULL, split TEXT NOT NULL, dev INT NOT NULL DEFAULT 0) WITHOUT ROWID')
+            for name, path in pools.items():
+                result[name] = {}
+                for split in SPLITS:
+                    filename = f'{split}.documents.jsonl'
+                    file = path / filename
+                    if file_hash(file) != manifests[name]['files'][filename]['sha256']:
+                        raise ValueError(f'Prepared document trace hash mismatch for {name}/{filename}')
+                    count = 0
+                    for row in records(file):
+                        document, group = row['id'], row['group']
+                        if split_for(group) != split:
+                            raise ValueError('Prepared document group is in another frozen split')
+                        if name == first:
+                            db.execute('INSERT INTO included(id,group_id,split,dev) VALUES (?,?,?,?)',
+                                       (document, group, split, int(name == 'prepared-dev')))
+                        else:
+                            current = db.execute('SELECT group_id,split,dev FROM included WHERE id=?', (document,)).fetchone()
+                            if current is None or current[:2] != (group, split) or name == 'prepared-reference' and current[2] != 1:
+                                raise ValueError('Prepared data pool is not a nested subset of its parent')
+                            if name == 'prepared-dev':
+                                db.execute('UPDATE included SET dev=1 WHERE id=?', (document,))
+                        count += 1
+                    expected = manifests[name]['counts'][split].get('documents', 0)
+                    if count != expected:
+                        raise ValueError(f'Prepared document count disagrees for {name}/{split}')
+                    result[name][split] = count
+                    db.commit()
+    return {'version': 1, 'passed': True, 'scope': 'all' if full else 'dev-and-reference',
+            'counts': result, 'tokenizerSha256': tokenizers.pop(),
+            'preparedManifestSha256': {name: file_hash(path / 'manifest.json') for name, path in pools.items()}}
 
 
 def main():

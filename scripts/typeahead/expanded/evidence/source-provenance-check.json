@@ -1,5 +1,26 @@
 {
+  "allFamilyPreflight": {
+    "notebook": "mayankyadav9432/lemma-typeahead-provenance-preflight-20261124/1",
+    "samples": [
+      {
+        "distinctGroups": 32,
+        "sampled": 32,
+        "source": "HuggingFaceTB/finemath"
+      },
+      {
+        "distinctGroups": 32,
+        "sampled": 32,
+        "source": "EleutherAI/proof-pile-2"
+      },
+      {
+        "distinctGroups": 32,
+        "sampled": 32,
+        "source": "hoskinson-center/proof-pile"
+      }
+    ]
+  },
   "earlier500mBuildDiagnosticOnly": true,
+  "fullEmittedGroupAuditRequired": true,
   "groupKeys": {
     "EleutherAI/proof-pile-2": "meta.arxiv_id normalized against arXiv URLs",
     "hoskinson-center/proof-pile": "meta.question_id normalized against Math StackExchange question URLs"

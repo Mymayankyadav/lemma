@@ -73,7 +73,8 @@ function textBefore(container: Node, boundary: Node, index: number, beforeNode =
 }
 
 export function readTutorAnswer(editor: HTMLElement): PadEdit {
-  const text = editor.childNodes.length === 1 && editor.firstChild instanceof HTMLBRElement ? '' : content(editor);
+  const text = domText(editor);
+  if (!text) return padEdit('');
   const selection = editor.ownerDocument.getSelection();
   if (!selection?.anchorNode || !selection.focusNode || !editor.contains(selection.anchorNode) || !editor.contains(selection.focusNode))
     return padEdit(text);

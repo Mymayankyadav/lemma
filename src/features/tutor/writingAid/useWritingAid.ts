@@ -1,3 +1,4 @@
+import {moveAcceptedSpans} from './authorship';
 import {exposureIdentity, visibleTime} from './visibleTime';
 import {typeaheadFrozenProfile, typeaheadGraphTrial, typeaheadReplayEnabled, usesNeural, usesPersonalization, usesTutorBias} from './replayArm';
 import {countPersonalTransition, learnSlateChoice, observeLocalCalibration, writingAidWeek} from './adaptation';
@@ -32,13 +33,30 @@ interface Prediction {
   pool: WritingAidPool;
 }
 interface Exposure {proposal: WritingAidProposal; key: string}
-interface PendingAcceptance {proposal: WritingAidProposal; expected: string; learningScope: LearningScope; timer: number; kept: boolean}
+interface PendingAcceptance {
+  proposal: WritingAidProposal; expected: string; learningScope: LearningScope; timer: number; deadline: number; kept: boolean;
+  retention: 'pending' | 'observed' | 'censored';
+}
+
+function retainsAcceptedText(value: PendingAcceptance, draft: string): boolean {
+  const start = value.proposal.start, text = value.proposal.insert.trimEnd();
+  if (!text || value.expected.slice(start, start + text.length) !== text) return false;
+  return moveAcceptedSpans(value.expected, draft, [{start, end: start + text.length, text, source: 'word'}])
+    .some(span => span.text === text);
+}
+
+function censorRetention(value: PendingAcceptance | null): void {
+  if (value?.retention === 'pending') {
+    clearTimeout(value.timer);
+    value.retention = 'censored';
+  }
+}
 
 export interface WritingAidView extends WritingAidSuggestions {
   readonly assetHashes: Readonly<{ngram?: string; neural?: string}>;
   readonly rankedWords: readonly WritingAidProposal[];
   /** Indicate actual visibility; undisplayed candidates are never treated as rejections. */
-  readonly shown: (surface: WritingAidRefreshSurface, displayed: readonly WritingAidProposal[]) => void;
+  readonly shown: (surface: WritingAidRefreshSurface, displayed: readonly WritingAidProposal[], covered?: boolean) => void;
   readonly refresh: (surface: WritingAidRefreshSurface, displayed: readonly WritingAidProposal[]) => void;
   readonly feedback: (signal: WritingAidFeedback, proposal: WritingAidProposal) => void;
   readonly isCurrent: (proposal: WritingAidProposal) => boolean;
@@ -101,7 +119,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   live.current = {snapshot, current, personalization, learningScope};
   const [visibility] = useState(visibleTime);
   useEffect(() => {
-    const hide = () => visibility.hide(Date.now());
+    const hide = () => {visibility.hide(Date.now()); censorRetention(pending.current);};
     const changed = () => {if (document.visibilityState === 'hidden') hide();};
     document.addEventListener('visibilitychange', changed);
     window.addEventListener('pagehide', hide);
@@ -112,6 +130,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     };
   }, [visibility]);
   const displayed = useRef<Lists>(freshLists());
+  const coveredOffers = useRef<Lists>(freshLists());
   const exposures = useRef<Exposure[]>([]);
   const pending = useRef<PendingAcceptance | null>(null);
   const previous = useRef<WritingAidRequest | null>(null);
@@ -177,6 +196,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     visibility.reset();
     exposures.current = [];
     displayed.current = freshLists();
+    coveredOffers.current = freshLists();
     if (pending.current) window.clearTimeout(pending.current.timer);
     pending.current = null;
   }, [visibility]);
@@ -205,14 +225,19 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   const isCurrent = useCallback((proposal: WritingAidProposal): boolean => eligible(proposal) &&
     displayed.current[surfaceOf(proposal)].some(item => sameProposal(item, proposal)), [eligible]);
 
-  const shown = useCallback((surface: WritingAidRefreshSurface, proposals: readonly WritingAidProposal[]) => {
+  const shown = useCallback((surface: WritingAidRefreshSurface, proposals: readonly WritingAidProposal[], covered = false) => {
     const now = Date.now();
     if (document.visibilityState === 'hidden' || live.current.snapshot.readOnly || live.current.snapshot.composing) {
       visibility.hide(now);
       exposures.current = [];
       displayed.current = freshLists();
+      coveredOffers.current = freshLists();
       return;
     }
+    // Preserve the last visible slate for an explicit Refresh in Session actions.
+    // A covered offer is ineligible for taps, exposure time and passive learning.
+    if (covered && displayed.current[surface].length) coveredOffers.current[surface] = displayed.current[surface];
+    if (!covered) coveredOffers.current[surface] = [];
     const visible = proposals.filter(proposal => surfaceOf(proposal) === surface && eligible(proposal)).slice(0, surface === 'words' ? 3 : 1);
     const {current: prediction, personalization} = live.current;
     // Empty while a prediction is pending is not a hide. An empty report for
@@ -237,7 +262,9 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   }, [eligible, recordImpression, visibility]);
 
   const refresh = useCallback((surface: WritingAidRefreshSurface, proposals: readonly WritingAidProposal[]) => {
-    const visible = proposals.filter(proposal => surfaceOf(proposal) === surface && isCurrent(proposal)).slice(0, surface === 'words' ? 3 : 1);
+    const visible = proposals.filter(proposal => surfaceOf(proposal) === surface && eligible(proposal) &&
+      (isCurrent(proposal) || coveredOffers.current[surface].some(item => sameProposal(item, proposal))))
+      .slice(0, surface === 'words' ? 3 : 1);
     if (!visible.length) return;
     const model = live.current.personalization;
     for (const proposal of visible) {
@@ -246,12 +273,13 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     }
     cycle.current.attempted[surface] = true;
     displayed.current[surface] = [];
+    coveredOffers.current[surface] = [];
     visibility.update(surface, [], Date.now());
     // Explicitly rejected proposals do not get additional passive feedback.
     exposures.current = exposures.current.filter(item => surfaceOf(item.proposal) !== surface);
     if (model.enabled) save();
     setSequence(value => value + 1);
-  }, [isCurrent, save, visibility]);
+  }, [eligible, isCurrent, save, visibility]);
 
   const feedback = useCallback((signal: WritingAidFeedback, proposal: WritingAidProposal) => {
     const {snapshot, personalization: state, learningScope} = live.current;
@@ -260,7 +288,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     if (signal === 'undo' || signal === 'kept') {
       if (!accepted || accepted.learningScope !== learningScope || !sameProposal(accepted.proposal, proposal)) return;
       if (signal === 'kept' && accepted.kept) return;
-      window.clearTimeout(accepted.timer);
+      if (signal === 'undo' || !isFlagOn('typeaheadV2')) window.clearTimeout(accepted.timer);
       if (signal === 'undo') pending.current = null;
       else accepted.kept = true;
     } else if (!isCurrent(proposal)) return;
@@ -280,13 +308,12 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
               visibility.elapsed(surfaceOf(alternative), exposureIdentity(alternative), Date.now()) >= 300) {
             observeLocalCalibration(state.model.adaptation, alternative, 'accept', false);
           }
-        } else if (signal === 'kept') {
-          weekly.retained++;
-          observeLocalCalibration(state.model.adaptation, proposal, 'retain', true);
         } else if (signal === 'dismiss') {
           observeLocalCalibration(state.model.adaptation, proposal, 'accept', false);
         } else if (signal === 'undo') {
-          if (!accepted?.kept) observeLocalCalibration(state.model.adaptation, proposal, 'retain', false);
+          if (accepted?.retention === 'pending' && Date.now() <= accepted.deadline) {
+            observeLocalCalibration(state.model.adaptation, proposal, 'retain', false);
+          }
           weekly.undos++; weekly.keysSaved = Math.max(0, weekly.keysSaved - keys);}
       }
       updateWritingAidModel(state.model, signal, writingAidFeatures(proposal));
@@ -305,23 +332,24 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       if (!state.enabled) return;
       const {start, end, insert} = proposal, text = proposal.snapshot.cursor.text;
       const expected = text.slice(0, start) + insert + text.slice(end);
+      const deadline = Date.now() + 3000;
       const timer = window.setTimeout(() => {
         const held = pending.current, latest = live.current;
         if (!held || held.timer !== timer || held.learningScope !== latest.learningScope) return;
-        const inserted = held.proposal.insert.trimEnd();
-        if (inserted && latest.snapshot.mode !== 'off' && document.visibilityState !== 'hidden' && !latest.snapshot.readOnly && !latest.snapshot.composing &&
-            latest.snapshot.cursor.text.slice(held.proposal.start, held.proposal.start + inserted.length) === inserted &&
-            latest.personalization.enabled) {
+        if (held.retention !== 'pending') return;
+        if (latest.snapshot.mode !== 'off' && document.visibilityState !== 'hidden' && !latest.snapshot.readOnly && !latest.snapshot.composing &&
+            retainsAcceptedText(held, latest.snapshot.cursor.text) && latest.personalization.enabled) {
           if (isFlagOn('typeaheadV2')) {
             writingAidWeek(latest.personalization.model.adaptation).retained++;
             observeLocalCalibration(latest.personalization.model.adaptation, held.proposal, 'retain', true);
           }
-          updateWritingAidModel(latest.personalization.model, 'kept', writingAidFeatures(held.proposal));
+          if (!held.kept) updateWritingAidModel(latest.personalization.model, 'kept', writingAidFeatures(held.proposal));
           held.kept = true;
+          held.retention = 'observed';
           save();
-        }
+        } else held.retention = 'censored';
       }, 3000);
-      pending.current = {proposal, expected, learningScope, timer, kept: false};
+      pending.current = {proposal, expected, learningScope, timer, deadline, kept: false, retention: 'pending'};
     } else if (signal === 'dismiss') {
       exposures.current = exposures.current.filter(item => surfaceOf(item.proposal) !== surfaceOf(proposal));
     }
@@ -343,17 +371,21 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     }
     if (snapshot.readOnly || snapshot.composing || document.visibilityState === 'hidden') {
       visibility.hide(Date.now());
+      censorRetention(pending.current);
       exposures.current = [];
       displayed.current = freshLists();
+      coveredOffers.current = freshLists();
       return;
     }
     const model = live.current.personalization;
     const held = pending.current;
     if (held && snapshot.cursor.text !== old.cursor.text && snapshot.cursor.text !== held.expected) {
-      const inserted = held.proposal.insert.trimEnd();
-      if (inserted && snapshot.cursor.text.slice(held.proposal.start, held.proposal.start + inserted.length) !== inserted) {
+      if (!retainsAcceptedText(held, snapshot.cursor.text)) {
         window.clearTimeout(held.timer);
         if (model.enabled) {
+          if (isFlagOn('typeaheadV2') && held.retention === 'pending' && Date.now() <= held.deadline) {
+            observeLocalCalibration(model.model.adaptation, held.proposal, 'retain', false);
+          }
           updateWritingAidModel(model.model, 'partial-edit', writingAidFeatures(held.proposal));
           save();
         }
@@ -408,7 +440,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         }
         continue;
       }
-      const completed = tail.match(/^([\p{L}\p{M}]+)(?=[^\p{L}\p{M}])/u);
+      const completed = tail.match(/^([\p{L}\p{M}]+(?:['’\p{Pd}][\p{L}\p{M}]+)*)(?=[^\p{L}\p{M}'’\p{Pd}])/u);
       if (!completed) {remaining.push(item); continue;}
       if (visibility.elapsed(surfaceOf(proposal), item.key, Date.now()) >= 300) {
         const matches = completed[1].toLocaleLowerCase() === proposal.label.toLocaleLowerCase();

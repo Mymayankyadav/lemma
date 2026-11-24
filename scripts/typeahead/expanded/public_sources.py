@@ -4,20 +4,20 @@ import json
 from pathlib import Path
 import urllib.request
 
-from corpus import file_hash
+from corpus import file_hash, group_preflight
 
 SOURCES = (
     {'id': 'HuggingFaceTB/finemath', 'revision': 'e92b25a616738fe95dc186b64dfb19f9c8525594',
      'prefix': 'finemath-4plus/train-', 'suffix': '.parquet', 'register': 'explanation',
-     'license': 'ODC-By, underlying Common Crawl source terms', 'groupField': 'url'},
+     'license': 'ODC-By, underlying Common Crawl source terms', 'groupField': 'url', 'requirePublisherGroup': True},
     {'id': 'EleutherAI/proof-pile-2', 'revision': '901a9273a770e9d4138c5ddd91802f9c5c6cdc4b',
      'prefix': 'arxiv/train/', 'suffix': '.jsonl.zst', 'register': 'proof',
-     'license': 'Underlying arXiv author licences, see document metadata and dataset card', 'groupFields': ['meta.arxiv_id', 'meta.id', 'arxiv_id', 'meta.url', 'url', 'id']},
+     'license': 'Underlying arXiv author licences, see document metadata and dataset card', 'groupFields': ['meta.arxiv_id', 'meta.url', 'arxiv_id', 'url'], 'requirePublisherGroup': True},
     {'id': 'hoskinson-center/proof-pile', 'revision': '490b980249446f2f3bd2df3a8cf085d0f2de240a',
      'prefix': 'train/proofpile_train_', 'suffix': '.jsonl.gz', 'register': 'learner',
      'license': 'CC BY-SA (Math StackExchange text)',
      'groupFields': ['meta.question_id', 'meta.url', 'url'],
-     'groupPrefix': 'https://math.stackexchange.com/questions/',
+     'groupPrefix': 'https://math.stackexchange.com/questions/', 'requirePublisherGroup': True,
      'filter': {'meta.set_name': 'stack_exchange'}},
 )
 
@@ -64,6 +64,9 @@ def fetch(out, counts):
                 raise ValueError(f'Source size or SHA-256 differs from pinned revision for {path}')
             info = {'path': filename, 'originalPath': path, 'sha256': digest, 'bytes': dest.stat().st_size}
             print(json.dumps(info), flush=True)
+            if i == 0:
+                entry['provenancePreflight'] = group_preflight(dest, source)
+                print('PROVENANCE PREFLIGHT', json.dumps(entry['provenancePreflight']), flush=True)
             entry['shards'].append(info)
         manifest.append(entry)
     spec = out / 'sources.json'

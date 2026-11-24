@@ -53,6 +53,7 @@ def accumulate(db, source, vocab, order):
     db.execute(f'CREATE TABLE counts{order}(k BLOB PRIMARY KEY,n INTEGER NOT NULL,raw INTEGER NOT NULL) WITHOUT ROWID')
     table = Counter()
     training_tokens = 0
+    next_report = 10_000_000
     sql = f'INSERT INTO counts{order} SELECT ?1,?2,?2 ON CONFLICT(k) DO UPDATE SET n=n+excluded.n,raw=raw+excluded.raw'
     for sentence in source:
         tokens = [BOS] * (order - 1) + ids(sentence, vocab) + [EOS]
@@ -62,9 +63,14 @@ def accumulate(db, source, vocab, order):
             db.executemany(sql, table.items())
             db.commit()
             table.clear()
+            if training_tokens >= next_report:
+                print('NGRAM COUNTS', json.dumps({'order': order, 'trainTokens': training_tokens}), flush=True)
+                next_report = (training_tokens // 10_000_000 + 1) * 10_000_000
     db.executemany(sql, table.items())
     db.commit()
     for n in range(order - 1, 0, -1):
+        if training_tokens >= 10_000_000:
+            print('NGRAM CONTINUATIONS', json.dumps({'order': n, 'trainTokens': training_tokens}), flush=True)
         db.execute(f'CREATE TABLE counts{n}(k BLOB PRIMARY KEY,n INTEGER NOT NULL,raw INTEGER NOT NULL) WITHOUT ROWID')
         db.execute(f'INSERT INTO counts{n} SELECT substr(k,3),count(*),sum(raw) FROM counts{n + 1} GROUP BY substr(k,3)')
         db.commit()

@@ -29,11 +29,29 @@ def locate(name):
         raise RuntimeError(f"Expected precisely one staged {name} directory and found {len(matches)}")
     return matches[0]
 
+def locate_file(name):
+    matches = [path for path in pathlib.Path('/kaggle/input').rglob(name) if path.is_file()]
+    if len(matches) != 1:
+        raise RuntimeError(f"Expected precisely one staged {name} file and found {len(matches)}")
+    return matches[0]
+
 def command(script, *args):
     return [sys.executable, str(root / 'expanded' / (script + '.py')), *map(str, args)]
 
 work = pathlib.Path('/kaggle/working')
-if stage == 'cpu':
+if stage == 'provenance':
+    from public_sources import fetch
+    spec = fetch(pathlib.Path('/tmp/lemma-provenance-source'), (1, 1, 1))
+    shutil.copyfile(spec, work / 'verified-source-preflight.json')
+elif stage == 'group-audit':
+    from corpus import audit_groups, file_hash
+    pool, development = locate('corpus'), locate('corpus-dev')
+    report = {'passed': True, 'counts': audit_groups(pool, development, '/tmp'),
+              'corpusSha256': file_hash(pool / 'manifest.json'),
+              'developmentSha256': file_hash(development / 'manifest.json')}
+    (work / 'group-audit.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+    print('GROUP AUDIT', json.dumps(report, sort_keys=True), flush=True)
+elif stage == 'cpu':
     from corpus import build
     from public_sources import fetch
     from subwords import prepare
@@ -56,27 +74,64 @@ if stage == 'cpu':
         print('SUBWORD COUNTS', json.dumps(result['counts']), flush=True)
         if target_subwords is not None and result['counts']['train']['tokens'] < minimum_subwords:
             raise RuntimeError(f"Subword corpus fell short of the required {minimum_subwords} tokens")
-elif stage == 'prepare':
+elif stage == 'tokenizer':
+    from corpus import file_hash
+    from corpus import SPLITS
     from subwords import prepare, train
+    group_report = json.loads(locate_file('group-audit.json').read_text())
+    dev = locate(corpus_dir or 'corpus-dev')
+    manifest = file_hash(dev / 'manifest.json')
+    if not group_report.get('passed') or group_report['developmentSha256'] != manifest:
+        raise RuntimeError('Tokenizer input differs from the audited development corpus')
     run([sys.executable, '-m', 'pip', 'install', '-q', 'tokenizers==0.22.1'])
+    tokenizer = work / 'frozen-tokenizer.json'
+    train(dev, tokenizer, 3_000_000)
+    heldout = work / 'shared-heldout'
+    prepare(dev, heldout, 3_000_000, (512, 1024), frozen_tokenizer=tokenizer, splits=SPLITS[1:])
+    output = {'version': 1, 'tokenizerSha256': file_hash(tokenizer), 'tokenizerBytes': tokenizer.stat().st_size,
+              'developmentSha256': manifest, 'split': 'train', 'sampleWords': 3_000_000,
+              'sharedHeldoutSha256': file_hash(heldout / 'manifest.json')}
+    (work / 'frozen-tokenizer-manifest.json').write_text(json.dumps(output, indent=2, sort_keys=True) + '\n')
+    print('TOKENIZER FROZEN', json.dumps(output, sort_keys=True), flush=True)
+elif stage == 'prepare':
+    from corpus import file_hash
+    from subwords import prepare, train
+    group_report = json.loads(locate_file('group-audit.json').read_text()) if require_audit else None
+    run([sys.executable, '-m', 'pip', 'install', '-q', 'tokenizers==0.22.1'])
+    shared_heldout = None
+    if require_audit:
+        frozen = locate_file('frozen-tokenizer.json')
+        shared_heldout = locate('shared-heldout')
+        signature = json.loads(locate_file('frozen-tokenizer-manifest.json').read_text())
+        if signature['split'] != 'train':
+            raise RuntimeError('Tokenizer must be fitted only on training documents')
+        if (signature['developmentSha256'] != group_report['developmentSha256'] or
+                signature['tokenizerSha256'] != file_hash(frozen) or
+                signature['sharedHeldoutSha256'] != file_hash(shared_heldout / 'manifest.json')):
+            raise RuntimeError('Cannot verify the common freeze from the audited development pool')
     if prepare_pool == 'development':
         dev = locate(corpus_dir or 'corpus-dev')
-        frozen = work / 'frozen-tokenizer.json'
-        train(dev, frozen, 3_000_000)
+        if not require_audit:
+            frozen = work / 'frozen-tokenizer.json'
+            train(dev, frozen, 3_000_000)
         jobs = [('prepared-dev', dev, None, None)]
         if reference_words:
             jobs.append(('prepared-reference', dev, None, reference_words))
     else:
-        frozen = locate('prepared-dev') / 'tokenizer.json'
+        if not require_audit:
+            frozen = locate('prepared-dev') / 'tokenizer.json'
         jobs = [('prepared', locate(corpus_dir or 'corpus'), target_subwords, None)]
     for label, source, target, words in jobs:
+        group_key = 'corpusSha256' if label == 'prepared' else 'developmentSha256'
+        if require_audit and (not group_report.get('passed') or file_hash(source / 'manifest.json') != group_report[group_key]):
+            raise RuntimeError('Corpus manifest differs from its publisher-group audit')
         contexts = () if label == 'prepared-reference' else (512, 1024)
-        result = prepare(source, work / label, 3_000_000, contexts, target, frozen, words)
+        result = prepare(source, work / label, 3_000_000, contexts, target, frozen, words, shared_heldout=shared_heldout)
         print('SUBWORD COUNTS', label, json.dumps(result['counts'], sort_keys=True), flush=True)
         if label == 'prepared' and target and result['counts']['train']['tokens'] < minimum_subwords:
             raise RuntimeError(f"Subword corpus fell short of the required {minimum_subwords} tokens")
 elif stage == 'ngram':
-    from corpus import build
+    from corpus import build, file_hash
     from ngram import build as build_ngram, build_models
     from score_assets import fit_subjects
     if pilot_source:
@@ -102,34 +157,65 @@ elif stage == 'ngram':
         (work / 'ngram-corpus-manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True))
     else:
         corpus = locate(corpus_dir or 'corpus')
-    report = []
-    targets = [(work / f'ngram{order}-{pruning}', order, pruning)
-               for order in ngram_orders for pruning in pruning_methods]
-    for target, result in build_models(corpus, targets, 20 * 1024 * 1024, 60000, 'ngram', None):
-        report.append((target.name, result))
-        print('NGRAM', json.dumps(result, sort_keys=True), flush=True)
-    chosen, selected = min(report, key=lambda entry: entry[1]['metrics']['validation']['perplexity'])
-    vocab = work / chosen / 'vocab.json'
-    subject_models = {}
-    for subject in subjects:
-        subject_models[subject] = work / ('subject-' + subject)
-        result = build_ngram(corpus, subject_models[subject], selected['order'], 4 * 1024 * 1024,
-                             60000, selected['pruning'], 'ngram', subject, vocab)
-        print('SUBJECT', json.dumps(result, sort_keys=True), flush=True)
-    mixture = fit_subjects(corpus, work / chosen, subject_models, pathlib.Path('/tmp/lemma-mixture-events.jsonl'), 250_000)
-    (work / chosen / 'mixture-diagnostic.json').write_text(json.dumps(mixture, indent=2, sort_keys=True) + '\n')
-    print('MIXTURE', json.dumps(mixture, sort_keys=True), flush=True)
-    result = build_ngram(corpus, work / 'latex-v2', 4, 2 * 1024 * 1024, 1500, selected['pruning'],
-                         'latex', None, train_limit=latex_train_tokens)
-    print('LATEX', json.dumps(result, sort_keys=True), flush=True)
-    (work / 'ngram-selection.json').write_text(json.dumps({'selected': chosen, 'comparisons': report},
-                                                        indent=2, sort_keys=True) + '\n')
+    if require_audit:
+        audit = json.loads(locate_file('group-audit.json').read_text())
+        if not audit.get('passed') or file_hash(corpus / 'manifest.json') not in (
+                audit['corpusSha256'], audit['developmentSha256']):
+            raise RuntimeError('N-gram inputs differ from the audited corpus')
+    latex_pruning = pruning_methods[0]
+    if ngram_task != 'latex':
+        report = []
+        targets = [(work / f'ngram{order}-{pruning}', order, pruning)
+                   for order in ngram_orders for pruning in pruning_methods]
+        for target, result in build_models(corpus, targets, 20 * 1024 * 1024, 60000, 'ngram', None):
+            report.append((target.name, result))
+            print('NGRAM', json.dumps(result, sort_keys=True), flush=True)
+        chosen, selected = min(report, key=lambda entry: entry[1]['metrics']['validation']['perplexity'])
+        latex_pruning = selected['pruning']
+        vocab = work / chosen / 'vocab.json'
+        subject_models = {}
+        for subject in subjects:
+            subject_models[subject] = work / ('subject-' + subject)
+            result = build_ngram(corpus, subject_models[subject], selected['order'], 4 * 1024 * 1024,
+                                 60000, selected['pruning'], 'ngram', subject, vocab)
+            print('SUBJECT', json.dumps(result, sort_keys=True), flush=True)
+        mixture = fit_subjects(corpus, work / chosen, subject_models, pathlib.Path('/tmp/lemma-mixture-events.jsonl'), 250_000)
+        (work / chosen / 'mixture-diagnostic.json').write_text(json.dumps(mixture, indent=2, sort_keys=True) + '\n')
+        print('MIXTURE', json.dumps(mixture, sort_keys=True), flush=True)
+        (work / 'ngram-selection.json').write_text(json.dumps({'selected': chosen, 'comparisons': report},
+                                                            indent=2, sort_keys=True) + '\n')
+    if ngram_task != 'prose':
+        result = build_ngram(corpus, work / 'latex-v2', 4, 2 * 1024 * 1024, 1500, latex_pruning,
+                             'latex', None, train_limit=latex_train_tokens)
+        print('LATEX', json.dumps(result, sort_keys=True), flush=True)
+        if require_audit and result['metrics']['trainTokens'] < latex_train_tokens:
+            raise RuntimeError('Audited LaTeX corpus did not reach the predicted formula token target')
+elif stage == 'prepared-audit':
+    from subwords import audit_prepared_membership
+    dev, ref = locate('prepared-dev'), locate('prepared-reference')
+    sources = [(dev, 'developmentSha256'), (ref, 'developmentSha256')]
+    full = locate('prepared') if audit_pool == 'all' else None
+    if full:
+        sources.append((full, 'corpusSha256'))
+    group_report = json.loads(locate_file('group-audit.json').read_text())
+    for path, key in sources:
+        prepared_manifest = json.loads((path / 'manifest.json').read_text())
+        if not group_report.get('passed') or prepared_manifest['corpus'] != group_report[key]:
+            raise RuntimeError('Prepared comparison corpus differs from the publisher-group audit')
+    report = audit_prepared_membership(full, dev, ref, '/tmp')
+    (work / 'prepared-audit.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+    print('PREPARED MEMBERSHIP AUDIT', json.dumps(report, sort_keys=True), flush=True)
 elif stage == 'gpu':
     import torch
+    from corpus import file_hash
     allocated = torch.cuda.device_count()
     if allocated != assigned_gpus:
         raise RuntimeError(f"Expected {assigned_gpus} assigned GPUs; found {allocated}")
     data = locate(data_dir)
+    if require_audit:
+        audit = json.loads(locate_file('prepared-audit.json').read_text())
+        if not audit.get('passed') or audit['preparedManifestSha256'].get(data_dir) != file_hash(data / 'manifest.json'):
+            raise RuntimeError('Prepared data does not match the frozen, audited comparison pools')
     browsers = [name for name in ('chromium', 'chromium-browser', 'google-chrome', 'chrome')
                 if shutil.which(name)]
     graphics = {'browserBinaries': browsers,
@@ -148,7 +234,8 @@ elif stage == 'gpu':
         if seconds < 30:
             raise RuntimeError('GPU allocation may not cover the next checkpoint')
         opts = ['--candidate', candidate, '--sequence-length', sequence_length, '--data', data,
-                '--max-minutes', max(0.1, (seconds - 15) / 60), '--schedule-tokens', schedule_tokens]
+                '--max-minutes', max(0.1, (seconds - 15) / 60), '--schedule-tokens', schedule_tokens,
+                '--lr', learning_rate]
         if adapt:
             opts.append('--adapt')
         train = command('train', *opts, *extra)
@@ -207,7 +294,7 @@ elif stage == 'gpu':
             if resume_dir:
                 checkpoint = ['--resume', locate(resume_dir) / 'latest.pt']
             elif initialize_dir:
-                checkpoint = ['--initialize', locate(initialize_dir) / 'best.pt']
+                checkpoint = ['--initialize', locate(initialize_dir) / checkpoint_file]
             out = work / 'training'
             planned('train', ['--out', out, '--stop-tokens', stop_tokens, '--accumulate', accumulation,
                               '--microbatch', microbatch, '--logit-chunk', logit_chunk, *checkpoint], selected, minutes=training_minutes)
@@ -228,7 +315,7 @@ elif stage == 'export':
     # Export and qualify on CPU. A failing export makes the notebook fail.
     run([sys.executable, '-m', 'pip', 'install', '-q', 'onnx==1.20.1', 'onnxruntime==1.24.2', 'onnx-ir==1.1.0'])
     run(command('export', '--out', work / 'export', '--data', locate(data_dir),
-                '--checkpoint', locate(checkpoint_dir) / 'best.pt', '--precision', precision,
+                '--checkpoint', locate(checkpoint_dir) / checkpoint_file, '--precision', precision,
                 '--max-bytes', max_bytes, '--split', export_split))
 else:
     raise ValueError(f"Unsupported notebook stage {stage}")
@@ -267,8 +354,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--slug', required=True)
-    parser.add_argument('--stage', choices=('cpu', 'prepare', 'gpu', 'export', 'ngram'), required=True)
+    parser.add_argument('--stage', choices=('provenance', 'group-audit', 'cpu', 'tokenizer', 'prepare', 'prepared-audit', 'gpu', 'export', 'ngram'), required=True)
     parser.add_argument('--input', action='append', default=[])
+    parser.add_argument('--ngram-task', choices=('prose', 'latex', 'both'), default='both')
     parser.add_argument('--ngram-orders', nargs='+', type=int, choices=(3, 4, 5), default=[3, 4, 5])
     parser.add_argument('--pruning-methods', nargs='+', choices=('count', 'entropy'), default=['count', 'entropy'])
     parser.add_argument('--subjects', nargs='*', default=['topology', 'linear-algebra'])
@@ -277,6 +365,7 @@ def main():
     parser.add_argument('--target-words', type=int, default=100_000_000)
     parser.add_argument('--target-subwords', type=int, choices=(500_000_000, 1_000_000_000))
     parser.add_argument('--corpus-only', action='store_true')
+    parser.add_argument('--audit-pool', choices=('controls', 'all'), default='all')
     parser.add_argument('--prepare-pool', choices=('development', 'large'), default='development')
     parser.add_argument('--minimum-subwords', type=int, default=500_000_000)
     parser.add_argument('--reference-words', type=int, default=0)
@@ -284,7 +373,8 @@ def main():
     parser.add_argument('--corpus-dir')
     parser.add_argument('--latex-train-tokens', type=int, default=50_000_000)
     parser.add_argument('--checkpoint-dir', default='training')
-    parser.add_argument('--precision', choices=('int8', 'int8-weight-only', 'int4'), default='int8')
+    parser.add_argument('--checkpoint-file', default='best.pt')
+    parser.add_argument('--precision', choices=('int8', 'int8-weight-only', 'int4', 'int4-int8-head'), default='int8')
     parser.add_argument('--export-split', choices=('validation', 'calibration', 'test'), default='test')
     parser.add_argument('--max-bytes', type=int, default=40 * 1024 * 1024)
     parser.add_argument('--candidate', choices=('primary', 'larger', 'reference', 'capacity-reference'), default='primary')
@@ -302,13 +392,17 @@ def main():
     parser.add_argument('--probe-batches', type=int, nargs='+', choices=(4, 8, 16, 32), default=[4, 8, 16, 32])
     parser.add_argument('--probe-logit-chunks', type=int, nargs='+', choices=(1024, 4096), default=[1024])
     parser.add_argument('--accumulation', type=int, default=8)
+    parser.add_argument('--require-audit', action='store_true')
     parser.add_argument('--resume-dir')
     parser.add_argument('--initialize-dir')
     parser.add_argument('--adapt', action='store_true')
     parser.add_argument('--schedule-tokens', type=int, default=1_000_000_000)
+    parser.add_argument('--learning-rate', type=float, default=.0004)
     parser.add_argument('--commit', required=True)
     args = parser.parse_args()
     values = vars(args).copy()
+    if not re.fullmatch(r'(?:best|latest|tokens-[0-9]+)\.pt', args.checkpoint_file):
+        parser.error('Choose best.pt, latest.pt or a saved exposure checkpoint')
     if args.resume_dir and args.initialize_dir:
         parser.error('Resume and initialize are mutually exclusive')
     if args.mode == 'pilot' and args.adapt:

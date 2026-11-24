@@ -107,7 +107,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
           preview.style.minWidth = Math.round(Math.max(48, cell.width + 16)) + 'px';
           preview.style.left = Math.max(30, Math.min(keyboard.width - 30, cell.left + cell.width / 2 - keyboard.left)) + 'px';
           preview.style.top = cell.top - keyboard.top + 6 + 'px';
-          preview.textContent = label;
+          if (preview.firstChild) preview.firstChild.nodeValue = label;
           preview.toggleAttribute('data-glyph', !/^[A-Za-z0-9.,]$/.test(label));
           preview.removeAttribute('data-leaving');
           preview.style.visibility = 'visible';
@@ -129,7 +129,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
           current.timer = setTimeout(() => {
             if (actions.current.disabled) return;
             haptic('reveal');
-            if (preview) preview.textContent = alt;
+            if (preview?.firstChild) preview.firstChild.nodeValue = alt;
             actions.current.onInsert(alt, true);
             current.fired = true;
           }, 380);
@@ -180,7 +180,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
   const phrases = view === 'Phrases';
   const math = phrases ? notation[view].slice(phrasePage * 9, (phrasePage + 1) * 9) : notation[view];
   return <div className="rows" data-view={view} ref={rows}>
-    <div className="tutor-key-preview" aria-hidden="true" ref={popup} style={{visibility: 'hidden'}}/>
+    <div className="tutor-key-preview" aria-hidden="true" ref={popup} style={{visibility: 'hidden'}}>{'\u00a0'}</div>
     {math ? <>
       <div className="cats" role="group" aria-label="Math categories">{Object.keys(notation).map(name =>
         <button key={name} type="button" disabled={disabled} className={view === name ? 'cur' : ''} aria-pressed={view === name}

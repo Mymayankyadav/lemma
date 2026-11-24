@@ -206,7 +206,7 @@ export function TutorComposer(props: Props) {
   const question = useMemo(() => JSON.parse(notationKey) as string[], [notationKey]);
   const writingRequest = {cursor, arm, replayDiagnostics, contextKey: aidContextKey, aid, mastery: props.mastery, middleEdits: enhancedMenu,
     subject: props.aidSubject, step: props.aidStep, question, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
-    surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown || props.suspended || editMenu || provenanceFull};
+    surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown || props.suspended || provenanceFull};
   const writing = useWritingAid(writingRequest);
   const aidVisible = dismissedAid !== aidSignature && !editingDisabled;
   const writingWords = aidVisible ? writing.words : EMPTY_WRITING_WORDS;
@@ -352,16 +352,16 @@ export function TutorComposer(props: Props) {
 
   useEffect(() => {
     const reportVisibility = () => {
-      const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && document.visibilityState !== 'hidden';
+      const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && !editMenu && document.visibilityState !== 'hidden';
       writing.shown('words', visible ? slots === 'unified' ? displayedWordMenu : slots === 'words'
-        ? [writingWords[1], writingWords[0], writingWords[2]].filter(Boolean) : [] : []);
-      writing.shown('edit', visible && shownEdit && !suggestionUndoable ? [shownEdit] : []);
-      writing.shown('ghost', visible && writingGhost ? [writingGhost] : []);
+        ? [writingWords[1], writingWords[0], writingWords[2]].filter(Boolean) : [] : [], editMenu);
+      writing.shown('edit', visible && shownEdit && !suggestionUndoable ? [shownEdit] : [], editMenu);
+      writing.shown('ghost', visible && writingGhost ? [writingGhost] : [], editMenu);
     };
     reportVisibility();
     document.addEventListener('visibilitychange', reportVisibility);
     return () => document.removeEventListener('visibilitychange', reportVisibility);
-  }, [writing.shown, writingWords, displayedWordMenu, slots, shownEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, suggestionUndoable]);
+  }, [writing.shown, writingWords, displayedWordMenu, slots, shownEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, suggestionUndoable]);
 
   // N221: load N219's lexicon for the n-gram and touch decoder when the keyboard opens, and let the tutor's question
   // (with the checkpoint's title and step) favour its own words while the learner answers it.
@@ -434,7 +434,7 @@ export function TutorComposer(props: Props) {
     remember();
     const live = liveMenu.current, edit = history.current.present;
     if (live.key !== menuEpoch || !sameEditTarget(live.target, editTarget()) || !live.entries.includes(entry) ||
-        editingDisabled || writingRequest.readOnly || composition.current) return;
+        editingDisabled || editMenu || writingRequest.readOnly || composition.current) return;
     if (entry.word) {acceptWriting(entry.word); return;}
     if (!entry.next || !entry.replacement || !allowed(entry.replacement, edit) || provenanceFull) return;
     const replacement = entry.replacement;
@@ -1174,7 +1174,22 @@ export function TutorComposer(props: Props) {
     wordBefore: () => keyboardActions.current?.wordBefore?.() ?? '',
   }), []);
 
-  return <div ref={composerRoot} className="keyboard-composer" hidden={props.suspended} data-keyboard={shown && !props.suspended ? 'math' : 'hidden'} data-symbols={shown && !props.suspended && Boolean(notation[view]) || undefined}>
+  const keyboardVisible = shown && !props.suspended;
+  const symbolKeysVisible = keyboardVisible && Boolean(notation[view]);
+  useLayoutEffect(() => {
+    const page = composerRoot.current?.closest('.lemma-tutor');
+    if (!page) return;
+    page.toggleAttribute('data-tutor-composer', true);
+    page.toggleAttribute('data-tutor-keyboard', keyboardVisible);
+    page.toggleAttribute('data-tutor-symbol-keys', symbolKeysVisible);
+    return () => {
+      page.removeAttribute('data-tutor-composer');
+      page.removeAttribute('data-tutor-keyboard');
+      page.removeAttribute('data-tutor-symbol-keys');
+    };
+  }, [keyboardVisible, symbolKeysVisible]);
+
+  return <div ref={composerRoot} className="keyboard-composer" hidden={props.suspended} data-keyboard={keyboardVisible ? 'math' : 'hidden'} data-symbols={symbolKeysVisible || undefined}>
     {value.includes('$') && !props.ink && <div className="composer-preview"><MathText source={tutorAnswerParts(value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
     {answerError && <p className="composer-status" role="alert">{answerError}</p>}
     {recoveryIssue && <div className="composer-status" role={recoveryIssue==='loading'?'status':'alert'}>
@@ -1310,7 +1325,7 @@ export function TutorComposer(props: Props) {
         </div>
       </div>}
     </Sheet>
-    <Sheet open={aidSettings} onClose={() => setAidSettings(false)} title="Writing assistance"><WritingAidSettings showTitle={false}/></Sheet>
+    <Sheet open={aidSettings} onClose={() => setAidSettings(false)} title="Writing assistance">{aidSettings && <WritingAidSettings showTitle={false}/>}</Sheet>
     {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoActions={photoActions} photoDisabled={editingDisabled}
       onPickPhoto={()=>{remember();assist.stop();drawingSelection.current=history.current.present;}}
       editingImageId={editingImageId} canMigrate={!readOnly} onInsertEquation={insertEquation}

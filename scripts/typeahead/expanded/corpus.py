@@ -122,7 +122,7 @@ def records(path):
 def select(document, field, default=None):
     value = document
     for key in field.split('.'):
-        if isinstance(value, str) and value.startswith('{'):
+        if isinstance(value, str) and value.lstrip().startswith('{'):
             value = json.loads(value)
         if not isinstance(value, dict):
             return default
@@ -153,18 +153,47 @@ def group_identity(reference):
     if url.netloc and url.scheme in ('http', 'https'):
         host = url.netloc.casefold().removeprefix('www.')
         path = url.path.rstrip('/')
+        query = url.query
         if host in ('arxiv.org', 'export.arxiv.org'):
             host = 'arxiv.org'
             path = re.sub(r'^/(?:pdf|abs|html)/', '/', path).removesuffix('.pdf')
             path = re.sub(r'v[0-9]+$', '', path)
+            query = ''
         if host.endswith('stackexchange.com') or host in ('stackoverflow.com', 'mathoverflow.net'):
             thread = re.match(r'/(?:questions|q)/([0-9]+)', path)
             if thread:
                 path = '/questions/' + thread[1]
-        return host + path
+                query = ''
+        return host + path + ('?' + query if query else '')
     arxiv = re.fullmatch(r'(?:arxiv:)?((?:[a-z.-]+/[0-9]{7}|[0-9]{4}\.[0-9]{4,5}))(?:v[0-9]+)?',
                          text, re.I)
     return 'arxiv.org/' + arxiv.group(1).lower() if arxiv else text
+
+
+def publisher_reference(raw, source):
+    fields = source.get('groupFields', (source.get('groupField', 'url'),))
+    value = next((value for field in fields if (value := select(raw, field)) and type(value) in (str, int)), None)
+    if value and source.get('groupPrefix') and str(value).isdigit():
+        return source['groupPrefix'] + str(value)
+    return value
+
+
+def group_preflight(path, source, sample=32):
+    groups = set()
+    checked = 0
+    for raw in records(path):
+        if any(select(raw, field) != value for field, value in source.get('filter', {}).items()):
+            continue
+        reference = publisher_reference(raw, source)
+        if not reference or not group_identity(reference):
+            raise ValueError(f"Missing publisher provenance key in sampled {source['id']} record")
+        groups.add(text_hash(group_identity(reference)))
+        checked += 1
+        if checked >= sample:
+            break
+    if not checked:
+        raise ValueError(f"No eligible provenance records sampled from {source['id']}")
+    return {'source': source['id'], 'sampled': checked, 'distinctGroups': len(groups)}
 
 
 def shingles(text):
@@ -221,6 +250,9 @@ def ingest(db, specs, base, exclusions):
     stats = Counter()
     files = []
     for source in specs:
+        for group_stat in ('publisherGroupPresent', 'publisherGroupMissing', 'questionFingerprintFallback',
+                           'contentFingerprintFallback'):
+            stats[group_stat + ':' + source['id']] = 0
         if source['register'] not in REGISTERS:
             raise ValueError(f"Unknown register for {source['id']}")
         if not all(source.get(key) for key in ('id', 'revision', 'license', 'url')):
@@ -242,14 +274,21 @@ def ingest(db, specs, base, exclusions):
                     stats['filtered'] += 1
                     continue
                 content = fingerprint(text)
-                group_fields = source.get('groupFields', (source.get('groupField', 'url'),))
-                group_key = next((value for field in group_fields if (value := select(raw, field))), None)
-                if group_key and source.get('groupPrefix') and str(group_key).isdigit():
-                    group_key = f"{source['groupPrefix']}{group_key}"
-                if not group_key and source['id'] == 'hoskinson-center/proof-pile':
-                    prompt, _ = tutor_pair({'source': source['id'], 'text': text})
-                    if prompt:
-                        group_key = 'question:' + fingerprint(prompt)
+                group_key = publisher_reference(raw, source)
+                family = source['id']
+                if group_key:
+                    stats['publisherGroupPresent:' + family] += 1
+                else:
+                    stats['publisherGroupMissing:' + family] += 1
+                    if source.get('allowQuestionFingerprint'):
+                        prompt, _ = tutor_pair({'source': family, 'text': text})
+                        if prompt:
+                            group_key = 'question:' + fingerprint(prompt)
+                            stats['questionFingerprintFallback:' + family] += 1
+                    if not group_key and source.get('requirePublisherGroup'):
+                        raise ValueError(f"Missing publisher group in {family}, {shard['path']} row {index}")
+                    if not group_key:
+                        stats['contentFingerprintFallback:' + family] += 1
                 group = text_hash(group_identity(group_key)) if group_key else content
                 join(db, group, group)
                 if content in exclusions or group in exclusions:
@@ -277,6 +316,7 @@ def ingest(db, specs, base, exclusions):
                 }
                 db.execute('INSERT INTO docs VALUES (?,?,?)', (content, group, json.dumps(document, ensure_ascii=False)))
                 stats['retained'] += 1
+                stats['preSplitWords:' + document['register']] += n_words
                 if stats['read'] % 10000 == 0:
                     db.commit()
             db.commit()
@@ -371,6 +411,54 @@ def documents(directory, split):
             if file_hash(path) != shard['sha256']:
                 raise ValueError(f'Corpus shard hash mismatch: {path.name}')
             yield from records(path)
+
+
+def audit_groups(pool, development, scratch):
+    """Assert publisher-group and document isolation on the emitted, hashed shards."""
+    from tempfile import TemporaryDirectory
+    audit = Counter()
+    if development:
+        manifests = [json.loads((path / 'manifest.json').read_text()) for path in (pool, development)]
+        for split in SPLITS[1:]:
+            hashes = [[shard['sha256'] for shard in manifest['shards'] if shard['split'] == split]
+                      for manifest in manifests]
+            if hashes[0] != hashes[1]:
+                raise ValueError('Raw development holdout differs from the full corpus')
+    with TemporaryDirectory(prefix='lemma-groups-', dir=scratch) as temp:
+        with sqlite3.connect(Path(temp) / 'audit.sqlite') as db:
+            db.execute('CREATE TABLE publisher(id TEXT PRIMARY KEY, group_id TEXT NOT NULL) WITHOUT ROWID')
+            db.execute('CREATE TABLE documents(id TEXT PRIMARY KEY, split TEXT NOT NULL, group_id TEXT NOT NULL) WITHOUT ROWID')
+            for split in SPLITS:
+                for document in documents(pool, split):
+                    source = document['source']
+                    reference = group_identity(document['reference'])
+                    if (not reference or source == 'EleutherAI/proof-pile-2' and not reference.startswith('arxiv.org/') or
+                            source == 'hoskinson-center/proof-pile' and not reference.startswith('math.stackexchange.com/questions/') or
+                            source == 'HuggingFaceTB/finemath' and not urlsplit(str(document['reference'])).netloc):
+                        audit['missingPublisherIdentity:' + source] += 1
+                        raise ValueError(f'Emitted corpus missing a publisher identity for {source}')
+                    group = document['group']
+                    if split_for(group) != split:
+                        raise ValueError('Emitted document split differs from its frozen group split')
+                    existing = db.execute('SELECT group_id FROM publisher WHERE id=?', (reference,)).fetchone()
+                    if existing is None:
+                        db.execute('INSERT INTO publisher VALUES (?,?)', (reference, group))
+                    elif existing[0] != group:
+                        raise ValueError('A publisher identity has inconsistent connected groups')
+                    db.execute('INSERT INTO documents VALUES (?,?,?)', (document['id'], split, group))
+                    audit['publisherIdentityVerified:' + source] += 1
+                    audit['documents:' + split] += 1
+                db.commit()
+            for split, count in db.execute('SELECT split,COUNT(DISTINCT group_id) FROM documents GROUP BY split'):
+                audit['groups:' + split] = count
+            if development:
+                for split in SPLITS:
+                    for document in documents(development, split):
+                        current = db.execute('SELECT split,group_id FROM documents WHERE id=?', (document['id'],)).fetchone()
+                        if current != (split, document['group']):
+                            raise ValueError('Development document is missing from the full pool or in another group/split')
+                        audit['nestedDevelopment:' + split] += 1
+    return dict(audit)
 
 
 def main():

@@ -113,7 +113,7 @@
 }
 
 @media (min-height: 560px) {
-  .lemma-tutor:has(.keyboard-composer[data-symbols]) .chat {min-height: 0;}
+  .lemma-tutor[data-tutor-composer][data-tutor-symbol-keys] .chat {min-height: 0;}
   .lemma-tutor .keyboard-composer[data-symbols] .composer textarea {max-height: 76px;}
   .lemma-tutor .keyboard-composer[data-symbols] .composer-preview {max-height: 44px;}
 }
@@ -382,9 +382,9 @@
    stretched over the whole screen. The paper keeps its own proportions (640 by 400) at one scale, large enough to cover
    the screen, so what is drawn is what is sent; whatever is larger scrolls. The Sheet's header is hidden: the surface has
    its own full-screen toggle, and Escape leaves. */
-.v7-sheet:has(.tutor-paper-full) {inset: 0; margin: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; border: 0; border-radius: 0;}
-.v7-sheet:has(.tutor-paper-full) > :is(.v7-grabber, .v7-sheet-header) {display: none;}
-.v7-sheet:has(.tutor-paper-full) > .v7-sheet-body {display: flex; flex: 1 1 auto; flex-direction: column; gap: 0; min-height: 0; overflow: hidden;
+.v7-sheet.tutor-paper-sheet {inset: 0; margin: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; border: 0; border-radius: 0;}
+.v7-sheet.tutor-paper-sheet > :is(.v7-grabber, .v7-sheet-header) {display: none;}
+.v7-sheet.tutor-paper-sheet > .v7-sheet-body {display: flex; flex: 1 1 auto; flex-direction: column; gap: 0; min-height: 0; overflow: hidden;
   padding: var(--tutor-safe-top) max(env(safe-area-inset-right,0px),var(--safe-area-inset-right,0px))
     var(--v7-safe-bottom) max(env(safe-area-inset-left,0px),var(--safe-area-inset-left,0px));}
 .lemma-tutor .tutor-paper-safe {position:relative;display:flex;flex:1 1 auto;min-height:0;overflow:hidden;container-type:size;}

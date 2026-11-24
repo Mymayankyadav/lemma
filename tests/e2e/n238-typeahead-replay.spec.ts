@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {readFileSync, writeFileSync} from 'node:fs';
+import {appendFileSync, readFileSync, writeFileSync} from 'node:fs';
 import {expect, test, type Locator, type Page} from '@playwright/test';
 import {liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
 import type {AnswerAidDraft} from '../../supabase/functions/_shared/tutor-answer-aids';
@@ -63,6 +63,13 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   const answers = input(answerInput, eventInput ? [] : fixtureAnswers);
   test.setTimeout(eventInput || answerInput ? 1_800_000 : 60_000);
   const output = process.env.LEMMA_TYPEAHEAD_REPLAY_OUTPUT;
+  const expectedNgram = process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NGRAM_SHA;
+  const retainPartial = (sink: string, row: unknown) => {
+    if (output) appendFileSync(output + '.partial.' + sink + '.jsonl', lines([row]));
+  };
+  if (output) for (const kind of ['impressions', 'keys', 'components']) {
+    writeFileSync(output + '.partial.' + kind + '.jsonl', '');
+  }
   const flags = process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS ?? 'typeaheadV2,tutorAnswerAids,proofAssistGhost';
   const arm = process.env.LEMMA_TYPEAHEAD_REPLAY_ARM;
   const graphTrial = process.env.LEMMA_TYPEAHEAD_REPLAY_GRAPH_TRIAL === '1';
@@ -108,6 +115,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       return {ngram: data.typeaheadNgramSha, neural: data.typeaheadNeuralSha, graphTrial: data.typeaheadGraphTrial,
         ghostEligible: data.typeaheadGhostEligible === '1'};
     });
+    if (expectedNgram) expect(model.ngram, 'active n-gram fingerprint during replay').toBe(expectedNgram);
     if (model.ngram) modelAssets.add(model.ngram);
     if (model.neural) modelAssets.add(model.neural);
     return model;
@@ -141,6 +149,14 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   }
 
   async function start(route: string, answerId: string, frozen: boolean) {
+    const open = page.getByRole('button', {name: 'Write a question', exact: true});
+    async function resetDraft(answer: Locator) {
+      if (await exactDraft(answer)) await answer.fill('');
+      if (await open.isVisible()) await open.click();
+      await expect(answer).toBeVisible({timeout: 5_000});
+      await expect.poll(() => exactDraft(answer)).toBe('');
+      await answer.focus();
+    }
     const context = contexts.get(answerId);
     const hasQuestion = Boolean(context?.question);
     const destination = hasQuestion ? '/p/logic/cp/CP1/tutor' : route;
@@ -151,17 +167,22 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       const query = '/lemma/?typeahead-replay=1&demo=' + (hasQuestion ? '0' : '1') + '&flags=v7Shell,v6Shell,tutorScratch,' + encodeURIComponent(flags)
         + (arm ? '&typeahead-arm=' + encodeURIComponent(arm) : '') + (frozen ? '&typeahead-frozen-profile=1' : '') + (graphTrial ? '&typeahead-graph-trial=1' : '');
       await page.goto(query + '#' + destination);
-      const open = page.getByRole('button', {name: 'Write a question', exact: true});
       editor = page.getByRole('textbox', {name: 'Your answer', exact: true});
-      await expect(open.or(editor).first()).toBeVisible();
+      await expect(open.or(editor).first()).toBeVisible({timeout: eventInput || answerInput ? 15000 : 5000});
       if (await open.isVisible()) await open.click();
       await expect(editor).toHaveAttribute('contenteditable', 'true');
       // All arms wait for the same asset-loading conditions, independent of the target.
       await page.waitForLoadState('networkidle');
+      if (expectedNgram) {
+        // Verify the configured arm before timing or recording a gold event.
+        // This non-answer warm-up completes no learned word or transition.
+        await resetDraft(editor);
+        await page.keyboard.type('Use th');
+        await expect(page.locator('form.composer')).toHaveAttribute('data-typeahead-ngram-sha', expectedNgram, {timeout: 20_000});
+      }
       opened = key;
     }
-    await editor.fill('');
-    await editor.focus();
+    await resetDraft(editor);
     return editor;
   }
 
@@ -178,16 +199,20 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     }
     const ghostButton = page.locator('[data-writing-aid-ghost][data-typeahead-insert]:visible');
     const ghost = await ghostButton.count() ? await ghostButton.getAttribute('data-typeahead-insert') : undefined;
-    impressions.push({eventId: event.eventId, prefixSha256: hash(event.prefix), slate: items.map(({text, family}) => ({text, family})),
+    const impression = {eventId: event.eventId, prefixSha256: hash(event.prefix), slate: items.map(({text, family}) => ({text, family})),
       ghostEligible: assets.ghostEligible, assets,
-      ...(ghost ? {ghost: {text: ghost, source: assets.neural ? 'neural' : 'visible-ui'}} : {})});
+      ...(ghost ? {ghost: {text: ghost, source: assets.neural ? 'neural' : 'visible-ui'}} : {})};
+    impressions.push(impression);
+    retainPartial('impressions', impression);
     const target = gold.get(event.eventId);
     // Query the observed outcome only after the slate is captured. This does
     // not change context, cache contents, scores, or visible suggestions.
     if (arm && target?.kind === 'word') {
       const sampled = await measureComponents(event.eventId, target.exactInsertion);
-      if (sampled?.probability && assets.ngram) components.push({eventId: event.eventId, subject: sampled.subject ?? 'other',
-        probability: sampled.probability, assetSha256: assets.ngram});
+      const component = {eventId: event.eventId, subject: sampled?.subject ?? contexts.get(event.answerId)?.subject ?? 'other',
+        probability: sampled?.probability && assets.ngram ? sampled.probability : null, assetSha256: assets.ngram};
+      components.push(component);
+      retainPartial('components', component);
     }
     const chosen = items.findIndex(item => item.text === event.target);
     if (!eventInput && process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS === undefined && event.target) expect(chosen).toBeGreaterThanOrEqual(0);
@@ -235,7 +260,10 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       draft = next;
     }
     await observeAssets();
-    keys.push({answerId: sample.answerId, manualKeys: [...sample.answer].length, assistedKeys, costDefinition: 'full-answer-v1', assetSha256: [...activeAssets].sort()});
+    const counted = {answerId: sample.answerId, manualKeys: [...sample.answer].length, assistedKeys,
+      costDefinition: 'full-answer-v1', assetSha256: [...activeAssets].sort()};
+    keys.push(counted);
+    retainPartial('keys', counted);
   }
   await info.attach('typeahead-impressions.jsonl', {body: Buffer.from(lines(impressions)), contentType: 'application/x-ndjson'});
   await info.attach('typeahead-keys.jsonl', {body: Buffer.from(lines(keys)), contentType: 'application/x-ndjson'});

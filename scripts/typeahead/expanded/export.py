@@ -71,7 +71,7 @@ def quantize(paths, out, precision):
     elif precision == 'int8-weight-only':
         for path in paths:
             quantize_weight_only(path, out / path.name)
-    elif precision == 'int4':
+    elif precision in ('int4', 'int4-int8-head'):
         import onnx
         logging.getLogger('onnxruntime.quantization.matmul_nbits_quantizer').setLevel(logging.WARNING)
         try:
@@ -92,7 +92,10 @@ def quantize(paths, out, precision):
             model = MatMulNBitsQuantizer(onnx.load(path), algo_config=config)
             model.process()
             model.model.save_model_to_file(str(out / path.name), False)
-            share_int4_embeddings(out / path.name)
+            if precision == 'int4':
+                share_int4_embeddings(path, out / path.name)
+            else:
+                mixed_int8_head(path, out / path.name)
     else:
         raise ValueError(f'Unsupported quantization: {precision}')
 
@@ -143,31 +146,110 @@ def share_int8_embeddings(path):
     onnx.save(model, path)
 
 
-def share_int4_embeddings(path):
-    # MatMulNBits stores unsigned nibbles centered at 8. GatherBlockQuantized
-    # supports that same representation when given an explicit zero point.
-    # Retain its logical [vocab,width] view of the output matrix bytes.
+
+def original_tied_output(graph):
+    from onnx import numpy_helper
+    tensors = {tensor.name: tensor for tensor in graph.initializer}
+    head = next(node for node in graph.node if node.op_type == 'MatMul' and 'logits' in node.output)
+    input_matrix = numpy_helper.to_array(tensors['model.tok.weight'])
+    output_matrix = numpy_helper.to_array(tensors[head.input[1]])
+    if not np.array_equal(input_matrix.T, output_matrix):
+        raise ValueError('Float graph does not have tied input and output weights')
+    return output_matrix
+
+
+def mixed_int8_head(source, path):
+    """Retain one signed int8 embedding/output matrix with int4 transformer blocks."""
+    import onnx
+    from onnx import TensorProto, helper, numpy_helper
+    original = onnx.load(source).graph
+    output_matrix = original_tied_output(original)
+    float_positions = next(node for node in original.node if node.op_type == 'Gather' and node.input[0] == 'model.pos.weight')
+    position_weight = next(tensor for tensor in original.initializer if tensor.name == float_positions.input[0])
+    scales = np.maximum(np.max(np.abs(output_matrix), axis=0) / 127, np.finfo('float32').tiny)
+    weights = np.clip(np.rint(output_matrix / scales), -127, 127).astype('int8')
+    model = onnx.load(path)
+    graph = model.graph
+    output_weight, weight_scale = 'tied_head_int8', 'tied_head_scales'
+    graph.initializer.append(position_weight)
+    graph.initializer.extend([
+        numpy_helper.from_array(weights, output_weight),
+        numpy_helper.from_array(scales.astype('float32'), weight_scale),
+        numpy_helper.from_array(np.asarray([2], dtype='int64'), 'tied_embed_axis'),
+    ])
+    gather = next(node for node in graph.node if node.op_type == 'GatherBlockQuantized' and node.input[1] == 'input_ids')
+    head = next(node for node in graph.node if node.op_type == 'MatMulNBits' and 'logits' in node.output)
+    positions = next(node for node in graph.node if list(node.output) == list(float_positions.output))
+    nodes = []
+    for node in graph.node:
+        if node == gather:
+            nodes.extend([
+                helper.make_node('Gather', [output_weight, 'input_ids'], ['tied_embed_gather'], axis=1),
+                helper.make_node('Transpose', ['tied_embed_gather'], ['tied_embed_transposed'], perm=[1, 2, 0]),
+                helper.make_node('Cast', ['tied_embed_transposed'], ['tied_embed_float'], to=TensorProto.FLOAT),
+                helper.make_node('Gather', [weight_scale, 'input_ids'], ['tied_embed_scale_gather'], axis=0),
+                helper.make_node('Unsqueeze', ['tied_embed_scale_gather', 'tied_embed_axis'], ['tied_embed_scale']),
+                helper.make_node('Mul', ['tied_embed_float', 'tied_embed_scale'], [node.output[0]]),
+            ])
+        elif node == positions:
+            nodes.append(float_positions)
+        elif node == head:
+            nodes.extend([
+                helper.make_node('DequantizeLinear', [output_weight, weight_scale], ['tied_projection_float'], axis=1),
+                helper.make_node('MatMul', [node.input[0], 'tied_projection_float'], list(node.output)),
+            ])
+        else:
+            nodes.append(node)
+    used = {name for node in nodes for name in node.input}
+    keep = [tensor for tensor in graph.initializer if tensor.name in used]
+    del graph.node[:]
+    graph.node.extend(nodes)
+    del graph.initializer[:]
+    graph.initializer.extend(keep)
+    onnx.checker.check_model(model)
+    onnx.save(model, path)
+
+def share_int4_embeddings(source, path):
+    # The selected MatMulNBits matrix is also the quantized input embedding.
+    # Compare the underlying float weights rather than requiring two independent
+    # quantizers to round every trained coefficient the same way.
     import onnx
     from onnx import TensorProto, helper
+    output_matrix = original_tied_output(onnx.load(source).graph)
+
     model = onnx.load(path)
     graph = model.graph
     tensors = {tensor.name: tensor for tensor in graph.initializer}
     gather = next(node for node in graph.node if node.op_type == 'GatherBlockQuantized' and node.input[1] == 'input_ids')
     projection = next(node for node in graph.node if node.op_type == 'MatMulNBits' and 'logits' in node.output)
+    attrs = {item.name: item.i for item in projection.attribute}
+    width, vocab = output_matrix.shape
+    block = attrs['block_size']
+    blocks = width // block
     embed = tensors[gather.input[0]]
-    old_scales, new_scales = tensors[gather.input[2]], tensors[projection.input[2]]
-    new_weight = tensors[projection.input[1]]
-    signed_as_unsigned = bytes(value ^ 0x88 for value in embed.raw_data)
-    if len(gather.input) != 3 or len(projection.input) != 3 or signed_as_unsigned != new_weight.raw_data:
-        raise ValueError('Int4 embedding and output must share equivalent symmetric block weights')
-    if old_scales.raw_data != new_scales.raw_data or list(old_scales.dims) != list(new_scales.dims):
-        raise ValueError('Int4 embedding and output block scales differ')
+    scales, packed = tensors[projection.input[2]], tensors[projection.input[1]]
+    if (width % block or attrs['bits'] != 4 or attrs['K'] != width or attrs['N'] != vocab or
+            any(projection.input[3:]) or packed.data_type != TensorProto.UINT8 or
+            list(packed.dims) != [vocab, blocks, block // 2] or len(packed.raw_data) != vocab * width // 2 or
+            math.prod(scales.dims) != vocab * blocks):
+        raise ValueError('Int4 output is not the expected symmetric block representation')
+    # MatMulNBits uses unsigned nibbles centered at 8. GatherBlockQuantized
+    # reads that same external storage as logical [vocab,width] with explicit zeros.
+    if list(scales.dims) != [vocab, blocks]:
+        scale_view = TensorProto()
+        scale_view.CopyFrom(scales)
+        scale_view.name = 'tied_embed_block_scales'
+        del scale_view.dims[:]
+        scale_view.dims.extend([vocab, blocks])
+        graph.initializer.append(scale_view)
+        scales = scale_view
     embed.data_type = TensorProto.UINT4
-    embed.raw_data = new_weight.raw_data
-    gather.input[2] = new_scales.name
-    zeros = helper.make_tensor('tied_embed_uint4_zero_points', TensorProto.UINT4, new_scales.dims,
-                               bytes([0x88]) * ((math.prod(new_scales.dims) + 1) // 2), raw=True)
+    embed.raw_data = packed.raw_data
+    gather.input[2] = scales.name
+    zeros = helper.make_tensor('tied_embed_uint4_zero_points', TensorProto.UINT4, (vocab, blocks),
+                               bytes([0x88]) * ((vocab * blocks + 1) // 2), raw=True)
     graph.initializer.append(zeros)
+    del gather.input[3:]
     gather.input.append(zeros.name)
     used = {name for node in graph.node for name in node.input}
     keep = [tensor for tensor in graph.initializer if tensor.name in used]
@@ -515,7 +597,7 @@ def run(args):
     filenames = {'tokenizer': 'tokenizer.json', 'prefill': 'prefill.onnx',
                  'incremental': 'incremental.onnx', 'weights': 'weights.bin'}
     files = {name: {'path': filename, **assets[filename]} for name, filename in filenames.items()}
-    manifest = {'version': 2, 'kind': 'neural', 'precision': args.precision.split('-')[0],
+    manifest = {'version': 2, 'kind': 'neural', 'precision': 'mixed' if args.precision == 'int4-int8-head' else args.precision.split('-')[0],
                 'quantization': args.precision, 'vocabSize': cfg.vocab, 'context': cfg.context,
                 'layers': cfg.layers, 'heads': cfg.heads, 'headDim': cfg.width // cfg.heads, 'files': files,
                 'qualification': {'parity': True, 'replay': False, 'wasm': False, 'webgpu': False}}
@@ -552,7 +634,7 @@ def main():
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--data', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
-    parser.add_argument('--precision', choices=('int8', 'int8-weight-only', 'int4'), required=True)
+    parser.add_argument('--precision', choices=('int8', 'int8-weight-only', 'int4', 'int4-int8-head'), required=True)
     parser.add_argument('--max-bytes', type=int, required=True)
     parser.add_argument('--split', choices=('validation', 'calibration', 'test'), default='test')
     parser.add_argument('--contexts', type=int, default=300)

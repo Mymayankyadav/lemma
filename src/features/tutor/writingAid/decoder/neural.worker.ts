@@ -2,7 +2,7 @@ import {ghostQualified} from '../calibration';
 import type {InferenceSession, Tensor} from 'onnxruntime-web/wasm';
 import {loadTutorModelWasm} from '../../input/modelAssets';
 import {fetchVerifiedTypeaheadFile} from './assets';
-import {neuralManifest, qualifiedNeuralTier, type NeuralManifest, type NeuralTier} from './neuralManifest';
+import {neuralManifest, selectNeuralBackend, TYPEAHEAD_RUNTIME_VERSION, type NeuralBackend, type NeuralManifest, type NeuralTier} from './neuralManifest';
 import {isNeuralBoundary, neuralWordPrompt, promptIds, readNeuralTokenizer, wordTrie, type NeuralPrompt, type NeuralTokenizer} from './neuralTokenizer';
 
 export interface NeuralRequest {
@@ -34,7 +34,7 @@ interface ActiveModel {
   readonly incremental: InferenceSession;
   readonly pieces: readonly string[];
   readonly boundary: readonly number[];
-  readonly provider: 'webgpu' | 'wasm';
+  readonly provider: NeuralBackend;
 }
 interface State {
   readonly ids: readonly number[];
@@ -54,12 +54,13 @@ let latest: NeuralRequest | undefined;
 let running = false;
 let generation = 0;
 
-async function load(tier: NeuralTier, gpu: boolean, trial = false): Promise<ActiveModel | undefined> {
-  const manifest = await neuralManifest(tier);
-  if (!manifest || !qualifiedNeuralTier(manifest, gpu ? 'webgpu' : 'wasm', trial)) return undefined;
+async function load(tier: NeuralTier, manifest: NeuralManifest, device: NeuralBackend): Promise<ActiveModel> {
+  const gpu = device !== 'wasm';
   const loadFile = (file: typeof manifest.files.prefill) => fetchVerifiedTypeaheadFile(tier, file, 48 * 1024 * 1024);
-  const [runtime, wasm, tokenizerData, prefill, incremental, weights] = await Promise.all([
-    gpu ? import('onnxruntime-web/webgpu') : import('onnxruntime-web/wasm'),
+  const runtime = await (device === 'webgpuJspi' ? import('onnxruntime-web/jspi') :
+    gpu ? import('onnxruntime-web/webgpu') : import('onnxruntime-web/wasm'));
+  if (runtime.env.versions.web !== TYPEAHEAD_RUNTIME_VERSION) throw new Error('Typeahead runtime version needs a new byte report');
+  const [wasm, tokenizerData, prefill, incremental, weights] = await Promise.all([
     gpu ? undefined : loadTutorModelWasm(),
     loadFile(manifest.files.tokenizer), loadFile(manifest.files.prefill), loadFile(manifest.files.incremental),
     manifest.files.weights && loadFile(manifest.files.weights),
@@ -82,7 +83,7 @@ async function load(tier: NeuralTier, gpu: boolean, trial = false): Promise<Acti
     const second = await runtime.InferenceSession.create(incremental, options);
     const pieces = Array.from({length: tokenizer.size}, (_, id) => tokenizer.piece(id));
     const boundary = pieces.flatMap((piece, id) => isNeuralBoundary(id, piece) ? [id] : []);
-    return {manifest, tokenizer, runtime, prefill: first, incremental: second, pieces, boundary, provider: gpu ? 'webgpu' : 'wasm'};
+    return {manifest, tokenizer, runtime, prefill: first, incremental: second, pieces, boundary, provider: device};
   } catch (error) {
     await first?.release();
     throw error;
@@ -92,11 +93,16 @@ async function load(tier: NeuralTier, gpu: boolean, trial = false): Promise<Acti
 async function available(trial = false): Promise<ActiveModel | undefined> {
   const gpu = (navigator as Navigator & {gpu?: {requestAdapter: () => Promise<{info?: {isFallbackAdapter?: boolean}} | null>}}).gpu;
   const adapter = await Promise.race([gpu?.requestAdapter().catch(() => null), new Promise<null>(resolve => setTimeout(() => resolve(null), 300))]);
-  if (adapter && (trial || adapter.info?.isFallbackAdapter !== true)) for (const tier of ['neural-large-v2', 'neural-v2'] as const) {
-    const found = await load(tier, true, trial).catch(() => undefined);
-    if (found) return found;
+  const gpuAvailable = Boolean(adapter && (trial || adapter.info?.isFallbackAdapter !== true));
+  const jspi = typeof WebAssembly !== 'undefined' && 'Suspending' in WebAssembly && 'promising' in WebAssembly;
+  for (const tier of ['neural-large-v2', 'neural-v2'] as const) {
+    const manifest = await neuralManifest(tier);
+    const device = manifest && selectNeuralBackend(manifest, tier, gpuAvailable, jspi, trial);
+    if (!manifest || !device) continue;
+    // A failing backend returns to the n-gram. Stacking a second cold
+    // download after failure could exceed the same installation budget.
+    return load(tier, manifest, device).catch(() => undefined);
   }
-  return load('neural-v2', false, trial).catch(() => undefined);
 }
 
 function logSoftmax(logits: Float32Array): Float32Array {

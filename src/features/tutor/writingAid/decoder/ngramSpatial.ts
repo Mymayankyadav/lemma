@@ -16,7 +16,7 @@
  */
 import compactRanks from '../vendor/compact-ranks.json';
 import wordAssets from '../vendor/word-assets.json';
-import {createDecoderLexicon, type DecoderLexicon, type DecoderLexiconIndex} from './lexicon';
+import {createDecoderLexicon, searchDecoderLexicon, type DecoderLexicon, type DecoderLexiconIndex} from './lexicon';
 import {usesExpandedNgram, type TypeaheadArm} from '../replayArm';
 import {loadTypeaheadMixture, subjectWeights} from './mixture';
 import {isFlagOn} from '../../../../flags';
@@ -344,17 +344,7 @@ function completions(index: DecoderLexiconIndex, prefix: string, limit: number):
   const out: string[] = [];
   const at = lowerBound(index, prefix);
   if (index.entries[at]?.word === prefix) out.push(prefix);
-  let best: {word: string; frequency: number}[] = [];
-  for (let i = at; i < index.entries.length && index.entries[i].word.startsWith(prefix); i++) {
-    const entry = index.entries[i];
-    if (entry.word === prefix) continue;
-    if (best.length < limit || entry.frequency > best[best.length - 1].frequency) {
-      best.push(entry);
-      best.sort((a, b) => b.frequency - a.frequency);
-      if (best.length > limit) best = best.slice(0, limit);
-    }
-  }
-  return out.concat(best.map(entry => entry.word));
+  return out.concat(searchDecoderLexicon(index, prefix, limit).map(entry => entry.word));
 }
 
 /** log P(word | previous, cache): a smoothed bigram mixed with the conversation cache. */

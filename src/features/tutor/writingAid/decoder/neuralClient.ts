@@ -10,7 +10,8 @@ export interface NeuralClient {
 export async function createNeuralClient(trial = false): Promise<NeuralClient | undefined> {
   if (typeof Worker === 'undefined') return undefined;
   const [primary, large] = await Promise.all([neuralManifest('neural-v2'), neuralManifest('neural-large-v2')]);
-  if (!qualifiedNeuralTier(primary, 'wasm', trial) && !qualifiedNeuralTier(primary, 'webgpu', trial) && !qualifiedNeuralTier(large, 'webgpu', trial)) return undefined;
+  if (!qualifiedNeuralTier(primary, 'wasm', trial) && !qualifiedNeuralTier(primary, 'webgpu', trial) && !qualifiedNeuralTier(large, 'webgpu', trial) &&
+      !qualifiedNeuralTier(primary, 'webgpuJspi', trial) && !qualifiedNeuralTier(large, 'webgpuJspi', trial)) return undefined;
   const worker = new Worker(new URL('./neural.worker.ts', import.meta.url), {type: 'module'});
   let id = 0;
   let pending: {id: number; started: number; timer: ReturnType<typeof setTimeout>; finish: (reply?: NeuralReply) => void} | undefined;

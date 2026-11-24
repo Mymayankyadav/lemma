@@ -257,7 +257,9 @@ test('writing assistance shows local weekly evidence and a reset control', async
 });
 
 test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', async ({page}, info) => {
-  test.setTimeout(90_000);
+  const extended = process.env.LEMMA_TYPEAHEAD_PERF_EXTENDED === '1';
+  const expectedAsset = process.env.LEMMA_TYPEAHEAD_EXPECTED_ASSET;
+  test.setTimeout(extended ? 300_000 : 90_000);
   const answer = await answerField(page, demo);
   const keyboard = page.getByRole('group', {name: 'Answer keyboard', exact: true});
   await expect(keyboard).toHaveAttribute('data-decoder', 'ready', {timeout: 20_000});
@@ -265,9 +267,10 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
   const client = await page.context().newCDPSession(page);
   await client.send('Emulation.setCPUThrottlingRate', {rate: 4});
   type Sample = {frameMs: number; domMs: number; clickDelayMs: number; physicalMs: number; presentationMs?: number;
-    worker?: {computeMs: number; elapsedMs: number; requests: number; dropped: number; failures: number; timeouts: number}};
-  const measurement: Record<string, {samples: Sample[]; p95: number; domP95: number; workerP95: number; presentationSamples: number}> = {};
-  const p95 = (values: number[]) => [...values].sort((a, b) => a - b)[Math.ceil(.95 * values.length) - 1] ?? 0;
+    worker?: {computeMs: number; elapsedMs: number; assetSha256?: string; requests: number; dropped: number; failures: number; timeouts: number}};
+  const measurement: Record<string, {samples: Sample[]; p95: number; p99: number; max: number; domP95: number; workerP95: number; presentationSamples: number}> = {};
+  const quantile = (sorted: number[], value: number) => sorted[Math.ceil(value * sorted.length) - 1] ?? 0;
+  const sorted = (values: number[]) => values.sort((a, b) => a - b);
 
   async function tap(button: Locator, target: string, expected: string) {
     await button.evaluate((node, state) => {
@@ -310,22 +313,25 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
 
   function record(name: string, samples: Sample[]) {
     const warm = samples.slice(1);
-    measurement[name] = {samples, p95: p95(warm.map(sample => sample.presentationMs ?? sample.frameMs)),
-      domP95: p95(warm.map(sample => sample.domMs)),
-      workerP95: p95(warm.flatMap(sample => sample.worker ? [sample.worker.computeMs] : [])),
+    const frame = sorted(warm.map(sample => sample.presentationMs ?? sample.frameMs));
+    measurement[name] = {samples, p95: quantile(frame, .95), p99: quantile(frame, .99), max: frame.at(-1) ?? 0,
+      domP95: quantile(sorted(warm.map(sample => sample.domMs)), .95),
+      workerP95: quantile(sorted(warm.flatMap(sample => sample.worker ? [sample.worker.computeMs] : [])), .95),
       presentationSamples: warm.filter(sample => sample.presentationMs !== undefined).length};
   }
 
   for (const [name, draft] of [['empty', ''], ['eightEquations', Array.from({length: 8}, (_, at) => '$x_' + at + '=1$').join(' ') + ' ']]) {
     const samples: Sample[] = [];
-    for (let sample = 0; sample < 20; sample++) {
+    for (let sample = 0; sample < (extended ? 101 : 20); sample++) {
       await answer.fill(draft);
       await answer.press('End');
       const before = await answer.evaluate(node => node.textContent);
       const timing = await tap(key, '[aria-label="Your answer"]', before + 'q');
       const diagnostic = await page.waitForFunction(() => (performance.getEntriesByName('lemma.typeahead.ngram').at(-1) as PerformanceMark | undefined)?.detail,
         undefined, {timeout: sample ? 2500 : 12_000});
-      samples.push({...timing, worker: await diagnostic.jsonValue()});
+      const worker = await diagnostic.jsonValue() as NonNullable<Sample['worker']>;
+      if (expectedAsset) expect(worker.assetSha256, 'verified n-gram asset used by timing worker').toBe(expectedAsset);
+      samples.push({...timing, worker});
     }
     record(name, samples);
   }
@@ -343,7 +349,7 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
   });
   const control = page.getByRole('button', {name: 'Paint control', exact: true});
   const controlSamples: Sample[] = [];
-  for (let index = 0; index < 12; index++) {
+  for (let index = 0; index < (extended ? 101 : 12); index++) {
     await page.locator('#typeahead-paint-control').evaluate(element => {element.textContent = '';});
     controlSamples.push(await tap(control, '#typeahead-paint-control', 'q'));
   }
@@ -351,6 +357,7 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
   const path = info.outputPath('tap-to-paint-4x.json');
   await writeFile(path, JSON.stringify(measurement, null, 2));
   await info.attach('tap-to-paint-4x', {contentType: 'application/json', path});
-  console.log('Typeahead tap-to-paint (4× CPU):', Object.fromEntries(Object.entries(measurement).map(([name, {p95, domP95, workerP95, presentationSamples}]) =>
-    [name, {tapP95Ms: p95, domP95Ms: domP95, workerP95Ms: workerP95, presentationSamples}])));
+  console.log('Typeahead tap-to-paint (4× CPU):', Object.fromEntries(Object.entries(measurement).map(([name, {samples, p95, p99, max, domP95, workerP95, presentationSamples}]) =>
+    [name, {warmSamples: samples.length - 1, tapP95Ms: p95, tapP99Ms: p99, tapMaxMs: max, domP95Ms: domP95,
+      workerP95Ms: workerP95, presentationSamples, asset: samples.at(-1)?.worker?.assetSha256}])));
 });

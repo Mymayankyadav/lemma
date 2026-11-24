@@ -45,9 +45,9 @@ afterEach(async () => {
   setHapticsEnabled(true);
 });
 function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = () => {},
-  hintLevel, pending = false, ink}: {
+  hintLevel, pending = false, ink, suspended = false}: {
   initial?: string; onSend?: (text: string) => void; onAsk?: (kind: 'hint' | 'stuck' | 'notation') => void;
-  onChange?: (value: string) => void; hintLevel?: number; pending?: boolean; ink?: TutorInkState;
+  onChange?: (value: string) => void; hintLevel?: number; pending?: boolean; ink?: TutorInkState; suspended?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   const [sessionActionsOpen, setSessionActionsOpen] = useState(false);
@@ -56,7 +56,7 @@ function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = 
     <button onClick={() => setSessionActionsOpen(true)}>Session actions</button>
     <dialog open={sessionActionsOpen}><div ref={setAnswerActions}/></dialog>
     <TutorComposer value={value} onChange={text => {setValue(text); onChange(text);}} onSend={onSend} onAsk={onAsk}
-    canSend={!pending} ink={ink} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
+    canSend={!pending} ink={ink} suspended={suspended} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
     onContext={() => {}} sessionActionsOpen={sessionActionsOpen} onCloseActions={() => setSessionActionsOpen(false)}
     answerActions={answerActions} notationContext={['What is the preimage f⁻¹(B)?']}/>
   </>;
@@ -70,6 +70,27 @@ const answerAction = async (name: string) => {
   await click(name, host.querySelector('dialog[open]')!);
 };
 const keyboard = () => host.querySelector('.rows')!;
+
+test('publishes explicit page surface state through keyboard suspension and close', async () => {
+  host.className = 'lemma-tutor';
+  await act(async () => root.render(<Harness/>));
+  expect(host.hasAttribute('data-tutor-composer')).toBe(true);
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(false);
+  await click('Keys');
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(true);
+  await click('Maths symbols', keyboard());
+  expect(host.hasAttribute('data-tutor-symbol-keys')).toBe(true);
+  await act(async () => root.render(<Harness suspended/>));
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(false);
+  expect(host.hasAttribute('data-tutor-symbol-keys')).toBe(false);
+  await act(async () => root.render(<Harness/>));
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(true);
+  await click('Hide keyboard');
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(false);
+  await act(async () => root.render(null));
+  expect(host.hasAttribute('data-tutor-composer')).toBe(false);
+});
+
 // N223: the word slots when the strip shows words; otherwise the whole strip (its slots then hold symbols or ∀ ∈ ⇒).
 const suggestion = () => host.querySelector('.writing-aid-words') ?? host.querySelector('.kb .strip')!;
 const key = (name: string, modifiers: KeyboardEventInit = {}) => act(async () => {
@@ -141,6 +162,20 @@ test('completes proof notation and asks for help without consuming a draft', asy
   expect(onAsk.mock.calls).toEqual([['hint'], ['stuck'], ['notation']]);
   expect(onSend).not.toHaveBeenCalled();
   expect(field().value).toBe('Let eps');
+});
+
+test('blocks covered offers while allowing an explicit refresh of the current slate', async () => {
+  await act(async () => root.render(<Harness/>));
+  await act(async () => field().focus());
+  await input('nota');
+  await awaitAid('Insert notation');
+  await click('Session actions');
+  await click('Insert notation', suggestion());
+  expect(field().value).toBe('nota');
+  expect(localStorage.getItem(writingModelKey)).toBeNull();
+  await click('Refresh suggestions', host.querySelector('dialog[open]')!);
+  expect(field().value).toBe('nota');
+  expect(localStorage.getItem(writingModelKey)).toContain('item:word:notation');
 });
 
 test.each(['forget', 'pause and resume'] as const)('does not retain writing feedback after %s in settings', async action => {

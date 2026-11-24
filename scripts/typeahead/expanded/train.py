@@ -100,6 +100,28 @@ def validate(objective, data, device, count, batch):
     return {'nll': nll / tokens, 'perplexity': math.exp(nll / tokens), 'targets': tokens}
 
 
+def exact_boundary(batches, limit, ranks, rank):
+    """Mask surplus labels in deterministic microbatch, rank, row and token order."""
+    counts = torch.stack([gold.ne(-100).sum() for _, gold in batches])
+    across = [torch.zeros_like(counts) for _ in range(ranks)]
+    if ranks > 1:
+        dist.all_gather(across, counts)
+    else:
+        across[0] = counts
+    ordered = torch.stack(across).cpu().tolist()
+    trimmed = []
+    remaining = limit
+    for index, (ids, gold) in enumerate(batches):
+        offset = sum(ordered[peer][index] for peer in range(rank))
+        local = min(ordered[rank][index], max(0, remaining - offset))
+        if local < ordered[rank][index]:
+            keep = gold.flatten().ne(-100).cumsum(0).reshape_as(gold) <= local
+            gold = gold.masked_fill(~keep, -100)
+        trimmed.append((ids, gold))
+        remaining -= sum(ordered[peer][index] for peer in range(ranks))
+    return trimmed
+
+
 def atomic_save(state, path):
     temp = path.with_suffix('.part')
     torch.save(state, temp)
@@ -151,8 +173,8 @@ def run(args):
                 'sequenceLength': args.sequence_length, 'microbatch': args.microbatch,
                 'accumulate': args.accumulate, 'ranks': ranks, 'scheduleTokens': args.schedule_tokens,
                 'dataSha256': data_hash, 'tokenizerSha256': tokenizer_hash, 'logitChunk': args.logit_chunk,
-                'sampling': 'affine-window-v1'}
-    step = tokens = cursor = 0
+                'sampling': 'affine-window-v1', 'milestones': sorted(set(args.checkpoints))}
+    step = tokens = cursor = discarded = 0
     best = float('inf')
     args.out.mkdir(exist_ok=True, parents=True)
     latest = args.out / 'latest.pt'
@@ -169,7 +191,7 @@ def run(args):
         random.setstate(rng['python'])
         if gpu:
             torch.cuda.set_rng_state(rng['cuda'], device)
-        step, tokens, cursor, best = (saved[k] for k in ('step', 'tokens', 'cursor', 'best'))
+        step, tokens, cursor, best, discarded = (saved[k] for k in ('step', 'tokens', 'cursor', 'best', 'discardedAtBoundaries'))
     elif args.initialize:
         saved = torch.load(args.initialize, map_location='cpu', weights_only=False)
         if saved['settings']['config'] != settings['config'] or saved['settings']['tokenizerSha256'] != tokenizer_hash:
@@ -202,6 +224,11 @@ def run(args):
         added = int(count)
         if not added:
             continue
+        ahead = min(boundary for boundary in checkpoints if boundary > tokens) - tokens
+        if added > ahead:
+            batches = exact_boundary(batches, ahead, ranks, rank)
+            discarded += added - ahead
+            added = ahead
         loss_total = torch.zeros((), device=device)
         for i, (ids, gold) in enumerate(batches):
             sync = distributed.no_sync() if ranks > 1 and i < len(batches) - 1 else nullcontext()
@@ -242,11 +269,12 @@ def run(args):
             improved = metrics['nll'] < best
             best = min(best, metrics['nll'])
             metrics.update(step=step, tokens=tokens, elapsedSeconds=elapsed,
-                           runTokens=tokens - first_token, allocatedGpuHours=elapsed * ranks / 3600 if gpu else 0,
+                           runTokens=tokens - first_token, discardedAtBoundaries=discarded, allocatedGpuHours=elapsed * ranks / 3600 if gpu else 0,
                            peakMemoryBytes=torch.cuda.max_memory_allocated(device) if gpu else 0)
             state = {'settings': settings, 'model': decoder.state_dict(), 'optimizer': opt.state_dict(),
                      'scaler': scaler.state_dict(), 'rankRng': rank_rng,
-                     'step': step, 'cursor': cursor, 'tokens': tokens, 'best': best}
+                     'step': step, 'cursor': cursor, 'tokens': tokens, 'best': best,
+                     'discardedAtBoundaries': discarded}
             atomic_save(state, latest)
             if improved:
                 atomic_save({'settings': settings, 'model': state['model'], 'metrics': metrics}, args.out / 'best.pt')

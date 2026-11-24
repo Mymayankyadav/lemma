@@ -13,6 +13,16 @@ function editor(value: string) {
 }
 
 describe('equation chips in the answer', () => {
+  test('an empty editor has one logical caret offset without a native selection read', () => {
+    const root = editor('');
+    root.replaceChildren(document.createElement('br'));
+    const selection = vi.spyOn(document, 'getSelection');
+    try {
+      expect(readTutorAnswer(root)).toEqual(padEdit(''));
+      expect(selection).not.toHaveBeenCalled();
+    } finally {selection.mockRestore();}
+  });
+
   test('a finished $…$ is one rendered, atomic chip; the text it stands for is unchanged', () => {
     const root = editor('The circle $x^2+y^2=1$ has radius $$\\sqrt{1}$$.');
     const chips = root.querySelectorAll<HTMLElement>('[data-math]');

@@ -1,6 +1,6 @@
 """Fit normalized subject mixtures and separate observation-specific calibration events."""
 import argparse
-from collections import defaultdict
+from collections import Counter, defaultdict
 import json
 from pathlib import Path
 
@@ -30,20 +30,38 @@ def mixture(samples, prior, shrink):
 
 
 def fit_mixtures(path):
-    pooled, groups = [], defaultdict(list)
+    pooled, groups, support = [], defaultdict(list), defaultdict(Counter)
     for record in records(path):
-        probability = record['probability']
+        subject = record['subject']
+        outcomes = support[subject]
+        outcomes['scheduled'] += 1
+        probability = record.get('probability')
+        if probability is None:
+            outcomes['missingComponents'] += 1
+            continue
         general = float(probability['general'])
         values = [float(probability.get(name, general)) for name in COMPONENTS]
+        if any(not np.isfinite(value) or not 0 <= value <= 1 for value in values):
+            raise ValueError('Invalid component target probability')
+        if general == 0:
+            outcomes['unsupportedLiterals'] += 1
+            continue
+        outcomes['supportedLiterals'] += 1
         pooled.append(values)
-        groups[record['subject']].append(values)
-    if not pooled:
+        groups[subject].append(values)
+    if not support:
         raise ValueError('Mixture-fit evidence is empty')
+    totals = sum(support.values(), Counter())
+    coverage = {'pooled': dict(totals), 'subjects': {name: dict(values) for name, values in sorted(support.items())},
+                'literalSupportRate': len(pooled) / totals['scheduled'],
+                'scope': 'Positive general probability from the frozen request outcome space'}
+    experiment = {'version': 1, 'components': COMPONENTS, 'coverage': coverage, 'calibrationSha256': file_hash(path)}
+    if not pooled:
+        return {**experiment, 'status': 'no-supported-literals'}
     base = mixture(pooled, PRIOR, 100)
     fitted = {subject: mixture(values, base, 200).tolist() for subject, values in sorted(groups.items())}
-    return {'version': 1, 'components': COMPONENTS, 'global': base.tolist(), 'subjects': fitted,
-            'counts': {'global': len(pooled), 'subjects': {name: len(values) for name, values in groups.items()}},
-            'calibrationSha256': file_hash(path)}
+    return {**experiment, 'status': 'fitted', 'global': base.tolist(), 'subjects': fitted,
+            'counts': {'global': len(pooled), 'subjects': {name: len(values) for name, values in groups.items()}}}
 
 
 def sigmoid(value):

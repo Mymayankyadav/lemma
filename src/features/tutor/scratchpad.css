@@ -155,7 +155,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   border: 1px solid var(--v7-role-border-default);
-  border-radius: var(--v7-radius-sm);
+  border-radius: var(--v7-radius-1);
   background: transparent;
   color: var(--v7-role-text-primary);
 }

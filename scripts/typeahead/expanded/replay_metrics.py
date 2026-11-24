@@ -110,7 +110,11 @@ def summarize(gold, impressions, costs, seed):
             values['blockedDisplays'] += any(text in forbidden for text in display_texts)
         if target['boundary']:
             hit = any(item['text'] == target['exactInsertion'] for item in slate)
-            for stratum in ('boundary', target['kind'], 'boundary/' + subject):
+            strata = ['boundary', target['kind'], 'boundary/' + subject]
+            for key in ('source', 'stratum', 'mathOpportunity'):
+                if target.get(key):
+                    strata.append(f'boundary/{key}/{target[key]}')
+            for stratum in strata:
                 values[stratum + '/hits'] += hit
                 values[stratum + '/targets'] += 1
         ghost = impression.get('ghost')

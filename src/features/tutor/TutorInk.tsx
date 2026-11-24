@@ -316,7 +316,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     setToolsOpen(false);
     onCloseDrawing();
   }
-  const pad=<section className="tutor-scratchpad" aria-label="Scratch pad" data-fullscreen={fullscreen||undefined}
+  const pad=shown&&(!editingAsset||editingAsset.ink)&&<section className="tutor-scratchpad" aria-label="Scratch pad" data-fullscreen={fullscreen||undefined}
     style={{'--scratch-height':height===undefined?undefined:height+'px'} as CSSProperties}>
     <div className="tutor-ink-tools" role="group" aria-label="Drawing tools">
       {leading}
@@ -382,7 +382,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     {!editingImageId&&!canInsertImage&&<p role="status" className="composer-status">Shorten the answer to insert another image.</p>}
   </section>;
   return <>
-    {shown&&(!editingAsset||editingAsset.ink)&&<FullscreenPaper active={fullscreen} onExit={()=>{flushDot();setFullscreen(false);}} label="Scratch pad, full screen">{pad}</FullscreenPaper>}
+    {pad&&<FullscreenPaper active={fullscreen} onExit={()=>{flushDot();setFullscreen(false);}} label="Scratch pad, full screen">{pad}</FullscreenPaper>}
     <Sheet open={Boolean(reading)&&shown} onClose={closeReading} title="Recognize equation">
       <div className="tutor-equation-reading" aria-live="polite">
         {reading?.phase==='ask'&&<>
@@ -421,6 +421,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
       </div>
     </Sheet>
     <Sheet open={toolsOpen&&shown} onClose={()=>setToolsOpen(false)} title="Scratch pad actions">
+      {toolsOpen&&shown&&<>
       <div className="tutor-session-actions">
         <Button small disabled={!canDraw||preparing||pendingDot||!redo.length} onClick={()=>{redoStroke();setToolsOpen(false);}}><Redo2 aria-hidden="true"/>Redo stroke</Button>
         <Button small disabled={!canDraw||preparing||(!history.strokes.length&&!pendingDot)} onClick={()=>{const current=flushDot();saveInk(clearPadInk(current));setToolsOpen(false);}}><Trash2 aria-hidden="true"/>Clear scratch pad</Button>
@@ -436,6 +437,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
         <button className="v7-filter-chip" type="button" aria-pressed={working.accent} disabled={!canDraw||preparing} onClick={()=>editWorking({accent:!working.accent})}>Accent</button>
       </div>
       {count>=TUTOR_ATTACHMENT_COUNT&&<p>Up to three images per answer.</p>}
+      </>}
     </Sheet>
     {shown&&preview&&editingAsset&&!editingAsset.ink&&<Sheet open title={editingAsset.kind==='photo'?'Photo':'Drawing'} onClose={onCloseDrawing}>
       <div className="tutor-image-view"><img src={preview} alt={editingAsset.kind==='photo'?'Photo':'Drawing'}/></div>

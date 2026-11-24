@@ -328,30 +328,42 @@ used the existing fallback for filling an otherwise-empty family slot. It is dia
 slice, the count-pruned orders 3, 4 and 5 measured perplexities of 107.31, 102.43 and 102.20 on the same
 155,670 validation targets and 51,815-token vocabulary. Each artifact stayed within 20 MiB. The fifth-order pilot, two
 subject packs and a LaTeX pack were available for browser diagnostics. Larger-corpus and device gates remain pending.</td></tr>
+<tr><th scope="row">Concurrent replay diagnostic</th><td data-label="Observation">Four arms produced all 283 fixed
+slates, with 62–65 exact hits. Ten complete trajectories were common to the same four arms, whose estimated key savings
+ranged from 29.2% to 30.4% over 876 manual key equivalents. The neural arm failed to start a fixture under concurrent
+load. These recovered records lack per-event active asset hashes and do not qualify a model.</td></tr>
 <tr><th scope="row">Guard and provenance</th><td data-label="Observation">Curated tests verify actual word and equation
 acceptance, withholding across the caret, stale-offer rejection, preserved partial assisted text and draft reload.
 The local Tutor draft stops offering additional insertions at its 32-range provenance limit.</td></tr>
-<tr><th scope="row">Phone-sized Chromium at 4× throttling</th><td data-label="Observation">A repeated run measured
-81.0 ms p95 tap-to-paint empty and 76.9 ms with eight equations. The 32 ms and 50 ms targets remain unmet in that run.
-The earlier isolated prose-worker run measured 7.4 ms and 2.9 ms p95 compute, respectively.</td></tr>
+<tr><th scope="row">Phone-sized Chromium at 4× throttling</th><td data-label="Observation">An isolated run with
+the verified fifth-order pilot and 100 warm taps per condition measured 51.0 ms p95 tap-to-frame empty and 38.6 ms
+with eight equations. The empty setup missed 32 ms and the eight-equation setup met 50 ms. Worker p95 was 6.9 ms empty
+and 0.3 ms with equations. The inert control was 8.8 ms. Physical phone testing remains open.</td></tr>
 <tr><th scope="row">Neural export</th><td data-label="Observation">A 34,587,365-byte weight-only int8 bundle
 matched the float graph’s top-three set in 297 of 300 validation contexts on native ONNX. This establishes export parity
 under that test. The browser probe produced zero scored requests within the edit deadline on WASM (77 dropped requests)
 or in the forced SwiftShader trial (45 dropped). Default Chromium exposed no WebGPU adapter. A hardware WebGPU tier
 remains unmeasured. The WebGPU JSEP runtime adds 24,254,953 transfer bytes beyond the existing 13,479,978-byte ink WASM.
 These runtime bytes are separate from the model package.</td></tr>
+<tr><th scope="row">JSPI WebGPU diagnostic</th><td data-label="Observation">ONNX Runtime Web 1.27.0 fetched
+15,046,878 runtime bytes in a Chromium worker using SwiftShader. The quantized pilot left its attention state on
+the GPU, and incremental and full-context logits agreed to 0.000004 with the same top-three set. Software took
+3.84 seconds for prefill and 4.02 seconds for one incremental token. Hardware latency and memory remain open.</td></tr>
 </tbody></table></div>
 <p>The public diagnostic is not a prospective measure of ordinary learner acceptance, retention or time saved. The model
 and feature gates stay in place while device, quality and calibration evidence is collected.</p>
 <p class="sources"><a href="https://github.com/Mymayankyadav/lemma/pull/1861">Implementation PR</a>
 <a href="../current/N238.md">Implementation and test record</a>
-<a href="typeahead-evidence/corrected-v1-diagnostic.json">Machine-readable diagnostic replay metrics</a></p>
+<a href="typeahead-evidence/corrected-v1-diagnostic.json">Corrected trigram diagnostic</a>
+<a href="typeahead-evidence/concurrent-diagnostic.json">Recovered concurrent diagnostics</a>
+<a href="typeahead-evidence/phone-tap-timings.json">Phone-sized Chromium timings</a>
+<a href="typeahead-evidence/jspi-software-smoke.json">JSPI software smoke</a></p>
 </section>
 
 <section id="sources">
 <h2>Evidence and sources</h2>
 <p>The attachment's plan §§3, 5, 10 and 11 supplies the pilot numbers, equations and targets. I compared the ZIP's training, preparation, export and build files with the pinned branch. I verified the binary independently, including its vocabulary order and backoff mass. During the baseline audit, the training corpus host returned HTTP 403 through this workspace's proxy. The ZIP also omits the four original question/answer pairs required by the pilot's optional fourth argument. The manifest's 101.33 perplexity, the affected corpus token count, and the four-answer UI replay therefore remain unreplicated here.</p>
-<p>This edition contains planning, repository inspection, dataset/runtime documentation checks and arithmetic. The numerical mass checks describe the existing n-gram asset. Dataset proportions, model configurations, priority weights and expanded compute/download limits are proposed choices. Training, app benchmarks and phone measurements remain future implementation work.</p>
+<p>The numerical mass checks in the baseline review describe the existing n-gram asset. The implementation evidence reports subsequent training diagnostics and browser benchmarks. Full-corpus comparison, physical-phone measurements and release qualification remain open.</p>
 <details><summary>Reproduction identifiers and mass calculation</summary>
 <p>Handoff commit <code>1444b245593b7d0bc372e3351025a26dfeead3a6</code>. Trigram binary SHA-256 <code>d439be36601fe22e599c4624ecb49d2ed043f658814942b1c95ea0105aadaceb</code>. Ordered vocabulary SHA-256 <code>a80b2f41633dfc2f1d3cc451bfaff55d87ca357aa7bd8e0d9064533e58eda571</code> over UTF-8 entries joined by a newline with no trailing newline. Expected compressed corpus SHA-256 <code>9a33bde2feabb2421936bbde65ab15692ba814812bb2cf0e82a77b35e07e0b9b</code>.</p>
 <p>Decode each stored score with exp(−0.07<i>q</i>) and its backoff factor with exp(0.1<i>b</i>). For a row with explicit successors <i>E</i>, its mass equals the sum of their stored probabilities plus its backoff factor times the lower-order mass outside <i>E</i>. This accounts for the full vocabulary without scanning 30,005 entries for every row. The minimum and maximum rows were also summed directly over every ID.</p>
