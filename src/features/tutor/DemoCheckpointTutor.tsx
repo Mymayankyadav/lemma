@@ -522,7 +522,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const contextControls=<div className="tutor-context">
       {excerpt&&<label className="tutor-context-check">
         <input type="checkbox" checked={Boolean(context.text)} disabled={busy}
-          onChange={e=>context.change(e.currentTarget.checked?'yes':'')}/> Include this checkpoint’s objective
+          onChange={e=>{question.flush();context.change(e.currentTarget.checked?'yes':'')}}/> Include this checkpoint’s objective
       </label>}
       {Boolean(context.text)&&excerpt&&<p>{excerpt}</p>}
       {scope.sourceShort&&session?.api.previewSource&&<Disclosure label={'Add a page from '+scope.sourceShort}>
@@ -551,6 +551,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
           <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{preview.text}</p>
           <Button disabled={busy} onClick={()=>setPreview(undefined)}>Cancel excerpt preview</Button>
           <Button disabled={busy} onClick={()=>{
+            question.flush()
             attachedLocal.change(addLocalTutorExcerpt(preview).text)
             setSelectedLocal('');setPreview(undefined)
           }}>Add local excerpt</Button>

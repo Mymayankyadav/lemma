@@ -40,6 +40,8 @@ The estimator stores sorted counts and unpruned reference rows in SQLite. Entrop
 
 ## Neural training and export
 
+The controlled neural comparison encodes every document of the audited 500M-word pool and nested 100M-word development pool using the same train-only 16K tokenizer. The full pool has no word or BPE cap. The preparation audit walks the verified raw training shards alongside the encoded document trace, checks every document and group, and verifies exact per-register word counts and shared holdout inputs. Record actual BPE IDs and artifact bytes separately from the exact optimizer exposure milestones.
+
 Use `train.py` with `--candidate primary` for the 33,870,848-parameter model and `--candidate larger` for the 70,224,640-parameter capacity comparison. The 48-token reference on the same byte tokenizer has 4,934,784 parameters. The controlled capacity arm uses `--candidate capacity-reference` to match the primary model's 512-token context. Use `--sequence-length 512` for the primary and 1,024 for the larger model. Train with `torchrun --standalone --nproc_per_node=2` after measuring the single- and dual-device cases. Use `--resume .../latest.pt` to continue the same hashed data, tokenizer, optimizer, batch, sampler cursor and schedule. The seeded affine sampler traverses each distinct pool in constant memory. Token milestones count scored next-token targets. At a milestone the final global batch masks surplus labels, records that count and saves the advanced sampler cursor. A staged resume should use the same planned milestone list as the uninterrupted run. Use `--adapt --initialize .../best.pt` for the separate role-masked stage with the same tokenizer.
 
 Prepare the private Kaggle notebook script with `kaggle_run.py`. Pass prior allocated usage when reserving a later run. Set the Kaggle `--timeout` to the maximum wall seconds allowed by allocated GPU-hours divided by assigned device count. NvidiaTeslaT4 assigns two devices, including when training uses only one. Compare the script ledger with the complete Kaggle session duration and provider quota. Save the source archive SHA-256, branch commit and exact Kaggle version with the experiment. Export on a CPU notebook using both the prepared data and training notebooks as inputs.
@@ -59,11 +61,32 @@ Capture the actual ordered three-slot display before opening the gold outcome. U
 python replay_metrics.py --gold work/test-gold.jsonl --baseline corrected \
     --run corrected work/corrected-impressions.jsonl work/corrected-keys.jsonl \
     --run expanded work/expanded-impressions.jsonl work/expanded-keys.jsonl --out work/replay-metrics.json
-python fit.py mixture --calibration work/mixture-component-probabilities.jsonl --out work/mixture.json
-python fit.py calibration --calibration work/calibration-impressions.jsonl \
-    --validation work/validation-impressions.jsonl --out work/calibration.json
+python fit.py mixture --calibration work/calibration.components.jsonl \
+    --validation work/validation.components.jsonl --asset-sha256 "$GENERAL_SHA256" --out work/mixture.json
+python fit.py calibration --calibration work/calibration.ghost-calibration.jsonl \
+    --validation work/validation.ghost-calibration.jsonl --model-fingerprint "$NEURAL_FINGERPRINT" --out work/calibration.json
 ```
 
-Component probabilities must refer to the same target outcomes. The mixture fitter redistributes missing component mass to the general model and shrinks subject fits toward the pooled weights. Calibration fits exact match, acceptance after a measured display, and retention conditional on observed acceptance separately. Product replay can estimate offline exact match and idealized keystroke savings. Acceptance and retention require actual observed selections. Tune an exact-match operating point on validation and report its precision, coverage and answer-level interval on the frozen final sample.
+The [browser fitting procedure](../../../docs/current/N238.md#fitting-and-promotion) defines the capture flags and bundle fingerprints. Use fixed-caret captures from independent grouped schedules and the same fallback build. The mixture fitter redistributes missing component mass to the general model and shrinks subject fits toward pooled coefficients. A mixture becomes loadable only after held-out log loss improves against the captured fallback, with matching general and subject assets. Calibration fits exact match, acceptance after measured display, and retention conditional on acceptance separately. Offline exact captures contain no observed acceptance or retention. Tune the exact-match operating point on validation and report precision, coverage and the answer-level interval on the frozen final schedule.
 
 Run the offline integrity suite with `python test_pipeline.py`. The [pilot evidence](evidence/primary-pilot.json) records measured training, resume, failure of the dynamic-int8 cache parity gate, and validation parity for weight-only int8. The pilot corpus is separate from the expanded-corpus training and product qualification. The [preliminary 100M corpus](evidence/preliminary-100m-corpus.json), [effective-batch GPU probe](evidence/gpu-batch-probe.json), [diagnostic n-grams](evidence/ngram-pilot.json), [baseline browser replay](evidence/corrected-v1-public-replay.json), and [download-size subtotal](evidence/pilot-download-budget.json) preserve measured numbers and their scope. The [int4 validation](evidence/primary-int4-validation.json) and [mixed-precision validation](evidence/primary-mixed-precision-validation.json) missed the 95% parity gate. No pilot candidate is qualified for deployment. The [allocated GPU ledger](evidence/allocated-gpu-runs.json) and [planned controlled matrix](evidence/controlled-run-matrix.json) give the compute bounds and comparisons separately.
+
+### Audited 100M and 500M prose comparisons
+
+Freeze the ordered vocabulary with `ngram-vocab --corpus-dir corpus-dev --subjects`. Count once
+on each audited pool with `ngram-counts --ngram-orders 5 --subjects`, mounting the frozen vocabulary.
+The two counting jobs can run in parallel. Mount the development checkpoint in one `ngram-pack`
+CPU notebook per order. Each runs count and entropy pruning
+against the same raw and continuation counts and evaluates the same validation targets. Run
+`ngram-select --subjects` with the three pack outputs. Order 3 remains a comparison. Among orders 4
+and 5, lowest validation perplexity selects the order and pruning rule. The order-3 control and all
+pruning results remain in the selection record.
+
+Mount the 500M count output and the selected development artifact for
+`ngram-pack --corpus-dir corpus --subjects`. This uses the selected configuration and unchanged
+ordered vocabulary, so the word-count comparison holds vocabulary size and composition constant.
+Build each subject in its own `ngram-pack` notebook with the same audited corpus and selected
+development artifact, passing one subject at a time.
+The count stage checks the compressed size against available output bytes. The packing stage checks
+both the archive and extracted database hashes, opens the raw count database read-only, and uses
+local scratch for model probability rows. Its output includes the source corpus and count hashes.

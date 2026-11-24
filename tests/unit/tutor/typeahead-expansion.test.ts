@@ -7,7 +7,8 @@ import {resolveTypeaheadArm, usesExpandedNgram, usesNeural, usesPersonalization,
 import {tutorHint, contextualWording, type AidRankingContext} from '../../../src/features/tutor/writingAid/answerAids';
 import {countPersonalTransition, createAdaptation, learnedRank, learnSlateChoice, localCalibrationEstimate, observeLocalCalibration, parseAdaptation, personalContext} from '../../../src/features/tutor/writingAid/adaptation';
 import {addAuthoredSpan, decodeAuthoredDraft, encodeAuthoredDraft, moveAcceptedSpans} from '../../../src/features/tutor/writingAid/authorship';
-import {ghostBreakEven, ghostQualified} from '../../../src/features/tutor/writingAid/calibration';
+import {ghostBreakEven, ghostQualified, parseNeuralCalibration} from '../../../src/features/tutor/writingAid/calibration';
+import {parseMixture} from '../../../src/features/tutor/writingAid/decoder/mixture';
 import {historyIds, historyLog, historyLogTotal, historyNext, parseNgram, setNgramModel} from '../../../src/features/tutor/writingAid/decoder/kn';
 import {decodeWord, mixtureProbability, prepareLanguage, setDecoderLexicon} from '../../../src/features/tutor/writingAid/decoder/ngramSpatial';
 import {isNeuralBoundary, neuralWordPrompt, promptIds, readNeuralTokenizer, wordTrie} from '../../../src/features/tutor/writingAid/decoder/neuralTokenizer';
@@ -23,6 +24,23 @@ const aid: TutorAnswerAid = {id: 'aid', turnId: 'turn', version: 1, level: 'scaf
   wording: ['With this notation,'], terms: [], symbols: []};
 const scope: AidRankingContext = {before: 'Use the ', prefix: 'def', mode: 'prose', subject: 'topology', step: 'CP4:0'};
 const hint: AidHint = {id: 'd', kind: 'word', entry: 'definition', priority: 'prefer', role: 'given'};
+
+it('uses only validation-bound mixture and finite graph-bound calibration artifacts', () => {
+  const mixture = {version: 1, captureVersion: 'n238-mixture-v1', status: 'validated', assetSha256: '1'.repeat(64),
+    subjectAssetSha256: {topology: '2'.repeat(64)}, components: ['general', 'subject', 'question', 'draft', 'personal'],
+    global: [.8, .05, .10, .05, 0], subjects: {}};
+  expect(parseMixture(mixture)?.subjectAssetSha256.get('topology')).toBe('2'.repeat(64));
+  expect(parseMixture({...mixture, status: 'fitted'})).toBeUndefined();
+  expect(parseMixture({...mixture, subjectAssetSha256: {topology: 'unbound'}})).toBeUndefined();
+  const row = {source: 'neural', outcome: 'exact', context: 'prefix', length: 'short', slope: 2, intercept: -1,
+    count: 100, operatingPoint: .71, displayedPrecision: .73};
+  const fitted = {version: 1, modelFingerprint: 'bundle', rows: [row]};
+  expect(parseNeuralCalibration(fitted, 'bundle')).toEqual([row]);
+  expect(parseNeuralCalibration(fitted, 'replaced')).toBeUndefined();
+  expect(parseNeuralCalibration({...fitted, rows: [{...row, slope: -.1}]}, 'bundle')).toBeUndefined();
+  expect(parseNeuralCalibration({...fitted, rows: [{...row, displayedPrecision: Infinity}]}, 'bundle')).toBeUndefined();
+  expect(parseNeuralCalibration({...fitted, rows: [row, row]}, 'bundle')).toBeUndefined();
+});
 
 describe('normalized typeahead distributions', () => {
   it('corrects full-vocabulary quantization drift and ignores periods inside math', () => {
@@ -117,12 +135,49 @@ describe('scoped guidance and exact insertion guard', () => {
     expect(contextualWording({...scope, aid, before: 'With this notation, ', prefix: ''})).toEqual([]);
   });
 
+  it('continues only literal phrase punctuation and retires after its terminal period', () => {
+    const phrase = 'By Dr. Euler, use this notation.';
+    const phraseHint: AidHint = {...hint, kind: 'phrase', entry: phrase};
+    const context: AidRankingContext = {...scope, prefix: '', before: '', aid: {
+      ...aid, wording: [phrase], ranking: {version: 1, hints: [phraseHint]},
+    }};
+    expect(contextualWording({...context, before: 'The earlier sentence ended. By Dr. '})).toEqual([
+      {phrase, text: 'Euler,', progress: 2},
+    ]);
+    expect(contextualWording({...context, before: 'The earlier sentence ended. Dr. '})).toEqual([]);
+    expect(tutorHint({...context, before: 'The earlier sentence ended. Dr. '}, 'Euler,').adjustment).toBe(0);
+    let before = '';
+    let total = 0;
+    for (const word of phrase.split(' ')) {
+      total += tutorHint({...context, before}, word).adjustment;
+      before += word + ' ';
+    }
+    expect(total).toBeCloseTo(Math.log(2));
+    expect(tutorHint({...context, before}, 'By').adjustment).toBe(0);
+    expect(tutorHint({...context, before}, phrase).adjustment).toBe(0);
+    expect(contextualWording({...context, before, prefix: 'B'})).toEqual([]);
+
+    const scoped: AidHint = {...hint, scope: {phraseStates: ['By Dr.', 'By Dr. Euler,']}};
+    const scopedContext = {...context, aid: {...aid, ranking: {version: 1 as const, hints: [scoped]}}};
+    expect(tutorHint({...scopedContext, before: 'An earlier result. By Dr. '}, 'definition').adjustment).toBeCloseTo(Math.log(2));
+    expect(tutorHint({...scopedContext, before: 'An earlier result. By Dr. Euler, '}, 'definition').adjustment).toBeCloseTo(Math.log(2));
+    expect(tutorHint({...scopedContext, before: 'An earlier result. Euler, '}, 'definition').adjustment).toBe(0);
+    const plain = {...scoped, scope: {phraseStates: ['The given data']}};
+    expect(tutorHint({...scopedContext, before: 'The given data. ',
+      aid: {...aid, ranking: {version: 1, hints: [plain]}}}, 'definition').adjustment).toBe(0);
+  });
+
   it('withholds phrases joined by insertion on either side and preserves mathematical choices', () => {
     const safe = (text: string, start: number, end: number, insert: string, authoredPrefix?: string) =>
       insertionEligible({text, start, end, insert, authoredPrefix, mode: 'prose', aid});
     expect(safe('This is NOT, ', 13, 13, 'all')).toBe(false);
     expect(safe('not al reach', 6, 6, 'l')).toBe(false);
     expect(safe('a subcover', 2, 2, 'finite-')).toBe(false);
+    const farLeft = 'not' + ' '.repeat(180);
+    expect(safe(farLeft, farLeft.length, farLeft.length, 'all')).toBe(false);
+    expect(safe('.'.repeat(180) + 'all', 0, 0, 'not ')).toBe(false);
+    expect(safe(farLeft + 'all. Therefore ', farLeft.length + 'all. Therefore '.length,
+      farLeft.length + 'all. Therefore '.length, 'byhand')).toBe(true);
     expect(safe('Therefore f is ', 15, 15, 'surjective ')).toBe(false);
     expect(safe('Therefore f is surj', 15, 19, 'surjective ', 'surj')).toBe(true);
     expect(insertionEligible({text: '$x \\in ', start: 7, end: 7, insert: 'X', mode: 'equation'})).toBe(false);

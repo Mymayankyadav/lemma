@@ -40,7 +40,7 @@ import {effectiveAidLevel, type AidRole, type TutorAnswerAid} from '../../../sup
 import {typedEquationAt} from './input/typedEquation';
 import {useAutoeqReadings} from './input/useAutoeqReadings';
 import {latexSymbolOptions} from './input/latexShortcuts';
-import {applyEquationOrigins, equationFences, equationOrigins} from './writingAid/equationAuthorship';
+import {applyEquationOrigins, equationFences, equationOrigins, equationSurroundings} from './writingAid/equationAuthorship';
 import {EquationLatexField} from './input/EquationLatexField';
 import {TutorEquationPanel} from './input/TutorEquationPanel';
 import {INK_VIEWPORT} from './input/TutorInkPad';
@@ -260,7 +260,7 @@ export function TutorComposer(props: Props) {
     !editingDisabled && isFlagOn('typeaheadV2') ? unfinishedMath(cursor) : null,
   [cursor, shown, scratch, equationEdit, writingPrefs.mode, editingDisabled]);
   const latexBefore = mathSpan ? cursor.text.slice(0, mathSpan.start) : '';
-  const latexOptions = useLatexSuggestions(mathSpan ? {math: mathSpan.math, typed: mathSpan.typed, before: latexBefore,
+  const {items: latexOptions, assetSha256: latexAssetSha256} = useLatexSuggestions(mathSpan ? {math: mathSpan.math, typed: mathSpan.typed, before: latexBefore,
     after: cursor.text.slice(cursor.end), knownSymbols: decoderSymbols(latexBefore, question)} : undefined, 64,
   {declarations: aidLevel === 'none' ? undefined : aid?.ranking?.declaredSymbols});
   type MenuEntry = {key: string; slotKey: string; score: number; label: string; title?: string; display?: string; math?: string; word?: WritingAidProposal;
@@ -1252,6 +1252,7 @@ export function TutorComposer(props: Props) {
     <form className="composer"
       data-typeahead-ghost-eligible={replayDiagnostics ? Number(isFlagOn('proofAssistGhost') && eligibleGhostContext(writingRequest)) : undefined}
       data-typeahead-ngram-sha={replayDiagnostics ? writing.assetHashes.ngram : undefined}
+      data-typeahead-latex-sha={replayDiagnostics ? latexAssetSha256 : undefined}
       data-typeahead-neural-sha={replayDiagnostics ? writing.assetHashes.neural : undefined}
       data-typeahead-graph-trial={typeaheadGraphTrial() ? 'unqualified' : undefined} onSubmit={event => {event.preventDefault(); send();}}>
       <div className="writing-composer-card" data-can-swipe={Boolean(writingGhost) || undefined}
@@ -1357,6 +1358,9 @@ export function TutorComposer(props: Props) {
           remainingSlots={equationEdit.remainingSlots}
           onChange={(tex, spans) => setEquationEdit({...equationEdit, tex, acceptedSpans: spans, error: undefined})}
           before={value.slice(0, equationEdit.offset)} notationContext={props.notationContext}
+          surroundings={equationSurroundings(value, equationEdit.source, equationEdit.offset)}
+          readSurroundings={() => equationEdit.scope === scopeKey + '|' + authGeneration()
+            ? equationSurroundings(history.current.present.text, equationEdit.source, equationEdit.offset) : undefined}
           aid={aid} mastery={props.mastery} subject={props.aidSubject} step={props.aidStep}
           suggestions={isFlagOn('typeaheadV2') && writingPrefs.mode !== 'off' && !editingDisabled}/>
         {equationEdit.error && <p role="alert">{equationEdit.error}</p>}

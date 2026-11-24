@@ -3,6 +3,7 @@ import argparse
 from collections import Counter, defaultdict
 import json
 from pathlib import Path
+import re
 
 import numpy as np
 
@@ -10,6 +11,8 @@ from corpus import file_hash, records
 
 COMPONENTS = ('general', 'subject', 'question', 'draft', 'personal')
 PRIOR = np.asarray([.84, .06, .06, .03, .01])
+CAPTURE_VERSION = 'n238-mixture-v1'
+SHA256 = re.compile(r'[a-f0-9]{64}\Z')
 
 
 def mixture(samples, prior, shrink):
@@ -29,25 +32,54 @@ def mixture(samples, prior, shrink):
     return w
 
 
-def fit_mixtures(path):
+def mixture_records(path, asset_sha=None, capture_groups=None, expected_subject_assets=None):
     pooled, groups, support = [], defaultdict(list), defaultdict(Counter)
+    subject_assets, group_ids, event_ids = {}, set(), set()
     for record in records(path):
         subject = record['subject']
+        if asset_sha:
+            event, group = record['eventId'], record['documentGroup']
+            if not isinstance(event, str) or not event or event in event_ids or not isinstance(group, str) or not group:
+                raise ValueError('Invalid or repeated capture identity')
+            if capture_groups is not None and group in capture_groups:
+                raise ValueError('Mixture calibration and validation document groups overlap')
+            if record.get('captureVersion') != CAPTURE_VERSION or record.get('assetSha256') != asset_sha:
+                raise ValueError('Mixture capture version or general model fingerprint mismatch')
+            event_ids.add(event)
+            group_ids.add(group)
         outcomes = support[subject]
         outcomes['scheduled'] += 1
         probability = record.get('probability')
         if probability is None:
             outcomes['missingComponents'] += 1
             continue
+        if asset_sha:
+            subject_asset = record.get('subjectAssetSha256')
+            subject_available = probability.get('subject') is not None
+            if subject_available != bool(subject_asset) or subject_asset and not SHA256.fullmatch(subject_asset):
+                raise ValueError('Subject probability and pack fingerprint do not agree')
+            if subject in subject_assets and subject_assets[subject] != subject_asset:
+                raise ValueError('Mixed subject model fingerprints in one capture')
+            if expected_subject_assets is not None and subject in expected_subject_assets and expected_subject_assets[subject] != subject_asset:
+                raise ValueError('Subject model fingerprint drift across captures')
+            subject_assets[subject] = subject_asset
+            if probability.get('personal') is not None:
+                raise ValueError('This mixture capture version requires a frozen, unpersonalized profile')
         general = float(probability['general'])
         values = [float(probability.get(name, general)) for name in COMPONENTS]
         if any(not np.isfinite(value) or not 0 <= value <= 1 for value in values):
             raise ValueError('Invalid component target probability')
+        for name in COMPONENTS[1:]:
+            if name in probability:
+                outcomes[name + 'Available'] += 1
         if general == 0:
             outcomes['unsupportedLiterals'] += 1
             continue
+        active = float(probability['activeMixture']) if asset_sha else general
+        if not np.isfinite(active) or not 0 < active <= 1:
+            raise ValueError('Invalid active fallback probability for a supported literal')
         outcomes['supportedLiterals'] += 1
-        pooled.append(values)
+        pooled.append((subject, values, active))
         groups[subject].append(values)
     if not support:
         raise ValueError('Mixture-fit evidence is empty')
@@ -55,13 +87,41 @@ def fit_mixtures(path):
     coverage = {'pooled': dict(totals), 'subjects': {name: dict(values) for name, values in sorted(support.items())},
                 'literalSupportRate': len(pooled) / totals['scheduled'],
                 'scope': 'Positive general probability from the frozen request outcome space'}
+    return pooled, groups, coverage, subject_assets, group_ids
+
+
+def fit_mixtures(path, validation=None, asset_sha=None):
+    if validation and (not isinstance(asset_sha, str) or not SHA256.fullmatch(asset_sha)):
+        raise ValueError('Mixture validation requires the verified general asset SHA-256')
+    pooled, groups, coverage, subject_assets, group_ids = mixture_records(path, asset_sha)
     experiment = {'version': 1, 'components': COMPONENTS, 'coverage': coverage, 'calibrationSha256': file_hash(path)}
     if not pooled:
         return {**experiment, 'status': 'no-supported-literals'}
-    base = mixture(pooled, PRIOR, 100)
-    fitted = {subject: mixture(values, base, 200).tolist() for subject, values in sorted(groups.items())}
-    return {**experiment, 'status': 'fitted', 'global': base.tolist(), 'subjects': fitted,
-            'counts': {'global': len(pooled), 'subjects': {name: len(values) for name, values in groups.items()}}}
+    # A frozen unpersonalized capture cannot estimate a personal-model weight.
+    prior = np.asarray([PRIOR[0] + PRIOR[4], *PRIOR[1:4], 0.]) if validation else PRIOR
+    base = mixture([values for _, values, _ in pooled], prior, 100)
+    fitted = {subject: mixture(values, base, 200) for subject, values in sorted(groups.items())}
+    result = {**experiment, 'status': 'fitted', 'global': base.tolist(),
+              'subjects': {subject: weights.tolist() for subject, weights in fitted.items()},
+              'counts': {'global': len(pooled), 'subjects': {name: len(values) for name, values in groups.items()}}}
+    if not validation:
+        return result
+    heldout, _, val_coverage, val_assets, _ = mixture_records(validation, asset_sha, group_ids, subject_assets)
+    baseline_losses, fitted_losses = [], []
+    for subject, values, active in heldout:
+        # A subject pack which was absent in calibration has no vetted fit.
+        candidate = active if val_assets[subject] and subject not in subject_assets else float(np.dot(fitted.get(subject, base), values))
+        fitted_losses.append(-np.log(candidate))
+        baseline_losses.append(-np.log(active))
+    base_loss = float(np.mean(baseline_losses)) if baseline_losses else None
+    fit_loss = float(np.mean(fitted_losses)) if fitted_losses else None
+    improved = fit_loss is not None and base_loss is not None and fit_loss < base_loss
+    return {**result, 'status': 'validated' if improved else 'validation-missed',
+            'captureVersion': CAPTURE_VERSION, 'assetSha256': asset_sha,
+            'subjectAssetSha256': {subject: sha for subject, sha in sorted(subject_assets.items()) if sha},
+            'validation': {'coverage': val_coverage, 'fallbackMeanNll': base_loss, 'fittedMeanNll': fit_loss,
+                           'sameGeneralAndSubjectAssets': True},
+            'validationSha256': file_hash(validation)}
 
 
 def sigmoid(value):
@@ -111,6 +171,24 @@ def outcomes(record):
         yield 'retain', record['retained']
 
 
+def require_calibration_observation(record, fingerprint):
+    if record.get('modelFingerprint') != fingerprint:
+        raise ValueError('Calibration neural bundle fingerprint mismatch')
+    if not isinstance(record.get('documentGroup'), str) or not record['documentGroup']:
+        raise ValueError('Calibration requires the source document or observation cohort')
+    measure = record.get('measure')
+    if measure == 'offline-exact':
+        if not isinstance(record.get('exact'), bool) or 'accepted' in record or 'retained' in record:
+            raise ValueError('Offline replay supplies exact outcomes only')
+        elapsed = float(record['elapsedMs'])
+        if not 0 <= elapsed <= 60:
+            raise ValueError('Offline exact outcome missed the edit deadline')
+    elif (measure != 'display-outcome' or record.get('displayed') is not True or
+          not isinstance(record.get('accepted'), bool) or
+          ('retained' in record and (not record['accepted'] or not isinstance(record['retained'], bool)))):
+        raise ValueError('Behavioral outcomes require a measured visible offer and observed action')
+
+
 def strata(record):
     length = int(record['length'])
     if not 1 <= length <= 256 or record['context'] not in ('boundary', 'prefix'):
@@ -142,10 +220,16 @@ def threshold(values, min_displays):
     return selected
 
 
-def fit_calibration(calibration, validation, minimum):
+def fit_calibration(calibration, validation, minimum, model_fingerprint=None):
+    if model_fingerprint:
+        pieces = model_fingerprint.split(':')
+        if len(pieces) != 4 or not all(SHA256.fullmatch(x) for x in pieces[:3]) or not (pieces[3] == '-' or SHA256.fullmatch(pieces[3])):
+            raise ValueError('Expected prefill:incremental:tokenizer:weights neural fingerprint')
     groups = defaultdict(list)
     calibration_ids = set()
     for record in records(calibration):
+        if model_fingerprint:
+            require_calibration_observation(record, model_fingerprint)
         calibration_ids.add(record['documentGroup'])
         length, source, context = strata(record)
         if source == '*':
@@ -161,6 +245,8 @@ def fit_calibration(calibration, validation, minimum):
                      'slope': slope, 'intercept': intercept, 'count': len(values)}
     scored = defaultdict(list)
     for record in records(validation):
+        if model_fingerprint:
+            require_calibration_observation(record, model_fingerprint)
         if record['documentGroup'] in calibration_ids:
             raise ValueError('Calibration and validation document groups overlap')
         length, source, context = strata(record)
@@ -175,7 +261,7 @@ def fit_calibration(calibration, validation, minimum):
         if fit:
             report['/'.join(key)] = {'eligible': len(values), **fit}
             rows[key].update({field: fit[field] for field in ('operatingPoint', 'displayedPrecision')})
-    return {'version': 1, 'rows': list(rows.values()), 'validation': report,
+    return {'version': 1, 'modelFingerprint': model_fingerprint, 'rows': list(rows.values()), 'validation': report,
             'calibrationSha256': file_hash(calibration), 'validationSha256': file_hash(validation),
             'acceptanceEvent': 'selection after a measured display',
             'retentionEvent': 'conditional on measured acceptance'}
@@ -186,15 +272,17 @@ def main():
     parser.add_argument('kind', choices=('mixture', 'calibration'))
     parser.add_argument('--calibration', type=Path, required=True)
     parser.add_argument('--validation', type=Path)
+    parser.add_argument('--asset-sha256')
+    parser.add_argument('--model-fingerprint')
     parser.add_argument('--min-displays', type=int, default=30)
     parser.add_argument('--out', type=Path, required=True)
     args = parser.parse_args()
     if args.kind == 'calibration':
         if not args.validation or args.min_displays <= 0:
             parser.error('Calibration needs disjoint validation and a positive minimum display count')
-        fit = fit_calibration(args.calibration, args.validation, args.min_displays)
+        fit = fit_calibration(args.calibration, args.validation, args.min_displays, args.model_fingerprint)
     else:
-        fit = fit_mixtures(args.calibration)
+        fit = fit_mixtures(args.calibration, args.validation, args.asset_sha256)
     args.out.write_text(json.dumps(fit, indent=2, sort_keys=True) + '\n')
 
 

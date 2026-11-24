@@ -170,7 +170,8 @@ elif stage == 'ngram':
         for target, result in build_models(corpus, targets, 20 * 1024 * 1024, 60000, 'ngram', None):
             report.append((target.name, result))
             print('NGRAM', json.dumps(result, sort_keys=True), flush=True)
-        chosen, selected = min(report, key=lambda entry: entry[1]['metrics']['validation']['perplexity'])
+        eligible = [entry for entry in report if entry[1]['order'] in (4, 5)]
+        chosen, selected = min(eligible or report, key=lambda entry: entry[1]['metrics']['validation']['perplexity'])
         latex_pruning = selected['pruning']
         vocab = work / chosen / 'vocab.json'
         subject_models = {}
@@ -190,6 +191,98 @@ elif stage == 'ngram':
         print('LATEX', json.dumps(result, sort_keys=True), flush=True)
         if require_audit and result['metrics']['trainTokens'] < latex_train_tokens:
             raise RuntimeError('Audited LaTeX corpus did not reach the predicted formula token target')
+elif stage in ('ngram-vocab', 'ngram-counts', 'ngram-pack'):
+    from corpus import file_hash, text_hash
+    from ngram import count_checkpoint, estimate_vocab, pack_checkpoint, publish_checkpoint, words
+    corpus = locate(corpus_dir or 'corpus')
+    audit = json.loads(locate_file('group-audit.json').read_text())
+    corpus_hash = file_hash(corpus / 'manifest.json')
+    is_full = corpus_hash == audit['corpusSha256']
+    if not audit.get('passed') or corpus_hash not in (audit['corpusSha256'], audit['developmentSha256']):
+        raise RuntimeError('Checkpointed n-gram corpus differs from its group audit')
+    if stage == 'ngram-vocab':
+        if is_full:
+            raise RuntimeError('Freeze the n-gram vocabulary on development training documents')
+        vocabulary = work / 'frozen-ngram-vocab.json'
+        vocabulary.write_text(json.dumps(estimate_vocab(words(corpus, 'train', 'ngram'), 60000),
+                                        ensure_ascii=False) + '\n')
+        envelope = {'developmentSha256': corpus_hash, 'split': 'train', 'sha256': file_hash(vocabulary)}
+        (work / 'ngram-vocab-manifest.json').write_text(json.dumps(envelope, sort_keys=True) + '\n')
+        print('NGRAM VOCABULARY', json.dumps(envelope, sort_keys=True), flush=True)
+    else:
+        vocabulary = locate_file('frozen-ngram-vocab.json')
+        envelope = json.loads(locate_file('ngram-vocab-manifest.json').read_text())
+        if envelope != {'developmentSha256': audit['developmentSha256'], 'split': 'train',
+                        'sha256': file_hash(vocabulary)}:
+            raise RuntimeError('N-gram vocabulary differs from its development training freeze')
+        orders, methods = ngram_orders, pruning_methods
+        if stage == 'ngram-pack' and is_full:
+            selection = json.loads(locate_file('ngram-selection.json').read_text())
+            chosen = locate(selection['selected'])
+            manifest = json.loads((chosen / 'manifest.json').read_text())
+            if (manifest['corpusSha256'] != audit['developmentSha256'] or
+                    manifest['sha256'] != file_hash(chosen / manifest['file']) or
+                    manifest['vocabSha256'] != text_hash('\n'.join(json.loads(vocabulary.read_text())))):
+                raise RuntimeError('Full-pool n-gram configuration must come from audited development')
+            entries = selection['comparisons']
+            expected = {(order, method) for order in (3, 4, 5) for method in ('count', 'entropy')}
+            actual = {(entry['order'], entry['pruning']) for _, entry in entries}
+            eligible = [entry for entry in entries if entry[1]['order'] in (4, 5)]
+            if (len(entries) != len(expected) or actual != expected or
+                    (selection['selected'], manifest) != tuple(min(
+                        eligible, key=lambda result: result[1]['metrics']['validation']['perplexity']))):
+                raise RuntimeError('N-gram selection does not match the frozen six-way validation comparison')
+            orders, methods = [manifest['order']], [manifest['pruning']]
+        subject = subjects[0] if subjects else None
+        if len(subjects) > 1 or subject and (not is_full or stage != 'ngram-pack'):
+            raise RuntimeError('Use independent full-pool pack notebooks for subject models')
+        local_checkpoint = pathlib.Path('/tmp/lemma-ngram-count-checkpoint')
+        if stage == 'ngram-counts' or subject:
+            report = count_checkpoint(corpus, local_checkpoint, max(orders), 60000, 'ngram', subject,
+                                      vocabulary, compress=not subject)
+            print('COUNT CHECKPOINT', json.dumps(report, sort_keys=True), flush=True)
+            if stage == 'ngram-counts':
+                publish_checkpoint(local_checkpoint, work / 'ngram-counts')
+        if stage == 'ngram-pack':
+            checkpoint = local_checkpoint if subject else locate('ngram-counts')
+            if file_hash(checkpoint / 'vocab.json') != file_hash(vocabulary):
+                raise RuntimeError('Count checkpoint differs from the frozen development vocabulary')
+            targets = [(work / (f'subject-{subject}' if subject else f'ngram{order}-{method}'), order, method)
+                       for order in orders for method in methods]
+            report = []
+            for target, result in pack_checkpoint(corpus, checkpoint, targets, (4 if subject else 20) * 1024 * 1024, '/tmp'):
+                report.append((target.name, result))
+                print('NGRAM', json.dumps(result, sort_keys=True), flush=True)
+            (work / 'ngram-comparisons.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+elif stage == 'ngram-select':
+    from corpus import file_hash, text_hash
+    audit = json.loads(locate_file('group-audit.json').read_text())
+    entries = []
+    validation_targets = set()
+    vocabularies = set()
+    counts = set()
+    for order in (3, 4, 5):
+        for method in ('count', 'entropy'):
+            name = f'ngram{order}-{method}'
+            directory = locate(name)
+            manifest = json.loads((directory / 'manifest.json').read_text())
+            vocabulary = json.loads((directory / 'vocab.json').read_text())
+            if (not audit.get('passed') or manifest['corpusSha256'] != audit['developmentSha256'] or
+                    manifest['order'] != order or manifest['pruning'] != method or
+                    manifest['sha256'] != file_hash(directory / manifest['file']) or
+                    manifest['vocabSha256'] != text_hash('\n'.join(vocabulary))):
+                raise RuntimeError(f'N-gram comparison artifact {name} does not match the audited development pool')
+            validation_targets.add(manifest['metrics']['validation']['targets'])
+            vocabularies.add(manifest['vocabSha256'])
+            counts.add(manifest['countsSha256'])
+            entries.append((name, manifest))
+    if len(validation_targets) != 1 or not min(validation_targets) or len(vocabularies) != 1 or len(counts) != 1:
+        raise RuntimeError('Validation targets, vocabulary and count inputs must match across comparisons')
+    eligible = [entry for entry in entries if entry[1]['order'] in (4, 5)]
+    chosen, _ = min(eligible, key=lambda result: result[1]['metrics']['validation']['perplexity'])
+    shutil.copytree(locate(chosen), work / chosen)
+    (work / 'ngram-selection.json').write_text(json.dumps({'selected': chosen, 'comparisons': entries},
+                                                        indent=2, sort_keys=True) + '\n')
 elif stage == 'prepared-audit':
     from subwords import audit_prepared_membership
     dev, ref = locate('prepared-dev'), locate('prepared-reference')
@@ -202,7 +295,8 @@ elif stage == 'prepared-audit':
         prepared_manifest = json.loads((path / 'manifest.json').read_text())
         if not group_report.get('passed') or prepared_manifest['corpus'] != group_report[key]:
             raise RuntimeError('Prepared comparison corpus differs from the publisher-group audit')
-    report = audit_prepared_membership(full, dev, ref, '/tmp')
+    raw_pool = locate('corpus') if full else None
+    report = audit_prepared_membership(full, dev, ref, '/tmp', raw_pool)
     (work / 'prepared-audit.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
     print('PREPARED MEMBERSHIP AUDIT', json.dumps(report, sort_keys=True), flush=True)
 elif stage == 'gpu':
@@ -247,6 +341,7 @@ elif stage == 'gpu':
     ledger = {'assignedGpus': allocated, 'leasedHours': allocated_hours,
               'candidate': candidate, 'mode': mode, 'commit': commit, 'stagedData': str(data),
               'graphicsAvailability': graphics}
+    out = work / 'training'
     try:
         selected = train_ranks
         if mode == 'throughput':
@@ -294,8 +389,15 @@ elif stage == 'gpu':
             if resume_dir:
                 checkpoint = ['--resume', locate(resume_dir) / 'latest.pt']
             elif initialize_dir:
-                checkpoint = ['--initialize', locate(initialize_dir) / checkpoint_file]
-            out = work / 'training'
+                initial = locate(initialize_dir) / checkpoint_file
+                ledger['initialCheckpointSha256'] = file_hash(initial)
+                if require_audit:
+                    parent = json.loads(locate_file('gpu-ledger.json').read_text())
+                    expected = {'sha256': ledger['initialCheckpointSha256'], 'bytes': initial.stat().st_size}
+                    if (parent.get('stopReason') != 'target-exposure' or
+                            parent['checkpointFiles'].get(checkpoint_file) != expected):
+                        raise RuntimeError('Adaptation parent did not complete its exposure or emit these weights')
+                checkpoint = ['--initialize', initial]
             planned('train', ['--out', out, '--stop-tokens', stop_tokens, '--accumulate', accumulation,
                               '--microbatch', microbatch, '--logit-chunk', logit_chunk, *checkpoint], selected, minutes=training_minutes)
             if mode == 'pilot':
@@ -306,17 +408,48 @@ elif stage == 'gpu':
                 ledger['resumeVerified'] = True
             ledger['checkpoint'] = json.loads((out / 'metrics.json').read_text())
             ledger['selectedTrainingRanks'] = selected
+            ledger['requestedTargets'] = stop_tokens
+            exposures = ledger['checkpoint']['tokens']
+            ledger['stopReason'] = 'target-exposure' if exposures == stop_tokens else 'time-cap'
+            if require_audit and not adapt and exposures != stop_tokens:
+                raise RuntimeError(f'Training stopped short of the required exact {stop_tokens} target exposure')
+    except subprocess.TimeoutExpired:
+        ledger['stopReason'] = 'wrapper-timeout'
+        raise
+    except subprocess.CalledProcessError:
+        ledger['stopReason'] = 'training-process-failed'
+        raise
     finally:
+        if out.is_dir():
+            progress = out / 'metrics.json'
+            if progress.is_file() and 'checkpoint' not in ledger:
+                ledger['checkpoint'] = json.loads(progress.read_text())
+            ledger['checkpointFiles'] = {path.name: {'sha256': file_hash(path), 'bytes': path.stat().st_size}
+                                         for path in sorted(out.glob('*.pt'))}
+            ledger['milestoneValidation'] = {path.name.split('.')[0]: json.loads(path.read_text())
+                                             for path in sorted(out.glob('tokens-*.metrics.json'))}
         ledger['sessionSecondsFromScriptStart'] = time.monotonic() - start
         ledger['allocatedGpuHoursFromScriptStart'] = ledger['sessionSecondsFromScriptStart'] * allocated / 3600
         (work / 'gpu-ledger.json').write_text(json.dumps(ledger, indent=2, sort_keys=True) + '\n')
         print('GPU LEDGER', json.dumps(ledger, sort_keys=True), flush=True)
 elif stage == 'export':
+    from corpus import file_hash
+    data = locate(data_dir)
+    if require_audit:
+        audit = json.loads(locate_file('prepared-audit.json').read_text())
+        if not audit.get('passed') or audit['preparedManifestSha256'].get(data_dir) != file_hash(data / 'manifest.json'):
+            raise RuntimeError('Export data does not match the frozen audited split')
+    checkpoint = locate(checkpoint_dir) / checkpoint_file
+    if require_audit:
+        training = json.loads(locate_file('gpu-ledger.json').read_text())
+        entry = training['checkpointFiles'].get(checkpoint_file)
+        if entry != {'sha256': file_hash(checkpoint), 'bytes': checkpoint.stat().st_size}:
+            raise RuntimeError('Export checkpoint was not emitted by its immutable training run')
     # Export and qualify on CPU. A failing export makes the notebook fail.
     run([sys.executable, '-m', 'pip', 'install', '-q', 'onnx==1.20.1', 'onnxruntime==1.24.2', 'onnx-ir==1.1.0'])
-    run(command('export', '--out', work / 'export', '--data', locate(data_dir),
-                '--checkpoint', locate(checkpoint_dir) / checkpoint_file, '--precision', precision,
-                '--max-bytes', max_bytes, '--split', export_split))
+    run(command('export', '--out', work / 'export', '--data', data,
+                '--checkpoint', checkpoint, '--precision', precision,
+                '--max-bytes', max_bytes, '--split', export_split, *(['--match-training-data'] if require_audit else [])))
 else:
     raise ValueError(f"Unsupported notebook stage {stage}")
 '''
@@ -342,7 +475,9 @@ sys.path.insert(0, str(root / 'expanded'))
                               **variables).items())
     (out / 'run.py').write_text(startup + settings + '\n' + STAGE)
     metadata = {'id': slug, 'title': slug.split('/')[1], 'code_file': 'run.py', 'language': 'python',
-                'kernel_type': 'script', 'is_private': True, 'enable_internet': stage != 'gpu',
+                'kernel_type': 'script', 'is_private': True,
+                'enable_internet': stage in ('provenance', 'cpu', 'tokenizer', 'prepare', 'export') or
+                                   (stage == 'ngram' and variables['pilot_source']),
                 'enable_gpu': stage == 'gpu', 'dataset_sources': [], 'competition_sources': [],
                 'kernel_sources': inputs}
     if stage == 'gpu':
@@ -354,7 +489,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--slug', required=True)
-    parser.add_argument('--stage', choices=('provenance', 'group-audit', 'cpu', 'tokenizer', 'prepare', 'prepared-audit', 'gpu', 'export', 'ngram'), required=True)
+    parser.add_argument('--stage', choices=('provenance', 'group-audit', 'cpu', 'tokenizer', 'prepare', 'prepared-audit', 'gpu', 'export', 'ngram', 'ngram-vocab', 'ngram-counts', 'ngram-pack', 'ngram-select'), required=True)
     parser.add_argument('--input', action='append', default=[])
     parser.add_argument('--ngram-task', choices=('prose', 'latex', 'both'), default='both')
     parser.add_argument('--ngram-orders', nargs='+', type=int, choices=(3, 4, 5), default=[3, 4, 5])

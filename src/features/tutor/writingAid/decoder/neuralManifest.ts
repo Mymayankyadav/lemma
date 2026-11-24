@@ -1,4 +1,4 @@
-import type {CalibrationRow} from '../calibration';
+import {neuralCalibrationFingerprint, parseNeuralCalibration, type CalibrationRow} from '../calibration';
 import type {DecoderAssetFile} from './assets';
 
 export type NeuralBackend = 'wasm' | 'webgpu' | 'webgpuJspi';
@@ -16,7 +16,8 @@ export interface NeuralManifest {
   readonly calibration?: readonly CalibrationRow[];
   readonly qualification?: Readonly<{parity?: boolean; replay?: boolean; wasm?: boolean; webgpu?: boolean; webgpuJspi?: boolean}>;
 }
-const manifests = import.meta.glob<NeuralManifest>('../../../../../public/models/typeahead/*/manifest.json', {import: 'default'});
+type PersistedManifest = Omit<NeuralManifest, 'calibration'> & {calibration?: unknown};
+const manifests = import.meta.glob<PersistedManifest>('../../../../../public/models/typeahead/*/manifest.json', {import: 'default'});
 
 export async function neuralManifest(tier: NeuralTier): Promise<NeuralManifest | null> {
   const load = manifests['../../../../../public/models/typeahead/' + tier + '/manifest.json'];
@@ -32,7 +33,7 @@ export async function neuralManifest(tier: NeuralTier): Promise<NeuralManifest |
   const uniqueAssets = new Map(files.map(file => [file.sha256, file.bytes]));
   const sum = [...uniqueAssets.values()].reduce((total, bytes) => total + bytes, 0);
   if (sum > (tier === 'neural-v2' ? 40 : 48) * 1024 * 1024 || model.files.tokenizer.bytes > 4 * 1024 * 1024) return null;
-  return model;
+  return {...model, calibration: parseNeuralCalibration(model.calibration, neuralCalibrationFingerprint(model.files))};
 }
 
 export function qualifiedNeuralTier(model: NeuralManifest | null, device: NeuralBackend, trial = false): boolean {

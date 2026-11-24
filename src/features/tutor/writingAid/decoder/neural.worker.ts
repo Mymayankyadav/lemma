@@ -1,4 +1,4 @@
-import {ghostQualified} from '../calibration';
+import {ghostQualified, neuralCalibrationFingerprint} from '../calibration';
 import type {InferenceSession, Tensor} from 'onnxruntime-web/wasm';
 import {loadTutorModelWasm} from '../../input/modelAssets';
 import {fetchVerifiedTypeaheadFile} from './assets';
@@ -14,15 +14,18 @@ export interface NeuralRequest {
   readonly deadline: number;
   readonly startedAt: number;
   readonly ghost: boolean;
+  readonly probeGhost?: boolean;
   readonly trial?: boolean;
 }
 export interface NeuralReply {
   readonly id: number;
   readonly assetSha256?: string;
+  readonly modelFingerprint?: string;
   readonly blendWeight?: number;
   readonly timing?: Readonly<{cold: boolean; provider?: string; attempted: number; scored: number; reusedPrefix: boolean; elapsedMs: number; late: boolean}>;
   readonly scores?: readonly (readonly [string, number])[];
   readonly continuation?: {text: string; logProbability: number};
+  readonly ghostProbe?: readonly {text: string; logProbability: number; context: 'prefix' | 'boundary'; elapsedMs: number}[];
 }
 
 type Runtime = typeof import('onnxruntime-web/wasm');
@@ -224,7 +227,9 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
     depths.set(node, result);
     return result;
   }
-  const ghostTime = request.ghost && active.manifest.calibration?.length ? 18 : 0;
+  const calibration = active.manifest.calibration;
+  const evaluateGhost = request.ghost && Boolean(calibration?.length || request.probeGhost);
+  const ghostTime = evaluateGhost ? 18 : 0;
   async function walk(node: ReturnType<typeof wordTrie>, parent: State, score: number, owned = false): Promise<void> {
     try {
       while (current()) {
@@ -267,8 +272,10 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   }
   await walk(trie, state, 0);
   let continuation: NeuralReply['continuation'];
-  if (request.ghost && active.manifest.calibration?.length && current()) {
+  const ghostProbe: NonNullable<NeuralReply['ghostProbe']>[number][] = [];
+  if (evaluateGhost && current()) {
     const ghostIds = promptIds(active.tokenizer, prompt, active.manifest.context - 16);
+    const context = prefix ? 'prefix' : 'boundary';
     let text = '', score = 0, stateAt = await infer(active, ghostIds);
     try {
       while (current() && stateAt.ids.length < active.manifest.context && text.length < 32) {
@@ -278,10 +285,13 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
         if (!piece || !/^[\p{L}\p{M} ,.;:!?'-]+$/u.test(piece) || text.length + piece.length > 32) break;
         text += piece;
         score += stateAt.logs[best];
-        if (/\s$/u.test(text) && ghostQualified(active.manifest.calibration, score, text.length, prefix ? 'prefix' : 'boundary',
-          Date.now() - request.startedAt)) {
-          continuation = {text, logProbability: score};
-          break;
+        if (text.length >= 5 && /\s$/u.test(text)) {
+          const elapsedMs = Date.now() - request.startedAt;
+          if (request.probeGhost && ghostProbe.length < 12) ghostProbe.push({text, logProbability: score, context, elapsedMs});
+          if (!request.probeGhost && calibration && ghostQualified(calibration, score, text.length, context, elapsedMs)) {
+            continuation = {text, logProbability: score};
+            break;
+          }
         }
         const updated = await infer(active, [...stateAt.ids, best], stateAt);
         if (stateAt !== cached) dispose(stateAt);
@@ -290,7 +300,9 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
     } finally {if (stateAt !== cached) dispose(stateAt);}
   }
   if (!current()) return {id, timing: timing(scores.length)};
-  return {id, scores, continuation, assetSha256: active.manifest.files.prefill.sha256, blendWeight: active.manifest.blendWeight,
+  return {id, scores, continuation, ghostProbe: request.probeGhost ? ghostProbe : undefined,
+    modelFingerprint: request.probeGhost ? neuralCalibrationFingerprint(active.manifest.files) : undefined,
+    assetSha256: active.manifest.files.prefill.sha256, blendWeight: active.manifest.blendWeight,
     timing: timing(scores.length)};
 }
 

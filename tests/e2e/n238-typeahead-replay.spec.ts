@@ -5,10 +5,14 @@ import {liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
 import type {AnswerAidDraft} from '../../supabase/functions/_shared/tutor-answer-aids';
 
 type ReplayEvent = {eventId: string; answerId: string; prefix: string; target?: string; route?: string};
-type ReplayAnswer = {answerId: string; answer: string; route?: string; question?: string; subject?: string; aid?: AnswerAidDraft};
-type GoldEvent = {eventId: string; exactInsertion: string; kind: 'word' | 'symbol'};
-type RuntimeAsset = {ngram?: string; neural?: string; graphTrial?: string; ghostEligible: boolean};
+type ReplayAnswer = {answerId: string; answer: string; route?: string; question?: string; subject?: string; aid?: AnswerAidDraft;
+  documentGroup?: string};
+type GoldEvent = {eventId: string; exactInsertion: string; exactGhost?: string; kind: 'word' | 'symbol'};
+type RuntimeAsset = {ngram?: string; latex?: string; neural?: string; graphTrial?: string; ghostEligible: boolean};
 type Displayed = {text: string; family: string; start: number; end: number};
+type ComponentSample = {id: string; subject?: string; probability?: Record<string, number>; assetSha256?: string; subjectAssetSha256?: string};
+type GhostSample = {id: string; modelFingerprint?: string;
+  candidates?: {text: string; logProbability: number; context: 'prefix' | 'boundary'; elapsedMs: number}[]};
 const fixture: ReplayEvent[] = [
   {eventId: 'word', answerId: 'draft-a', prefix: 'Could you clarify the nota', target: 'notation '},
   {eventId: 'equation', answerId: 'draft-b', prefix: 'Let x1+x2=4', target: '$x_{1}+x_{2}=4$'},
@@ -64,24 +68,34 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   test.setTimeout(eventInput || answerInput ? 1_800_000 : 60_000);
   const output = process.env.LEMMA_TYPEAHEAD_REPLAY_OUTPUT;
   const expectedNgram = process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NGRAM_SHA;
+  const expectedLatex = process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_LATEX_SHA;
+  const captureOnly = process.env.LEMMA_TYPEAHEAD_REPLAY_CAPTURE_ONLY === '1';
+  const ghostCalibration = process.env.LEMMA_TYPEAHEAD_REPLAY_GHOST_CALIBRATION === '1';
   const retainPartial = (sink: string, row: unknown) => {
     if (output) appendFileSync(output + '.partial.' + sink + '.jsonl', lines([row]));
   };
-  if (output) for (const kind of ['impressions', 'keys', 'components']) {
+  if (output) for (const kind of ['impressions', 'keys', 'components', 'ghost-calibration', 'ghost-opportunities']) {
     writeFileSync(output + '.partial.' + kind + '.jsonl', '');
   }
   const flags = process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS ?? 'typeaheadV2,tutorAnswerAids,proofAssistGhost';
   const arm = process.env.LEMMA_TYPEAHEAD_REPLAY_ARM;
   const graphTrial = process.env.LEMMA_TYPEAHEAD_REPLAY_GRAPH_TRIAL === '1';
+  const expectedNeural = process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NEURAL_FINGERPRINT;
   const modelAssets = new Set<string>();
   const gold = new Map(input<GoldEvent>(process.env.LEMMA_TYPEAHEAD_REPLAY_GOLD, []).map(event => [event.eventId, event]));
   const components = [];
+  const ghostCandidates = [];
+  const ghostOpportunities = [];
   const neuralCoverage: Array<Record<string, unknown>> = [];
   const impressions = [];
   const keys = [];
   let opened: string | undefined;
   let editor: Locator | undefined;
   const contexts = new Map(answers.map(value => [value.answerId, value]));
+  if (ghostCalibration && (!captureOnly || !graphTrial || !expectedNeural || !expectedNgram || !events.length ||
+      events.some(event => !contexts.get(event.answerId)?.documentGroup || typeof gold.get(event.eventId)?.exactGhost !== 'string'))) {
+    throw new Error('Ghost calibration needs capture-only graph trial, verified fingerprints, and disjoint grouped replay outcomes');
+  }
   let active: ReplayAnswer | undefined;
   if (answers.some(sample => sample.question)) {
     const {threadId, payload} = await prepareLiveTutor(page);
@@ -112,19 +126,21 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   async function observeAssets(): Promise<RuntimeAsset> {
     const model = await page.locator('form.composer').evaluate(form => {
       const data = (form as HTMLElement).dataset;
-      return {ngram: data.typeaheadNgramSha, neural: data.typeaheadNeuralSha, graphTrial: data.typeaheadGraphTrial,
+      return {ngram: data.typeaheadNgramSha, latex: data.typeaheadLatexSha, neural: data.typeaheadNeuralSha, graphTrial: data.typeaheadGraphTrial,
         ghostEligible: data.typeaheadGhostEligible === '1'};
     });
     if (expectedNgram) expect(model.ngram, 'active n-gram fingerprint during replay').toBe(expectedNgram);
+    if (expectedLatex && model.latex) expect(model.latex, 'active LaTeX fingerprint during replay').toBe(expectedLatex);
     if (model.ngram) modelAssets.add(model.ngram);
+    if (model.latex) modelAssets.add(model.latex);
     if (model.neural) modelAssets.add(model.neural);
     return model;
   }
 
   async function measureComponents(id: string, target: string) {
-    return page.evaluate(({id, target}) => new Promise<{subject?: string; probability?: Record<string, number>} | null>(resolve => {
+    return page.evaluate(({id, target}) => new Promise<ComponentSample | null>(resolve => {
       function receive(event: Event) {
-        const detail = (event as CustomEvent<{id: string; subject?: string; probability?: Record<string, number>}>).detail;
+        const detail = (event as CustomEvent<ComponentSample>).detail;
         if (detail?.id !== id) return;
         clearTimeout(timer);
         window.removeEventListener('lemma-typeahead-components-result', receive);
@@ -137,6 +153,26 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       window.addEventListener('lemma-typeahead-components-result', receive);
       window.dispatchEvent(new CustomEvent('lemma-typeahead-components-request', {detail: {id, target}}));
     }), {id, target});
+  }
+
+  async function measureGhost(id: string) {
+    return page.evaluate(id => new Promise<GhostSample | null>(resolve => {
+      const until = performance.now() + 80;
+      let sample: GhostSample | null = null;
+      function receive(event: Event) {
+        const detail = (event as CustomEvent<GhostSample>).detail;
+        if (detail?.id === id) sample = detail;
+      }
+      function read() {
+        window.dispatchEvent(new CustomEvent('lemma-typeahead-ghost-probe-request', {detail: {id}}));
+        if (sample || performance.now() >= until) {
+          window.removeEventListener('lemma-typeahead-ghost-probe-result', receive);
+          resolve(sample);
+        } else requestAnimationFrame(read);
+      }
+      window.addEventListener('lemma-typeahead-ghost-probe-result', receive);
+      read();
+    }), id);
   }
 
   async function drainCoverage() {
@@ -165,7 +201,8 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       if (editor) await drainCoverage();
       active = context;
       const query = '/lemma/?typeahead-replay=1&demo=' + (hasQuestion ? '0' : '1') + '&flags=v7Shell,v6Shell,tutorScratch,' + encodeURIComponent(flags)
-        + (arm ? '&typeahead-arm=' + encodeURIComponent(arm) : '') + (frozen ? '&typeahead-frozen-profile=1' : '') + (graphTrial ? '&typeahead-graph-trial=1' : '');
+        + (arm ? '&typeahead-arm=' + encodeURIComponent(arm) : '') + (frozen ? '&typeahead-frozen-profile=1' : '')
+        + (graphTrial ? '&typeahead-graph-trial=1' : '') + (ghostCalibration ? '&typeahead-ghost-probe=1' : '');
       await page.goto(query + '#' + destination);
       editor = page.getByRole('textbox', {name: 'Your answer', exact: true});
       await expect(open.or(editor).first()).toBeVisible({timeout: eventInput || answerInput ? 15000 : 5000});
@@ -209,10 +246,29 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     // not change context, cache contents, scores, or visible suggestions.
     if (arm && target?.kind === 'word') {
       const sampled = await measureComponents(event.eventId, target.exactInsertion);
-      const component = {eventId: event.eventId, subject: sampled?.subject ?? contexts.get(event.answerId)?.subject ?? 'other',
-        probability: sampled?.probability && assets.ngram ? sampled.probability : null, assetSha256: assets.ngram};
+      const context = contexts.get(event.answerId);
+      const component = {eventId: event.eventId, answerId: event.answerId, documentGroup: context?.documentGroup,
+        captureVersion: 'n238-mixture-v1', subjectAssetSha256: sampled?.subjectAssetSha256,
+        subject: sampled?.subject ?? context?.subject ?? 'other',
+        probability: sampled?.assetSha256 === assets.ngram ? sampled?.probability ?? null : null, assetSha256: assets.ngram};
       components.push(component);
       retainPartial('components', component);
+    }
+    if (ghostCalibration) {
+      const sample = assets.ghostEligible ? await measureGhost(event.eventId) : null;
+      if (sample) expect(sample.modelFingerprint, 'neural bundle fingerprint during ghost capture').toBe(expectedNeural);
+      const documentGroup = contexts.get(event.answerId)!.documentGroup;
+      const opportunity = {eventId: event.eventId, answerId: event.answerId, documentGroup, eligible: assets.ghostEligible,
+        measured: sample !== null, candidates: sample?.candidates?.length ?? 0, modelFingerprint: sample?.modelFingerprint};
+      ghostOpportunities.push(opportunity);
+      retainPartial('ghost-opportunities', opportunity);
+      for (const candidate of sample?.candidates ?? []) {
+        const row = {eventId: event.eventId, answerId: event.answerId, documentGroup, source: 'neural',
+          modelFingerprint: sample?.modelFingerprint, measure: 'offline-exact', context: candidate.context, length: candidate.text.length,
+          elapsedMs: candidate.elapsedMs, score: candidate.logProbability, exact: target!.exactGhost!.startsWith(candidate.text)};
+        ghostCandidates.push(row);
+        retainPartial('ghost-calibration', row);
+      }
     }
     const chosen = items.findIndex(item => item.text === event.target);
     if (!eventInput && process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS === undefined && event.target) expect(chosen).toBeGreaterThanOrEqual(0);
@@ -224,7 +280,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
 
   // Start each answer empty. Count every key or accepted exact offer once.
   // The greedy reader is idealized. The actions and resulting draft are real.
-  for (const sample of answers) {
+  for (const sample of captureOnly ? [] : answers) {
     const answer = await start(sample.route ?? defaultRoute, sample.answerId, false);
     let draft = '', assistedKeys = 0;
     const activeAssets = new Set<string>();
@@ -233,6 +289,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       const {slots, items} = await slate(page);
       const assets = await observeAssets();
       if (assets.ngram) activeAssets.add(assets.ngram);
+      if (assets.latex) activeAssets.add(assets.latex);
       if (assets.neural) activeAssets.add(assets.neural);
       let best = -1, next = draft;
       for (const [index, offer] of items.entries()) {
@@ -268,10 +325,16 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   await info.attach('typeahead-impressions.jsonl', {body: Buffer.from(lines(impressions)), contentType: 'application/x-ndjson'});
   await info.attach('typeahead-keys.jsonl', {body: Buffer.from(lines(keys)), contentType: 'application/x-ndjson'});
   if (editor) await drainCoverage();
-  const audit = {arm: arm ?? 'personal', graphTrial, assetSha256: [...modelAssets].sort(), events: impressions.length, answers: keys.length};
+  if (expectedLatex) expect(modelAssets.has(expectedLatex), 'LaTeX model was observed on at least one replay edit').toBe(true);
+  const audit = {arm: arm ?? 'personal', graphTrial, captureOnly, ghostCalibration, assetSha256: [...modelAssets].sort(),
+    events: impressions.length, answers: keys.length};
   await info.attach('typeahead-models.json', {body: Buffer.from(JSON.stringify(audit)), contentType: 'application/json'});
   if (output) {
     writeFileSync(output + '.components.jsonl', lines(components));
+    if (ghostCalibration) {
+      writeFileSync(output + '.ghost-calibration.jsonl', lines(ghostCandidates));
+      writeFileSync(output + '.ghost-opportunities.jsonl', lines(ghostOpportunities));
+    }
     writeFileSync(output + '.neural-coverage.jsonl', lines(neuralCoverage));
     writeFileSync(output + '.assets.json', JSON.stringify(audit, null, 2) + '\n');
     writeFileSync(output + '.impressions.jsonl', lines(impressions));

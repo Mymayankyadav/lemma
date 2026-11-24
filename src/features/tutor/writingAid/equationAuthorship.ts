@@ -1,9 +1,28 @@
 import type {TutorAcceptedSpan} from '../../../../supabase/functions/_shared/tutor-answer';
-import {addAuthoredSpan} from './authorship';
+import {addAuthoredSpan, moveAcceptedSpans} from './authorship';
 
 export function equationFences(source: string) {
   const width = source.startsWith('$$') || source.startsWith('\\') ? 2 : 1;
   return {opening: source.slice(0, width), closing: source.slice(-width), tex: source.slice(width, -width), width};
+}
+
+/** Keep the answer's original delimiters around the sheet's editable body. */
+export function equationSurroundings(text: string, source: string, offset: number) {
+  if (!Number.isInteger(offset) || offset < 0 || text.slice(offset, offset + source.length) !== source) return undefined;
+  const {width} = equationFences(source);
+  return {before: text.slice(0, offset + width), after: text.slice(offset + source.length - width)};
+}
+
+/** Plan the exact assisted sheet edit before making any visible or saved change. */
+export function planEquationSuggestion(value: string, start: number, end: number, insert: string,
+  spans: readonly TutorAcceptedSpan[], remainingSlots: number) {
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || start > end || end > value.length ||
+      !insert.trim() || insert.length > 240) return null;
+  const text = value.slice(0, start) + insert + value.slice(end);
+  const nextEnd = start + insert.length;
+  const retained = moveAcceptedSpans(value, text, spans, {start, end, nextEnd}, remainingSlots);
+  const result = addAuthoredSpan(text, retained, {start, end: nextEnd, text: insert, source: 'equation'});
+  return result && result.length <= remainingSlots ? {text, spans: result} : null;
 }
 
 function clip(text: string, span: TutorAcceptedSpan, start: number, end: number, shift = 0): TutorAcceptedSpan[] {

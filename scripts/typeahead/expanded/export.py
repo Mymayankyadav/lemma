@@ -568,6 +568,8 @@ def run(args):
     streams = [args.split, role_split] if adapted else [args.split]
     role_case_files = [role_split + '.partial.jsonl'] if adapted else []
     data_hash, tokenizer_hash = verify_prepared(args.data, streams, role_case_files)
+    if args.match_training_data and settings.get('dataSha256') != data_hash:
+        raise ValueError('Audited export must use the exact prepared pool that produced the checkpoint')
     expected_tokenizer = settings.get('tokenizerSha256')
     if (expected_tokenizer is not None and expected_tokenizer != tokenizer_hash or
             expected_tokenizer is None and settings.get('dataSha256') != data_hash):
@@ -633,6 +635,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--data', type=Path, required=True)
+    parser.add_argument('--match-training-data', action='store_true')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--precision', choices=('int8', 'int8-weight-only', 'int4', 'int4-int8-head'), required=True)
     parser.add_argument('--max-bytes', type=int, required=True)

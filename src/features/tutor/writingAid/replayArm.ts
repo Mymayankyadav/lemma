@@ -40,3 +40,8 @@ export function typeaheadGraphTrial(): boolean {
 export function typeaheadFrozenProfile(): boolean {
   return typeaheadReplayEnabled() && new URLSearchParams(window.location.search).get('typeahead-frozen-profile') === '1';
 }
+
+export function typeaheadGhostProbe(): boolean {
+  return typeaheadReplayEnabled() && typeaheadGraphTrial() &&
+    new URLSearchParams(window.location.search).get('typeahead-ghost-probe') === '1';
+}

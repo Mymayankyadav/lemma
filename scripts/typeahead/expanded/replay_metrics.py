@@ -123,7 +123,9 @@ def summarize(gold, impressions, costs, seed):
             if not impression.get('ghostEligible'):
                 raise ValueError('Displayed ghost at an ineligible boundary')
             coverage['displays'] += 1
-            exact = ghost['text'] == target.get('exactGhost')
+            continuation = ghost['text']
+            remaining = target.get('exactGhost')
+            exact = bool(continuation) and isinstance(remaining, str) and remaining.startswith(continuation)
             values['ghost/hits'] += exact
             values['ghost/targets'] += 1
             length = len(ghost['text'])

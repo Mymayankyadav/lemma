@@ -1,15 +1,17 @@
 import {moveAcceptedSpans} from './authorship';
 import {normalizeAidScopePrefix} from './answerAids';
 import {exposureIdentity, visibleTime} from './visibleTime';
-import {typeaheadFrozenProfile, typeaheadGraphTrial, typeaheadReplayEnabled, usesNeural, usesPersonalization, usesTutorBias} from './replayArm';
+import {typeaheadFrozenProfile, typeaheadGhostProbe, typeaheadGraphTrial, typeaheadReplayEnabled, usesNeural, usesPersonalization, usesTutorBias} from './replayArm';
 import {countPersonalTransition, learnSlateChoice, observeLocalCalibration, writingAidWeek} from './adaptation';
 import {isFlagOn} from '../../../flags';
 import {createNgramClient, type NgramClient} from './decoder/ngramClient';
 import {prepareMainTypeaheadFallback} from './decoder/ngramSpatial';
 import {createNeuralClient, type NeuralClient} from './decoder/neuralClient';
+import type {NeuralReply} from './decoder/neural.worker';
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {
-  ALL_WRITING_AID_SURFACES, NO_WRITING_AID, canSuggestWritingAid, eligibleGhostContext, eligibleNeuralContext, sameWritingAidRequest, writingAidProposalKey,
+  ALL_WRITING_AID_SURFACES, NO_WRITING_AID, canSuggestWritingAid, eligibleGhostContext, eligibleNeuralContext, proposalEligible,
+  sameWritingAidRequest, writingAidProposal, writingAidProposalKey,
   type WritingAidProposal, type WritingAidRefreshSurface, type WritingAidRequest, type WritingAidSuggestions,
 } from './policy';
 import {recordWritingAidVocabulary, scoreWritingAidProposal, updateWritingAidModel, writingAidFeatures, type WritingAidFeedback} from './learning';
@@ -137,6 +139,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   const previous = useRef<WritingAidRequest | null>(null);
 
   const ngram = useRef<NgramClient | undefined>(undefined);
+  const ghostProbe = useRef<{snapshot: WritingAidRequest; learningScope: LearningScope; reply: NeuralReply} | undefined>(undefined);
   useEffect(() => {
     if (!isFlagOn('typeaheadV2') || mode === 'off' || readOnly) return;
     const client = createNgramClient();
@@ -157,8 +160,32 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         window.dispatchEvent(new CustomEvent('lemma-typeahead-components-result', {detail: {...detail, id}}));
       }).catch(() => undefined);
     }
+    function ghostSample(event: Event) {
+      if (!typeaheadGhostProbe()) return;
+      const id = (event as CustomEvent<{id?: string}>).detail?.id;
+      if (typeof id !== 'string' || document.visibilityState === 'hidden') return;
+      const {snapshot, learningScope} = live.current;
+      const sample = ghostProbe.current;
+      if (!sample || sample.learningScope !== learningScope || !sameWritingAidRequest(sample.snapshot, snapshot)) return;
+      const buckets = new Set<string>();
+      const candidates = sample.reply.ghostProbe?.filter(candidate => {
+        const {end} = snapshot.cursor;
+        const length = candidate.text.length;
+        const bucket = length < 8 ? 'short' : length < 16 ? 'medium' : 'long';
+        const proposal = writingAidProposal(snapshot, 'ghost', end, end, candidate.text);
+        if (buckets.has(bucket) || !proposalEligible(snapshot, proposal)) return false;
+        buckets.add(bucket);
+        return true;
+      });
+      window.dispatchEvent(new CustomEvent('lemma-typeahead-ghost-probe-result',
+        {detail: {id, candidates, modelFingerprint: sample.reply.modelFingerprint}}));
+    }
     window.addEventListener('lemma-typeahead-components-request', componentSample);
-    return () => window.removeEventListener('lemma-typeahead-components-request', componentSample);
+    window.addEventListener('lemma-typeahead-ghost-probe-request', ghostSample);
+    return () => {
+      window.removeEventListener('lemma-typeahead-components-request', componentSample);
+      window.removeEventListener('lemma-typeahead-ghost-probe-request', ghostSample);
+    };
   }, []);
 
   const neural = useRef<NeuralClient | undefined>(undefined);
@@ -484,11 +511,14 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
             normalizeAidScopePrefix(hint.kind, prefix).startsWith(normalizeAidScopePrefix(hint.kind, value))))
           .filter(hint => !hint.scope?.phraseStates?.length && hint.priority !== 'deemphasize')
           .map(hint => hint.entry) ?? []].join(' ');
+      const ghostAllowed = isFlagOn('proofAssistGhost') && eligibleGhostContext(snapshot);
+      const probe = ghostAllowed && typeaheadGhostProbe();
       void client.predict({epoch: neuralEpoch, prompt: {question: question?.filter(Boolean).join('\n') ?? '', aids, draft},
         prefix, words: pool.words.filter(entry => entry.source !== 'symbol').map(entry => entry.label),
-        startedAt, deadline: startedAt + 60, ghost: isFlagOn('proofAssistGhost') && eligibleGhostContext(snapshot)}).then(reply => {
+        startedAt, deadline: startedAt + 60, ghost: ghostAllowed, probeGhost: probe}).then(reply => {
         if (!reply || cancelled || Date.now() > startedAt + 60 || learningScope !== live.current.learningScope ||
             !sameWritingAidRequest(snapshot, live.current.snapshot)) return;
+        if (probe) ghostProbe.current = {snapshot, learningScope, reply};
         const updated = applyNeuralReply(pool, snapshot, reply);
         const selected = selectWritingAidPool(updated, model, cycle.current.excluded);
         setResult({snapshot, sequence, learningScope, pool: updated, suggestions: selected, assets: {ngram: ngramSha, neural: reply.assetSha256}});

@@ -34,13 +34,20 @@ function domText(root: HTMLElement): string {
  */
 function patchText(root: HTMLElement, from: string, to: string): boolean {
   if (domText(root) !== from) return false;
+  const risky = /[$\\\[\]]/u;
+  // A native empty contenteditable may contain a placeholder line break.
+  // The ordinary renderer represents plain source as a single text node.
+  if (!from && to && !risky.test(to) &&
+      (!root.firstChild || root.childNodes.length === 1 && root.firstChild instanceof HTMLBRElement)) {
+    root.replaceChildren(root.ownerDocument.createTextNode(to));
+    return true;
+  }
   let p = 0;
   const max = Math.min(from.length, to.length);
   while (p < max && from.charCodeAt(p) === to.charCodeAt(p)) p++;
   let q = 0;
   while (q < max - p && from.charCodeAt(from.length - 1 - q) === to.charCodeAt(to.length - 1 - q)) q++;
   const removed = from.slice(p, from.length - q), inserted = to.slice(p, to.length - q);
-  const risky = /[$\\\[\]]/u;
   if (risky.test(removed) || risky.test(inserted) || risky.test(to.slice(Math.max(0, p - 1), p)) ||
       risky.test(to.slice(p + inserted.length, p + inserted.length + 1))) return false;
   let offset = 0;
@@ -236,7 +243,7 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
     rendered.current = {signature, readOnly, mark, value};
     // N232: a small text change in one text node is patched in place; see patchText.
     if (previous && previous.value !== value && previous.signature === signature && previous.readOnly === readOnly &&
-        previous.mark === mark && patchText(root, previous.value, value)) {
+        previous.mark === mark && (!mark || previous.value !== '') && patchText(root, previous.value, value)) {
       root.toggleAttribute('data-empty', !value);
       return;
     }

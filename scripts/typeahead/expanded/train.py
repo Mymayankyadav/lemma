@@ -283,6 +283,9 @@ def run(args):
             metrics['checkpointSha256'] = file_hash(latest)
             metrics['elapsedWithCheckpointSeconds'] = time.monotonic() - start
             (args.out / 'metrics.json').write_text(json.dumps(metrics, indent=2) + '\n')
+            for target in milestone:
+                snapshot = {**metrics, 'checkpointSha256': file_hash(args.out / f'tokens-{target}.pt')}
+                (args.out / f'tokens-{target}.metrics.json').write_text(json.dumps(snapshot, indent=2) + '\n')
             print('VALIDATION', json.dumps(metrics), flush=True)
         if ranks > 1 and save:
             dist.barrier()

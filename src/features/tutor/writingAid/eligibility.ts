@@ -10,19 +10,21 @@ export const aidWords = (value: string): string[] =>
 
 function withheldAcrossInsertion(text: string, start: number, end: number, insert: string, withheld: readonly string[]): boolean {
   if (!withheld.length) return false;
-  // A collapsed insertion may join a prefix and suffix into one word. Include
-  // both sides and test only token sequences whose source span touches the edit.
-  const before = text.slice(Math.max(0, start - 160), start);
-  const after = text.slice(end, end + 160);
-  const tokens = [...(before + insert + after).matchAll(/[\p{L}\p{M}\p{N}]+/gu)];
-  const from = before.length, to = from + insert.length;
+  // Token adjacency can span arbitrary spaces or punctuation in the bounded
+  // draft. Only compare token sequences whose source span touches the edit.
+  const tokens = [...(text.slice(0, start) + insert + text.slice(end)).matchAll(/[\p{L}\p{M}\p{N}]+/gu)];
+  const from = start, to = start + insert.length;
+  const first = tokens.findIndex(token => token.index + token[0].length > from);
+  if (first < 0) return false;
+  let last = first - 1;
+  while (last + 1 < tokens.length && tokens[last + 1].index < to) last++;
   return withheld.some(entry => {
     const wanted = aidWords(entry);
-    return wanted.length > 0 && tokens.some((token, index) => {
-      const last = tokens[index + wanted.length - 1];
-      return last && token.index < to && last.index + last[0].length > from &&
-        wanted.every((word, offset) => aidWords(tokens[index + offset][0])[0] === word);
-    });
+    if (!wanted.length) return false;
+    for (let index = Math.max(0, first - wanted.length + 1); index <= last && index + wanted.length <= tokens.length; index++) {
+      if (wanted.every((word, offset) => aidWords(tokens[index + offset][0])[0] === word)) return true;
+    }
+    return false;
   });
 }
 

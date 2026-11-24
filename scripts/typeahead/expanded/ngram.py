@@ -1,14 +1,18 @@
 """Estimate modified Kneser–Ney with disk-backed counts and export normalized v2 assets."""
 import argparse
 from collections import Counter
+from contextlib import closing
 from functools import lru_cache
+import gzip
 import heapq
 from itertools import groupby
 import json
 import math
 from pathlib import Path
+import shutil
 import sqlite3
 import struct
+import time
 
 from corpus import PROSE, documents, file_hash, latex_spans, text_hash
 
@@ -54,23 +58,26 @@ def accumulate(db, source, vocab, order):
     table = Counter()
     training_tokens = 0
     next_report = 10_000_000
+    started = time.monotonic()
     sql = f'INSERT INTO counts{order} SELECT ?1,?2,?2 ON CONFLICT(k) DO UPDATE SET n=n+excluded.n,raw=raw+excluded.raw'
     for sentence in source:
         tokens = [BOS] * (order - 1) + ids(sentence, vocab) + [EOS]
         table.update(key(tokens[i:i + order]) for i in range(len(tokens) - order + 1))
         training_tokens += len(sentence)
         if len(table) >= 150_000:
-            db.executemany(sql, table.items())
+            db.executemany(sql, sorted(table.items()))
             db.commit()
             table.clear()
             if training_tokens >= next_report:
-                print('NGRAM COUNTS', json.dumps({'order': order, 'trainTokens': training_tokens}), flush=True)
+                print('NGRAM COUNTS', json.dumps({'order': order, 'trainTokens': training_tokens,
+                                                  'seconds': time.monotonic() - started}), flush=True)
                 next_report = (training_tokens // 10_000_000 + 1) * 10_000_000
-    db.executemany(sql, table.items())
+    db.executemany(sql, sorted(table.items()))
     db.commit()
     for n in range(order - 1, 0, -1):
         if training_tokens >= 10_000_000:
-            print('NGRAM CONTINUATIONS', json.dumps({'order': n, 'trainTokens': training_tokens}), flush=True)
+            print('NGRAM CONTINUATIONS', json.dumps({'order': n, 'trainTokens': training_tokens,
+                                                        'seconds': time.monotonic() - started}), flush=True)
         db.execute(f'CREATE TABLE counts{n}(k BLOB PRIMARY KEY,n INTEGER NOT NULL,raw INTEGER NOT NULL) WITHOUT ROWID')
         db.execute(f'INSERT INTO counts{n} SELECT substr(k,3),count(*),sum(raw) FROM counts{n + 1} GROUP BY substr(k,3)')
         db.commit()
@@ -166,7 +173,7 @@ def high_priority(rows, n, budget):
     return result
 
 
-def compile_model(db, vocab, order, limit, pruning):
+def compile_model(db, vocab, order, limit, pruning, progress=False):
     rows = dict((from_key(k)[0], count) for k, count in db.execute('SELECT k,n FROM counts1'))
     count = sum(rows.values())
     if count == 0:
@@ -188,6 +195,7 @@ def compile_model(db, vocab, order, limit, pruning):
     params = {}
     row_mass = {}
     for n in range(2, order + 1):
+        started = time.monotonic()
         column = 'raw' if n == order else 'n'
         d = discounts(db, n, column)
         params[n] = d[1:]
@@ -250,6 +258,9 @@ def compile_model(db, vocab, order, limit, pruning):
         # Leave budget unused by shorter tables available to the highest model order.
         if n < order:
             row_budgets[-1] += row_budgets[n - 2] - row_bytes(n, len(packed_rows), sum(len(v[0]) for v in packed_rows.values()))
+        if progress:
+            print('NGRAM PACK ORDER', json.dumps({'order': order, 'tableOrder': n, 'pruning': pruning,
+                                                 'seconds': time.monotonic() - started}), flush=True)
     return model, {'maxRowMassError': mass_error, 'discounts': params}, reference
 
 
@@ -302,46 +313,120 @@ def evaluate(model, reference, word_ids, source, order):
 
 
 
-def build_models(corpus, outputs, limit, size, kind, subject, shared_vocab=None, train_limit=None, scratch=None):
-    """Reuse the highest-order sorted counts for every order/pruning variant."""
-    from tempfile import TemporaryDirectory
+def count_checkpoint(corpus, out, max_order, size, kind, subject=None, shared_vocab=None, train_limit=None,
+                     compress=False):
+    """Persist the exact raw and continuation counts so packing can run in a separate session."""
     if subject and not shared_vocab:
         raise ValueError('A subject pack requires the selected general vocabulary')
+
     def source():
         return words(corpus, 'train', kind, subject, limit=train_limit)
+
     vocab = json.loads(shared_vocab.read_text()) if shared_vocab else estimate_vocab(source(), size)
     if vocab[:len(SPECIAL)] != list(SPECIAL) or len(vocab) > 65535 or len(set(vocab)) != len(vocab):
         raise ValueError('Invalid ordered vocabulary')
+    out.mkdir(parents=True, exist_ok=False)
+    vocab_file = out / 'vocab.json'
+    vocab_file.write_text(json.dumps(vocab, ensure_ascii=False) + '\n')
+    binary = out / 'counts.sqlite'
+    with closing(sqlite3.connect(binary)) as db:
+        db.execute('PRAGMA temp_store=FILE')
+        db.execute('PRAGMA cache_size=-262144')
+        training_tokens = accumulate(db, source(), {word: i for i, word in enumerate(vocab)}, max_order)
+    checkpoint = {'version': 1, 'kind': kind, 'subject': subject, 'maxOrder': max_order,
+                  'trainTokens': training_tokens, 'targetTrainTokens': train_limit,
+                  'corpusSha256': file_hash(corpus / 'manifest.json'),
+                  'vocabSha256': file_hash(vocab_file), 'countsSha256': file_hash(binary),
+                  'countsBytes': binary.stat().st_size}
+    if compress:
+        compressed = out / (binary.name + '.gz')
+        with binary.open('rb') as source, compressed.open('wb') as output:
+            with gzip.GzipFile(filename='', mode='wb', fileobj=output, compresslevel=1, mtime=0) as stream:
+                shutil.copyfileobj(source, stream, 4 * 1024 * 1024)
+        checkpoint['compressedBytes'] = compressed.stat().st_size
+        checkpoint['compressedSha256'] = file_hash(compressed)
+        binary.unlink()
+    (out / 'count-manifest.json').write_text(json.dumps(checkpoint, indent=2, sort_keys=True) + '\n')
+    return checkpoint
+
+
+def publish_checkpoint(local, published):
+    expected = sum(path.stat().st_size for path in local.iterdir())
+    available = shutil.disk_usage(published.parent).free
+    if expected > available - 128 * 1024 * 1024:
+        raise RuntimeError(f'Count checkpoint needs {expected} bytes with {available} bytes free')
+    shutil.copytree(local, published)
+
+
+def pack_checkpoint(corpus, checkpoint_dir, outputs, limit, scratch=None):
+    """Verify input identity and create only the transient probability tables in local scratch."""
+    from tempfile import TemporaryDirectory
+    metadata = json.loads((checkpoint_dir / 'count-manifest.json').read_text())
+    binary, vocab_file = checkpoint_dir / 'counts.sqlite', checkpoint_dir / 'vocab.json'
+    corpus_hash = file_hash(corpus / 'manifest.json')
+    if (metadata['version'] != 1 or metadata['corpusSha256'] != corpus_hash or
+            metadata['vocabSha256'] != file_hash(vocab_file) or max(order for _, order, _ in outputs) > metadata['maxOrder']):
+        raise ValueError('Invalid or mismatched n-gram count checkpoint')
+    vocab = json.loads(vocab_file.read_text())
     lookup = {word: i for i, word in enumerate(vocab)}
-    with TemporaryDirectory(prefix='lemma-ngram-', dir=scratch) as temp:
-        db = sqlite3.connect(Path(temp) / 'counts.sqlite')
+    kind, subject = metadata['kind'], metadata['subject']
+    with TemporaryDirectory(prefix='lemma-ngram-pack-', dir=scratch) as temp:
+        scratch_dir = Path(temp)
+        if 'compressedSha256' in metadata:
+            compressed = binary.with_suffix('.sqlite.gz')
+            if (compressed.stat().st_size != metadata['compressedBytes'] or
+                    file_hash(compressed) != metadata['compressedSha256']):
+                raise ValueError('Compressed count checkpoint has changed')
+            binary = scratch_dir / binary.name
+            with gzip.open(compressed, 'rb') as source, binary.open('wb') as target:
+                shutil.copyfileobj(source, target, 4 * 1024 * 1024)
+        if metadata['countsBytes'] != binary.stat().st_size or metadata['countsSha256'] != file_hash(binary):
+            raise ValueError('N-gram count database has changed')
+        db = sqlite3.connect(scratch_dir / 'rows.sqlite', uri=True)
         try:
             db.execute('PRAGMA temp_store=FILE')
-            training_tokens = accumulate(db, source(), lookup, max(order for _, order, _ in outputs))
+            db.execute('PRAGMA cache_size=-262144')
+            db.execute('ATTACH DATABASE ? AS counts', (binary.resolve().as_uri() + '?mode=ro&immutable=1',))
+            db.execute('PRAGMA counts.cache_size=-262144')
             for out, order, pruning in outputs:
                 out.mkdir(parents=True, exist_ok=False)
-                model, stats, reference = compile_model(db, vocab, order, limit, pruning)
+                progress = metadata['trainTokens'] >= 10_000_000
+                model, stats, reference = compile_model(db, vocab, order, limit, pruning, progress)
+                started = time.monotonic()
                 stats['validation'] = evaluate(model, reference, lookup, words(corpus, 'validation', kind, subject), order)
-                stats['trainTokens'] = training_tokens
-                stats['targetTrainTokens'] = train_limit
+                if progress:
+                    print('NGRAM PACK VALIDATION', json.dumps({'order': order, 'pruning': pruning,
+                                                               'seconds': time.monotonic() - started}), flush=True)
+                stats['trainTokens'] = metadata['trainTokens']
+                stats['targetTrainTokens'] = metadata['targetTrainTokens']
                 reference.row.cache_clear()
                 for n in range(2, order + 1):
                     db.execute(f'DROP TABLE rows{n}')
                 db.commit()
-                binary = out / 'model.bin'
-                binary.write_bytes(encode(vocab, model))
-                if binary.stat().st_size > limit:
+                asset = out / 'model.bin'
+                asset.write_bytes(encode(vocab, model))
+                if asset.stat().st_size > limit:
                     raise ValueError('Packed asset exceeded its byte budget')
-                (out / 'vocab.json').write_text(json.dumps(vocab, ensure_ascii=False) + '\n')
-                manifest = {'version': 2, 'kind': kind, 'order': order, 'file': binary.name,
-                            'bytes': binary.stat().st_size, 'sha256': file_hash(binary),
+                (out / 'vocab.json').write_bytes(vocab_file.read_bytes())
+                manifest = {'version': 2, 'kind': kind, 'order': order, 'file': asset.name,
+                            'bytes': asset.stat().st_size, 'sha256': file_hash(asset),
                             'vocabSha256': text_hash('\n'.join(vocab)), 'vocabSize': len(vocab),
                             'subject': subject, 'pruning': pruning, 'metrics': stats,
-                            'corpusSha256': file_hash(corpus / 'manifest.json')}
+                            'corpusSha256': corpus_hash, 'countsSha256': metadata['countsSha256']}
                 (out / 'manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
                 yield out, manifest
         finally:
             db.close()
+
+
+def build_models(corpus, outputs, limit, size, kind, subject, shared_vocab=None, train_limit=None, scratch=None):
+    """Reuse the highest-order sorted counts for every order/pruning variant."""
+    from tempfile import TemporaryDirectory
+    with TemporaryDirectory(prefix='lemma-ngram-count-', dir=scratch) as temp:
+        checkpoint = Path(temp) / 'counts'
+        count_checkpoint(corpus, checkpoint, max(order for _, order, _ in outputs), size, kind,
+                         subject, shared_vocab, train_limit)
+        yield from pack_checkpoint(corpus, checkpoint, outputs, limit, scratch)
 
 
 def build(corpus, out, order, limit, size, pruning, kind, subject, shared_vocab=None, train_limit=None):

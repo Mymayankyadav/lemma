@@ -9,9 +9,9 @@ import unittest
 import numpy as np
 
 from corpus import SPLITS, build, file_hash, fingerprint, group_identity, group_preflight, publisher_reference, records, split_for, text_hash
-from fit import fit_mixtures, mixture, PRIOR, threshold
-from ngram import SPECIAL, accumulate, compile_model, encode, entropy_cost, high_priority, key
-from replay_metrics import paired
+from fit import fit_calibration, fit_mixtures, mixture, PRIOR, threshold
+from ngram import SPECIAL, accumulate, build_models, compile_model, count_checkpoint, encode, entropy_cost, high_priority, key, pack_checkpoint, publish_checkpoint
+from replay_metrics import paired, summarize
 from replay_sample import boundary_cases, math_spans
 from score_assets import model_file
 from subwords import Encoder, audit_prepared_membership, prompt_ids
@@ -96,6 +96,36 @@ class PipelineTests(unittest.TestCase):
                             full = [reference.probability(key(history), word) for word in lookup.values()]
                             self.assertAlmostEqual(sum(packed), 1, places=6)
                             self.assertAlmostEqual(sum(full), 1, places=10)
+
+    def test_compressed_count_checkpoint_reproduces_direct_binary(self):
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            corpus = root / 'corpus'
+            source = root / 'source.jsonl'
+            source.write_text(''.join(json.dumps({'text': f'The {noun} is open in this topology.'}) + '\n'
+                                      for noun in ('subset', 'interval', 'neighborhood', 'set', 'cover')))
+            spec = root / 'sources.json'
+            spec.write_text(json.dumps([{'id': 'fixture', 'revision': 'fixture', 'register': 'proof',
+                                         'license': 'fixture', 'url': 'https://example.net',
+                                         'shards': [{'path': source.name, 'sha256': file_hash(source)}]}]))
+            build(spec, corpus, 1000, 2)
+            variants = ((3, 'count'), (4, 'entropy'), (5, 'count'))
+            direct = [(root / f'direct{order}', order, method) for order, method in variants]
+            staged = [(root / f'staged{order}', order, method) for order, method in variants]
+            list(build_models(corpus, direct, 4096, 50, 'ngram', None))
+            local = root / 'local-checkpoint'
+            mounted = root / 'mounted-checkpoint'
+            report = count_checkpoint(corpus, local, 5, 50, 'ngram', compress=True)
+            publish_checkpoint(local, mounted)
+            list(pack_checkpoint(corpus, mounted, staged, 4096))
+            for (direct_out, _, _), (staged_out, _, _) in zip(direct, staged):
+                self.assertEqual((direct_out / 'model.bin').read_bytes(), (staged_out / 'model.bin').read_bytes())
+                manifest = json.loads((staged_out / 'manifest.json').read_text())
+                self.assertEqual(manifest['countsSha256'], report['countsSha256'])
+            with (mounted / 'counts.sqlite.gz').open('ab') as changed:
+                changed.write(b'unexpected')
+            with self.assertRaisesRegex(ValueError, 'Compressed count checkpoint has changed'):
+                list(pack_checkpoint(corpus, mounted, staged, 4096))
 
     def test_reused_highest_order_counts_match_independent_lower_order(self):
         vocab = [*SPECIAL, 'a', 'in', 'set', 'open', 'space']
@@ -183,11 +213,60 @@ class PipelineTests(unittest.TestCase):
             self.assertAlmostEqual(sum(report['global']), 1.)
             self.assertEqual(report['counts']['global'], 1)
             self.assertEqual(report['coverage']['pooled'], {'scheduled': 3, 'supportedLiterals': 1,
-                                                            'unsupportedLiterals': 1, 'missingComponents': 1})
+                                                            'unsupportedLiterals': 1, 'missingComponents': 1, 'subjectAvailable': 1})
             path.write_text(json.dumps(rows[1]) + '\n')
             report = fit_mixtures(path)
             self.assertEqual(report['status'], 'no-supported-literals')
             self.assertNotIn('global', report)
+
+    def test_browser_mixture_requires_fingerprint_and_disjoint_validation(self):
+        with TemporaryDirectory() as temp:
+            calibration = Path(temp) / 'calibration.jsonl'
+            validation = Path(temp) / 'validation.jsonl'
+            general_sha, subject_sha = 'c' * 64, 'd' * 64
+            row = {'captureVersion': 'n238-mixture-v1', 'assetSha256': general_sha, 'subject': 'topology',
+                   'subjectAssetSha256': subject_sha, 'probability': {'general': .2, 'subject': .6, 'activeMixture': .21}}
+            def write(path, group, data):
+                path.write_text(json.dumps({**data, 'eventId': group + '-1', 'documentGroup': group}) + '\n')
+            write(calibration, 'fit-group', row)
+            write(validation, 'heldout-group', row)
+            result = fit_mixtures(calibration, validation, general_sha)
+            self.assertEqual(result['status'], 'validated')
+            self.assertEqual(result['subjectAssetSha256'], {'topology': subject_sha})
+            self.assertEqual(result['global'][-1], 0.)
+            self.assertLess(result['validation']['fittedMeanNll'], result['validation']['fallbackMeanNll'])
+            write(validation, 'fit-group', row)
+            with self.assertRaisesRegex(ValueError, 'groups overlap'):
+                fit_mixtures(calibration, validation, general_sha)
+            write(validation, 'heldout-group', {**row, 'subjectAssetSha256': 'e' * 64})
+            with self.assertRaisesRegex(ValueError, 'fingerprint drift'):
+                fit_mixtures(calibration, validation, general_sha)
+
+    def test_offline_ghost_fit_never_infers_behavioral_outcomes(self):
+        with TemporaryDirectory() as temp:
+            calibration = Path(temp) / 'calibration.jsonl'
+            validation = Path(temp) / 'validation.jsonl'
+            digest = ':'.join(['a' * 64, 'b' * 64, 'c' * 64, '-'])
+            row = {'modelFingerprint': digest, 'length': 6, 'score': -2, 'context': 'prefix', 'source': 'neural',
+                   'measure': 'offline-exact', 'exact': True, 'elapsedMs': 30}
+            calibration.write_text(json.dumps({**row, 'documentGroup': 'fit'}) + '\n')
+            validation.write_text(json.dumps({**row, 'documentGroup': 'heldout'}) + '\n')
+            report = fit_calibration(calibration, validation, 1, digest)
+            self.assertEqual(report['modelFingerprint'], digest)
+            self.assertEqual({value['outcome'] for value in report['rows']}, {'exact'})
+            validation.write_text(json.dumps({**row, 'documentGroup': 'heldout', 'accepted': True}) + '\n')
+            with self.assertRaisesRegex(ValueError, 'exact outcomes only'):
+                fit_calibration(calibration, validation, 1, digest)
+
+    def test_product_ghost_counts_an_exact_prefix_of_the_remaining_answer(self):
+        gold = {'one': {'answerId': 'answer', 'subject': 'topology', 'kind': 'word', 'boundary': True, 'prefixSha256': '1',
+                        'exactInsertion': 'every ', 'exactGhost': 'every open cover has a finite subcover.'}}
+        impressions = {'one': {'prefixSha256': '1', 'slate': [], 'ghostEligible': True,
+                               'ghost': {'text': 'every open ', 'source': 'neural'}}}
+        keys = {'answer': {'manualKeys': 40, 'assistedKeys': 29, 'costDefinition': 'full-answer-v1'}}
+        report, _, _ = summarize(gold, impressions, keys, 7)
+        self.assertEqual(report['rates']['ghost']['rate'], 1.)
+        self.assertEqual(report['ghost']['counts']['acceptanceObserved'], 0)
 
     def test_replay_uses_unicode_compounds_and_balanced_unescaped_math(self):
         answer = 'Évariste calls it non‑Archimedean and he’s paying ' + chr(92) + '$5. '

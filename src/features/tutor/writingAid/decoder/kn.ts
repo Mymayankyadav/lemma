@@ -351,12 +351,22 @@ export const setNgramModel = prose.set;
 export const loadNgram = prose.load;
 /** N235: the LaTeX-token model for the strip inside $…$. */
 let expandedLatex: NgramModel | null = null;
+let expandedLatexFingerprint: string | undefined;
 export const latexModel = () => expandedLatex ?? latex.get();
 export const setLatexModel = latex.set;
+export const typeaheadLatexFingerprint = () => expandedLatexFingerprint ?? (latex.get() ? latexManifest.file.sha256 : undefined);
 let latexLoading: Promise<void> | undefined;
-export function loadLatexModel(): Promise<void> {
-  return latexLoading ??= Promise.all([latex.load(), expandedAsset('latex-v2', null, 4 * 1024 * 1024, 'latex')
-    .then(result => {if (result) expandedLatex = result.model;}).catch(() => undefined)]).then(() => undefined);
+export function loadLatexModel(expanded = false): Promise<void> {
+  if (!expanded) return latex.load();
+  return latexLoading ??= expandedAsset('latex-v2', null, 2 * MiB, 'latex').catch(() => undefined)
+    .then(async result => {
+      if (result) {
+        expandedLatex = result.model;
+        expandedLatexFingerprint = result.fingerprint;
+      }
+      else await latex.load();
+      if (!latexModel()) latexLoading = undefined;
+    });
 }
 
 
@@ -380,11 +390,11 @@ export function typeaheadNgramFingerprint(): string | undefined {
   return expandedFingerprint ?? (ngramModel() ? manifest.file.sha256 : undefined);
 }
 let generalLoading: Promise<void> | undefined;
-let subjectSelection: {subject: string; token: object; model?: NgramModel; weight?: number} | undefined;
+let subjectSelection: {subject: string; token: object; model?: NgramModel; weight?: number; fingerprint?: string} | undefined;
 export const generalNgram = (): NgramModel | null => expandedGeneral ?? ngramModel();
-export function activeSubjectNgram(subject?: string): {model: NgramModel; weight: number} | undefined {
-  if (!subject || subjectSelection?.subject !== subject || !subjectSelection.model) return undefined;
-  return {model: subjectSelection.model, weight: subjectSelection.weight ?? .2};
+export function activeSubjectNgram(subject?: string): {model: NgramModel; weight: number; fingerprint: string} | undefined {
+  if (!subject || subjectSelection?.subject !== subject || !subjectSelection.model || !subjectSelection.fingerprint) return undefined;
+  return {model: subjectSelection.model, weight: subjectSelection.weight ?? .2, fingerprint: subjectSelection.fingerprint};
 }
 
 async function expandedAsset(set: string, subject: string | null, budget: number, kind: ExpandedManifest['kind'] = 'ngram'): Promise<{model: NgramModel; weight?: number; fingerprint: string} | null> {

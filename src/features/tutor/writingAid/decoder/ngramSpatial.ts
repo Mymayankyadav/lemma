@@ -20,7 +20,8 @@ import {createDecoderLexicon, searchDecoderLexicon, type DecoderLexicon, type De
 import {usesExpandedNgram, type TypeaheadArm} from '../replayArm';
 import {loadTypeaheadMixture, subjectWeights} from './mixture';
 import {isFlagOn} from '../../../../flags';
-import {activeSubjectNgram, EOS, generalNgram, historyIds, historyLog, historyNext, loadExpandedNgram, loadLatexModel, loadNgram, MATH_TOKEN, UNK, type NgramModel} from './kn';
+import {activeSubjectNgram, EOS, generalNgram, historyIds, historyLog, historyNext, loadExpandedNgram, loadLatexModel, loadNgram, MATH_TOKEN,
+  typeaheadNgramFingerprint, UNK, type NgramModel} from './kn';
 
 export interface KeyTouch {
   /** Horizontal position in key pitches from the left edge of the letter rows (q's centre is 0.5). */
@@ -131,7 +132,7 @@ export function typeaheadActive(): boolean {
 export function prepareTypeahead(): Promise<void> {
   if (!isFlagOn('typeaheadV2')) return Promise.resolve();
   return typeof Worker === 'undefined'
-    ? Promise.all([loadNgram(), loadLatexModel(), loadTypeaheadMixture()]).then(() => undefined)
+    ? Promise.all([loadNgram(), loadLatexModel(true), loadTypeaheadMixture()]).then(() => undefined)
     : Promise.resolve();
 }
 export function prepareMainTypeaheadFallback(arm?: TypeaheadArm): Promise<void> {
@@ -215,7 +216,7 @@ export interface LanguageContext {
 }
 
 export type ComponentProbabilities = Readonly<{
-  general: number; subject?: number; question?: number; draft?: number; personal?: number;
+  general: number; subject?: number; question?: number; draft?: number; personal?: number; activeMixture: number;
 }>;
 
 export interface LanguageDistribution {
@@ -256,11 +257,15 @@ export function prepareLanguage(before: string, options: LanguageContext = {}): 
   const history = kn ? historyIds(kn, before) : [];
   const scopedHistory = scoped ? historyIds(scoped.model, before) : [];
   const previous = /([A-Za-z]+)[^A-Za-z.!?;:\n]*$/u.exec(before)?.[1]?.toLowerCase() ?? '';
-  const fit = kn ? subjectWeights(options.subject) : undefined;
-  const cacheWeights = [{cache: source, weight: fit?.[2] ?? .06}, {cache: draft, weight: fit?.[3] ?? .04},
-    ...options.personal ? [{...options.personal, weight: Math.min(fit?.[4] ?? .4, options.personal.weight)}] : []];
+  const fit = kn ? subjectWeights(typeaheadNgramFingerprint(), options.subject, scoped?.fingerprint) : undefined;
+  // Frozen corpus fits have no personal history. Preserve the separate
+  // local weight and give the remaining probability mass to the fitted mix.
+  const personalWeight = options.personal?.cache.total ? Math.min(.4, options.personal.weight) : 0;
+  const fittedScale = 1 - personalWeight;
+  const cacheWeights = [{cache: source, weight: fit ? fit[2] * fittedScale : .06}, {cache: draft, weight: fit ? fit[3] * fittedScale : .04},
+    ...options.personal ? [{...options.personal, weight: personalWeight}] : []];
   const cacheWeight = cacheWeights.reduce((sum, entry) => sum + (entry.cache.total ? entry.weight : 0), 0);
-  const subjectWeight = scoped ? fit ? fit[1] / Math.max(Number.EPSILON, 1 - cacheWeight) : scoped.weight : 0;
+  const subjectWeight = scoped ? fit ? fit[1] * fittedScale / Math.max(Number.EPSILON, 1 - cacheWeight) : scoped.weight : 0;
   const candidates = new Set([...source.counts.keys(), ...draft.counts.keys(), ...options.personal?.cache.counts.keys() ?? [],
     ...options.extraLexical?.map(word => word.toLowerCase()) ?? []]);
   if (kn) for (const id of historyNext(kn, history)) if (id > EOS) candidates.add(kn.words[id]);
@@ -278,6 +283,7 @@ export function prepareLanguage(before: string, options: LanguageContext = {}): 
   const components = (word: string): ComponentProbabilities => ({
     general: generalProbability(word), subject: scoped ? modelProbability(word, scoped.model, scopedHistory) : undefined,
     question: probabilityIn(source, word), draft: probabilityIn(draft, word), personal: probabilityIn(options.personal?.cache, word),
+    activeMixture: Math.exp(score(word)),
   });
   const score = (word: string) => {
     const general = generalProbability(word);

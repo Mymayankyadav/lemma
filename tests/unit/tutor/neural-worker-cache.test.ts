@@ -15,7 +15,8 @@ vi.mock('../../../src/features/tutor/writingAid/decoder/neuralManifest', () => (
   selectNeuralBackend: () => 'wasm',
   neuralManifest: async () => ({
     context: 512, layers: 1, vocabSize: 262,
-    files: {tokenizer: {path: 'tokenizer'}, prefill: {path: 'prefill', sha256: 'checked'}, incremental: {path: 'incremental'}},
+    files: {tokenizer: {path: 'tokenizer', sha256: 'tokens'}, prefill: {path: 'prefill', sha256: 'checked'},
+      incremental: {path: 'incremental', sha256: 'step'}},
   }),
 }));
 vi.mock('../../../src/features/tutor/writingAid/decoder/assets', () => ({
@@ -26,8 +27,10 @@ vi.mock('../../../src/features/tutor/writingAid/decoder/assets', () => ({
   },
 }));
 
-function tensors() {
-  return {logits: {getData: async () => new Float32Array(262), dispose: vi.fn()},
+function tensors(bestToken?: number) {
+  const logits = new Float32Array(262);
+  if (bestToken !== undefined) logits[bestToken] = 12;
+  return {logits: {getData: async () => logits, dispose: vi.fn()},
     present_key_0: {dispose: vi.fn()}, present_value_0: {dispose: vi.fn()}};
 }
 
@@ -42,9 +45,10 @@ async function worker() {
   vi.stubGlobal('navigator', {});
   await import('../../../src/features/tutor/writingAid/decoder/neural.worker');
   return {
-    suggest(id: number, draft: string, epoch = 'turn', deadline = Date.now() + 1000) {
+    suggest(id: number, draft: string, epoch = 'turn', deadline = Date.now() + 1000,
+      options?: Pick<NeuralRequest, 'ghost' | 'probeGhost'>) {
       scope.onmessage!({data: {id, epoch, deadline, prompt: {question: 'Exercise', aids: '', draft},
-        prefix: '', words: [], startedAt: Date.now(), ghost: false}});
+        prefix: '', words: [], startedAt: Date.now(), ghost: false, ...options}});
     },
     reset() {scope.onmessage!({data: {reset: true}});},
     async reply(id: number) {
@@ -99,4 +103,44 @@ test.each(['same', 'other', 'reset'] as const)('handles a %s request while prefi
   expect(pending.cached.present_key_0.dispose).toHaveBeenCalledTimes(change === 'same' ? 0 : 1);
   decoder.reset();
   expect(pending.cached.present_key_0.dispose).toHaveBeenCalledTimes(1);
+});
+
+test('keeps an uncalibrated continuation restricted to an explicit replay probe', async () => {
+  const decoder = await worker();
+  decoder.suggest(1, 'Use ', 'turn', Date.now() + 1000, {ghost: true});
+  const ordinary = await decoder.reply(1);
+  expect(ordinary.ghostProbe).toBeUndefined();
+  expect(ordinary.continuation).toBeUndefined();
+  expect(ort.prefill).toHaveBeenCalledTimes(1);
+  ort.prefill.mockResolvedValueOnce(tensors('t'.charCodeAt(0) + 6));
+  for (const char of 'here ') ort.incremental.mockResolvedValueOnce(tensors(char.charCodeAt(0) + 6));
+  ort.incremental.mockResolvedValueOnce(tensors(2));
+  decoder.suggest(2, 'Use ', 'turn', Date.now() + 1000, {ghost: true, probeGhost: true});
+  const diagnostic = await decoder.reply(2);
+  expect(diagnostic.continuation).toBeUndefined();
+  expect(diagnostic.ghostProbe?.map(candidate => candidate.text)).toEqual(['there ']);
+  expect(diagnostic.modelFingerprint).toBe('checked:step:tokens:-');
+  decoder.reset();
+});
+
+test.each(['late', 'reset'] as const)('discards a %s probe even if its first boundary was computed earlier', async change => {
+  const decoder = await worker();
+  let now = 100;
+  vi.spyOn(Date, 'now').mockImplementation(() => now);
+  ort.prefill.mockResolvedValueOnce(tensors()).mockResolvedValueOnce(tensors('t'.charCodeAt(0) + 6));
+  for (const char of 'here ') ort.incremental.mockResolvedValueOnce(tensors(char.charCodeAt(0) + 6));
+  const final = tensors(2);
+  let finish!: () => void;
+  ort.incremental.mockImplementationOnce(() => new Promise(resolve => {finish = () => resolve(final);}));
+  decoder.suggest(1, 'Use ', 'turn', 160, {ghost: true, probeGhost: true});
+  await vi.waitFor(() => expect(ort.incremental).toHaveBeenCalledTimes(6));
+  if (change === 'reset') decoder.reset();
+  else now = 170;
+  finish();
+  const discarded = await decoder.reply(1);
+  expect(discarded.timing?.late).toBe(change === 'late');
+  expect(discarded.continuation).toBeUndefined();
+  expect(discarded.ghostProbe).toBeUndefined();
+  expect(final.present_key_0.dispose).toHaveBeenCalledTimes(1);
+  decoder.reset();
 });

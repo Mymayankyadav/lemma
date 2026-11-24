@@ -13618,6 +13618,4019 @@
           ]
         }
       }
+    },
+    {
+      "label": "diagnostic expanded n-gram with empty text fast path",
+      "selectedAssetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56",
+      "rawTimingsSha256": "94ce7df9a5d22bcc1dae680c603e3ea5be64c10be934502ebde33f4a27f67609",
+      "host": {
+        "startedUtc": "2026-11-24T22:00:50Z",
+        "finishedUtc": "2026-11-24T22:02:47Z",
+        "elapsedSeconds": 117.0,
+        "hostLoadAverage1mBefore": 0.98,
+        "hostLoadAverage1mAfter": 1.83,
+        "cgroupQuotaUs": 400000,
+        "cgroupPeriodUs": 100000,
+        "cgroupCpuUsageUs": 161399079,
+        "cgroupThrottledUs": 23897,
+        "cgroupThrottledPeriods": 1
+      },
+      "scenarios": {
+        "empty": {
+          "p95": 35.30000000074506,
+          "p99": 40.69999999925494,
+          "max": 46.5,
+          "domP95": 32.09999999962747,
+          "workerP95": 4.5,
+          "presentationSamples": 0,
+          "warmSamples": 100,
+          "targetMs": 32,
+          "status": "missed",
+          "workerTargetMs": 8,
+          "workerP99": 5.400000000372529,
+          "workerMax": 8.299999998882413,
+          "workerStatus": "met",
+          "samples": [
+            {
+              "phase": "initial",
+              "frameMs": 75.90000000037253,
+              "domMs": 71.20000000111759,
+              "clickDelayMs": 27.09999999962747,
+              "physicalMs": 76,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 1,
+                "computeMs": 40.30000000074506,
+                "elapsedMs": 932.1999999992549,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 34.90000000037253,
+              "domMs": 32.5,
+              "clickDelayMs": 12.200000001117587,
+              "physicalMs": 35,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 2,
+                "computeMs": 3.300000000745058,
+                "elapsedMs": 17.299999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 30.59999999962747,
+              "domMs": 28.09999999962747,
+              "clickDelayMs": 12.199999999254942,
+              "physicalMs": 30.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 3,
+                "computeMs": 5.299999998882413,
+                "elapsedMs": 25.90000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 34.40000000037253,
+              "domMs": 32.09999999962747,
+              "clickDelayMs": 14.299999998882413,
+              "physicalMs": 34.600000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 4,
+                "computeMs": 3.099999999627471,
+                "elapsedMs": 13.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.5,
+              "domMs": 20.40000000037253,
+              "clickDelayMs": 10.400000000372529,
+              "physicalMs": 22.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 5,
+                "computeMs": 3.299999998882413,
+                "elapsedMs": 33.09999999962747,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.09999999962747,
+              "domMs": 24.800000000745058,
+              "clickDelayMs": 10.900000000372529,
+              "physicalMs": 28.299999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 6,
+                "computeMs": 2.900000000372529,
+                "elapsedMs": 16.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.899999998509884,
+              "domMs": 22.199999999254942,
+              "clickDelayMs": 10.799999998882413,
+              "physicalMs": 25.899999998509884,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 7,
+                "computeMs": 3.099999999627471,
+                "elapsedMs": 16.90000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.200000001117587,
+              "domMs": 20.59999999962747,
+              "clickDelayMs": 9.200000001117587,
+              "physicalMs": 23.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 8,
+                "computeMs": 2.5,
+                "elapsedMs": 12.599999999627471,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.90000000037253,
+              "domMs": 21.5,
+              "clickDelayMs": 9.900000000372529,
+              "physicalMs": 25,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 9,
+                "computeMs": 3.900000000372529,
+                "elapsedMs": 21.90000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.90000000037253,
+              "domMs": 20.199999999254942,
+              "clickDelayMs": 8.5,
+              "physicalMs": 23,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 10,
+                "computeMs": 2.199999999254942,
+                "elapsedMs": 13.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.300000000745058,
+              "domMs": 25.90000000037253,
+              "clickDelayMs": 12.400000000372529,
+              "physicalMs": 28.300000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 11,
+                "computeMs": 2.699999999254942,
+                "elapsedMs": 17.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.199999999254942,
+              "domMs": 22.59999999962747,
+              "clickDelayMs": 10,
+              "physicalMs": 25.299999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 12,
+                "computeMs": 2.200000001117587,
+                "elapsedMs": 14.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.700000001117587,
+              "domMs": 21.90000000037253,
+              "clickDelayMs": 11.100000001490116,
+              "physicalMs": 23.700000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 13,
+                "computeMs": 2.200000001117587,
+                "elapsedMs": 10.199999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28,
+              "domMs": 24.699999999254942,
+              "clickDelayMs": 9.199999999254942,
+              "physicalMs": 28.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 14,
+                "computeMs": 2,
+                "elapsedMs": 17.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 35.30000000074506,
+              "domMs": 31.59999999962747,
+              "clickDelayMs": 14,
+              "physicalMs": 35.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 15,
+                "computeMs": 2,
+                "elapsedMs": 17.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.699999999254942,
+              "domMs": 25.5,
+              "clickDelayMs": 10.799999998882413,
+              "physicalMs": 28.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 16,
+                "computeMs": 2,
+                "elapsedMs": 15.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 27.800000000745058,
+              "domMs": 25,
+              "clickDelayMs": 11.5,
+              "physicalMs": 28,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 17,
+                "computeMs": 2.099999999627471,
+                "elapsedMs": 26.09999999962747,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.5,
+              "domMs": 19.299999998882413,
+              "clickDelayMs": 8.5,
+              "physicalMs": 21.700000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 18,
+                "computeMs": 2.5,
+                "elapsedMs": 24.90000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.699999999254942,
+              "domMs": 23.799999998882413,
+              "clickDelayMs": 12.699999999254942,
+              "physicalMs": 26.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 19,
+                "computeMs": 2.099999999627471,
+                "elapsedMs": 23.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.40000000037253,
+              "domMs": 21,
+              "clickDelayMs": 9.199999999254942,
+              "physicalMs": 24.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 20,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 14.599999999627471,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.299999998882413,
+              "domMs": 22.899999998509884,
+              "clickDelayMs": 10,
+              "physicalMs": 26.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 21,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 15.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.799999998882413,
+              "domMs": 20.09999999962747,
+              "clickDelayMs": 9,
+              "physicalMs": 22.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 22,
+                "computeMs": 2,
+                "elapsedMs": 23.100000001490116,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.100000001490116,
+              "domMs": 17.800000000745058,
+              "clickDelayMs": 8.900000000372529,
+              "physicalMs": 20.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 23,
+                "computeMs": 1.800000000745058,
+                "elapsedMs": 20.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 18.59999999962747,
+              "domMs": 18.300000000745058,
+              "clickDelayMs": 8.5,
+              "physicalMs": 18.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 24,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 12.599999999627471,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.59999999962747,
+              "domMs": 23.90000000037253,
+              "clickDelayMs": 11.5,
+              "physicalMs": 24.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 25,
+                "computeMs": 2,
+                "elapsedMs": 20.40000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24,
+              "domMs": 21.199999999254942,
+              "clickDelayMs": 4.799999998882413,
+              "physicalMs": 24.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 26,
+                "computeMs": 1.800000000745058,
+                "elapsedMs": 10.199999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.699999999254942,
+              "domMs": 20.799999998882413,
+              "clickDelayMs": 8.899999998509884,
+              "physicalMs": 22.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 27,
+                "computeMs": 1.799999998882413,
+                "elapsedMs": 22,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.5,
+              "domMs": 20.699999999254942,
+              "clickDelayMs": 9.699999999254942,
+              "physicalMs": 23.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 28,
+                "computeMs": 2.200000001117587,
+                "elapsedMs": 14.099999999627471,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.5,
+              "domMs": 23.299999998882413,
+              "clickDelayMs": 10.599999999627471,
+              "physicalMs": 25.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 29,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 12.599999999627471,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.09999999962747,
+              "domMs": 19.399999998509884,
+              "clickDelayMs": 9,
+              "physicalMs": 22.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 30,
+                "computeMs": 1.8999999985098839,
+                "elapsedMs": 15.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20,
+              "domMs": 17.799999998882413,
+              "clickDelayMs": 8.699999999254942,
+              "physicalMs": 20,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 31,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 17.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.299999998882413,
+              "domMs": 18.59999999962747,
+              "clickDelayMs": 8.599999999627471,
+              "physicalMs": 21.399999998509884,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 32,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 14.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.09999999962747,
+              "domMs": 18.09999999962747,
+              "clickDelayMs": 8.599999999627471,
+              "physicalMs": 20.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 33,
+                "computeMs": 2,
+                "elapsedMs": 21.40000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.799999998882413,
+              "domMs": 21,
+              "clickDelayMs": 9.299999998882413,
+              "physicalMs": 22.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 34,
+                "computeMs": 2.099999999627471,
+                "elapsedMs": 23.299999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.59999999962747,
+              "domMs": 18.299999998882413,
+              "clickDelayMs": 8.599999999627471,
+              "physicalMs": 20.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 35,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 14.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.5,
+              "domMs": 20.90000000037253,
+              "clickDelayMs": 9,
+              "physicalMs": 25.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 36,
+                "computeMs": 2,
+                "elapsedMs": 16.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 30.299999998882413,
+              "domMs": 27.199999999254942,
+              "clickDelayMs": 13.199999999254942,
+              "physicalMs": 30.299999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 37,
+                "computeMs": 3,
+                "elapsedMs": 20.700000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 36.30000000074506,
+              "domMs": 34,
+              "clickDelayMs": 20.200000001117587,
+              "physicalMs": 36.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 38,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 14.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.09999999962747,
+              "domMs": 19.799999998882413,
+              "clickDelayMs": 8.599999999627471,
+              "physicalMs": 22.300000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 39,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 15,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21,
+              "domMs": 18.699999999254942,
+              "clickDelayMs": 8.199999999254942,
+              "physicalMs": 21.300000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 40,
+                "computeMs": 3.699999999254942,
+                "elapsedMs": 15.299999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.899999998509884,
+              "domMs": 18.699999999254942,
+              "clickDelayMs": 8.899999998509884,
+              "physicalMs": 21,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 41,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 13.400000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.5,
+              "domMs": 18.40000000037253,
+              "clickDelayMs": 8.799999998882413,
+              "physicalMs": 20.800000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 42,
+                "computeMs": 2.5,
+                "elapsedMs": 11.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.700000001117587,
+              "domMs": 20.800000000745058,
+              "clickDelayMs": 9.800000000745058,
+              "physicalMs": 22.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 43,
+                "computeMs": 1.800000000745058,
+                "elapsedMs": 16.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 27.199999999254942,
+              "domMs": 23.399999998509884,
+              "clickDelayMs": 10.5,
+              "physicalMs": 27.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 44,
+                "computeMs": 2,
+                "elapsedMs": 15.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.40000000037253,
+              "domMs": 25.799999998882413,
+              "clickDelayMs": 13.299999998882413,
+              "physicalMs": 26.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 45,
+                "computeMs": 2.400000000372529,
+                "elapsedMs": 17.299999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 27.299999998882413,
+              "domMs": 24,
+              "clickDelayMs": 11.599999999627471,
+              "physicalMs": 27.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 46,
+                "computeMs": 2.799999998882413,
+                "elapsedMs": 16.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.40000000037253,
+              "domMs": 19,
+              "clickDelayMs": 9.5,
+              "physicalMs": 21.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 47,
+                "computeMs": 2.599999999627471,
+                "elapsedMs": 15.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.59999999962747,
+              "domMs": 18.699999999254942,
+              "clickDelayMs": 8.199999999254942,
+              "physicalMs": 20.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 48,
+                "computeMs": 2.100000001490116,
+                "elapsedMs": 15.399999998509884,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 27.200000001117587,
+              "domMs": 24.600000001490116,
+              "clickDelayMs": 12,
+              "physicalMs": 27.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 49,
+                "computeMs": 2.199999999254942,
+                "elapsedMs": 21.09999999962747,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.700000001117587,
+              "domMs": 23.59999999962747,
+              "clickDelayMs": 10.900000000372529,
+              "physicalMs": 26.700000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 50,
+                "computeMs": 2.099999999627471,
+                "elapsedMs": 18.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24,
+              "domMs": 22.199999999254942,
+              "clickDelayMs": 9.300000000745058,
+              "physicalMs": 24.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 51,
+                "computeMs": 2.600000001490116,
+                "elapsedMs": 14.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.899999998509884,
+              "domMs": 22.899999998509884,
+              "clickDelayMs": 9.399999998509884,
+              "physicalMs": 26,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 52,
+                "computeMs": 2.399999998509884,
+                "elapsedMs": 17.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.699999999254942,
+              "domMs": 23.09999999962747,
+              "clickDelayMs": 12.300000000745058,
+              "physicalMs": 25.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 53,
+                "computeMs": 3,
+                "elapsedMs": 30.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.40000000037253,
+              "domMs": 22.199999999254942,
+              "clickDelayMs": 8.800000000745058,
+              "physicalMs": 25.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 54,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 16.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.5,
+              "domMs": 25.699999999254942,
+              "clickDelayMs": 11.299999998882413,
+              "physicalMs": 28.800000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 55,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 14.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.40000000037253,
+              "domMs": 21,
+              "clickDelayMs": 9.5,
+              "physicalMs": 24.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 56,
+                "computeMs": 2.100000001490116,
+                "elapsedMs": 16.600000001490116,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.299999998882413,
+              "domMs": 18,
+              "clickDelayMs": 8.5,
+              "physicalMs": 20.399999998509884,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 57,
+                "computeMs": 1.800000000745058,
+                "elapsedMs": 12.400000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.09999999962747,
+              "domMs": 23.09999999962747,
+              "clickDelayMs": 10.099999999627471,
+              "physicalMs": 25.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 58,
+                "computeMs": 3,
+                "elapsedMs": 13.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.800000000745058,
+              "domMs": 23.800000000745058,
+              "clickDelayMs": 11.700000001117587,
+              "physicalMs": 26.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 59,
+                "computeMs": 2.099999999627471,
+                "elapsedMs": 10.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 18.699999999254942,
+              "domMs": 17.300000000745058,
+              "clickDelayMs": 8.699999999254942,
+              "physicalMs": 18.899999998509884,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 60,
+                "computeMs": 3.300000000745058,
+                "elapsedMs": 17.09999999962747,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.40000000037253,
+              "domMs": 22.09999999962747,
+              "clickDelayMs": 10.400000000372529,
+              "physicalMs": 24.700000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 61,
+                "computeMs": 2.200000001117587,
+                "elapsedMs": 13.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21,
+              "domMs": 19.100000001490116,
+              "clickDelayMs": 8.800000000745058,
+              "physicalMs": 21.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 62,
+                "computeMs": 2.299999998882413,
+                "elapsedMs": 14.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 30.199999999254942,
+              "domMs": 27.5,
+              "clickDelayMs": 12.599999999627471,
+              "physicalMs": 30.300000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 63,
+                "computeMs": 2,
+                "elapsedMs": 13.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.5,
+              "domMs": 22.300000000745058,
+              "clickDelayMs": 10.199999999254942,
+              "physicalMs": 24.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 64,
+                "computeMs": 1.8999999985098839,
+                "elapsedMs": 13.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 36.90000000037253,
+              "domMs": 34.59999999962747,
+              "clickDelayMs": 19.800000000745058,
+              "physicalMs": 37,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 65,
+                "computeMs": 3,
+                "elapsedMs": 22.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 35.40000000037253,
+              "domMs": 30.300000000745058,
+              "clickDelayMs": 12.700000001117587,
+              "physicalMs": 35.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 66,
+                "computeMs": 2.699999999254942,
+                "elapsedMs": 18.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.799999998882413,
+              "domMs": 17.899999998509884,
+              "clickDelayMs": 8.5,
+              "physicalMs": 20.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 67,
+                "computeMs": 1.699999999254942,
+                "elapsedMs": 14.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 27.5,
+              "domMs": 24.90000000037253,
+              "clickDelayMs": 9.600000001490116,
+              "physicalMs": 27.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 68,
+                "computeMs": 1.800000000745058,
+                "elapsedMs": 12.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.199999999254942,
+              "domMs": 19.299999998882413,
+              "clickDelayMs": 9.699999999254942,
+              "physicalMs": 21.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 69,
+                "computeMs": 1.799999998882413,
+                "elapsedMs": 14.700000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.300000000745058,
+              "domMs": 22.700000001117587,
+              "clickDelayMs": 10.200000001117587,
+              "physicalMs": 24.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 70,
+                "computeMs": 1.8999999985098839,
+                "elapsedMs": 13,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.40000000037253,
+              "domMs": 19.100000001490116,
+              "clickDelayMs": 8.400000000372529,
+              "physicalMs": 20.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 71,
+                "computeMs": 2.099999999627471,
+                "elapsedMs": 16.700000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 40.69999999925494,
+              "domMs": 36.29999999888241,
+              "clickDelayMs": 15.099999999627471,
+              "physicalMs": 40.79999999888241,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 72,
+                "computeMs": 3.099999999627471,
+                "elapsedMs": 35.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20,
+              "domMs": 17.600000001490116,
+              "clickDelayMs": 8.400000000372529,
+              "physicalMs": 20.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 73,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 11.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 27.59999999962747,
+              "domMs": 23.700000001117587,
+              "clickDelayMs": 11.099999999627471,
+              "physicalMs": 27.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 74,
+                "computeMs": 1.799999998882413,
+                "elapsedMs": 9.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 19.200000001117587,
+              "domMs": 18.300000000745058,
+              "clickDelayMs": 8.300000000745058,
+              "physicalMs": 19.300000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 75,
+                "computeMs": 2,
+                "elapsedMs": 12,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 46.5,
+              "domMs": 38.20000000111759,
+              "clickDelayMs": 19.59999999962747,
+              "physicalMs": 46.79999999888241,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 76,
+                "computeMs": 4.900000000372529,
+                "elapsedMs": 21.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.40000000037253,
+              "domMs": 22.40000000037253,
+              "clickDelayMs": 10,
+              "physicalMs": 25.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 77,
+                "computeMs": 3.099999999627471,
+                "elapsedMs": 17.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.90000000037253,
+              "domMs": 24.40000000037253,
+              "clickDelayMs": 10.800000000745058,
+              "physicalMs": 27,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 78,
+                "computeMs": 4.199999999254942,
+                "elapsedMs": 24.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.09999999962747,
+              "domMs": 19.799999998882413,
+              "clickDelayMs": 9.599999999627471,
+              "physicalMs": 24.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 79,
+                "computeMs": 5.400000000372529,
+                "elapsedMs": 16.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.5,
+              "domMs": 22,
+              "clickDelayMs": 10.5,
+              "physicalMs": 22.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 80,
+                "computeMs": 3.700000001117587,
+                "elapsedMs": 9,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.90000000037253,
+              "domMs": 20.59999999962747,
+              "clickDelayMs": 9.099999999627471,
+              "physicalMs": 23.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 81,
+                "computeMs": 4.5,
+                "elapsedMs": 21.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.699999999254942,
+              "domMs": 22,
+              "clickDelayMs": 9.599999999627471,
+              "physicalMs": 22.899999998509884,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 82,
+                "computeMs": 5.199999999254942,
+                "elapsedMs": 19.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 19,
+              "domMs": 18.700000001117587,
+              "clickDelayMs": 8.400000000372529,
+              "physicalMs": 19.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 83,
+                "computeMs": 1.8999999985098839,
+                "elapsedMs": 18.40000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.300000000745058,
+              "domMs": 20.700000001117587,
+              "clickDelayMs": 9.5,
+              "physicalMs": 21.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 84,
+                "computeMs": 2,
+                "elapsedMs": 9.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 18.5,
+              "domMs": 18.09999999962747,
+              "clickDelayMs": 7.699999999254942,
+              "physicalMs": 18.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 85,
+                "computeMs": 8.299999998882413,
+                "elapsedMs": 10.199999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 18.5,
+              "domMs": 17.90000000037253,
+              "clickDelayMs": 8,
+              "physicalMs": 18.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 86,
+                "computeMs": 2.600000001490116,
+                "elapsedMs": 16.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.5,
+              "domMs": 26,
+              "clickDelayMs": 12.200000001117587,
+              "physicalMs": 26.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 87,
+                "computeMs": 2.599999999627471,
+                "elapsedMs": 22.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.800000000745058,
+              "domMs": 20.40000000037253,
+              "clickDelayMs": 9.400000000372529,
+              "physicalMs": 20.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 88,
+                "computeMs": 1.800000000745058,
+                "elapsedMs": 18.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.40000000037253,
+              "domMs": 20.90000000037253,
+              "clickDelayMs": 8.299999998882413,
+              "physicalMs": 21.600000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 89,
+                "computeMs": 2.699999999254942,
+                "elapsedMs": 21.299999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.699999999254942,
+              "domMs": 22.199999999254942,
+              "clickDelayMs": 10.5,
+              "physicalMs": 22.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 90,
+                "computeMs": 2.200000001117587,
+                "elapsedMs": 18,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.09999999962747,
+              "domMs": 18.5,
+              "clickDelayMs": 9.199999999254942,
+              "physicalMs": 22.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 91,
+                "computeMs": 2.200000001117587,
+                "elapsedMs": 16,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.09999999962747,
+              "domMs": 23.399999998509884,
+              "clickDelayMs": 11.399999998509884,
+              "physicalMs": 26.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 92,
+                "computeMs": 2.400000000372529,
+                "elapsedMs": 16,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.600000001490116,
+              "domMs": 18.5,
+              "clickDelayMs": 8.800000000745058,
+              "physicalMs": 20.600000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 93,
+                "computeMs": 1.700000001117587,
+                "elapsedMs": 18.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 18.799999998882413,
+              "domMs": 17.299999998882413,
+              "clickDelayMs": 8.099999999627471,
+              "physicalMs": 18.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 94,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 18.199999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.5,
+              "domMs": 20.40000000037253,
+              "clickDelayMs": 9.299999998882413,
+              "physicalMs": 22.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 95,
+                "computeMs": 2,
+                "elapsedMs": 15.299999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.299999998882413,
+              "domMs": 23.5,
+              "clickDelayMs": 11,
+              "physicalMs": 26.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 96,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 14.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.399999998509884,
+              "domMs": 18.299999998882413,
+              "clickDelayMs": 8.399999998509884,
+              "physicalMs": 20.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 97,
+                "computeMs": 3,
+                "elapsedMs": 14.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.600000001490116,
+              "domMs": 20.100000001490116,
+              "clickDelayMs": 10,
+              "physicalMs": 22.600000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 98,
+                "computeMs": 2.699999999254942,
+                "elapsedMs": 16.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.100000001490116,
+              "domMs": 22.200000001117587,
+              "clickDelayMs": 11.200000001117587,
+              "physicalMs": 25.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 99,
+                "computeMs": 3.200000001117587,
+                "elapsedMs": 16.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.700000001117587,
+              "domMs": 20,
+              "clickDelayMs": 9.600000001490116,
+              "physicalMs": 21.800000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 100,
+                "computeMs": 1.900000000372529,
+                "elapsedMs": 13.400000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.199999999254942,
+              "domMs": 21,
+              "clickDelayMs": 9.799999998882413,
+              "physicalMs": 23.300000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 101,
+                "computeMs": 3,
+                "elapsedMs": 13.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            }
+          ]
+        },
+        "eightEquations": {
+          "p95": 36.40000000037253,
+          "p99": 45,
+          "max": 81.09999999962747,
+          "domP95": 33.600000001490116,
+          "workerP95": 0.2000000011175871,
+          "presentationSamples": 0,
+          "warmSamples": 100,
+          "targetMs": 50,
+          "status": "met",
+          "workerTargetMs": 8,
+          "workerP99": 0.3999999985098839,
+          "workerMax": 0.5,
+          "workerStatus": "met",
+          "samples": [
+            {
+              "phase": "initial",
+              "frameMs": 28,
+              "domMs": 25.40000000037253,
+              "clickDelayMs": 10.600000001490116,
+              "physicalMs": 28,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 102,
+                "computeMs": 2,
+                "elapsedMs": 17.399999998509884,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 81.09999999962747,
+              "domMs": 76.90000000037253,
+              "clickDelayMs": 36.5,
+              "physicalMs": 81.19999999925494,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 103,
+                "computeMs": 0.5,
+                "elapsedMs": 22.199999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.59999999962747,
+              "domMs": 17.90000000037253,
+              "clickDelayMs": 7.5,
+              "physicalMs": 20.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 104,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 13.899999998509884,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.40000000037253,
+              "domMs": 19.300000000745058,
+              "clickDelayMs": 9.099999999627471,
+              "physicalMs": 21.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 105,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 15.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.600000001490116,
+              "domMs": 22.5,
+              "clickDelayMs": 9.900000000372529,
+              "physicalMs": 25.600000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 106,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 14.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 45,
+              "domMs": 42.59999999962747,
+              "clickDelayMs": 23.699999999254942,
+              "physicalMs": 45.30000000074506,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 107,
+                "computeMs": 0.3999999985098839,
+                "elapsedMs": 17.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25,
+              "domMs": 22.699999999254942,
+              "clickDelayMs": 11.199999999254942,
+              "physicalMs": 25.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 108,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 14.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.100000001490116,
+              "domMs": 18.700000001117587,
+              "clickDelayMs": 9.200000001117587,
+              "physicalMs": 21.100000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 109,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 13.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.799999998882413,
+              "domMs": 20.5,
+              "clickDelayMs": 10.399999998509884,
+              "physicalMs": 22.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 110,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 15,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.899999998509884,
+              "domMs": 21.199999999254942,
+              "clickDelayMs": 10.699999999254942,
+              "physicalMs": 23.899999998509884,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 111,
+                "computeMs": 0,
+                "elapsedMs": 16,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.700000001117587,
+              "domMs": 20.300000000745058,
+              "clickDelayMs": 10,
+              "physicalMs": 22.700000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 112,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 14.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.59999999962747,
+              "domMs": 26.799999998882413,
+              "clickDelayMs": 15.699999999254942,
+              "physicalMs": 28.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 113,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 15.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.600000001490116,
+              "domMs": 25.700000001117587,
+              "clickDelayMs": 11,
+              "physicalMs": 28.700000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 114,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 15.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.700000001117587,
+              "domMs": 23.700000001117587,
+              "clickDelayMs": 10.200000001117587,
+              "physicalMs": 26.700000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 115,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 16.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 42.59999999962747,
+              "domMs": 39.90000000037253,
+              "clickDelayMs": 21.299999998882413,
+              "physicalMs": 42.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 116,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 16.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 29.40000000037253,
+              "domMs": 26.800000000745058,
+              "clickDelayMs": 12.199999999254942,
+              "physicalMs": 29.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 117,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 18.09999999962747,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.800000000745058,
+              "domMs": 23.09999999962747,
+              "clickDelayMs": 10.5,
+              "physicalMs": 25.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 118,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 15,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.699999999254942,
+              "domMs": 19.699999999254942,
+              "clickDelayMs": 9.699999999254942,
+              "physicalMs": 21.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 119,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 14,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.800000000745058,
+              "domMs": 21,
+              "clickDelayMs": 10.5,
+              "physicalMs": 23.800000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 120,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 14.599999999627471,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.299999998882413,
+              "domMs": 22.59999999962747,
+              "clickDelayMs": 9.299999998882413,
+              "physicalMs": 25.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 121,
+                "computeMs": 0.2999999988824129,
+                "elapsedMs": 14.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.799999998882413,
+              "domMs": 25.399999998509884,
+              "clickDelayMs": 10.5,
+              "physicalMs": 28.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 122,
+                "computeMs": 0,
+                "elapsedMs": 17.199999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.5,
+              "domMs": 22.799999998882413,
+              "clickDelayMs": 10.599999999627471,
+              "physicalMs": 26.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 123,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 17.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.299999998882413,
+              "domMs": 22.5,
+              "clickDelayMs": 11,
+              "physicalMs": 24.299999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 124,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 16.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 36.40000000037253,
+              "domMs": 33.19999999925494,
+              "clickDelayMs": 14.800000000745058,
+              "physicalMs": 36.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 125,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 20,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 41.69999999925494,
+              "domMs": 38.29999999888241,
+              "clickDelayMs": 18.299999998882413,
+              "physicalMs": 41.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 126,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 16.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.199999999254942,
+              "domMs": 21.199999999254942,
+              "clickDelayMs": 10.199999999254942,
+              "physicalMs": 23.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 127,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 12.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 31.09999999962747,
+              "domMs": 27.90000000037253,
+              "clickDelayMs": 11.199999999254942,
+              "physicalMs": 31.299999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 128,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 16.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.90000000037253,
+              "domMs": 23.799999998882413,
+              "clickDelayMs": 11.299999998882413,
+              "physicalMs": 27.100000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 129,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 17.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 44.09999999962747,
+              "domMs": 37.40000000037253,
+              "clickDelayMs": 24,
+              "physicalMs": 44.19999999925494,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 130,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 27,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 31.59999999962747,
+              "domMs": 29.40000000037253,
+              "clickDelayMs": 16.199999999254942,
+              "physicalMs": 31.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 131,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 16.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.90000000037253,
+              "domMs": 24.09999999962747,
+              "clickDelayMs": 12,
+              "physicalMs": 27,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 132,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 18.399999998509884,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 32,
+              "domMs": 27.199999999254942,
+              "clickDelayMs": 12.300000000745058,
+              "physicalMs": 32.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 133,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 18.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.09999999962747,
+              "domMs": 20.800000000745058,
+              "clickDelayMs": 9.199999999254942,
+              "physicalMs": 23.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 134,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 20.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.800000000745058,
+              "domMs": 23.90000000037253,
+              "clickDelayMs": 9.700000001117587,
+              "physicalMs": 25,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 135,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 16.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.59999999962747,
+              "domMs": 22.40000000037253,
+              "clickDelayMs": 10.599999999627471,
+              "physicalMs": 25.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 136,
+                "computeMs": 0,
+                "elapsedMs": 14.299999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.300000000745058,
+              "domMs": 20.40000000037253,
+              "clickDelayMs": 9.599999999627471,
+              "physicalMs": 23.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 137,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 16.90000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 33.59999999962747,
+              "domMs": 31.899999998509884,
+              "clickDelayMs": 19.399999998509884,
+              "physicalMs": 34.20000000111759,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 138,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 13.600000001490116,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.699999999254942,
+              "domMs": 20.800000000745058,
+              "clickDelayMs": 5.400000000372529,
+              "physicalMs": 22.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 139,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 14.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.600000001490116,
+              "domMs": 24.700000001117587,
+              "clickDelayMs": 11.200000001117587,
+              "physicalMs": 29,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 140,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 16,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.09999999962747,
+              "domMs": 21.59999999962747,
+              "clickDelayMs": 9.799999998882413,
+              "physicalMs": 25.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 141,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 14.400000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 32.69999999925494,
+              "domMs": 29.800000000745058,
+              "clickDelayMs": 14.400000000372529,
+              "physicalMs": 32.79999999888241,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 142,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 17.09999999962747,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.5,
+              "domMs": 26.09999999962747,
+              "clickDelayMs": 12.599999999627471,
+              "physicalMs": 28.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 143,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 15,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.5,
+              "domMs": 24.600000001490116,
+              "clickDelayMs": 12.300000000745058,
+              "physicalMs": 26.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 144,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 14.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.90000000037253,
+              "domMs": 22.699999999254942,
+              "clickDelayMs": 11.400000000372529,
+              "physicalMs": 25.100000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 145,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 16.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.59999999962747,
+              "domMs": 19.40000000037253,
+              "clickDelayMs": 9,
+              "physicalMs": 21.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 146,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 13.400000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.200000001117587,
+              "domMs": 20.100000001490116,
+              "clickDelayMs": 9.400000000372529,
+              "physicalMs": 22.300000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 147,
+                "computeMs": 0.2999999988824129,
+                "elapsedMs": 13.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.200000001117587,
+              "domMs": 21.700000001117587,
+              "clickDelayMs": 9.900000000372529,
+              "physicalMs": 25.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 148,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 17.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 29,
+              "domMs": 25.799999998882413,
+              "clickDelayMs": 11.599999999627471,
+              "physicalMs": 29.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 149,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 17.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.5,
+              "domMs": 22.300000000745058,
+              "clickDelayMs": 10.400000000372529,
+              "physicalMs": 25.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 150,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 18.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.09999999962747,
+              "domMs": 23.5,
+              "clickDelayMs": 11.400000000372529,
+              "physicalMs": 26.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 151,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 17.09999999962747,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 36.40000000037253,
+              "domMs": 33.600000001490116,
+              "clickDelayMs": 18.100000001490116,
+              "physicalMs": 36.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 152,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 13.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.199999999254942,
+              "domMs": 20.40000000037253,
+              "clickDelayMs": 9.400000000372529,
+              "physicalMs": 22.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 153,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 15.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.199999999254942,
+              "domMs": 21.699999999254942,
+              "clickDelayMs": 10.299999998882413,
+              "physicalMs": 22.299999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 154,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 23.90000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.699999999254942,
+              "domMs": 19.5,
+              "clickDelayMs": 9.199999999254942,
+              "physicalMs": 21.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 155,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 9,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.59999999962747,
+              "domMs": 17.699999999254942,
+              "clickDelayMs": 9.799999998882413,
+              "physicalMs": 22.800000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 156,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 22.09999999962747,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.09999999962747,
+              "domMs": 19.40000000037253,
+              "clickDelayMs": 8.300000000745058,
+              "physicalMs": 22.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 157,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 14.199999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 19,
+              "domMs": 17.299999998882413,
+              "clickDelayMs": 8,
+              "physicalMs": 19.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 158,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 14.400000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.699999999254942,
+              "domMs": 19.799999998882413,
+              "clickDelayMs": 9.799999998882413,
+              "physicalMs": 21.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 159,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 13.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.59999999962747,
+              "domMs": 19.199999999254942,
+              "clickDelayMs": 8.5,
+              "physicalMs": 21.699999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 160,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 15.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 33.69999999925494,
+              "domMs": 29.899999998509884,
+              "clickDelayMs": 13.5,
+              "physicalMs": 33.80000000074506,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 161,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 18.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.5,
+              "domMs": 19.300000000745058,
+              "clickDelayMs": 8.900000000372529,
+              "physicalMs": 20.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 162,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 8.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 18.700000001117587,
+              "domMs": 17,
+              "clickDelayMs": 8,
+              "physicalMs": 18.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 163,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 11.400000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.800000000745058,
+              "domMs": 19.100000001490116,
+              "clickDelayMs": 8.5,
+              "physicalMs": 21.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 164,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 9.700000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22,
+              "domMs": 19.40000000037253,
+              "clickDelayMs": 9.400000000372529,
+              "physicalMs": 22.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 165,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 9.299999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.09999999962747,
+              "domMs": 21.200000001117587,
+              "clickDelayMs": 9.300000000745058,
+              "physicalMs": 23.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 166,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 11,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.09999999962747,
+              "domMs": 23.59999999962747,
+              "clickDelayMs": 11,
+              "physicalMs": 26.09999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 167,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 10.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22,
+              "domMs": 20,
+              "clickDelayMs": 9,
+              "physicalMs": 22.100000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 168,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 9.900000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.100000001490116,
+              "domMs": 17.600000001490116,
+              "clickDelayMs": 7.900000000372529,
+              "physicalMs": 20.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 169,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 10.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 19.199999999254942,
+              "domMs": 18.699999999254942,
+              "clickDelayMs": 9.099999999627471,
+              "physicalMs": 19.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 170,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 8.399999998509884,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21,
+              "domMs": 19,
+              "clickDelayMs": 8,
+              "physicalMs": 21.700000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 171,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 12.600000001490116,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.200000001117587,
+              "domMs": 23.700000001117587,
+              "clickDelayMs": 11.5,
+              "physicalMs": 26.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 172,
+                "computeMs": 0.2999999988824129,
+                "elapsedMs": 14.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.40000000037253,
+              "domMs": 22,
+              "clickDelayMs": 9.700000001117587,
+              "physicalMs": 24.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 173,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 15.300000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.40000000037253,
+              "domMs": 21,
+              "clickDelayMs": 10.099999999627471,
+              "physicalMs": 23.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 174,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 14.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.800000000745058,
+              "domMs": 20.700000001117587,
+              "clickDelayMs": 9.200000001117587,
+              "physicalMs": 23.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 175,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 17.700000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 25.5,
+              "domMs": 23,
+              "clickDelayMs": 10,
+              "physicalMs": 25.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 176,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 17.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.199999999254942,
+              "domMs": 24,
+              "clickDelayMs": 10.699999999254942,
+              "physicalMs": 26.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 177,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 14.400000000372529,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.09999999962747,
+              "domMs": 23.5,
+              "clickDelayMs": 9.699999999254942,
+              "physicalMs": 26.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 178,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 16,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.299999998882413,
+              "domMs": 20,
+              "clickDelayMs": 9.599999999627471,
+              "physicalMs": 21.399999998509884,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 179,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 12.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.199999999254942,
+              "domMs": 23.59999999962747,
+              "clickDelayMs": 11.099999999627471,
+              "physicalMs": 26.299999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 180,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 15.600000001490116,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 27.5,
+              "domMs": 24,
+              "clickDelayMs": 11.599999999627471,
+              "physicalMs": 27.600000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 181,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 14.800000000745058,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 27.200000001117587,
+              "domMs": 24.09999999962747,
+              "clickDelayMs": 11.099999999627471,
+              "physicalMs": 27.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 182,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 17.90000000037253,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 19.800000000745058,
+              "domMs": 18.100000001490116,
+              "clickDelayMs": 7.5,
+              "physicalMs": 19.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 183,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 22,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.59999999962747,
+              "domMs": 19.59999999962747,
+              "clickDelayMs": 8.599999999627471,
+              "physicalMs": 21.800000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 184,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 14.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26,
+              "domMs": 23.799999998882413,
+              "clickDelayMs": 10.099999999627471,
+              "physicalMs": 26.100000001490116,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 185,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 16.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.300000000745058,
+              "domMs": 19.59999999962747,
+              "clickDelayMs": 9,
+              "physicalMs": 21.40000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 186,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 9,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.199999999254942,
+              "domMs": 22.59999999962747,
+              "clickDelayMs": 9.399999998509884,
+              "physicalMs": 24.300000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 187,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 10.099999999627471,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.899999998509884,
+              "domMs": 23.199999999254942,
+              "clickDelayMs": 9.099999999627471,
+              "physicalMs": 25,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 188,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 9,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.200000001117587,
+              "domMs": 20.90000000037253,
+              "clickDelayMs": 9.600000001490116,
+              "physicalMs": 24.300000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 189,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 21.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.699999999254942,
+              "domMs": 21.90000000037253,
+              "clickDelayMs": 10.599999999627471,
+              "physicalMs": 24.799999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 190,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 12.799999998882413,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.90000000037253,
+              "domMs": 21.40000000037253,
+              "clickDelayMs": 9.800000000745058,
+              "physicalMs": 24,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 191,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 13.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 21.5,
+              "domMs": 19.799999998882413,
+              "clickDelayMs": 8.099999999627471,
+              "physicalMs": 21.700000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 192,
+                "computeMs": 0.2000000011175871,
+                "elapsedMs": 15.599999999627471,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 20.700000001117587,
+              "domMs": 18.800000000745058,
+              "clickDelayMs": 8.700000001117587,
+              "physicalMs": 20.90000000037253,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 193,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 12.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 27.09999999962747,
+              "domMs": 24.699999999254942,
+              "clickDelayMs": 10.300000000745058,
+              "physicalMs": 27.199999999254942,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 194,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 15.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 29.5,
+              "domMs": 25.899999998509884,
+              "clickDelayMs": 11.399999998509884,
+              "physicalMs": 30,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 195,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 14.200000001117587,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.90000000037253,
+              "domMs": 21.100000001490116,
+              "clickDelayMs": 10.200000001117587,
+              "physicalMs": 23.299999998882413,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 196,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 9.699999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 28.5,
+              "domMs": 25.5,
+              "clickDelayMs": 13.300000000745058,
+              "physicalMs": 28.59999999962747,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 197,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 17.600000001490116,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 36.40000000037253,
+              "domMs": 32.69999999925494,
+              "clickDelayMs": 14.699999999254942,
+              "physicalMs": 36.80000000074506,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 198,
+                "computeMs": 0.19999999925494194,
+                "elapsedMs": 22.199999999254942,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 26.90000000037253,
+              "domMs": 23.299999998882413,
+              "clickDelayMs": 9.900000000372529,
+              "physicalMs": 27,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 199,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 19,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 22.700000001117587,
+              "domMs": 20.200000001117587,
+              "clickDelayMs": 9.5,
+              "physicalMs": 22.800000000745058,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 200,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 16,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 24.90000000037253,
+              "domMs": 22.199999999254942,
+              "clickDelayMs": 10.099999999627471,
+              "physicalMs": 25.200000001117587,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 201,
+                "computeMs": 0.10000000149011612,
+                "elapsedMs": 15.5,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            },
+            {
+              "phase": "warm",
+              "frameMs": 23.5,
+              "domMs": 20.40000000037253,
+              "clickDelayMs": 10.300000000745058,
+              "physicalMs": 23.5,
+              "worker": {
+                "dropped": 0,
+                "failures": 0,
+                "timeouts": 0,
+                "requests": 202,
+                "computeMs": 0.09999999962747097,
+                "elapsedMs": 16.09999999962747,
+                "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+              }
+            }
+          ]
+        },
+        "control": {
+          "p95": 8.400000000372529,
+          "p99": 11.099999999627471,
+          "max": 14.600000001490116,
+          "domP95": 4.800000000745058,
+          "workerP95": 0,
+          "presentationSamples": 0,
+          "warmSamples": 100,
+          "targetMs": null,
+          "status": "control",
+          "samples": [
+            {
+              "phase": "initial",
+              "frameMs": 10.200000001117587,
+              "domMs": 8.200000001117587,
+              "clickDelayMs": 7.700000001117587,
+              "physicalMs": 10.200000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 10.800000000745058,
+              "domMs": 2.5,
+              "clickDelayMs": 2.5,
+              "physicalMs": 11.300000000745058
+            },
+            {
+              "phase": "warm",
+              "frameMs": 4.899999998509884,
+              "domMs": 2.5,
+              "clickDelayMs": 2.5,
+              "physicalMs": 5.099999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.5,
+              "domMs": 3.800000000745058,
+              "clickDelayMs": 3.400000000372529,
+              "physicalMs": 6.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.099999999627471,
+              "domMs": 3.300000000745058,
+              "clickDelayMs": 3.199999999254942,
+              "physicalMs": 6.400000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.5,
+              "domMs": 3.299999998882413,
+              "clickDelayMs": 3.299999998882413,
+              "physicalMs": 5.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.900000000372529,
+              "domMs": 3.700000001117587,
+              "clickDelayMs": 2.700000001117587,
+              "physicalMs": 6
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.5,
+              "domMs": 4.199999999254942,
+              "clickDelayMs": 3.300000000745058,
+              "physicalMs": 7.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.599999999627471,
+              "domMs": 2.5,
+              "clickDelayMs": 2.400000000372529,
+              "physicalMs": 5.699999999254942
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.099999999627471,
+              "domMs": 3.099999999627471,
+              "clickDelayMs": 3.099999999627471,
+              "physicalMs": 6.299999998882413
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.300000000745058,
+              "domMs": 3.099999999627471,
+              "clickDelayMs": 2.300000000745058,
+              "physicalMs": 5.700000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.400000000372529,
+              "domMs": 2.5,
+              "clickDelayMs": 2.5,
+              "physicalMs": 5.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.599999999627471,
+              "domMs": 3.199999999254942,
+              "clickDelayMs": 2.900000000372529,
+              "physicalMs": 5.800000000745058
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.600000001490116,
+              "domMs": 4.100000001490116,
+              "clickDelayMs": 4.100000001490116,
+              "physicalMs": 7.700000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 8.400000000372529,
+              "domMs": 5.900000000372529,
+              "clickDelayMs": 5.200000001117587,
+              "physicalMs": 8.400000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.800000000745058,
+              "domMs": 3,
+              "clickDelayMs": 2.900000000372529,
+              "physicalMs": 5.900000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 4.199999999254942,
+              "domMs": 2.599999999627471,
+              "clickDelayMs": 2.599999999627471,
+              "physicalMs": 4.199999999254942
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.5,
+              "domMs": 2.900000000372529,
+              "clickDelayMs": 2.800000000745058,
+              "physicalMs": 5.699999999254942
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.700000001117587,
+              "domMs": 3.100000001490116,
+              "clickDelayMs": 3.100000001490116,
+              "physicalMs": 6.800000000745058
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.5,
+              "domMs": 4.199999999254942,
+              "clickDelayMs": 4.199999999254942,
+              "physicalMs": 7.700000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.599999999627471,
+              "domMs": 4.599999999627471,
+              "clickDelayMs": 4.599999999627471,
+              "physicalMs": 7.699999999254942
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.299999998882413,
+              "domMs": 3.799999998882413,
+              "clickDelayMs": 3.799999998882413,
+              "physicalMs": 6.5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.300000000745058,
+              "domMs": 2.5,
+              "clickDelayMs": 2.400000000372529,
+              "physicalMs": 5.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 4.900000000372529,
+              "domMs": 2.699999999254942,
+              "clickDelayMs": 2.699999999254942,
+              "physicalMs": 5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 4.399999998509884,
+              "domMs": 2.099999999627471,
+              "clickDelayMs": 2.099999999627471,
+              "physicalMs": 4.5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.900000000372529,
+              "domMs": 3.5,
+              "clickDelayMs": 3.400000000372529,
+              "physicalMs": 5.900000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6,
+              "domMs": 4,
+              "clickDelayMs": 4,
+              "physicalMs": 6.099999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.599999999627471,
+              "domMs": 3.199999999254942,
+              "clickDelayMs": 3.199999999254942,
+              "physicalMs": 6.099999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.900000000372529,
+              "domMs": 3.5,
+              "clickDelayMs": 3.5,
+              "physicalMs": 6.100000001490116
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.400000000372529,
+              "domMs": 2.699999999254942,
+              "clickDelayMs": 2.599999999627471,
+              "physicalMs": 5.5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.099999999627471,
+              "domMs": 2.099999999627471,
+              "clickDelayMs": 2.099999999627471,
+              "physicalMs": 5.200000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 4.5,
+              "domMs": 2.599999999627471,
+              "clickDelayMs": 2.5,
+              "physicalMs": 4.5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.800000000745058,
+              "domMs": 3.5,
+              "clickDelayMs": 3.5,
+              "physicalMs": 5.900000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 4.700000001117587,
+              "domMs": 2.5,
+              "clickDelayMs": 2.400000000372529,
+              "physicalMs": 4.800000000745058
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.699999999254942,
+              "domMs": 4,
+              "clickDelayMs": 4,
+              "physicalMs": 6.800000000745058
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.5,
+              "domMs": 3.200000001117587,
+              "clickDelayMs": 3.200000001117587,
+              "physicalMs": 5.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.099999999627471,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 2.699999999254942,
+              "physicalMs": 6.199999999254942
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.200000001117587,
+              "domMs": 3.800000000745058,
+              "clickDelayMs": 3,
+              "physicalMs": 6.300000000745058
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.900000000372529,
+              "domMs": 3.700000001117587,
+              "clickDelayMs": 3.600000001490116,
+              "physicalMs": 7
+            },
+            {
+              "phase": "warm",
+              "frameMs": 4.800000000745058,
+              "domMs": 2.900000000372529,
+              "clickDelayMs": 2.900000000372529,
+              "physicalMs": 4.900000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.599999999627471,
+              "domMs": 4.400000000372529,
+              "clickDelayMs": 3.900000000372529,
+              "physicalMs": 7.699999999254942
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.900000000372529,
+              "domMs": 3.400000000372529,
+              "clickDelayMs": 3.400000000372529,
+              "physicalMs": 7.100000001490116
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.800000000745058,
+              "domMs": 4.300000000745058,
+              "clickDelayMs": 4.199999999254942,
+              "physicalMs": 6.900000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.5,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 2.199999999254942,
+              "physicalMs": 5.5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.199999999254942,
+              "domMs": 4,
+              "clickDelayMs": 3.900000000372529,
+              "physicalMs": 6.299999998882413
+            },
+            {
+              "phase": "warm",
+              "frameMs": 4.799999998882413,
+              "domMs": 3.400000000372529,
+              "clickDelayMs": 2.599999999627471,
+              "physicalMs": 4.899999998509884
+            },
+            {
+              "phase": "warm",
+              "frameMs": 8.200000001117587,
+              "domMs": 4.800000000745058,
+              "clickDelayMs": 4.700000001117587,
+              "physicalMs": 8.200000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.5,
+              "domMs": 3.199999999254942,
+              "clickDelayMs": 3.199999999254942,
+              "physicalMs": 6.5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.900000000372529,
+              "domMs": 3.699999999254942,
+              "clickDelayMs": 3.699999999254942,
+              "physicalMs": 7
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.400000000372529,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 3.599999999627471,
+              "physicalMs": 6.5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 14.600000001490116,
+              "domMs": 9.600000001490116,
+              "clickDelayMs": 9.600000001490116,
+              "physicalMs": 15
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.5,
+              "domMs": 3.900000000372529,
+              "clickDelayMs": 3.199999999254942,
+              "physicalMs": 6.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.5,
+              "domMs": 3.900000000372529,
+              "clickDelayMs": 3.100000001490116,
+              "physicalMs": 5.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7,
+              "domMs": 4,
+              "clickDelayMs": 3,
+              "physicalMs": 7
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.699999999254942,
+              "domMs": 3.5,
+              "clickDelayMs": 3.5,
+              "physicalMs": 6.799999998882413
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.200000001117587,
+              "domMs": 4,
+              "clickDelayMs": 4,
+              "physicalMs": 6.200000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.699999999254942,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 3.5,
+              "physicalMs": 6.900000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.299999998882413,
+              "domMs": 3.699999999254942,
+              "clickDelayMs": 3.599999999627471,
+              "physicalMs": 6.299999998882413
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.800000000745058,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 3.099999999627471,
+              "physicalMs": 5.900000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.5,
+              "domMs": 3.199999999254942,
+              "clickDelayMs": 3.099999999627471,
+              "physicalMs": 5.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.900000000372529,
+              "domMs": 3.800000000745058,
+              "clickDelayMs": 3.700000001117587,
+              "physicalMs": 8
+            },
+            {
+              "phase": "warm",
+              "frameMs": 9.299999998882413,
+              "domMs": 6.599999999627471,
+              "clickDelayMs": 6.599999999627471,
+              "physicalMs": 9.299999998882413
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.099999999627471,
+              "domMs": 2.699999999254942,
+              "clickDelayMs": 2.599999999627471,
+              "physicalMs": 6.200000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 3.5,
+              "physicalMs": 7.100000001490116
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.099999999627471,
+              "domMs": 2.800000000745058,
+              "clickDelayMs": 2.800000000745058,
+              "physicalMs": 5.400000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.5,
+              "domMs": 2.5,
+              "clickDelayMs": 2.400000000372529,
+              "physicalMs": 5.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.600000001490116,
+              "domMs": 3.200000001117587,
+              "clickDelayMs": 3.200000001117587,
+              "physicalMs": 5.600000001490116
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.199999999254942,
+              "domMs": 4.199999999254942,
+              "clickDelayMs": 4.199999999254942,
+              "physicalMs": 7.299999998882413
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.200000001117587,
+              "domMs": 3.5,
+              "clickDelayMs": 3,
+              "physicalMs": 6.200000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.900000000372529,
+              "domMs": 3.900000000372529,
+              "clickDelayMs": 3.199999999254942,
+              "physicalMs": 7.099999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.400000000372529,
+              "domMs": 3.400000000372529,
+              "clickDelayMs": 3.300000000745058,
+              "physicalMs": 5.400000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.899999998509884,
+              "domMs": 3.899999998509884,
+              "clickDelayMs": 3.899999998509884,
+              "physicalMs": 7
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.5,
+              "domMs": 2.699999999254942,
+              "clickDelayMs": 2.699999999254942,
+              "physicalMs": 5.699999999254942
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.900000000372529,
+              "domMs": 3.700000001117587,
+              "clickDelayMs": 3.600000001490116,
+              "physicalMs": 7
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7,
+              "domMs": 3.5,
+              "clickDelayMs": 3.400000000372529,
+              "physicalMs": 7
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.299999998882413,
+              "domMs": 3.5,
+              "clickDelayMs": 2.899999998509884,
+              "physicalMs": 6.400000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.900000000372529,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 3.599999999627471,
+              "physicalMs": 5.900000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.099999999627471,
+              "domMs": 2.5,
+              "clickDelayMs": 2.399999998509884,
+              "physicalMs": 6.099999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 9.400000000372529,
+              "domMs": 3.699999999254942,
+              "clickDelayMs": 3.599999999627471,
+              "physicalMs": 10
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.199999999254942,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 2.599999999627471,
+              "physicalMs": 6.300000000745058
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6,
+              "domMs": 3.5,
+              "clickDelayMs": 3.399999998509884,
+              "physicalMs": 6
+            },
+            {
+              "phase": "warm",
+              "frameMs": 4.799999998882413,
+              "domMs": 2,
+              "clickDelayMs": 1.900000000372529,
+              "physicalMs": 4.899999998509884
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5,
+              "domMs": 2.899999998509884,
+              "clickDelayMs": 2.899999998509884,
+              "physicalMs": 5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.700000001117587,
+              "domMs": 4.600000001490116,
+              "clickDelayMs": 4.600000001490116,
+              "physicalMs": 7.800000000745058
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.700000001117587,
+              "domMs": 3.100000001490116,
+              "clickDelayMs": 3.100000001490116,
+              "physicalMs": 5.800000000745058
+            },
+            {
+              "phase": "warm",
+              "frameMs": 11.099999999627471,
+              "domMs": 7.599999999627471,
+              "clickDelayMs": 6.599999999627471,
+              "physicalMs": 11.299999998882413
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.5,
+              "domMs": 3,
+              "clickDelayMs": 2.900000000372529,
+              "physicalMs": 6.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.699999999254942,
+              "domMs": 2.800000000745058,
+              "clickDelayMs": 2.800000000745058,
+              "physicalMs": 5.799999998882413
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.599999999627471,
+              "domMs": 3.099999999627471,
+              "clickDelayMs": 3,
+              "physicalMs": 6.599999999627471
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.900000000372529,
+              "domMs": 3.099999999627471,
+              "clickDelayMs": 3.099999999627471,
+              "physicalMs": 6
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.5,
+              "domMs": 4.699999999254942,
+              "clickDelayMs": 4.599999999627471,
+              "physicalMs": 7.5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.300000000745058,
+              "domMs": 3.199999999254942,
+              "clickDelayMs": 3.099999999627471,
+              "physicalMs": 6.400000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6,
+              "domMs": 3.699999999254942,
+              "clickDelayMs": 3.299999998882413,
+              "physicalMs": 6.200000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.900000000372529,
+              "domMs": 3.300000000745058,
+              "clickDelayMs": 2.900000000372529,
+              "physicalMs": 5.900000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.400000000372529,
+              "domMs": 1.900000000372529,
+              "clickDelayMs": 1.900000000372529,
+              "physicalMs": 6.5
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.400000000372529,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 3.599999999627471,
+              "physicalMs": 6.400000000372529
+            },
+            {
+              "phase": "warm",
+              "frameMs": 7.099999999627471,
+              "domMs": 5,
+              "clickDelayMs": 4.800000000745058,
+              "physicalMs": 7.199999999254942
+            },
+            {
+              "phase": "warm",
+              "frameMs": 5.299999998882413,
+              "domMs": 3.5,
+              "clickDelayMs": 2.299999998882413,
+              "physicalMs": 5.399999998509884
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.099999999627471,
+              "domMs": 3.599999999627471,
+              "clickDelayMs": 2.699999999254942,
+              "physicalMs": 6.200000001117587
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.5,
+              "domMs": 4,
+              "clickDelayMs": 2.899999998509884,
+              "physicalMs": 6.600000001490116
+            },
+            {
+              "phase": "warm",
+              "frameMs": 6.800000000745058,
+              "domMs": 4,
+              "clickDelayMs": 3.900000000372529,
+              "physicalMs": 6.800000000745058
+            }
+          ]
+        }
+      },
+      "buildIdentity": {
+        "baseCommit": "dfb148a311600d5fd4753f84f16204fb183bfb13",
+        "sourceBeforeSha256": "a05fafeaa2099af3135736afd794f23438c12f4a4dc8fcc2dc71b15903306141",
+        "sourceAfterSha256": "a05fafeaa2099af3135736afd794f23438c12f4a4dc8fcc2dc71b15903306141",
+        "bundleJsSha256": "823702b9a4e02b1db49e3b61324ee5a9814139a80dfca53f40095764ee163528",
+        "assetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56",
+        "compiledManifest": "dist/assets/manifest-Crlg2p26.js"
+      }
     }
   ],
   "localTraceHashes": {

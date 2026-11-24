@@ -328,7 +328,33 @@ def verify_prepared(directory, streams, role_case_files=()):
     return file_hash(manifest_path), manifest['files']['tokenizer.json']['sha256']
 
 
-def audit_prepared_membership(full, development, reference, scratch):
+def audit_full_encoding(raw_pool, encoded_pool, manifest):
+    """Require the encoded comparison stream to cover every audited raw training document."""
+    raw = json.loads((raw_pool / 'manifest.json').read_text())
+    if manifest['corpus'] != file_hash(raw_pool / 'manifest.json'):
+        raise ValueError('Full encoded pool does not reference its exact raw corpus')
+    if manifest.get('targetTrainSubwords') is not None or manifest.get('targetTrainWords') is not None:
+        raise ValueError('Full encoding cannot use a word or subword cap')
+    trace = encoded_pool / 'train.documents.jsonl'
+    if file_hash(trace) != manifest['files'][trace.name]['sha256']:
+        raise ValueError('Full encoded training trace does not match its prepared manifest')
+    words = Counter()
+    count = 0
+    for document, row in zip(documents(raw_pool, 'train'), records(trace), strict=True):
+        if document['id'] != row['id'] or document['group'] != row['group']:
+            raise ValueError('Full encoding omitted, reordered or added a training document')
+        words[document['register']] += document['words']
+        count += 1
+    source = raw['counts']['train']
+    encoded = manifest['counts']['train']
+    if (count != source['documents'] or count != encoded['documents'] or
+            sum(words.values()) != source['words'] or sum(words.values()) != encoded['words'] or
+            words != source['registers'] or words != encoded['wordRegisters']):
+        raise ValueError('Full encoded training pool must match raw document and register word counts')
+    return {'documents': count, 'words': sum(words.values()), 'wordRegisters': dict(words)}
+
+
+def audit_prepared_membership(full, development, reference, scratch, raw_pool=None):
     """Prove identical held-out inputs and nested membership before training."""
     from tempfile import TemporaryDirectory
     pools = {'prepared-dev': development, 'prepared-reference': reference}
@@ -376,8 +402,9 @@ def audit_prepared_membership(full, development, reference, scratch):
                         raise ValueError(f'Prepared document count disagrees for {name}/{split}')
                     result[name][split] = count
                     db.commit()
+    full_coverage = audit_full_encoding(raw_pool, full, manifests['prepared']) if raw_pool else None
     return {'version': 1, 'passed': True, 'scope': 'all' if full else 'dev-and-reference',
-            'counts': result, 'tokenizerSha256': tokenizers.pop(),
+            'counts': result, 'tokenizerSha256': tokenizers.pop(), 'fullRawCoverage': full_coverage,
             'preparedManifestSha256': {name: file_hash(path / 'manifest.json') for name, path in pools.items()}}
 
 

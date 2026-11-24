@@ -2,8 +2,10 @@ import {writeFile} from 'node:fs/promises';
 import {expect, test, type Locator, type Page} from '@playwright/test';
 import {writingAidWeek} from '../../src/features/tutor/writingAid/adaptation';
 import {createWritingAidModel} from '../../src/features/tutor/writingAid/learning';
+import {decodeAuthoredDraft, encodeAuthoredDraft} from '../../src/features/tutor/writingAid/authorship';
 import type {TutorThreadView} from '../../src/data/tutor/manual-api';
 import type {TutorAnswerAid} from '../../supabase/functions/_shared/tutor-answer-aids';
+import type {TutorAcceptedSpan} from '../../supabase/functions/_shared/tutor-answer';
 import {liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
 
 const demo = '/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch,tutorAnswerAids,typeaheadV2#/p/real-analysis/cp/CP4/tutor';
@@ -154,6 +156,100 @@ test('scoped tutor priority reranks the same prefix and a held tap cannot accept
   await expect(answer).toHaveJSProperty('textContent', 'With this zzmo');
   await page.getByRole('button', {name: 'Send', exact: true}).click();
   await expect.poll(() => setup.submissions.map(item => item.endpoint)).toEqual(['rpc/tutor_owner_command']);
+});
+
+function stubEquationChoices(page: Page) {
+  return page.addInitScript(() => {
+    const NativeWorker = window.Worker;
+    window.Worker = new Proxy(NativeWorker, {construct(Worker, args) {
+      if (!String(args[0]).includes('latex.worker')) return Reflect.construct(Worker, args);
+      const model = {
+        onmessage: undefined as ((event: MessageEvent) => void) | undefined,
+        postMessage({id}: {id: number}) {
+          const results = [{insert: 'x', caret: 1, label: 'x', score: 0}, {insert: 'z', caret: 1, label: 'z', score: -1}];
+          queueMicrotask(() => model.onmessage?.(new MessageEvent('message', {data: {id, results}})));
+        },
+        terminate() {},
+      };
+      return model;
+    }});
+  });
+}
+
+test('Equation suggestions guard the adjacent answer and retire held taps when the aid changes', async ({page}) => {
+  await stubEquationChoices(page);
+  const setup = await fixture(page);
+  setup.changeAid({withhold: []});
+  const answer = await answerField(page, route);
+  const sheet = page.getByRole('dialog', {name: 'Equation', exact: true});
+  const latex = sheet.getByRole('textbox', {name: 'LaTeX', exact: true});
+  const x = sheet.getByRole('button', {name: 'Insert x', exact: true});
+  const z = sheet.getByRole('button', {name: 'Insert z', exact: true});
+  await answer.fill('𝒰 is not $y$.');
+  await answer.getByRole('button', {name: 'Edit equation y', exact: true}).click();
+  await latex.fill('');
+  await expect(x).toBeVisible();
+  await expect(z).toBeVisible();
+  const box = (await x.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  setup.changeAid({version: 2, withhold: ['not z']});
+  await refresh(page);
+  await expect(z).toHaveCount(0);
+  await expect(x).toBeVisible();
+  await page.mouse.up();
+  await expect(latex).toHaveValue('');
+
+  setup.changeAid({version: 3, withhold: ['not x']});
+  await refresh(page);
+  await expect(z).toBeVisible();
+  await expect(x).toHaveCount(0);
+  await latex.fill('x');
+  await sheet.getByRole('button', {name: 'Done', exact: true}).click();
+  await expect(answer.getByRole('button', {name: 'Edit equation x', exact: true})).toBeVisible();
+
+  setup.changeAid({version: 4, withhold: ['x holds']});
+  await refresh(page);
+  await answer.fill('𝒰 says $$y$$ holds.');
+  await answer.getByRole('button', {name: 'Edit equation y', exact: true}).click();
+  await latex.fill('');
+  await expect(z).toBeVisible();
+  await expect(x).toHaveCount(0);
+  await z.click();
+  await expect(latex).toHaveValue('z');
+  await sheet.getByRole('button', {name: 'Undo LaTeX suggestion', exact: true}).click();
+  await expect(latex).toHaveValue('');
+});
+
+test('Equation suggestions respect the exact retained span budget and allow manual edits at capacity', async ({page}) => {
+  await stubEquationChoices(page);
+  const {owner, cpId} = await fixture(page);
+  const key = 'lemma.tutor.draft:' + JSON.stringify([owner, 'logic', cpId]) + ':question';
+  const prefix = 'a '.repeat(30) + '$';
+  const text = prefix + 'xy$';
+  const spans: TutorAcceptedSpan[] = Array.from({length: 30}, (_, index) =>
+    ({start: index * 2, end: index * 2 + 1, text: 'a', source: 'word'}));
+  spans.push({start: prefix.length, end: prefix.length + 2, text: 'xy', source: 'symbol'});
+  await page.addInitScript(({key, draft}) => localStorage.setItem(key, draft), {key, draft: encodeAuthoredDraft(text, spans)});
+  const answer = await answerField(page, route);
+  await answer.getByRole('button', {name: 'Edit equation xy', exact: true}).click();
+  const sheet = page.getByRole('dialog', {name: 'Equation', exact: true});
+  const latex = sheet.getByRole('textbox', {name: 'LaTeX', exact: true});
+  const z = sheet.getByRole('button', {name: 'Insert z', exact: true});
+  await expect(z).toBeVisible();
+  await latex.press('Home');
+  await latex.press('ArrowRight');
+  await expect(z).toHaveCount(0);
+  await latex.press('z');
+  await expect(latex).toHaveValue('xzy');
+  await sheet.getByRole('button', {name: 'Done', exact: true}).click();
+  await expect(answer.getByRole('button', {name: 'Edit equation xzy', exact: true})).toBeVisible();
+  await expect.poll(async () => decodeAuthoredDraft(await page.evaluate(key => localStorage.getItem(key) ?? '', key))).toEqual({
+    text: prefix + 'xzy$', spans: [...spans.slice(0, -1),
+      {start: prefix.length, end: prefix.length + 1, text: 'x', source: 'symbol'},
+      {start: prefix.length + 2, end: prefix.length + 3, text: 'y', source: 'symbol'},
+    ],
+  });
 });
 
 test('a retained completion reaches the tutor with exact accepted UTF-16 offsets', async ({page}) => {

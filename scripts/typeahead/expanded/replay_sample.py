@@ -182,9 +182,11 @@ def pilot_rows(data, split):
         yield {'text': text, 'source': 'hoskinson-center/proof-pile'}
 
 
-def freeze(data, output, split, maximum, legacy, pilot, excluded_files, stratified=False):
+def freeze(data, output, split, maximum, legacy, pilot, excluded_files, stratified=False, excluded_group_file=None):
     source = pilot_rows(data, split) if pilot else documents(data, split)
     excluded_ids, excluded_questions, excluded_groups, groups = set(), set(), set(), set()
+    if excluded_group_file:
+        excluded_groups.update(row['documentGroup'] for row in records(excluded_group_file))
     for path in excluded_files:
         for item in records(path):
             excluded_ids.add(item['answerId'])
@@ -258,6 +260,8 @@ def freeze(data, output, split, maximum, legacy, pilot, excluded_files, stratifi
                 'documentGroupsSha256': text_hash('\n'.join(sorted(groups))),
                 'excludedSchedulesSha256': [file_hash(path) for path in excluded_files],
                 'sha256': {name: file_hash(path) for name, path in paths.items()}}
+    if excluded_group_file:
+        manifest['excludedGroupsSha256'] = file_hash(excluded_group_file)
     (output / 'manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
     print(json.dumps(manifest, sort_keys=True))
 
@@ -268,6 +272,7 @@ def main():
     source.add_argument('--pilot-data', type=Path)
     source.add_argument('--corpus', type=Path, help='Audited corpus shards with frozen document groups')
     parser.add_argument('--exclude-answers', type=Path, action='append', default=[])
+    parser.add_argument('--exclude-groups', type=Path, help='Hasher output from the deployed training identity audit')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--split', choices=('validation', 'calibration', 'test'), required=True)
     parser.add_argument('--answers', type=int, default=32)
@@ -280,7 +285,7 @@ def main():
     if args.stratified and args.answers != 40:
         parser.error('The frozen stratified schedule has 40 answers')
     freeze(args.pilot_data or args.corpus, args.out, args.split, args.answers, args.legacy_holdout,
-           args.pilot_data is not None, args.exclude_answers, args.stratified)
+           args.pilot_data is not None, args.exclude_answers, args.stratified, args.exclude_groups)
 
 
 if __name__ == '__main__':

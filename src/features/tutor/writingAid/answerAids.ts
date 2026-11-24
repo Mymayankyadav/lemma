@@ -35,6 +35,13 @@ function normalized(value: string): string {
   return value.normalize('NFKC').toLowerCase().trim().replace(/\s+/gu, ' ');
 }
 
+function matchesPhraseTail(literal: string, sentence: string, before: string, suffix: boolean): boolean {
+  const matches = (tail: string) => tail === literal || suffix && tail.endsWith(' ' + literal);
+  if (matches(sentence)) return true;
+  // A configured prefix can itself contain punctuation such as “Dr.”, which splits the sentence tail.
+  return /[.!?](?: |$)/u.test(literal) && matches(normalized(before));
+}
+
 export function normalizeAidScopePrefix(kind: AidEntryKind, value: string): string {
   return kind === 'symbol' ? value.trim().replace(/\s+/gu, ' ') : normalized(value);
 }
@@ -58,7 +65,7 @@ export function aidScopeSpecificity(hint: AidHint, context: AidRankingContext, s
     const tail = sentence ?? normalized(sentenceTail(context.before));
     for (const value of scope.phraseStates) {
       const phrase = normalized(value);
-      if (tail === phrase || tail.endsWith(' ' + phrase)) phraseMatch = Math.max(phraseMatch, phrase.length);
+      if (matchesPhraseTail(phrase, tail, context.before, true)) phraseMatch = Math.max(phraseMatch, phrase.length);
     }
     if (!phraseMatch) return undefined;
   }
@@ -83,9 +90,10 @@ export function tutorHint(context: AidRankingContext, insertion: string): {adjus
     const targets = [hint.entry, ...hint.aliases ?? []];
     const exact = targets.some(value => equal(value, insertion));
     const strength = exact ? 1 : hint.kind === 'phrase'
-      ? Math.max(...targets.map(value => phraseStepWeight(value, sentence, insertion))) : 0;
+      ? Math.max(...targets.map(value => phraseStepWeight(value, sentence, before, insertion))) : 0;
     if (!strength) continue;
     if ((hint.role === 'alternative' || hint.role === 'goal') && (!restrictive || roleOrder[hint.role] > roleOrder[restrictive])) restrictive = hint.role;
+    if (hint.kind === 'phrase' && exact && targets.some(value => matchesPhraseTail(normalized(value), sentence, before, true))) continue;
     const key = aidEntryKey(hint.kind, hint.entry);
     const saved = entries.get(key);
     if (!saved || specificity > saved.specificity) {
@@ -108,12 +116,12 @@ export function tutorHint(context: AidRankingContext, insertion: string): {adjus
 }
 
 /** The telescoping prefix potential allocates log(2) over a complete phrase. */
-function phraseStepWeight(value: string, sentence: string, insertion: string): number {
+function phraseStepWeight(value: string, sentence: string, before: string, insertion: string): number {
   const words = normalized(value).split(' ');
-  if (sentence === words.join(' ') || sentence.endsWith(' ' + words.join(' '))) return 0;
+  if (matchesPhraseTail(words.join(' '), sentence, before, true)) return 0;
   for (let progress = words.length - 1; progress >= 1; progress--) {
     const prefix = words.slice(0, progress).join(' ');
-    if (sentence === prefix || progress >= 2 && sentence.endsWith(' ' + prefix)) {
+    if (matchesPhraseTail(prefix, sentence, before, progress >= 2)) {
       return normalized(insertion) === words[progress] ? 1 / words.length : 0;
     }
   }
@@ -135,11 +143,11 @@ export function contextualWording(context: AidRankingContext): WordingCandidate[
     const words = phrase.trim().split(/\s+/u);
     const normalizedWords = words.map(normalized);
     const complete = normalizedWords.join(' ');
-    if (sentence === complete || sentence.endsWith(' ' + complete)) continue;
+    if (matchesPhraseTail(complete, sentence, before, true)) continue;
     for (let progress = words.length - 1; progress >= 0; progress--) {
       const left = normalizedWords.slice(0, progress).join(' ');
       const text = words[progress];
-      const allowed = progress === 0 ? Boolean(prefix) && !sentence : sentence === left || progress >= 2 && sentence.endsWith(' ' + left);
+      const allowed = progress === 0 ? Boolean(prefix) && !sentence : matchesPhraseTail(left, sentence, before, progress >= 2);
       if (!allowed || !normalized(text).startsWith(normalized(prefix)) || normalized(text) === normalized(prefix)) continue;
       const key = normalized(text);
       if ((result.get(key)?.progress ?? -1) < progress) result.set(key, {phrase, text, progress});

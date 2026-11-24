@@ -1,16 +1,19 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {loadLatexModel} from './decoder/kn';
+import {isFlagOn} from '../../../flags';
+import {loadLatexModel, typeaheadLatexFingerprint} from './decoder/kn';
+import {currentTypeaheadArm, usesExpandedNgram} from './replayArm';
 import {latexSuggestions, type LatexSuggestion, type LatexSuggestionOptions} from './latexGrammar';
 import type {LatexQuery, LatexWorkerReply, LatexWorkerRequest} from './decoder/latex.worker';
 
 export function useLatexSuggestions(query: LatexQuery | undefined, limit: number, options: LatexSuggestionOptions = {}) {
   const enabled = query !== undefined;
+  const expanded = isFlagOn('typeaheadV2') && usesExpandedNgram(currentTypeaheadArm());
   const serialized = query ? JSON.stringify(query) : '';
   const worker = useRef<Worker | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const sent = useRef<{id: number; serialized: string}>({id: 0, serialized: ''});
   const [fallback, setFallback] = useState(false);
-  const [results, setResults] = useState<{id: number; serialized: string; items: readonly LatexSuggestion[]}>();
+  const [results, setResults] = useState<{id: number; serialized: string; items: readonly LatexSuggestion[]; assetSha256?: string}>();
   const [, setFallbackRevision] = useState(0);
 
   const fail = useCallback((client: Worker) => {
@@ -31,7 +34,7 @@ export function useLatexSuggestions(query: LatexQuery | undefined, limit: number
     client.onmessage = ({data}: MessageEvent<LatexWorkerReply>) => {
       if (sent.current.id === data.id && worker.current === client) {
         clearTimeout(timer.current);
-        setResults({...sent.current, items: data.results});
+        setResults({...sent.current, items: data.results, assetSha256: data.assetSha256});
       }
     };
     client.onerror = () => fail(client);
@@ -45,22 +48,24 @@ export function useLatexSuggestions(query: LatexQuery | undefined, limit: number
   useEffect(() => {
     if (!enabled || !fallback) return;
     let active = true;
-    void loadLatexModel().then(() => {if (active) setFallbackRevision(revision => revision + 1);});
+    void loadLatexModel(expanded).then(() => {if (active) setFallbackRevision(revision => revision + 1);});
     return () => {active = false;};
-  }, [enabled, fallback]);
+  }, [enabled, expanded, fallback]);
   useEffect(() => {
     const client = worker.current;
     if (!serialized || !client) return;
     const id = sent.current.id + 1;
     sent.current = {id, serialized};
-    const request: LatexWorkerRequest = {id, query: JSON.parse(serialized)};
+    const request: LatexWorkerRequest = {id, query: JSON.parse(serialized), expanded};
     clearTimeout(timer.current);
     timer.current = setTimeout(() => fail(client), 18_000);
     try {client.postMessage(request);}
     catch {fail(client);}
-  }, [serialized, fail]);
-  if (!query) return [];
-  const items = results?.serialized === serialized ? results.items : [];
-  return latexSuggestions(query.math, query.typed, query.before, limit, {...query, ...options,
-    modelCandidates: items.length || !fallback ? items : undefined});
+  }, [serialized, expanded, fail]);
+  if (!query) return {items: []};
+  const latest = results?.serialized === serialized ? results : undefined;
+  const model = latest?.items ?? [];
+  return {items: latexSuggestions(query.math, query.typed, query.before, limit, {...query, ...options,
+    modelCandidates: model.length || !fallback ? model : undefined}), assetSha256: latest?.assetSha256 ??
+    (fallback ? typeaheadLatexFingerprint() : undefined)};
 }
