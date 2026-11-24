@@ -1,8 +1,8 @@
-import {useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode} from 'react';
+import {memo, useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode} from 'react';
 import {ArrowBigUp, ArrowBigUpDash, ChevronLeft, ChevronRight, CornerDownLeft, Delete, Search} from 'lucide-react';
 import {haptic} from '../../ui/v7/haptics';
 import {notation} from './notation';
-import {correctTap, prepareTapCorrection, type KeyBox} from './tapCorrection';
+import {correctTap, needsTapCorrection, prepareTapCorrection, type KeyBox} from './tapCorrection';
 import type {KeyTouch} from './writingAid/decoder/ngramSpatial';
 
 const keepSelection = (event: PointerEvent) => event.preventDefault();
@@ -25,7 +25,7 @@ interface KeyHold {
  * letter shows an enlarged preview above the finger, every key gives the system's keyboard tap, and a touch near the
  * edge of a letter counts for its neighbour when only the neighbour continues a word (tap correction).
  */
-export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove, onBrowse, wordBefore}: {
+export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove, onBrowse, wordBefore}: {
   view: string; lastMath: string; onView: (view: string) => void; disabled: boolean;
   /** `touch`: where a letter was tapped, in key pitches and rows from the top-left of the letter rows (N221 decoder). */
   onInsert: (text: string, typed?: boolean, touch?: KeyTouch) => void; onDelete: () => void;
@@ -42,7 +42,7 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
   const pressed = useRef<HTMLButtonElement | null>(null);
   const popup = useRef<HTMLDivElement>(null);
   const rows = useRef<HTMLDivElement>(null);
-  const touch = useRef<{x: number; y: number; at: number} | null>(null);
+  const touch = useRef<{x: number; y: number; at: number; q?: DOMRect} | null>(null);
   const previewTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const actions = useRef({onInsert, onDelete, onMove, disabled});
   useLayoutEffect(() => {actions.current = {onInsert, onDelete, onMove, disabled};}, [onInsert, onDelete, onMove, disabled]);
@@ -51,17 +51,18 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
     const preview = popup.current;
     clearTimeout(previewTimer.current);
     if (!preview) return;
-    if (!linger || preview.hidden || reducedMotion()) {preview.hidden = true; preview.removeAttribute('data-leaving'); return;}
+    if (!linger || preview.style.visibility === 'hidden' || reducedMotion()) {preview.style.visibility = 'hidden'; preview.removeAttribute('data-leaving'); return;}
     preview.setAttribute('data-leaving', '');
-    previewTimer.current = setTimeout(() => {preview.hidden = true; preview.removeAttribute('data-leaving');}, PREVIEW_LINGER);
+    previewTimer.current = setTimeout(() => {preview.style.visibility = 'hidden'; preview.removeAttribute('data-leaving');}, PREVIEW_LINGER);
   };
   useEffect(() => () => {
     clearTimeout(hold.current?.timer);
     hold.current = null;
-    pressed.current?.classList.remove('down', 'sliding');
+    pressed.current?.style.removeProperty('--tutor-key-press');
+    pressed.current?.classList.remove('sliding');
     pressed.current = null;
     clearTimeout(previewTimer.current);
-    if (popup.current) {popup.current.hidden = true; popup.current.removeAttribute('data-leaving');}
+    if (popup.current) {popup.current.style.visibility = 'hidden'; popup.current.removeAttribute('data-leaving');}
   }, [view, disabled]);
   /** The letter keys' boxes, for tap correction. */
   const letterBoxes = (): KeyBox[] => [...(rows.current?.querySelectorAll<HTMLButtonElement>('.row .k.ch[data-letter]') ?? [])].map(button => {
@@ -69,10 +70,8 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
     return {letter: button.dataset.letter!, x: box.left, y: box.top, width: box.width, height: box.height};
   });
   /** A tap in the decoder's key units: q's cell is the unit (a pitch wide, a row tall), measured from its top-left. */
-  const keyTouch = (point: {x: number; y: number}, boxes: KeyBox[]): KeyTouch | undefined => {
-    const q = boxes.find(box => box.letter === 'q');
-    return q && q.width > 0 && q.height > 0 ? {x: (point.x - q.x) / q.width, y: (point.y - q.y) / q.height} : undefined;
-  };
+  const keyTouch = (point: {x: number; y: number}, q?: Pick<KeyBox, 'x' | 'y' | 'width' | 'height'>): KeyTouch | undefined =>
+    q && q.width > 0 && q.height > 0 ? {x: (point.x - q.x) / q.width, y: (point.y - q.y) / q.height} : undefined;
   function key(label: string, action: () => void, options: {style?: string; icon?: ReactNode; alt?: string; printable?: boolean; letter?: string} = {}) {
     const {style = '', icon, alt, printable, letter} = options;
     const swallowing = (event: PointerEvent<HTMLButtonElement>) => {
@@ -81,7 +80,8 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
       clearTimeout(current.timer);
       if (current.fired) skipClick.current = current.key;
       hold.current = null;
-      event.currentTarget.classList.remove('down', 'sliding');
+      event.currentTarget.style.removeProperty('--tutor-key-press');
+      event.currentTarget.classList.remove('sliding');
       hidePreview(event.type === 'pointerup');
     };
     return <button type="button" key={label} className={'k ' + style} aria-label={label} disabled={disabled}
@@ -92,24 +92,25 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
         keepSelection(event);
         skipClick.current = null;
         haptic('key');
-        touch.current = {x: event.clientX, y: event.clientY, at: Date.now()};
+        const preview = printable ? popup.current : null;
+        const keyboard = preview?.parentElement?.getBoundingClientRect();
+        const cell = preview ? event.currentTarget.querySelector('.kl')?.getBoundingClientRect() : undefined;
+        const q = letter ? rows.current?.querySelector('[data-letter="q"]')?.getBoundingClientRect() : undefined;
+        touch.current = {x: event.clientX, y: event.clientY, at: Date.now(), q};
         pressed.current = event.currentTarget;
-        event.currentTarget.classList.add('down');
+        event.currentTarget.style.setProperty('--tutor-key-press', 'var(--key-down)');
         const current: KeyHold = {key: label, pointer: event.pointerId, x: event.clientX, fired: false};
         hold.current = current;
-        const preview = printable ? popup.current : null;
         clearTimeout(previewTimer.current);
-        if (popup.current && !preview) {popup.current.hidden = true; popup.current.removeAttribute('data-leaving');}
-        if (preview) {
-          const keyboard = preview.parentElement!.getBoundingClientRect();
-          const cell = event.currentTarget.querySelector('.kl')!.getBoundingClientRect();
+        if (popup.current && !preview) {popup.current.style.visibility = 'hidden'; popup.current.removeAttribute('data-leaving');}
+        if (preview && keyboard && cell) {
           preview.style.minWidth = Math.round(Math.max(48, cell.width + 16)) + 'px';
           preview.style.left = Math.max(30, Math.min(keyboard.width - 30, cell.left + cell.width / 2 - keyboard.left)) + 'px';
           preview.style.top = cell.top - keyboard.top + 6 + 'px';
           preview.textContent = label;
           preview.toggleAttribute('data-glyph', !/^[A-Za-z0-9.,]$/.test(label));
           preview.removeAttribute('data-leaving');
-          preview.hidden = false;
+          preview.style.visibility = 'visible';
         }
         if (label === 'Space' || label === 'Delete') event.currentTarget.setPointerCapture?.(event.pointerId);
         if (label === 'Delete') {
@@ -165,9 +166,11 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
         const point = touch.current;
         touch.current = null;
         const recent = point && Date.now() - point.at < 1500 ? point : null;
-        const boxes = recent ? letterBoxes() : [];
-        const typed = recent && wordBefore ? correctTap(letter, recent, boxes, wordBefore()) : letter;
-        onInsert(typed, true, recent ? keyTouch(recent, boxes) : undefined);
+        const before = recent && wordBefore ? wordBefore() : '';
+        const boxes = recent && needsTapCorrection(letter, before) ? letterBoxes() : [];
+        const q = boxes.find(box => box.letter === 'q') ?? recent?.q;
+        const typed = recent && boxes.length ? correctTap(letter, recent, boxes, before) : letter;
+        onInsert(typed, true, recent ? keyTouch(recent, q) : undefined);
         if (shift === 'once') setShift('off');
       }, {style: 'ch' + edge, printable: true, letter: char, alt: digit < 0 ? undefined : String((digit + 1) % 10)});
     });
@@ -177,7 +180,7 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
   const phrases = view === 'Phrases';
   const math = phrases ? notation[view].slice(phrasePage * 9, (phrasePage + 1) * 9) : notation[view];
   return <div className="rows" data-view={view} ref={rows}>
-    <div className="tutor-key-preview" aria-hidden="true" ref={popup} hidden/>
+    <div className="tutor-key-preview" aria-hidden="true" ref={popup} style={{visibility: 'hidden'}}/>
     {math ? <>
       <div className="cats" role="group" aria-label="Math categories">{Object.keys(notation).map(name =>
         <button key={name} type="button" disabled={disabled} className={view === name ? 'cur' : ''} aria-pressed={view === name}
@@ -224,4 +227,4 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
       </div>
     </>}
   </div>;
-}
+});

@@ -1,5 +1,5 @@
 import type {PadStrokes} from '../../ui/v7/ink/ink';
-import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
+import {readTutorAcceptedSpans, referencedImageIds, type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer';
 import {TUTOR_ATTACHMENT_COUNT,unresolvedTutorImageIds,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from './attachment-types';
 import {authGeneration,onAccountChange} from '../authBoundary';
 import {getDemoProfile,getMode,type DemoProfile} from '../mode';
@@ -7,6 +7,7 @@ import {subscribeTutorLocalCleanup,tutorLocalScopeActive,tutorOwnerDeleted,tutor
 
 export type InkDraft={
   drawingId?:string;strokes:PadStrokes;width:number;accent:boolean;queuedText?:string;
+  queuedAcceptedSpans?:readonly TutorAcceptedSpan[];
   inlineImages?:true;
   editingDrawing?:TutorDrawingInk&{id:string};
   /** A durable image whose answer reference is being inserted. The working vectors survive until publication. */
@@ -65,7 +66,7 @@ export function removeSubmittedInk(draft:InkDraft,submitted:ReadonlySet<string>)
   const drawing=!!current.drawingId&&submitted.has(current.drawingId);
   const photos=current.photos.filter(photo=>!submitted.has(photo.id));
   if(current===draft&&!drawing&&photos.length===draft.photos.length)return draft;
-  return {...current,photos,queuedText:undefined,...(drawing&&{strokes:[],drawingId:undefined})};
+  return {...current,photos,queuedText:undefined,queuedAcceptedSpans:undefined,...(drawing&&{strokes:[],drawingId:undefined})};
 }
 
 const DRAFTS='drafts',DELETED_OWNERS='deleted-owners';
@@ -162,7 +163,10 @@ export async function readInkDraft(scope:TutorInkScope):Promise<InkDraft> {
   const draft:InkDraft|undefined=await persist({...scope},'readonly',(store,key)=>store.get(key));
   if(draft&&(!Array.isArray(draft.strokes)||!Array.isArray(draft.photos)||draft.photos.some(image=>typeof image?.id!=='string')))
     throw storageUnavailable();
-  return draft??emptyInk;
+  if (!draft) return emptyInk;
+  if (!draft.queuedAcceptedSpans) return draft;
+  const spans = readTutorAcceptedSpans(draft.queuedText ?? '', draft.queuedAcceptedSpans);
+  return {...draft, queuedAcceptedSpans: spans.length ? spans : undefined};
 }
 export function writeInkDraft(scope:TutorInkScope,draft:InkDraft) {
   return persist({...scope},'readwrite',(store,key)=>store.put(draft,key));

@@ -4,9 +4,9 @@
     python3 scripts/typeahead/train/train.py --data work/data --out work/model --max-minutes 30
 
 Decoder-only, 4 layers, width 192, 3 heads, learned positions, tied embeddings, context 48 words. About 3.6e14 FLOP per epoch of
-9 M tokens, so an epoch takes well under a minute on a T4. --max-minutes is a hard wall-clock cap: training stops, evaluates and
-saves whatever it has. Reports held-out perplexity the way ngram-v1's manifest does (sentence by sentence, <m> and <num> targets
-skipped, </s> included) so the two are comparable; the n-gram's is in public/models/typeahead/ngram-v1/manifest.json (101.33).
+9 M tokens. When --max-minutes is reached the training loop stops and evaluates its checkpoint. The word-level evaluation
+scores every in-scope word and the true sentence ending, with up to 48 preceding IDs. Compare with normalized n-gram
+probabilities on the same vocabulary and sentence events.
 """
 import argparse, json, math, os, time
 import numpy as np
@@ -41,28 +41,48 @@ class LM(nn.Module):
     def forward(self, ids):
         return self.hidden(ids) @ self.tok.weight.T   # tied output embedding
 
+def held_windows(flat, offsets, limit):
+    """Yield aligned inputs and gold labels, scoring each real target exactly once."""
+    for index in range(min(limit, len(offsets) - 1)):
+        words = flat[offsets[index]:offsets[index + 1]].astype(np.int64)
+        context = np.concatenate(([0], words))
+        targets = np.concatenate((words, [4]))
+        first = min(len(context), CTX)
+        yield context[:first], targets[:first]
+        for pos in range(first, len(targets)):
+            gold = np.full(CTX, -1, dtype=np.int64)
+            gold[-1] = targets[pos]
+            yield context[pos - CTX + 1:pos + 1], gold
+
+
 def held_perplexity(model, flat, offsets, device, limit=20000):
-    """Sentence-reset perplexity, as ngram-v1's manifest reports it: input <s> + words, targets words + </s>, skipping <m> and <num>."""
+    """Sentence resets with rolling context and real EOS; maths/numbers remain in context."""
+    from itertools import islice
     model.eval()
-    total, n = 0.0, 0
-    sents = [flat[offsets[i]:offsets[i + 1]][:CTX - 1].astype(np.int64) for i in range(min(limit, len(offsets) - 1))]
-    order = sorted(range(len(sents)), key=lambda i: len(sents[i]))
+    total, n = 0., 0
+    windows = iter(held_windows(flat, offsets, limit))
     with torch.no_grad():
-        for start in range(0, len(order), 256):
-            batch = [sents[i] for i in order[start:start + 256]]
-            width = max(len(s) for s in batch) + 1
-            x = np.zeros((len(batch), width), dtype=np.int64); y = np.full((len(batch), width), -1, dtype=np.int64)
-            for r, s in enumerate(batch):
-                x[r, 0] = 0; x[r, 1:len(s) + 1] = s          # <s> then the words
-                y[r, :len(s)] = s; y[r, len(s)] = 4          # the words then </s>
+        while batch := list(islice(windows, 64)):
+            width = max(len(x) for x, _ in batch)
+            x = np.zeros((len(batch), width), dtype=np.int64)
+            y = np.full((len(batch), width), -1, dtype=np.int64)
+            for row, (inputs, gold) in enumerate(batch):
+                x[row, :len(inputs)] = inputs
+                y[row, :len(gold)] = gold
             x, y = torch.from_numpy(x).to(device), torch.from_numpy(y).to(device)
-            with torch.autocast(device_type=device, dtype=torch.float16, enabled=device == 'cuda'):
-                logits = model(x)
-            logp = F.log_softmax(logits.float(), -1).gather(-1, y.clamp(min=0).unsqueeze(-1)).squeeze(-1)
             keep = (y >= 0) & (y != 1) & (y != 2)
-            total += float(-(logp * keep).sum()); n += int(keep.sum())
+            with torch.autocast(device_type=device, dtype=torch.float16, enabled=device == 'cuda'):
+                hidden = model.hidden(x)[keep]
+            targets = y[keep]
+            for part, target in zip(hidden.split(256), targets.split(256)):
+                logp = F.log_softmax((part.float() @ model.tok.weight.T).float(), -1)
+                total += float(-logp.gather(-1, target.unsqueeze(-1)).sum())
+                n += len(target)
     model.train()
+    if not n:
+        raise ValueError('No eligible held-out word targets')
     return math.exp(total / n)
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -108,7 +128,7 @@ def main():
         if ppl < best:
             best = ppl; torch.save({'model': model.state_dict(), 'vocab': vocab, 'ctx': CTX}, os.path.join(a.out, 'best.pt'))
         if stop: break
-    json.dump({'parameters': params, 'bestHeldPerplexity': best, 'ngramHeldPerplexity': 101.33, 'log': log,
+    json.dump({'parameters': params, 'bestHeldPerplexity': best, 'log': log,
                'gpuMinutes': (time.time() - t0) / 60, 'device': device}, open(os.path.join(a.out, 'metrics.json'), 'w'), indent=2)
 
 if __name__ == '__main__':

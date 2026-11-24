@@ -56,19 +56,29 @@ function patchText(root: HTMLElement, from: string, to: string): boolean {
   return false;
 }
 
+/** Mathematical chips contribute their source length, without cloning their rendered DOM. */
+function textBefore(container: Node, boundary: Node, index: number, beforeNode = false): string {
+  if (atomic(container)) return content(container);
+  if (container.nodeType === Node.TEXT_NODE) return (container.textContent ?? '').slice(0, index);
+  let result = '';
+  const limit = container === boundary ? index : container.childNodes.length;
+  for (let at = 0; at < limit; at++) {
+    const child = container.childNodes[at];
+    if (beforeNode && child === boundary) return result;
+    if (child instanceof HTMLDivElement && result && !result.endsWith('\n')) result += '\n';
+    if (child.contains(boundary)) return result + textBefore(child, boundary, index, beforeNode);
+    result += content(child);
+  }
+  return result;
+}
+
 export function readTutorAnswer(editor: HTMLElement): PadEdit {
   const text = editor.childNodes.length === 1 && editor.firstChild instanceof HTMLBRElement ? '' : content(editor);
   const selection = editor.ownerDocument.getSelection();
   if (!selection?.anchorNode || !selection.focusNode || !editor.contains(selection.anchorNode) || !editor.contains(selection.focusNode))
     return padEdit(text);
-  function offset(node: Node, index: number) {
-    const range = editor.ownerDocument.createRange();
-    range.selectNodeContents(editor);
-    range.setEnd(node, index);
-    return content(range.cloneContents()).length;
-  }
-  const anchor = offset(selection.anchorNode, selection.anchorOffset);
-  const focus = offset(selection.focusNode, selection.focusOffset);
+  const anchor = textBefore(editor, selection.anchorNode, selection.anchorOffset).length;
+  const focus = selection.isCollapsed ? anchor : textBefore(editor, selection.focusNode, selection.focusOffset).length;
   return padEdit(text, anchor, focus, anchor > focus ? 'backward' : 'forward');
 }
 
@@ -98,7 +108,8 @@ export function setTutorAnswerSelection(editor: HTMLElement, {start, end, direct
   const selection = editor.ownerDocument.getSelection();
   if (!selection) return;
   const [focus, focusOffset] = point(to);
-  selection.setBaseAndExtent(...point(from), focus, focusOffset);
+  const startPoint = from === to ? [focus, focusOffset] as const : point(from);
+  selection.setBaseAndExtent(...startPoint, focus, focusOffset);
   const caret = editor.ownerDocument.createRange();
   caret.setStart(focus, focusOffset);
   const box = caret.getBoundingClientRect?.();
@@ -199,11 +210,12 @@ export function renderTutorAnswer(editor: HTMLElement, value: string, images: re
 type Events = Pick<React.ComponentProps<'div'>,
   'onCopy' | 'onCut' | 'onFocus' | 'onPointerDown' | 'onInput' | 'onKeyDown' | 'onCompositionStart' | 'onCompositionEnd' | 'onPaste' | 'onDrop'>;
 
-export function TutorAnswerEditor({editor, value, images, composing, placeholder, readOnly, ghost, marked, onSelection, onChip, onMath, ...events}: Events & {
+export function TutorAnswerEditor({editor, value, images, composing, placeholder, readOnly, ghost, marked, restoreSelection = true, onSelection, onChip, onMath, ...events}: Events & {
   editor: RefObject<HTMLDivElement | null>;
   value: string;
   images: readonly AnswerImage[];
   composing: boolean;
+  restoreSelection?: boolean;
   placeholder: string;
   ghost?: string;
   marked?: {start: number; end: number};
@@ -237,12 +249,12 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
     const mathChips = [...root.querySelectorAll<HTMLElement>('[data-math]')].map(node => node.dataset.math);
     const staleMath = equations.length !== mathChips.length || equations.some((segment, index) => mathChips[index] !== segment.source);
     if (domText(root) !== value || staleChips || staleMath || nestedText || previous?.signature !== signature || previous?.readOnly !== readOnly || previous?.mark !== mark) {
-      const saved = readTutorAnswer(root);
+      const saved = restoreSelection && root.ownerDocument.activeElement === root ? readTutorAnswer(root) : undefined;
       renderTutorAnswer(root, value, images, readOnly, marked);
-      if (root.ownerDocument.activeElement === root) setTutorAnswerSelection(root, padEdit(value, saved.start, saved.end, saved.direction));
+      if (saved) setTutorAnswerSelection(root, padEdit(value, saved.start, saved.end, saved.direction));
     }
     root.toggleAttribute('data-empty', !value);
-  }, [editor, value, images, readOnly, composing, mark]);
+  }, [editor, value, images, readOnly, composing, mark, restoreSelection]);
 
   return <div {...events} ref={editor} className="tutor-answer-editor" role="textbox" aria-label="Your answer"
     data-completion={ghost || undefined} aria-multiline="true" aria-readonly={readOnly} aria-placeholder={placeholder} data-placeholder={placeholder}
@@ -255,18 +267,12 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
       const action = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-chip-action]') : null;
       const equation = action?.dataset.chipAction === 'math' ? action.closest<HTMLElement>('[data-math]') : null;
       if (equation && !readOnly && onMath) {
-        const before = event.currentTarget.ownerDocument.createRange();
-        before.selectNodeContents(event.currentTarget);
-        before.setEndBefore(equation);
-        onMath(equation.dataset.math!, content(before.cloneContents()).length);
+        onMath(equation.dataset.math!, textBefore(event.currentTarget, equation, 0, true).length);
         return;
       }
       const wrapper = action?.closest<HTMLElement>('[data-image-id]');
       const id = wrapper?.dataset.imageId;
       if (!id || !action || !wrapper || readOnly) {onSelection(); return;}
-      const range = event.currentTarget.ownerDocument.createRange();
-      range.selectNodeContents(event.currentTarget);
-      range.setEndBefore(wrapper);
-      onChip(id, content(range.cloneContents()).length, action.dataset.chipAction === 'remove' ? 'remove' : 'edit');
+      onChip(id, textBefore(event.currentTarget, wrapper, 0, true).length, action.dataset.chipAction === 'remove' ? 'remove' : 'edit');
     }}/>;
 }

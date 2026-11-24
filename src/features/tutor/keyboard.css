@@ -129,12 +129,12 @@
 }
 .lemma-tutor .kb .k::before {top: 5px; bottom: 5px; border-radius: 7px; box-shadow: none;}
 .lemma-tutor .kb .k.go {color: var(--v7-role-text-primary);}
-.lemma-tutor .kb .k.go::before {background: var(--key-fn); border-radius: 9999px;}
+.lemma-tutor .kb .k.go::before {background: var(--tutor-key-press,var(--key-fn)); border-radius: 9999px;}
 .lemma-tutor .kb .k.go.down::before {background: var(--key-down); filter: none;}
 .lemma-tutor .kb .row.bottom .k.fn.w15::before {border-radius: 9999px;}
 /* Gboard tints comma and full stop like the modifiers; its emoji key (Lemma's maths key) and the space bar are plain keys. */
-.lemma-tutor .kb .row.bottom .k.tint::before {background: var(--key-fn);}
-.lemma-tutor .kb .row.bottom .k.sym2::before {background: var(--key);}
+.lemma-tutor .kb .row.bottom .k.tint::before {background: var(--tutor-key-press,var(--key-fn));}
+.lemma-tutor .kb .row.bottom .k.sym2::before {background: var(--tutor-key-press,var(--key));}
 .lemma-tutor .kb .row.bottom :is(.k.tint, .k.sym2).down::before {background: var(--key-down);}
 .lemma-tutor .kb .sugg button, .lemma-tutor .kb .sugg button:nth-child(2) {background: transparent; border-radius: 0;}
 .lemma-tutor .kb .sugg button.preferred {font-weight: 600;}

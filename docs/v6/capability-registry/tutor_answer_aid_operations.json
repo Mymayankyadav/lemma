@@ -1,0 +1,62 @@
+{
+  "table": "tutor_answer_aid_operations",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "Owner export only",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (operationId)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "Owner export only",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (connector owner)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "turn_id": {
+      "classification": "derived",
+      "appPath": "Owner export only",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (authorized turn)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "grant_id": {
+      "classification": "derived",
+      "appPath": "Owner export only",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (authorized grant)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "request": {
+      "classification": "derived",
+      "appPath": "Owner export only",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (exact command for retry deduplication)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "receipt": {
+      "classification": "derived",
+      "appPath": "Owner export only",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (original result returned on retry)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "previous": {
+      "classification": "derived",
+      "appPath": "Owner export only",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (previous aid fields for versioned undo)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "Owner export only",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (receipt creation timestamp)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    }
+  }
+}

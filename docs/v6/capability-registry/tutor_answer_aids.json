@@ -5,7 +5,7 @@
     "id": {
       "classification": "command-managed",
       "appPath": "src/data/tutor/live-manual.ts via tutor_answer_aid_state (read only)",
-      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, list) with the owner's connector secret and the handoff grant; the study operationId",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, undo, list) with the owner's connector secret and the handoff grant; the study operationId",
       "exportPolicy": "Included in the authenticated owner snapshot",
       "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
     },
@@ -26,35 +26,35 @@
     "level": {
       "classification": "command-managed",
       "appPath": "src/data/tutor/live-manual.ts via tutor_answer_aid_state (read only)",
-      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, list) with the owner's connector secret and the handoff grant",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, undo, list) with the owner's connector secret and the handoff grant",
       "exportPolicy": "Included in the authenticated owner snapshot",
       "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
     },
     "wording": {
       "classification": "command-managed",
       "appPath": "src/data/tutor/live-manual.ts via tutor_answer_aid_state (read only)",
-      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, list) with the owner's connector secret and the handoff grant",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, undo, list) with the owner's connector secret and the handoff grant",
       "exportPolicy": "Included in the authenticated owner snapshot",
       "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
     },
     "terms": {
       "classification": "command-managed",
       "appPath": "src/data/tutor/live-manual.ts via tutor_answer_aid_state (read only)",
-      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, list) with the owner's connector secret and the handoff grant",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, undo, list) with the owner's connector secret and the handoff grant",
       "exportPolicy": "Included in the authenticated owner snapshot",
       "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
     },
     "symbols": {
       "classification": "command-managed",
       "appPath": "src/data/tutor/live-manual.ts via tutor_answer_aid_state (read only)",
-      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, list) with the owner's connector secret and the handoff grant",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, undo, list) with the owner's connector secret and the handoff grant",
       "exportPolicy": "Included in the authenticated owner snapshot",
       "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
     },
     "withhold": {
       "classification": "command-managed",
       "appPath": "src/data/tutor/live-manual.ts via tutor_answer_aid_state (read only)",
-      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, list) with the owner's connector secret and the handoff grant",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, undo, list) with the owner's connector secret and the handoff grant",
       "exportPolicy": "Included in the authenticated owner snapshot",
       "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
     },
@@ -76,6 +76,20 @@
       "classification": "derived",
       "appPath": "src/data/tutor/live-manual.ts via tutor_answer_aid_state (read only)",
       "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector list (read only)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "ranking": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_answer_aid_state (read only)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (set, undo, list)",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
+    },
+    "grant_id": {
+      "classification": "derived",
+      "appPath": "src/data/tutor/live-manual.ts via tutor_answer_aid_state (read only)",
+      "mcpPath": "supabase/functions/mcp/tutor-connector.ts via tutor_answer_aid_connector (grant ID of the answering handoff)",
       "exportPolicy": "Included in the authenticated owner snapshot",
       "deletionPolicy": "Removed with the owner, checkpoint, thread or turn"
     }

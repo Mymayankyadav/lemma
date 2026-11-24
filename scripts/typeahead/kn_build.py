@@ -41,8 +41,9 @@ def build_vocab(sentences, size):
 
 def discounts(counter):
     n = collections.Counter(c for c in counter.values() if c <= 4)
-    y = n[1] / (n[1] + 2 * n[2])
-    return (0.0, 1 - 2 * y * n[2] / n[1], 2 - 3 * y * n[3] / n[2], 3 - 4 * y * n[4] / n[3])
+    y = n[1] / (n[1] + 2 * n[2]) if n[1] and n[2] else .75
+    return (0.0, *(min(c - .01, max(.01, c - (c + 1) * y * n[c + 1] / n[c]))
+                   if n[c] and n[c + 1] else .75 for c in range(1, 4)))
 
 
 def count_ngrams(id_sentences):
@@ -64,7 +65,11 @@ def estimate_bytes(counts, vocab_bytes, v_size, min3, min2):
     n3 = sum(1 for c in c3.values() if c >= min3)
     ctx = len({(u, v) for (u, v, _), c in c3.items() if c >= min3})
     n2 = sum(1 for c in cont2.values() if c >= min2)
-    return 32 + vocab_bytes + 2 * v_size + 4 * (v_size + 1) + 3 * n2 + 6 * ctx + 4 + 3 * n3 + 64
+    def aligned(x):
+        return x + (-x % 4)
+    sections = (vocab_bytes, v_size, v_size, 4 * (v_size + 1), 2 * n2, n2,
+                4 * ctx, 4 * (ctx + 1), ctx, 2 * n3, n3)
+    return 32 + sum(aligned(size) for size in sections)
 
 
 def train(counts, v_size, min3, min2):
@@ -183,14 +188,27 @@ class Scorer:
         self.k2 = {v: {w: q(p) for w, p in row.items()} for v, row in model['kept2'].items()}
         self.k3 = {k: {w: q(p) for w, p in row.items()} for k, row in model['kept3'].items()}
         self.bow3 = {k: math.exp(b_of(b) * B_STEP) for k, b in model['bow3'].items()}
+        unigram_mass = math.fsum(self.p1)
+        self.mass2 = []
+        for h, alpha in enumerate(self.bow2):
+            seen = self.k2.get(h, {})
+            self.mass2.append(math.fsum(seen.values()) +
+                              alpha * (unigram_mass - math.fsum(self.p1[w] for w in seen)))
+        self.mass3 = {}
+        for (u, v), seen in self.k3.items():
+            self.mass3[u, v] = (math.fsum(seen.values()) + self.bow3[u, v] *
+                               (self.mass2[v] - math.fsum(self.p2(w, v) for w in seen)))
+
+    def p2(self, w, v):
+        row2 = self.k2.get(v)
+        return row2[w] if row2 and w in row2 else self.bow2[v] * self.p1[w]
 
     def p(self, w, u, v):
         row3 = self.k3.get((u, v))
-        if row3 and w in row3:
-            return row3[w]
-        row2 = self.k2.get(v)
-        p2 = row2[w] if row2 and w in row2 else self.bow2[v] * self.p1[w]
-        return self.bow3.get((u, v), 1.0) * p2
+        if row3:
+            raw = row3[w] if w in row3 else self.bow3[u, v] * self.p2(w, v)
+            return raw / self.mass3[u, v]
+        return self.p2(w, v) / self.mass2[v]
 
 
 def perplexity(scorer, id_sentences, skip=()):

@@ -1,0 +1,46 @@
+{
+  "allocatedFromLogTimeGpuHours": 0.06228099393555555,
+  "allocatedGpuHoursFromScriptStart": 0.05927896530777777,
+  "assignedGpus": 2,
+  "batchAndChunkTrials": {
+    "batch-32-chunk-1024": {
+      "accumulation": 1,
+      "logitChunk": 1024,
+      "microbatch": 32,
+      "peakMemoryBytes": 3377031168,
+      "ranks": 2,
+      "targets": 2017735,
+      "tokensPerSecond": 39124.607347742494
+    },
+    "batch-32-chunk-4096": {
+      "accumulation": 1,
+      "logitChunk": 4096,
+      "microbatch": 32,
+      "peakMemoryBytes": 3974391808,
+      "ranks": 2,
+      "targets": 2017735,
+      "tokensPerSecond": 65912.58016695816
+    }
+  },
+  "candidate": "primary",
+  "commit": "1444b245593b7d0bc372e3351025a26dfeead3a6",
+  "deterministicTwoRankResumeWeightsMatched": true,
+  "effectiveSequences": 64,
+  "lastKaggleLogSeconds": 112.105789084,
+  "leasedHours": 0.2,
+  "mode": "throughput",
+  "notebook": "mayankyadav9432/lemma-typeahead-gpu-chunk-probe-20261124/1",
+  "selectedLogitChunk": 4096,
+  "selectedTrial": {
+    "accumulation": 1,
+    "logitChunk": 4096,
+    "microbatch": 32,
+    "peakMemoryBytes": 3974391808,
+    "ranks": 2,
+    "targets": 2017735,
+    "tokensPerSecond": 65912.58016695816
+  },
+  "sessionSecondsFromScriptStart": 106.70213755399999,
+  "sourceArchiveSha256": "71ada8e461dbd103df017b3b93ac6f80e3801a8d5b216648472790b84c067cb3",
+  "status": "diagnostic"
+}

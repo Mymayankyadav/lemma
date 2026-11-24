@@ -1,5 +1,10 @@
 import {padEdit, type PadEdit} from '../../pad/padEdit';
 import {sameEditTarget} from '../input/recognitionPolicy';
+import type {TypeaheadArm} from './replayArm';
+import {tutorHint} from './answerAids';
+import {tutorMathContext} from '../input/symbolEdit';
+import {hasOpenLiteral, insertionEligible} from './eligibility';
+import type {AidRole, TutorAnswerAid} from '../../../../supabase/functions/_shared/tutor-answer-aids';
 import type {EditTarget} from '../input/types';
 
 export type WritingAidMode = 'balanced' | 'fast' | 'strict' | 'off';
@@ -15,6 +20,7 @@ export interface WritingAidAnchor {
   /** An exact snapshot with newly typed, uninterrupted learner input from start onward. */
   readonly text: string;
   readonly start: number;
+  readonly caret?: number;
   /** The one intermediate word tap allowed before the lexical budget is exhausted. */
   readonly continuation?: string;
 }
@@ -25,6 +31,15 @@ export interface WritingAidRequest {
   readonly target: EditTarget;
   readonly mode: WritingAidMode;
   readonly surfaces?: WritingAidSurfaces;
+  readonly contextKey?: string;
+  readonly arm?: TypeaheadArm;
+  readonly replayDiagnostics?: boolean;
+  readonly middleEdits?: boolean;
+  readonly aid?: TutorAnswerAid;
+  readonly mastery?: number;
+  readonly subject?: string;
+  readonly step?: string;
+  readonly question?: readonly (string | undefined)[];
   readonly composing: boolean;
   readonly readOnly: boolean;
 }
@@ -38,7 +53,12 @@ export interface WritingAidProposal {
   readonly label: string;
   readonly snapshot: WritingAidRequest;
   /** N221: offered by the n-gram and touch decoder rather than the existing engine. */
-  readonly source?: 'decoder';
+  readonly source?: 'decoder' | 'bank' | 'personal' | 'symbol' | 'neural' | 'notation' | 'equation';
+  readonly menuPosition?: number;
+  readonly score?: number;
+  readonly tutorAdjustment?: number;
+  readonly role?: AidRole;
+  readonly logic?: boolean;
 }
 
 export interface WritingAidSuggestions {
@@ -62,8 +82,15 @@ const anchorText = (anchor: WritingAidAnchor) => anchor.continuation ?? anchor.t
 
 /** Call only on direct native/custom-key typing. Revisions for other edit sources clear the anchor. */
 export function advanceWritingAidAnchor(
-  before: PadEdit, after: PadEdit, previous: WritingAidAnchor | null,
+  before: PadEdit, after: PadEdit, previous: WritingAidAnchor | null, middleEdits = false,
 ): WritingAidAnchor | null {
+  if (middleEdits && before.start === before.end && after.start === after.end && !atEnd(after) &&
+      after.end > before.end && after.text.length <= WRITING_AID_LIMIT &&
+      before.text.slice(0, before.end) === after.text.slice(0, before.end) &&
+      before.text.slice(before.end) === after.text.slice(after.end)) {
+    const continuing = previous?.caret === before.end && previous.text === before.text;
+    return {text: after.text, start: continuing ? previous.start : before.end, caret: after.end};
+  }
   if (!atEnd(before) || !atEnd(after) || after.text.length <= before.text.length ||
       after.text.length > WRITING_AID_LIMIT || !after.text.startsWith(before.text)) return null;
   if (previous?.continuation && !/[\p{L}\p{N}]/u.test(after.text.slice(before.text.length))) return null;
@@ -73,10 +100,20 @@ export function advanceWritingAidAnchor(
 
 export function canSuggestWritingAid(request: WritingAidRequest): boolean {
   const {cursor, anchor, mode, composing, readOnly} = request;
-  return Boolean(mode !== 'off' && !composing && !readOnly && atEnd(cursor) &&
+  return Boolean(mode !== 'off' && !composing &&  !readOnly && (atEnd(cursor) || request.middleEdits && cursor.start === cursor.end && anchor?.caret === cursor.end) &&
     cursor.text.length <= WRITING_AID_LIMIT && anchor && Number.isInteger(anchor.start) &&
     anchor.start >= 0 && anchor.start < anchor.text.length && anchorText(anchor) === cursor.text &&
     cursor.text.startsWith(anchor.text));
+}
+
+export function eligibleNeuralContext(request: WritingAidRequest): boolean {
+  return canSuggestWritingAid(request) && !request.anchor?.continuation &&
+    tutorMathContext(request.cursor) === 'prose' && !hasOpenLiteral(request.cursor.text);
+}
+
+export function eligibleGhostContext(request: WritingAidRequest): boolean {
+  return eligibleNeuralContext(request) && request.mode !== 'strict' &&
+    (request.surfaces ?? ALL_WRITING_AID_SURFACES).ghost && request.cursor.end === request.cursor.text.length;
 }
 
 export function sameWritingAidRequest(left: WritingAidRequest, right: WritingAidRequest): boolean {
@@ -84,8 +121,8 @@ export function sameWritingAidRequest(left: WritingAidRequest, right: WritingAid
   const x = left.anchor, y = right.anchor;
   const l = left.surfaces ?? ALL_WRITING_AID_SURFACES, r = right.surfaces ?? ALL_WRITING_AID_SURFACES;
   return a.text === b.text && a.start === b.start && a.end === b.end && a.direction === b.direction &&
-    x?.text === y?.text && x?.start === y?.start && x?.continuation === y?.continuation &&
-    left.mode === right.mode && left.readOnly === right.readOnly && left.composing === right.composing &&
+    x?.caret === y?.caret && left.middleEdits === right.middleEdits && x?.text === y?.text && x?.start === y?.start && x?.continuation === y?.continuation &&
+    left.arm === right.arm && left.contextKey === right.contextKey && left.mode === right.mode && left.readOnly === right.readOnly && left.composing === right.composing &&
     l.words === r.words && l.replace === r.replace && l.correction === r.correction && l.ghost === r.ghost &&
     sameEditTarget(left.target, right.target);
 }
@@ -107,7 +144,32 @@ export function applyWritingAidProposal(request: WritingAidRequest, proposal: Wr
       start < anchor.start || start > end || end > cursor.end ||
       cursor.text.slice(start, end) !== before || !insert || insert === before ||
       cursor.text.length - before.length + insert.length > WRITING_AID_LIMIT) return null;
-  return padEdit(cursor.text.slice(0, start) + insert + cursor.text.slice(end));
+  if (!proposalEligible(request, proposal)) return null;
+  return padEdit(cursor.text.slice(0, start) + insert + cursor.text.slice(end), cursor.end + insert.length - before.length);
+}
+
+/** Direct learner evidence comes from the anchor, never earlier accepted output. */
+export function proposalEligible(request: WritingAidRequest, proposal: WritingAidProposal): boolean {
+  const {anchor, cursor} = request;
+  const {start, end, insert} = proposal;
+  const authored = anchor ? anchor.text.slice(Math.max(anchor.start, start), Math.min(end, anchor.text.length)) : '';
+  const ghostStem = proposal.kind === 'ghost' && anchor && !anchor.continuation
+    ? /[\p{L}\p{M}]+$/u.exec(anchor.text.slice(anchor.start, start))?.[0] : undefined;
+  const prefix = authored || ghostStem || '';
+  const prior = cursor.text.slice(0, start);
+  const context = {aid: request.aid, mastery: request.mastery, subject: request.subject,
+    step: request.step, mode: 'prose' as const, before: prior, prefix};
+  const candidateText = ghostStem && /^[\p{L}\p{M}]/u.test(insert) ? ghostStem + insert : insert;
+  const hints = request.aid?.ranking ? [tutorHint(context, candidateText.trim()).role] : [];
+  if (request.aid?.ranking && /\S+\s+\S/u.test(candidateText)) {
+    for (const match of candidateText.matchAll(/[\p{L}\p{M}]+(?:['’\p{Pd}][\p{L}\p{M}]+)*/gu)) {
+      hints.push(tutorHint({...context, before: prior + candidateText.slice(0, match.index),
+        prefix: match.index === 0 ? prefix : ''}, match[0]).role);
+    }
+  }
+  const role = hints.includes('goal') ? 'goal' : hints.includes('alternative') ? 'alternative' : proposal.role;
+  return insertionEligible({text: cursor.text, start, end, insert, mode: 'prose', aid: request.aid,
+    authoredPrefix: prefix, role, tagged: proposal.logic, notation: proposal.source === 'symbol'});
 }
 
 /** A tap can spend the second word slot, but it cannot add learner-written evidence. */

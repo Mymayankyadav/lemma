@@ -23,5 +23,5 @@ if os.path.getsize(data) != 161818020:
 T = f'{W}/lemma/scripts/typeahead/train'
 run(sys.executable, f'{T}/prepare.py', '--input', data, '--out', f'{W}/data')
 run(sys.executable, f'{T}/train.py', '--data', f'{W}/data', '--out', f'{W}/model', '--max-minutes', MAX_MINUTES)
-code = subprocess.run([sys.executable, f'{T}/export_onnx.py', '--model', f'{W}/model/best.pt', '--data', f'{W}/data', '--out', f'{W}/neural-v1']).returncode
-print('EXPORT GATE', 'PASS' if code == 0 else 'FAIL', flush=True)
+run(sys.executable, f'{T}/export_onnx.py', '--model', f'{W}/model/best.pt', '--data', f'{W}/data',
+    '--out', f'{W}/neural-v1')

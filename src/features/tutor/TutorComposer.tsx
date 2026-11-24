@@ -1,4 +1,4 @@
-import {startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
+import {startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type ComponentProps, type KeyboardEvent, type PointerEvent} from 'react';
 import {createPortal} from 'react-dom';
 import {ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, HelpCircle, Keyboard, MoveRight, Paperclip, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
 import {isFlagOn} from '../../flags';
@@ -15,7 +15,7 @@ import {
 import {findNotationSlot, insertNotation, notation} from './notation';
 import {removeTutorImageReferences,TUTOR_ATTACHMENT_COUNT} from '../../data/tutor/attachment-types';
 import {inkIssueText,tutorInkIssue} from '../../data/tutor/ink-storage';
-import {imageReference, referencedImageIds, tutorAnswerParts} from '../../../supabase/functions/_shared/tutor-answer';
+import {imageReference, readTutorAcceptedSpans, referencedImageIds, tutorAnswerParts, type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer';
 import {readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection, TutorAnswerEditor} from './TutorAnswerEditor';
 import {TutorKeyboard} from './TutorKeyboard';
 import {TutorInkPad} from './input/TutorInkPad';
@@ -28,17 +28,24 @@ import {sameEditTarget} from './input/recognitionPolicy';
 import type {EditTarget} from './input/types';
 import {useWritingAid, useWritingAidPreferences, WritingAidSettings, advanceWritingAidAnchor, continueWritingAidAnchor, applyWritingAidProposal, type WritingAidAnchor, type WritingAidProposal} from './writingAid';
 import {LatexWords, SymbolWords, WritingAidBar, WritingAidWords} from './WritingAidBar';
-import {latexSuggestions, unfinishedMath, type LatexSuggestion} from './writingAid/latexGrammar';
-import {setAnswerAid} from './writingAid/answerAids';
-import {effectiveAidLevel, type TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids';
+import {unfinishedMath} from './writingAid/latexGrammar';
+import {useLatexSuggestions} from './writingAid/useLatexSuggestions';
+import {currentTypeaheadArm, typeaheadGraphTrial, typeaheadReplayEnabled, usesTutorBias} from './writingAid/replayArm';
+import {tutorHint} from './writingAid/answerAids';
+import {ACCEPTED_SPAN_LIMIT, addAuthoredSpan, moveAcceptedSpans} from './writingAid/authorship';
+import {insertionEligible} from './writingAid/eligibility';
+import {eligibleGhostContext, writingAidProposalKey} from './writingAid/policy';
+import {effectiveAidLevel, type AidRole, type TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids';
 import {typedEquationAt} from './input/typedEquation';
 import {useAutoeqReadings} from './input/useAutoeqReadings';
-import {latexSymbolOptions, type SymbolOption} from './input/latexShortcuts';
+import {latexSymbolOptions} from './input/latexShortcuts';
+import {applyEquationOrigins, equationFences, equationOrigins} from './writingAid/equationAuthorship';
+import {EquationLatexField} from './input/EquationLatexField';
 import {TutorEquationPanel} from './input/TutorEquationPanel';
 import {INK_VIEWPORT} from './input/TutorInkPad';
 import {resampleInkPath} from './input/inkGeometry';
 import {PAD_PAPER, type PadStrokes} from '../../ui/v7/ink/ink';
-import {prepareTypeahead, prepareWritingDecoder, recordKeyTouch, setDecoderContext, typeaheadActive, writingDecoderReady, type KeyTouch} from './writingAid/decoder/ngramSpatial';
+import {clearKeyTouches, decoderSymbols, prepareTypeahead, prepareWritingDecoder, recordKeyTouch, writingDecoderReady, type KeyTouch} from './writingAid/decoder/ngramSpatial';
 import './keyboard.css';
 import './input/input.css';
 import './writing-aid.css';
@@ -46,6 +53,7 @@ import './writing-aid.css';
 const keepSelection = (event: PointerEvent) => event.preventDefault();
 const ANSWER_CLIPBOARD = 'application/x-lemma-tutor-answer';
 const MAX_ANSWER_LENGTH = 2000;
+const EMPTY_WRITING_WORDS: readonly WritingAidProposal[] = Object.freeze([]);
 const IMAGE_REFERENCE_LENGTH = imageReference('00000000-0000-0000-0000-000000000000').length;
 
 export function keepsKeyboardOpenFor(target: Element) {
@@ -54,8 +62,9 @@ export function keepsKeyboardOpenFor(target: Element) {
 
 interface Props {
   value: string;
-  onChange: (text: string) => void;
-  onSend: (text: string) => void;
+  onChange: (text: string, acceptedSpans?: readonly TutorAcceptedSpan[], persistImmediately?: boolean) => void;
+  acceptedSpans?: readonly TutorAcceptedSpan[];
+  onSend: (text: string, acceptedSpans?: readonly TutorAcceptedSpan[]) => void;
   onAsk: (kind: 'hint' | 'stuck' | 'notation') => void;
   hintLevel?: number;
   canSend: boolean;
@@ -69,6 +78,9 @@ interface Props {
   onCloseActions: () => void;
   answerActions: HTMLElement | null;
   notationContext?: readonly string[];
+  aidSubject?: string;
+  aidStep?: string;
+  aidTurnId?: string;
   /** N234: the tutor's answer aids for this answer (behind tutorAnswerAids), and how well the learner knows the concept (0 to 1). */
   answerAid?: TutorAnswerAid;
   mastery?: number;
@@ -105,6 +117,10 @@ export function TutorComposer(props: Props) {
   const [compositionText, setCompositionText] = useState<string | null>(null);
   const composing = compositionText !== null;
   const history = useRef(createPadTextHistory(padEdit(props.value)));
+  const [initialSpans] = useState(() => new WeakMap<PadEdit, readonly TutorAcceptedSpan[]>([
+    [history.current.present, readTutorAcceptedSpans(props.value, props.acceptedSpans)],
+  ]));
+  const acceptedSpans = useRef(initialSpans);
   const [cursor, setCursor] = useState(history.current.present);
   /**
    * N232: the composer owns the text being typed. `cursor.text` is the live draft, painted at once; the page above is told in a
@@ -112,6 +128,7 @@ export function TutorComposer(props: Props) {
    * told but may not have rendered yet, so a late render of an older value is not mistaken for an outside change.
    */
   const value = cursor.text;
+  const provenanceFull = (acceptedSpans.current.get(history.current.present)?.length ?? 0) >= ACCEPTED_SPAN_LIMIT;
   const emitted = useRef<string[]>([]);
   const lastProp = useRef(props.value);
   const [mountId] = useState(()=>crypto.randomUUID());
@@ -127,7 +144,7 @@ export function TutorComposer(props: Props) {
   const swipe = useRef<{pointer: number; x: number; y: number; time: number; proposal: WritingAidProposal; cursor: PadEdit} | null>(null);
   const [aidSettings, setAidSettings] = useState(false);
   /** N221: the equation chip being edited: its $…$ source at `offset`, and the LaTeX in the sheet. */
-  const [equationEdit, setEquationEdit] = useState<{source: string; offset: number; tex: string} | null>(null);
+  const [equationEdit, setEquationEdit] = useState<{source: string; offset: number; tex: string; acceptedSpans: readonly TutorAcceptedSpan[]; remainingSlots: number; error?: string} | null>(null);
   /** N221 (Owner): equation mode, where the keys give way to paper; `writeReplace` is the equation it will replace, if any. */
   const [equationMode, setEquationMode] = useState(false);
   const [writeReplace, setWriteReplace] = useState<{source: string; offset: number} | null>(null);
@@ -174,12 +191,26 @@ export function TutorComposer(props: Props) {
     }});
 
 
-  const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, revision.current, cursor]);
-  const writingRequest = {cursor, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
-    surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown};
+  const enhancedMenu = isFlagOn('typeaheadV2');
+  const arm = currentTypeaheadArm();
+  const replayDiagnostics = typeaheadReplayEnabled();
+  const activeAid = isFlagOn('tutorAnswerAids') ? props.answerAid : undefined;
+  const aid = useMemo(() => !activeAid?.ranking || usesTutorBias(arm) ? activeAid :
+    {...activeAid, ranking: {...activeAid.ranking, hints: activeAid.ranking.hints?.map(hint => ({...hint, priority: 'neutral' as const}))}},
+  [activeAid, arm]);
+  const aidLevel = aid ? effectiveAidLevel(aid.level, props.mastery) : undefined;
+  const notationKey = useMemo(() => JSON.stringify(props.notationContext ?? []), [props.notationContext]);
+  const aidContextKey = [props.aidTurnId, aid?.turnId, aid?.id, aid?.version, aid?.grantId, aidLevel, props.aidSubject, props.aidStep, arm,
+    notationKey].join('|');
+  const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, aidContextKey, revision.current, cursor]);
+  const question = useMemo(() => JSON.parse(notationKey) as string[], [notationKey]);
+  const writingRequest = {cursor, arm, replayDiagnostics, contextKey: aidContextKey, aid, mastery: props.mastery, middleEdits: enhancedMenu,
+    subject: props.aidSubject, step: props.aidStep, question, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
+    surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown || props.suspended || editMenu || provenanceFull};
   const writing = useWritingAid(writingRequest);
   const aidVisible = dismissedAid !== aidSignature && !editingDisabled;
-  const writingWords = aidVisible ? writing.words : [];
+  const writingWords = aidVisible ? writing.words : EMPTY_WRITING_WORDS;
+  const rankedWritingWords = aidVisible && enhancedMenu ? writing.rankedWords : EMPTY_WRITING_WORDS;
   const rejectionKey = (proposal: WritingAidProposal) => JSON.stringify([proposal.start, proposal.end, proposal.before, proposal.insert]);
   const writingEdit = aidVisible && writing.edit && !rejectedEdits.current.has(rejectionKey(writing.edit)) ? writing.edit : null;
   const writingGhost = aidVisible ? writing.ghost : null;
@@ -213,29 +244,124 @@ export function TutorComposer(props: Props) {
    * them that show the first of: autoeq's readings of a typed equation; the symbols for a LaTeX command, short form or
    * name (\al, ->, eps); the word suggestions; and, with nothing to suggest, ∀ ∈ ⇒.
    */
-  // N235: inside an unfinished $…$ the slots offer the next LaTeX tokens (grammar-checked), behind typeaheadV2.
-  const latexOptions = useMemo<LatexSuggestion[]>(() => {
-    if (!shown || scratch || writingPrefs.mode === 'off' || editingDisabled || !decoderReady || !typeaheadActive()) return [];
-    const span = unfinishedMath(cursor);
-    return span ? latexSuggestions(span.math, span.typed, cursor.text.slice(0, span.start)) : [];
-  }, [cursor, shown, scratch, writingPrefs.mode, editingDisabled, decoderReady]);
-  const slots: 'equation' | 'symbols' | 'latex' | 'words' | 'quick' = typedEquation && equationReadings.length ? 'equation'
-    : symbolOptions.length ? 'symbols' : latexOptions.length ? 'latex' : writingWords.length ? 'words' : 'quick';
-  const symbolSlots = slots === 'symbols' ? symbolOptions : [];
-  /** The strip frames word slots (Gboard's typing strip) rather than spreading its idle icons. */
+  const mathSpan = useMemo(() => shown && !scratch && !equationEdit && writingPrefs.mode !== 'off' &&
+    !editingDisabled && isFlagOn('typeaheadV2') ? unfinishedMath(cursor) : null,
+  [cursor, shown, scratch, equationEdit, writingPrefs.mode, editingDisabled]);
+  const latexBefore = mathSpan ? cursor.text.slice(0, mathSpan.start) : '';
+  const latexOptions = useLatexSuggestions(mathSpan ? {math: mathSpan.math, typed: mathSpan.typed, before: latexBefore,
+    after: cursor.text.slice(cursor.end), knownSymbols: decoderSymbols(latexBefore, question)} : undefined, 64,
+  {declarations: aidLevel === 'none' ? undefined : aid?.ranking?.declaredSymbols});
+  type MenuEntry = {key: string; slotKey: string; score: number; label: string; title?: string; display?: string; math?: string; word?: WritingAidProposal;
+    next?: PadEdit; replacement?: {start: number; end: number; insert: string; equation: boolean; role?: AidRole}};
+  const entries: MenuEntry[] = [];
+  const offeredTarget = writingRequest.target;
+  const liveMenu = useRef<{key: string; target: EditTarget; entries: readonly MenuEntry[]}>({key: '', target: offeredTarget, entries: []});
+  const pressedOffer = useRef<{key: string; epoch: string} | null>(null);
+  const slotHistory = useRef<{epoch: string; entries: readonly MenuEntry[]}>({epoch: '', entries: []});
+  const mode = tutorMathContext(cursor) === 'prose' ? 'prose' : 'equation';
+  const allowed = (replacement: NonNullable<MenuEntry['replacement']>, edit = cursor) =>
+    insertionEligible({text: edit.text, start: replacement.start, end: replacement.end, insert: replacement.insert,
+      mode: replacement.equation ? 'equation' : mode, notation: true, role: replacement.role, aid,
+      authoredPrefix: edit.text.slice(replacement.start, replacement.end)});
+  function addNotation(key: string, score: number, label: string, replacement: NonNullable<MenuEntry['replacement']>, next: PadEdit,
+    display?: string, math?: string, title?: string) {
+    const tutorContext = {aid, mastery: props.mastery, subject: props.aidSubject, step: props.aidStep,
+      mode: (replacement.equation ? 'equation' : mode) as 'equation' | 'prose',
+      before: cursor.text.slice(0, replacement.start), prefix: cursor.text.slice(replacement.start, replacement.end)};
+    const explicit = tutorHint(tutorContext, replacement.insert.trim().replace(/^\$|\$$/gu, ''));
+    const hint = explicit.role !== undefined || explicit.adjustment !== 0 ? explicit : tutorHint(tutorContext, display ?? math ?? replacement.insert);
+    const scoped = {...replacement, role: hint.role};
+    if (scoped.insert.trimEnd().length > 240 || /[\uD800-\uDFFF]/u.test(scoped.insert) || !allowed(scoped)) return;
+    entries.push({key, slotKey: replacement.start + ':' + key, score: score + hint.adjustment, label, display, math, title, next, replacement: scoped});
+  }
+  if (!writingRequest.readOnly && !editingDisabled && aidVisible && writingPrefs.mode !== 'off') {
+    if (typedEquation) equationReadings.forEach((reading, index) => {
+      const insert = '$' + reading.latex + '$', {start, end} = typedEquation;
+      addNotation('equation:' + reading.latex, Math.log(.65 / (index + 1)), 'Insert equation ' + reading.latex,
+        {start, end, insert, equation: true}, insertNotation(padEdit(cursor.text, start, end), insert), undefined, insert, reading.label);
+    });
+    symbolOptions.forEach((option, index) => {
+      const base = padEdit(cursor.text.slice(0, option.start) + cursor.text.slice(option.end), option.start);
+      const next = insertTutorSymbol(base, option.symbol.id) ?? insertNotation(base, option.symbol.glyph);
+      const length = next.text.length - cursor.text.length + option.end - option.start;
+      addNotation('symbol:' + option.symbol.id, Math.log(.4 / (index + 1)), 'Insert ' + option.symbol.name,
+        {start: option.start, end: option.end, insert: next.text.slice(option.start, option.start + length), equation: mode === 'equation'},
+        next, option.symbol.glyph);
+    });
+    const span = mathSpan;
+    if (span) latexOptions.forEach((option, index) => {
+      const next = padEdit(cursor.text.slice(0, span.start) + option.insert + cursor.text.slice(cursor.end), span.start + option.caret);
+      addNotation('latex:' + option.insert, option.score ?? Math.log(.35 / (index + 1)), 'Insert ' + option.label,
+        {start: span.start, end: cursor.end, insert: option.insert, equation: true}, next, option.label);
+    });
+    if (enhancedMenu) rankedWritingWords.forEach(word => entries.push({key: 'word:' + writingAidProposalKey(word), slotKey: word.start + ':word:' + word.insert.toLowerCase(), score: word.score ?? -10,
+      label: 'Insert ' + word.label, display: word.label, word}));
+  }
+  const dedupedEntries = new Map<string, MenuEntry>();
+  for (const entry of entries) {
+    const {start, end, insert} = entry.word ?? entry.replacement!;
+    const key = JSON.stringify([start, end, insert]);
+    if (!dedupedEntries.has(key) || dedupedEntries.get(key)!.score < entry.score) dedupedEntries.set(key, entry);
+  }
+  const rankedEntries = [...dedupedEntries.values()].sort((left, right) => right.score - left.score).slice(0, 64);
+  const menuEpoch = aidSignature + '|' + offeredTarget.mountId + '|' + offeredTarget.scopeKey;
+  const stableScope = [scopeKey, mountId, aidContextKey, writingPrefs.mode, shown, editingDisabled].join('|');
+  const prior = slotHistory.current.epoch === stableScope ? slotHistory.current.entries : [];
+  const eligibleByKey = new Map(rankedEntries.map(entry => [entry.slotKey, entry]));
+  const familyOf = (entry: MenuEntry) => entry.word && entry.word.source !== 'symbol'
+    ? entry.word.label.toLowerCase().replace(/(?:ing|ers?|ed|es|s|ly|ment|ions?|al)$/u, '').slice(0, 5) : entry.slotKey;
+  const menuEntries: MenuEntry[] = [];
+  const families = new Set<string>();
+  for (const entry of rankedEntries) {
+    const family = familyOf(entry);
+    if (families.has(family)) continue;
+    menuEntries.push(entry);
+    families.add(family);
+    if (menuEntries.length === 3) break;
+  }
+  for (const [index, previous] of prior.entries()) {
+    const retained = eligibleByKey.get(previous.slotKey);
+    if (!retained || !menuEntries[index] || menuEntries[index].score > retained.score + .5) continue;
+    const other = menuEntries.findIndex(entry => entry.slotKey === retained.slotKey);
+    if (menuEntries.some((entry, slot) => slot !== index && slot !== other && familyOf(entry) === familyOf(retained))) continue;
+    if (other >= 0) menuEntries[other] = menuEntries[index];
+    menuEntries[index] = retained;
+  }
+  function observedEntry(entry: MenuEntry, position: number): WritingAidProposal {
+    if (entry.word) return {...entry.word, menuPosition: position};
+    const replacement = entry.replacement!;
+    return {kind: 'word', start: replacement.start, end: replacement.end,
+      before: cursor.text.slice(replacement.start, replacement.end), insert: replacement.insert,
+      label: entry.label, snapshot: writingRequest, score: entry.score,
+      source: replacement.equation ? 'equation' : 'notation', menuPosition: position};
+  }
+  const displayedWordMenu = useMemo(() => [menuEntries[1], menuEntries[0], menuEntries[2]].flatMap((entry, position) =>
+    entry ? [observedEntry(entry, position)] : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [menuEntries.map(entry => entry.key).join('|'), rankedWritingWords, aidSignature]);
+  useLayoutEffect(() => {
+    liveMenu.current = {key: menuEpoch, target: offeredTarget, entries: enhancedMenu ? menuEntries : entries};
+    slotHistory.current = {epoch: stableScope, entries: menuEntries};
+  });
+  const equationOptions = equationReadings.filter(reading => entries.some(entry => entry.key === 'equation:' + reading.latex)).slice(0, 3);
+  const symbolSlots = symbolOptions.filter(option => entries.some(entry => entry.key === 'symbol:' + option.symbol.id));
+  const eligibleLatex = latexOptions.filter(option => entries.some(entry => entry.key === 'latex:' + option.insert)).slice(0, 3);
+  const slots = enhancedMenu ? menuEntries.length ? 'unified' : 'quick'
+    : equationOptions.length ? 'equation' : symbolSlots.length ? 'symbols' : eligibleLatex.length ? 'latex' : writingWords.length ? 'words' : 'quick';
   const stripActive = slots !== 'quick' || reviewChoice;
 
   useEffect(() => {
     const reportVisibility = () => {
       const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && document.visibilityState !== 'hidden';
-      writing.shown('words', visible && slots === 'words' ? writingWords : []);
+      writing.shown('words', visible ? slots === 'unified' ? displayedWordMenu : slots === 'words'
+        ? [writingWords[1], writingWords[0], writingWords[2]].filter(Boolean) : [] : []);
       writing.shown('edit', visible && shownEdit && !suggestionUndoable ? [shownEdit] : []);
       writing.shown('ghost', visible && writingGhost ? [writingGhost] : []);
     };
     reportVisibility();
     document.addEventListener('visibilitychange', reportVisibility);
     return () => document.removeEventListener('visibilitychange', reportVisibility);
-  }, [writing.shown, writingWords, slots, shownEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, suggestionUndoable]);
+  }, [writing.shown, writingWords, displayedWordMenu, slots, shownEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, suggestionUndoable]);
 
   // N221: load N219's lexicon for the n-gram and touch decoder when the keyboard opens, and let the tutor's question
   // (with the checkpoint's title and step) favour its own words while the learner answers it.
@@ -244,8 +370,9 @@ export function TutorComposer(props: Props) {
     if (!shown) return;
     let live = true;
     // N233: the Kneser-Ney model loads beside the lexicon (only with typeaheadV2); both must be ready before the strip is re-worked.
-    void Promise.all([prepareWritingDecoder(), prepareTypeahead()]).then(() => {
-      if (!live || !writingDecoderReady()) return;
+    const workerProse = isFlagOn('typeaheadV2') && typeof Worker !== 'undefined';
+    void Promise.all([workerProse ? undefined : prepareWritingDecoder(), prepareTypeahead()]).then(() => {
+      if (!live || !workerProse && !writingDecoderReady()) return;
       setDecoderReady(true);
       if (decoderSeen.current || shownSuggestions.current) return;
       decoderSeen.current = true;
@@ -254,17 +381,7 @@ export function TutorComposer(props: Props) {
     });
     return () => {live = false;};
   }, [shown]);
-  // N234: the tutor's terms and symbols join the question's own words (unless the aids have faded away with mastery).
-  const aid = isFlagOn('tutorAnswerAids') ? props.answerAid : undefined;
-  const aidTexts = useMemo(() => aid && effectiveAidLevel(aid.level, props.mastery) !== 'none' ? [...aid.terms, ...aid.symbols] : [],
-    [aid, props.mastery]);
-  useEffect(() => {
-    setAnswerAid(aid ?? null, props.mastery);
-    setCursor(current => ({...current}));
-    return () => setAnswerAid(null);
-  }, [aid, props.mastery]);
-  const decoderContext = JSON.stringify([...(props.notationContext ?? []), ...aidTexts]);
-  useEffect(() => {setDecoderContext(JSON.parse(decoderContext) as string[]);}, [decoderContext]);
+
 
   useEffect(() => {
     swipe.current = null;
@@ -274,11 +391,12 @@ export function TutorComposer(props: Props) {
   useLayoutEffect(() => {
     const hadEvidence = authoredAnchor.current !== null || acceptedSuggestion.current !== null;
     authoredAnchor.current = null;
+    clearKeyTouches();
     acceptedSuggestion.current = null;
     rejectedEdits.current.clear();
     setDismissedAid(null);
     if (hadEvidence) setCursor({...history.current.present});
-  }, [scopeKey, writingPrefs.scopeKey, writingPrefs.mode]);
+  }, [scopeKey, writingPrefs.scopeKey, writingPrefs.mode, aidContextKey]);
 
   function dismissWriting() {
     if (suggestionUndoable && acceptedSuggestion.current) {
@@ -294,41 +412,59 @@ export function TutorComposer(props: Props) {
 
   function acceptWriting(proposal: WritingAidProposal) {
     remember();
-    if (!writing.isCurrent(proposal)) return;
+    if (provenanceFull || !writing.isCurrent(proposal)) return;
     const before = history.current, anchor = authoredAnchor.current;
     const next = applyWritingAidProposal({...writingRequest, cursor: before.present, anchor, target: editTarget(),
       composing: composition.current, readOnly: readOnly || scratch || assist.drawing || editMenu || aidSettings || !shown}, proposal);
-    if (!next || !commit(changePadText(before, next), true)) return;
+    if (!next) return;
+    const source = proposal.source === 'decoder' ? 'ngram' : proposal.source === 'bank' ? 'tutor' :
+      proposal.source === 'notation' ? 'symbol' : proposal.source ?? (proposal.kind === 'ghost' ? 'phrase' : 'word');
+    let authored = 0;
+    while (authored < proposal.before.length && proposal.before[authored] === proposal.insert[authored] &&
+      proposal.start + authored < (anchor?.text.length ?? 0)) authored++;
+    if (!commit(changePadText(before, next), true, true, false, false,
+      edit => addAcceptedSpan(edit, proposal.start + authored, proposal.insert.slice(authored), source))) return;
     authoredAnchor.current = continueWritingAidAnchor(anchor, proposal, next);
     acceptedSuggestion.current = {before, after: next, proposal};
     setHideSuggestionUndo(false);
     writing.feedback('accept', proposal);
     haptic('snap');
   }
-  /** N223: a reading of the typed equation replaces it in the answer as an equation chip. */
-  function acceptTypedEquation(latex: string) {
+  function acceptMenu(entry: MenuEntry) {
     remember();
-    const span = typedEquation, edit = history.current.present;
-    if (!span || readOnly || edit.text.slice(span.start, span.end) !== span.text) return;
-    if (commit(changePadText(history.current, insertNotation(padEdit(edit.text, span.start, span.end), '$' + latex + '$')), true)) haptic('snap');
+    const live = liveMenu.current, edit = history.current.present;
+    if (live.key !== menuEpoch || !sameEditTarget(live.target, editTarget()) || !live.entries.includes(entry) ||
+        editingDisabled || writingRequest.readOnly || composition.current) return;
+    if (entry.word) {acceptWriting(entry.word); return;}
+    if (!entry.next || !entry.replacement || !allowed(entry.replacement, edit) || provenanceFull) return;
+    const replacement = entry.replacement;
+    const observed = enhancedMenu
+      ? displayedWordMenu.find(item => item.start === replacement.start && item.end === replacement.end && item.insert === replacement.insert)
+      : undefined;
+    const before = history.current;
+    if (commit(changePadText(before, entry.next), true, true, false, false,
+      edit => addAcceptedSpan(edit, replacement.start, replacement.insert, replacement.equation ? 'equation' : 'symbol'))) {
+      if (observed) {
+        acceptedSuggestion.current = {before, after: entry.next, proposal: observed};
+        setHideSuggestionUndo(false);
+        writing.feedback('accept', observed);
+      }
+      haptic('snap');
+    }
   }
-  function acceptSymbol(option: SymbolOption) {
-    remember();
-    const edit = history.current.present;
-    if (editingDisabled || edit.start !== edit.end || edit.end !== option.end ||
-        edit.text.slice(option.start, option.end) !== option.token) return;
-    const base = padEdit(edit.text.slice(0, option.start) + edit.text.slice(option.end), option.start);
-    // Inside $…$ the symbol is its LaTeX command (\alp completes to \alpha); in prose, its glyph.
-    const next = insertTutorSymbol(base, option.symbol.id) ?? insertNotation(base, option.symbol.glyph);
-    if (commit(changePadText(history.current, next), true)) haptic('snap');
+  function acceptLegacyNotation(key: string) {
+    const entry = entries.find(item => item.key === key);
+    if (entry) acceptMenu(entry);
   }
-  /** N235: a LaTeX token goes in at the caret, replacing the command being typed; a pair of braces leaves the caret inside. */
-  function acceptLatex(option: LatexSuggestion) {
-    remember();
-    const edit = history.current.present, span = unfinishedMath(edit);
-    if (editingDisabled || !span) return;
-    const text = edit.text.slice(0, span.start) + option.insert + edit.text.slice(edit.end);
-    if (commit(changePadText(history.current, padEdit(text, span.start + option.caret)), true)) haptic('snap');
+  function addAcceptedSpan(edit: PadEdit, start: number, inserted: string, source: TutorAcceptedSpan['source']): boolean {
+    if (!enhancedMenu && !aid) return true;
+    const text = inserted.trimEnd();
+    if (!text || edit.text.slice(start, start + text.length) !== text) return false;
+    const end = start + text.length;
+    const span: TutorAcceptedSpan = {start, end, text, source, ...(source === 'tutor' && aid ? {aidId: aid.id, aidVersion: aid.version} : {})};
+    const updated = addAuthoredSpan(edit.text, acceptedSpans.current.get(edit) ?? [], span);
+    if (updated) acceptedSpans.current.set(edit, updated);
+    return updated !== null;
   }
   function undoWriting() {
     const saved = acceptedSuggestion.current;
@@ -375,6 +511,7 @@ export function TutorComposer(props: Props) {
       authoredAnchor.current = null;
       rejectedEdits.current.clear();
       history.current = createPadTextHistory(padEdit(props.value));
+      acceptedSpans.current.set(history.current.present, readTutorAcceptedSpans(props.value, props.acceptedSpans));
       setCursor(history.current.present);
       pendingSelection.current = history.current.present;
     }
@@ -392,7 +529,7 @@ export function TutorComposer(props: Props) {
       selectField(edit);
       pendingSelection.current = null;
     }
-  }, [props.value, value, compositionText, assist.picker, assist.drawing, ghostSuffix]);
+  }, [props.value, props.acceptedSpans, value, compositionText, assist.picker, assist.drawing, ghostSuffix]);
 
   useLayoutEffect(() => {
     const previous = previousIds.current;
@@ -431,13 +568,16 @@ export function TutorComposer(props: Props) {
     assist.pause();
     authoredAnchor.current = null;
     acceptedSuggestion.current = null;
+    const provenance = acceptedSpans.current.get(history.current.present);
+    if (provenance) acceptedSpans.current.set(edit, provenance);
     history.current = {...history.current, present: edit};
     setCursor(edit);
   }
   function tooManyImages(text: string) {
     return referencedImageIds(text).filter(id => availableIds.has(id)).length > TUTOR_ATTACHMENT_COUNT;
   }
-  function commit(next: PadTextHistory, focus = false, restore = true, fromAssist = false, manuallyTyped = false) {
+  function commit(next: PadTextHistory, focus = false, restore = true, fromAssist = false, manuallyTyped = false,
+    decorate?: (edit: PadEdit) => boolean | void) {
     const edit = next.present;
     if (readOnly || edit.text.length > MAX_ANSWER_LENGTH) return false;
     if (tooManyImages(edit.text)) {
@@ -451,7 +591,14 @@ export function TutorComposer(props: Props) {
     if(moved)revision.current.selectionRevision++;
     if(!fromAssist&&(changed||moved))assist.pause();
     if (focus && !(document.activeElement instanceof HTMLButtonElement)) fieldElement()?.focus({preventScroll: true});
-    const nextAnchor = manuallyTyped ? advanceWritingAidAnchor(previous, edit, authoredAnchor.current) : null;
+    const nextAnchor = manuallyTyped ? advanceWritingAidAnchor(previous, edit, authoredAnchor.current, enhancedMenu) : null;
+    const provenance = acceptedSpans.current.get(previous);
+    if (provenance && !acceptedSpans.current.has(edit)) {
+      acceptedSpans.current.set(edit, moveAcceptedSpans(previous.text, edit.text, provenance, {
+        start: Math.min(previous.start, edit.start), end: previous.end, nextEnd: edit.end,
+      }));
+    }
+    if (decorate?.(edit) === false) return false;
     history.current = next;
     if (changed || moved) authoredAnchor.current = nextAnchor;
     setCursor(edit);
@@ -465,7 +612,18 @@ export function TutorComposer(props: Props) {
       if (restore) pendingSelection.current = edit;
       emitted.current.push(edit.text);
       if (emitted.current.length > 64) emitted.current.shift();
-      startTransition(() => props.onChange(edit.text));
+      // The same edit transaction adds any accepted range before the parent
+      // persists the full draft and its provenance together.
+      // Image references are recovery data. Save the text at the same user
+      // action that adds or removes a saved image.
+      const imagesChanged = (/\[\[lemma-image:/iu.test(previous.text) || /\[\[lemma-image:/iu.test(edit.text)) &&
+        imageRanges(previous.text).map(image => image.id).join('|') !== imageRanges(edit.text).map(image => image.id).join('|');
+      startTransition(() => {
+        const spans = acceptedSpans.current.get(edit);
+        if (imagesChanged) props.onChange(edit.text, spans, true);
+        else if (spans?.length) props.onChange(edit.text, spans);
+        else props.onChange(edit.text);
+      });
     } else if (restore) {
       if(fromAssist)pendingSelection.current=edit;
       else selectField(edit);
@@ -501,8 +659,10 @@ export function TutorComposer(props: Props) {
   /** N221: tapping an equation chip opens it in the equation sheet. */
   function openEquation(source: string, offset: number) {
     if (editingDisabled || history.current.present.text.slice(offset, offset + source.length) !== source) return;
-    const tex = source.replace(/^\$\$?|\$\$?$/gu, '');
-    setEquationEdit({source, offset, tex});
+    const {tex} = equationFences(source);
+    const current = history.current.present;
+    const {inside, outsideCount} = equationOrigins(current.text, acceptedSpans.current.get(current) ?? [], source, offset);
+    setEquationEdit({source, offset, tex, acceptedSpans: inside, remainingSlots: Math.max(inside.length, ACCEPTED_SPAN_LIMIT - outsideCount)});
   }
   /** Closing the equation sheet puts the caret just after the equation, not where the focus lands. */
   function closeEquation() {
@@ -511,22 +671,35 @@ export function TutorComposer(props: Props) {
     const {text} = history.current.present;
     if (target && text.slice(target.offset, target.offset + target.source.length) === target.source) {
       const after = padEdit(text, target.offset + target.source.length);
+      const spans = acceptedSpans.current.get(history.current.present);
+      if (spans) acceptedSpans.current.set(after, spans);
       history.current = {...history.current, present: after};
       pendingSelection.current = after;
       setCursor(after);
     }
   }
-  /** Replace the edited equation with `tex` (empty removes it), keeping its $ or $$ delimiters. */
+  /** Keep the saved equation's delimiters and atomically move any retained origins. */
   function saveEquation(tex: string) {
     const target = equationEdit;
-    setEquationEdit(null);
     if (!target || readOnly) return;
-    const {text} = history.current.present;
-    if (text.slice(target.offset, target.offset + target.source.length) !== target.source) return;
-    const fence = target.source.startsWith('$$') ? '$$' : '$';
-    const replacement = tex.trim() ? fence + tex.trim() + fence : '';
+    const current = history.current.present;
+    const {text} = current;
+    if (text.slice(target.offset, target.offset + target.source.length) !== target.source) {setEquationEdit(null); return;}
+    const fence = equationFences(target.source);
+    const body = tex.trim();
+    const replacement = body ? fence.opening + body + fence.closing : '';
     const range = padEdit(text, target.offset, target.offset + target.source.length);
-    if (commit(changePadText(history.current, insertNotation(range, replacement)), true)) haptic('snap');
+    const next = insertNotation(range, replacement);
+    if (next.text === text) {closeEquation(); return;}
+    const spans = applyEquationOrigins(text, next.text, acceptedSpans.current.get(current) ?? [],
+      target.source, target.offset, tex, target.acceptedSpans);
+    if (!spans) {
+      setEquationEdit({...target, error: 'This edit exceeds the saved suggestion limit.'});
+      return;
+    }
+    if (!commit(changePadText(history.current, next), true, true, false, false, edit => {acceptedSpans.current.set(edit, spans);})) return;
+    setEquationEdit(null);
+    haptic('snap');
     if (surfaceSelection.current) surfaceSelection.current = history.current.present;
   }
   /** N221: recognised handwriting goes in at the caret, as $…$ in prose or as plain LaTeX inside $…$. */
@@ -571,7 +744,10 @@ export function TutorComposer(props: Props) {
       revision.current.modeRevision++;
       assist.stop();
       emitted.current = [];
-      props.onSend(history.current.present.text);
+      const answer = history.current.present;
+      const spans = acceptedSpans.current.get(answer);
+      if (spans?.length) props.onSend(answer.text, spans);
+      else props.onSend(answer.text);
     }
   }
 
@@ -898,7 +1074,7 @@ export function TutorComposer(props: Props) {
   }
   function refreshWriting() {
     if (editingDisabled) return;
-    if (writingWords.length) writing.refresh('words', writingWords);
+    if (writingWords.length) writing.refresh('words', enhancedMenu ? displayedWordMenu.filter(item => item.source !== 'notation' && item.source !== 'equation') : writingWords);
     if (writingEdit) writing.refresh('edit', [writingEdit]);
     if (writingGhost) writing.refresh('ghost', [writingGhost]);
     haptic('snap');
@@ -969,6 +1145,35 @@ export function TutorComposer(props: Props) {
     onClick={()=>{haptic('snap');selectSurface(surface === 'equation' ? 'keys' : 'equation');}}><Radical aria-hidden="true"/></button>;
   const keysButton = <button className="sbtn" type="button" aria-label="Keys" onPointerDown={keepSelection}
     onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></button>;
+  type KeyboardActions = Pick<ComponentProps<typeof TutorKeyboard>, 'onView' | 'onInsert' | 'wordBefore' | 'onBrowse' | 'onDelete' | 'onMove'>;
+  const keyboardActions = useRef<KeyboardActions | null>(null);
+  useLayoutEffect(() => {
+    keyboardActions.current = {
+      onView: changeView, onInsert: insert, onDelete: deleteBackward,
+      wordBefore: () => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';},
+      onBrowse: () => {remember(); assist.openPicker();},
+      onMove: (direction, count) => {
+        remember();
+        let edit = history.current.present;
+        const ranges = imageRanges(edit.text);
+        for (let step = 0; step < count; step++) {
+          edit = movePadCaret(edit, direction);
+          const image = ranges.find(item => item.start < edit.start && edit.start < item.end);
+          if (image) edit = padEdit(edit.text, direction === 'left' ? image.start : image.end);
+        }
+        change(edit, true);
+      },
+    };
+  });
+  const keyboardListeners = useMemo<KeyboardActions>(() => ({
+    onView: view => keyboardActions.current?.onView(view),
+    onInsert: (text, typed, touch) => keyboardActions.current?.onInsert(text, typed, touch),
+    onDelete: () => keyboardActions.current?.onDelete(),
+    onBrowse: () => keyboardActions.current?.onBrowse(),
+    onMove: (direction, count) => keyboardActions.current?.onMove(direction, count),
+    wordBefore: () => keyboardActions.current?.wordBefore?.() ?? '',
+  }), []);
+
   return <div ref={composerRoot} className="keyboard-composer" hidden={props.suspended} data-keyboard={shown && !props.suspended ? 'math' : 'hidden'} data-symbols={shown && !props.suspended && Boolean(notation[view]) || undefined}>
     {value.includes('$') && !props.ink && <div className="composer-preview"><MathText source={tutorAnswerParts(value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
     {answerError && <p className="composer-status" role="alert">{answerError}</p>}
@@ -982,12 +1187,16 @@ export function TutorComposer(props: Props) {
         <Button small type="button" onClick={()=>change(padEdit(removeTutorImageReferences(value)))}>Remove image references</Button>}
     </div>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
-    <form className="composer" onSubmit={event => {event.preventDefault(); send();}}>
+    <form className="composer"
+      data-typeahead-ghost-eligible={replayDiagnostics ? Number(isFlagOn('proofAssistGhost') && eligibleGhostContext(writingRequest)) : undefined}
+      data-typeahead-ngram-sha={replayDiagnostics ? writing.assetHashes.ngram : undefined}
+      data-typeahead-neural-sha={replayDiagnostics ? writing.assetHashes.neural : undefined}
+      data-typeahead-graph-trial={typeaheadGraphTrial() ? 'unqualified' : undefined} onSubmit={event => {event.preventDefault(); send();}}>
       <div className="writing-composer-card" data-can-swipe={Boolean(writingGhost) || undefined}
         onPointerDownCapture={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={stopSwipe}
         onLostPointerCapture={event => {if (event.target === event.currentTarget && swipe.current) stopSwipe();}}>
       <div className="field">
-        {props.ink ? <TutorAnswerEditor editor={richField} value={value} images={props.ink.draft.photos}
+        {props.ink ? <TutorAnswerEditor editor={richField} restoreSelection={!pendingSelection.current} value={value} images={props.ink.draft.photos}
           placeholder={followUp ? 'Add to your question…' : props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
           composing={composing} ghost={ghostSuffix} marked={writingEdit ? {start: writingEdit.start, end: writingEdit.end} : undefined} onSelection={remember} onChip={chipAction} onMath={openEquation} onFocus={event=>{
             if (event.target === event.currentTarget) focusAnswer();
@@ -1082,10 +1291,13 @@ export function TutorComposer(props: Props) {
     <Sheet open={Boolean(equationEdit)} onClose={closeEquation} title="Equation">
       {equationEdit && <div className="tutor-equation-edit">
         <div className="tutor-equation-preview" aria-label="Preview"><MathText source={equationEdit.tex.trim() ? '$' + equationEdit.tex + '$' : ''}/></div>
-        <label className="tutor-equation-latex">LaTeX
-          <textarea rows={2} value={equationEdit.tex} spellCheck={false} autoCapitalize="off" autoCorrect="off"
-            onChange={event => setEquationEdit({...equationEdit, tex: event.target.value})}/>
-        </label>
+        <EquationLatexField value={equationEdit.tex} acceptedSpans={equationEdit.acceptedSpans}
+          remainingSlots={equationEdit.remainingSlots}
+          onChange={(tex, spans) => setEquationEdit({...equationEdit, tex, acceptedSpans: spans, error: undefined})}
+          before={value.slice(0, equationEdit.offset)} notationContext={props.notationContext}
+          aid={aid} mastery={props.mastery} subject={props.aidSubject} step={props.aidStep}
+          suggestions={isFlagOn('typeaheadV2') && writingPrefs.mode !== 'off' && !editingDisabled}/>
+        {equationEdit.error && <p role="alert">{equationEdit.error}</p>}
         <div className="tutor-session-actions">
           <Button variant="primary" onClick={() => saveEquation(equationEdit.tex)}>Done</Button>
           <Button onClick={() => {
@@ -1126,16 +1338,39 @@ export function TutorComposer(props: Props) {
             at the left and Equation mode at the right, the slots between them for one kind of suggestion at a time. */}
         {/* N227 (Owner): with the scratch pad, the strip's pencil opens it (Draw symbol lives on in equation mode). */}
         {props.ink ? scratchButton : incomplete ? nextSlotButton : drawButton}
-        {slots === 'equation' && <div className="sugg equation-words" role="group" aria-label="Equation suggestions">
-          {/* Best in the middle, as the words and symbols (and Gboard). */}
-          {[equationReadings[1], equationReadings[0], equationReadings[2]].map((reading, index) => reading
-            ? <button key={reading.latex} type="button" className={index === 1 ? 'preferred' : undefined}
-              aria-label={'Insert equation ' + reading.latex} title={reading.label} disabled={editingDisabled} onPointerDown={keepSelection}
-              onClick={() => acceptTypedEquation(reading.latex)}><MathText source={'$' + reading.latex + '$'}/></button>
+        {slots === 'unified' && <div className="sugg equation-words" role="group" aria-label="Answer suggestions">
+          {[menuEntries[1], menuEntries[0], menuEntries[2]].map((entry, index) => entry
+            ? <button key={entry.slotKey} type="button" className={index === 1 ? 'preferred' : undefined} title={entry.title}
+              aria-label={entry.label} disabled={editingDisabled}
+              data-typeahead-insert={entry.word?.insert ?? entry.replacement?.insert}
+              data-typeahead-kind={entry.word?.source === 'symbol' || !entry.word ? 'symbol' : 'word'}
+              data-typeahead-family={familyOf(entry)}
+              data-typeahead-start={entry.word?.start ?? entry.replacement?.start}
+              data-typeahead-end={entry.word?.end ?? entry.replacement?.end}
+              onPointerDown={event => {
+                keepSelection(event);
+                pressedOffer.current = {key: entry.key, epoch: menuEpoch};
+              }} onPointerCancel={() => {pressedOffer.current = null;}} onClick={event => {
+                const pressed = pressedOffer.current;
+                pressedOffer.current = null;
+                if (event.detail && (pressed?.key !== entry.key || pressed.epoch !== menuEpoch)) return;
+                acceptMenu(entry);
+              }}>{entry.math ? <MathText source={entry.math}/> : entry.display}</button>
             : <button key={'empty' + index} type="button" disabled aria-label="No suggestion"><span aria-hidden="true" className="writing-aid-empty">·</span></button>)}
         </div>}
-        {symbolSlots.length > 0 && <SymbolWords options={symbolSlots} disabled={editingDisabled} onAccept={acceptSymbol}/>}
-        {slots === 'latex' && <LatexWords options={latexOptions} disabled={editingDisabled} onAccept={acceptLatex}/>}
+        {slots === 'equation' && <div className="sugg equation-words" role="group" aria-label="Equation suggestions">
+          {/* Best in the middle, as the words and symbols (and Gboard). */}
+          {[equationOptions[1], equationOptions[0], equationOptions[2]].map((reading, index) => reading
+            ? <button key={reading.latex} type="button" className={index === 1 ? 'preferred' : undefined}
+              aria-label={'Insert equation ' + reading.latex} title={reading.label} disabled={editingDisabled} onPointerDown={keepSelection}
+              data-typeahead-insert={typedEquation ? '$' + reading.latex + '$' : undefined} data-typeahead-kind="symbol"
+              data-typeahead-start={typedEquation?.start} data-typeahead-end={typedEquation?.end}
+              onClick={() => acceptLegacyNotation('equation:' + reading.latex)}><MathText source={'$' + reading.latex + '$'}/></button>
+            : <button key={'empty' + index} type="button" disabled aria-label="No suggestion"><span aria-hidden="true" className="writing-aid-empty">·</span></button>)}
+        </div>}
+        {slots === 'symbols' && <SymbolWords options={symbolSlots} disabled={editingDisabled}
+          onAccept={option => acceptLegacyNotation('symbol:' + option.symbol.id)}/>}
+        {slots === 'latex' && <LatexWords options={eligibleLatex} disabled={editingDisabled} onAccept={option => acceptLegacyNotation('latex:' + option.insert)}/>}
         <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting} hidden={slots !== 'words'}/>
         {slots === 'quick' && <div className="sugg tutor-quick-math" role="group" aria-label="Quick math symbols">
           {['∀', '∈', ...(props.ink && incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="qsym" aria-label={symbol}
@@ -1149,21 +1384,7 @@ export function TutorComposer(props: Props) {
           onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
           onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
-      <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled} onInsert={insert}
-        wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
-        onBrowse={()=>{remember();assist.openPicker();}}
-        onDelete={deleteBackward}
-        onMove={(direction, count) => {
-          remember();
-          let edit = history.current.present;
-          const ranges = imageRanges(edit.text);
-          for (let step = 0; step < count; step++) {
-            edit = movePadCaret(edit, direction);
-            const image = ranges.find(item => item.start < edit.start && edit.start < item.end);
-            if (image) edit = padEdit(edit.text, direction === 'left' ? image.start : image.end);
-          }
-          change(edit, true);
-        }}/>{hideButton('sbtn kb-band-hide')}</>}
+      <TutorKeyboard view={view} lastMath={lastMath} disabled={editingDisabled} {...keyboardListeners}/>{hideButton('sbtn kb-band-hide')}</>}
     </div> : null}
     {assist.picker && <TutorSymbolPicker recent={assist.recent} onPick={assist.onPick} onClose={assist.closePicker} error={assist.error}/>}
   </div>;

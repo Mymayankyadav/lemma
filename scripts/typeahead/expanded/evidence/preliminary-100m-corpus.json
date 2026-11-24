@@ -1,0 +1,172 @@
+{
+  "counts": {
+    "calibration": {
+      "documents": 7162,
+      "latex": 1888699,
+      "registers": {
+        "explanation": 3289743,
+        "learner": 634831,
+        "proof": 2064926
+      },
+      "sources": {
+        "EleutherAI/proof-pile-2": 2064926,
+        "HuggingFaceTB/finemath": 3289743,
+        "hoskinson-center/proof-pile": 634831
+      },
+      "subjects": {
+        "algebra": 506857,
+        "analysis": 1089117,
+        "geometry": 768270,
+        "linear-algebra": 643956,
+        "number-theory": 334647,
+        "other": 1438156,
+        "probability": 1007256,
+        "topology": 201241
+      },
+      "words": 5989500
+    },
+    "test": {
+      "documents": 7310,
+      "latex": 1912952,
+      "registers": {
+        "explanation": 3488822,
+        "learner": 680496,
+        "proof": 2143714
+      },
+      "sources": {
+        "EleutherAI/proof-pile-2": 2143714,
+        "HuggingFaceTB/finemath": 3488822,
+        "hoskinson-center/proof-pile": 680496
+      },
+      "subjects": {
+        "algebra": 543390,
+        "analysis": 877501,
+        "geometry": 756164,
+        "linear-algebra": 814516,
+        "number-theory": 490501,
+        "other": 1475958,
+        "probability": 1165910,
+        "topology": 189092
+      },
+      "words": 6313032
+    },
+    "train": {
+      "documents": 122872,
+      "latex": 30277720,
+      "registers": {
+        "explanation": 60001175,
+        "learner": 10000204,
+        "proof": 30008061
+      },
+      "sources": {
+        "EleutherAI/proof-pile-2": 30008061,
+        "HuggingFaceTB/finemath": 60001175,
+        "hoskinson-center/proof-pile": 10000204
+      },
+      "subjects": {
+        "algebra": 7039725,
+        "analysis": 16604814,
+        "geometry": 13992789,
+        "linear-algebra": 10917793,
+        "number-theory": 5614125,
+        "other": 25432957,
+        "probability": 17778155,
+        "topology": 2629082
+      },
+      "words": 100009440
+    },
+    "validation": {
+      "documents": 7274,
+      "latex": 1745020,
+      "registers": {
+        "explanation": 3348741,
+        "learner": 666825,
+        "proof": 1825818
+      },
+      "sources": {
+        "EleutherAI/proof-pile-2": 1825818,
+        "HuggingFaceTB/finemath": 3348741,
+        "hoskinson-center/proof-pile": 666825
+      },
+      "subjects": {
+        "algebra": 411577,
+        "analysis": 940993,
+        "geometry": 652918,
+        "linear-algebra": 710438,
+        "number-theory": 396237,
+        "other": 1474319,
+        "probability": 1099452,
+        "topology": 155450
+      },
+      "words": 5841384
+    }
+  },
+  "finalGroupedCorpus": false,
+  "ingest": {
+    "exactDuplicates": 1,
+    "filtered": 62696,
+    "read": 422426,
+    "retained": 359729
+  },
+  "manifestSha256": "b009fb88ac310a4aaf82d7aa3bb3d6bd1d56af753add612abdca707467e84d40",
+  "notebook": "mayankyadav9432/lemma-typeahead-cpu-data-20261124/1",
+  "purpose": "First 100M-word source/register feasibility sample before near-duplicate grouping",
+  "sources": [
+    {
+      "bytes": 286267316,
+      "id": "HuggingFaceTB/finemath",
+      "license": "ODC-By, underlying Common Crawl source terms",
+      "originalPath": "finemath-4plus/train-00000-of-00064.parquet",
+      "path": "explanation-000.parquet",
+      "revision": "e92b25a616738fe95dc186b64dfb19f9c8525594",
+      "sha256": "5d0b26114b4cf309c82a4ba8f6f45857480b27812e23a46b61b45e8bbed61fe5",
+      "url": "https://huggingface.co/datasets/HuggingFaceTB/finemath"
+    },
+    {
+      "bytes": 288474354,
+      "id": "HuggingFaceTB/finemath",
+      "license": "ODC-By, underlying Common Crawl source terms",
+      "originalPath": "finemath-4plus/train-00001-of-00064.parquet",
+      "path": "explanation-001.parquet",
+      "revision": "e92b25a616738fe95dc186b64dfb19f9c8525594",
+      "sha256": "4f38efdb251638c1a71be4ed380119bdd9966b1d6f200f6ff637e4768cc3930c",
+      "url": "https://huggingface.co/datasets/HuggingFaceTB/finemath"
+    },
+    {
+      "bytes": 219047026,
+      "id": "EleutherAI/proof-pile-2",
+      "license": "Underlying arXiv author licences, see document metadata and dataset card",
+      "originalPath": "arxiv/train/arXiv_000.jsonl.zst",
+      "path": "proof-000.jsonl.zst",
+      "revision": "901a9273a770e9d4138c5ddd91802f9c5c6cdc4b",
+      "sha256": "44afbfe594b8a289fd54e9937461b26629c6c5632dcfb64f78ba65bfbc1edecc",
+      "url": "https://huggingface.co/datasets/EleutherAI/proof-pile-2"
+    },
+    {
+      "bytes": 517848187,
+      "id": "hoskinson-center/proof-pile",
+      "license": "CC BY-SA (Math StackExchange text)",
+      "originalPath": "train/proofpile_train_0.jsonl.gz",
+      "path": "learner-000.jsonl.gz",
+      "revision": "490b980249446f2f3bd2df3a8cf085d0f2de240a",
+      "sha256": "f400ce6a8c199d4dc2d9d43f1b412c5c64414192d96835a42642149ff6910beb",
+      "url": "https://huggingface.co/datasets/hoskinson-center/proof-pile"
+    },
+    {
+      "bytes": 518967800,
+      "id": "hoskinson-center/proof-pile",
+      "license": "CC BY-SA (Math StackExchange text)",
+      "originalPath": "train/proofpile_train_1.jsonl.gz",
+      "path": "learner-001.jsonl.gz",
+      "revision": "490b980249446f2f3bd2df3a8cf085d0f2de240a",
+      "sha256": "4c97a2cb15288794cf9da7c6742c5eaba10c3035f36a6416ad3cdffd46385813",
+      "url": "https://huggingface.co/datasets/hoskinson-center/proof-pile"
+    }
+  ],
+  "status": "diagnostic",
+  "targets": {
+    "explanation": 0.6,
+    "learner": 0.1,
+    "proof": 0.3
+  }
+}

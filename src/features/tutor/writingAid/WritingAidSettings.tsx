@@ -1,3 +1,5 @@
+import {isFlagOn} from '../../../flags';
+import {readWritingAidWeek} from './adaptation';
 import {useId} from 'react';
 import {useToast} from '../../../ui/Toast';
 import {Button, Switch} from '../../../ui/v7/components';
@@ -23,6 +25,7 @@ const SURFACE_LABELS: ReadonlyArray<readonly [WritingAidSurface, string]> = [
 export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
   const {scopeKey, available, mode, surfaces} = useWritingAidPreferences();
   const personalization = useWritingAidPersonalization();
+  const weekly = isFlagOn('typeaheadV2') && personalization.enabled ? readWritingAidWeek(personalization.model.adaptation) : undefined;
   const group = useId();
   const notify = useToast();
   const failed = () => notify('Could not save writing aid settings.', {tone: 'danger'});
@@ -59,6 +62,10 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
         if (!resetWritingAidPersonalization(scopeKey)) failed();
         else notify('Learned writing preferences cleared.');
       }}>Forget learned writing preferences</Button>
+      {weekly && <details><summary>This week on this device</summary>
+        <p>{weekly.accepts} accepted of {weekly.impressions} displayed suggestions. {weekly.retained} kept for at least three seconds.
+          {' '}{weekly.undos} undone of {weekly.accepts} accepted. {weekly.keysSaved} estimated keystrokes saved.</p>
+      </details>}
     </fieldset>
   </section>;
 }

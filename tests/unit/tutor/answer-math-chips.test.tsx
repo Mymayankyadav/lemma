@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import {describe, expect, test} from 'vitest';
+import {describe, expect, test, vi} from 'vitest';
 import {padEdit} from '../../../src/features/pad/padEdit';
 import {answerEquations, readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection} from '../../../src/features/tutor/TutorAnswerEditor';
 
@@ -29,6 +29,31 @@ describe('equation chips in the answer', () => {
     expect(root.querySelectorAll('[data-math]')).toHaveLength(0);
     expect(readTutorAnswer(root).text).toBe('Let $x^2');
     expect(answerEquations('Let $x^2$ and $y$').map(segment => segment.tex)).toEqual(['x^2', 'y']);
+  });
+
+  test('reads an astral caret and backward range across eight chips without cloning rendered markup', () => {
+    const value = Array.from({length: 8}, (_, at) => '$x_' + at + '$').join(' ') + ' 𝒰 is given';
+    const root = editor(value);
+    const clone = vi.spyOn(Range.prototype, 'cloneContents');
+    try {
+      setTutorAnswerSelection(root, padEdit(value, value.length));
+      expect(readTutorAnswer(root)).toMatchObject({start: value.length, end: value.length});
+      const start = value.indexOf('𝒰') + '𝒰'.length;
+      setTutorAnswerSelection(root, padEdit(value, start, value.length, 'backward'));
+      expect(readTutorAnswer(root)).toMatchObject({start, end: value.length, direction: 'backward'});
+      expect(clone).not.toHaveBeenCalled();
+      expect(root.querySelectorAll('[data-math]')).toHaveLength(8);
+    } finally {clone.mockRestore();}
+  });
+
+  test('keeps native editor line breaks in the selection offset', () => {
+    const root = editor('One');
+    const line = document.createElement('div');
+    const text = document.createTextNode('Two');
+    line.append(text);
+    root.append(line);
+    document.getSelection()!.setBaseAndExtent(text, 2, text, 2);
+    expect(readTutorAnswer(root)).toMatchObject({text: 'One\nTwo', start: 6, end: 6});
   });
 
   test('the caret moves around a chip as one piece', () => {

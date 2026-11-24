@@ -28,7 +28,7 @@ function inputTail(edit: PadEdit): {start: number; text: string} {
 
 export function wordAtCaret(edit: PadEdit): string | undefined {
   if (edit.start !== edit.end || TOKEN_AFTER.test(edit.text.slice(edit.end, edit.end + 2))) return;
-  const word = inputTail(edit).text.match(/\p{L}[\p{L}\p{M}'’-]{0,23}$/u)?.[0];
+  const word = inputTail(edit).text.match(/\p{L}[\p{L}\p{M}'’\p{Pd}]{0,23}$/u)?.[0];
   const start = edit.start - (word?.length ?? 0);
   if (word && !TOKEN_BEFORE.test(edit.text.slice(Math.max(0, start - 2), start))) return word;
 }

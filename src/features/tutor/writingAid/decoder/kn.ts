@@ -9,6 +9,7 @@
  * unknown words → <unk>. A lookup costs a few binary searches, well under a millisecond.
  */
 import manifest from '../../../../../public/models/typeahead/ngram-v1/manifest.json';
+import {fetchVerifiedTypeaheadFile} from './assets';
 import latexManifest from '../../../../../public/models/typeahead/latex-v1/manifest.json';
 
 export const NGRAM_MANIFEST = manifest;
@@ -20,6 +21,7 @@ const MAX_BYTES = 6 * 1024 * 1024;
 
 export interface NgramModel {
   readonly words: readonly string[];
+  readonly extended?: ExtendedNgram;
   readonly id: ReadonlyMap<string, number>;
   readonly uniQ: Uint8Array;
   readonly biBow: Int8Array;
@@ -35,9 +37,92 @@ export interface NgramModel {
   readonly top: readonly number[];
 }
 
+interface ExtendedRow {
+  readonly history: Uint16Array;
+  readonly start: Uint32Array;
+  readonly backoff: Float32Array;
+  readonly next: Uint16Array;
+  readonly probability: Float32Array;
+}
+
+interface ExtendedNgram {
+  readonly unigram: Float32Array;
+  readonly rows: readonly ExtendedRow[];
+}
+
+function parseExtended(bytes: Uint8Array, view: DataView): NgramModel {
+  const [order, size, header, expectedRows, expectedEdges, vocabBytes] =
+    [8, 12, 16, 20, 24, 28].map(offset => view.getUint32(offset, true));
+  if (order < 2 || order > 5 || size < 5 || size > 65536 || header !== 32 ||
+      vocabBytes === 0 || vocabBytes > bytes.length - header) throw new Error('Invalid n-gram header');
+  const words = new TextDecoder('utf-8', {fatal: true}).decode(bytes.subarray(header, header + vocabBytes)).split('\n');
+  const id = new Map(words.map((word, index) => [word, index]));
+  if (words.length !== size || id.size !== size || words.some(word => !word) ||
+      words[0] !== '<s>' || words[1] !== '<m>' || words[2] !== '<num>' || words[3] !== '<unk>' || words[4] !== '</s>') throw new Error('Invalid n-gram vocabulary');
+  let at = header + Math.ceil(vocabBytes / 4) * 4;
+  function section<T>(Type: {new(buffer: ArrayBuffer, offset: number, length: number): T; BYTES_PER_ELEMENT: number}, length: number): T {
+    const end = at + Math.ceil(length * Type.BYTES_PER_ELEMENT / 4) * 4;
+    if (end > bytes.length) throw new Error('Truncated n-gram section');
+    const result = new Type(bytes.buffer as ArrayBuffer, at, length);
+    at = end;
+    return result;
+  }
+  const unigram = section(Float32Array, size);
+  if (unigram.some(value => !(value >= 0 && value <= 1)) ||
+      Math.abs(unigram.reduce((sum, value) => sum + value, 0) - 1) > 1e-4) throw new Error('Invalid n-gram unigram mass');
+  const rows: ExtendedRow[] = [];
+  let rowTotal = 0, edgeTotal = 0;
+  for (let width = 1; width < order; width++) {
+    const [count, edges] = section(Uint32Array, 2);
+    const history = section(Uint16Array, count * width), start = section(Uint32Array, count + 1);
+    const backoff = section(Float32Array, count), next = section(Uint16Array, edges);
+    const probability = section(Float32Array, edges);
+    if (start[0] !== 0 || start[count] !== edges ||
+        history.some(value => value >= size) || next.some(value => value >= size) ||
+        backoff.some(value => !(value >= 0 && Number.isFinite(value))) ||
+        probability.some(value => !(value >= 0 && value <= 1))) throw new Error('Invalid n-gram table');
+    for (let row = 0; row < count; row++) {
+      if (start[row] > start[row + 1] || row > 0 && compareHistory(history, row - 1, width, history.subarray(row * width, (row + 1) * width)) >= 0) {
+        throw new Error('Unsorted n-gram history');
+      }
+      for (let edge = start[row] + 1; edge < start[row + 1]; edge++) {
+        if (next[edge - 1] >= next[edge]) throw new Error('Unsorted n-gram continuation');
+      }
+    }
+    rows.push({history, start, backoff, next, probability});
+    rowTotal += count;
+    edgeTotal += edges;
+  }
+  if (at !== bytes.length || rowTotal !== expectedRows || edgeTotal !== expectedEdges) throw new Error('Invalid n-gram length');
+  const top = [...words.keys()].filter(index => index > EOS).sort((a, b) => unigram[b] - unigram[a] || a - b).slice(0, 256);
+  return {words, id, top, extended: {unigram, rows}, uniQ: new Uint8Array(), biBow: new Int8Array(),
+    biStart: new Uint32Array(), biNext: new Uint16Array(), biQ: new Uint8Array(),
+    triKey: new Uint32Array(), triStart: new Uint32Array(), triBow: new Int8Array(), triNext: new Uint16Array(), triQ: new Uint8Array()};
+}
+
+function compareHistory(stored: Uint16Array, row: number, width: number, target: ArrayLike<number>): number {
+  const offset = row * width, targetOffset = target.length - width;
+  for (let index = 0; index < width; index++) {
+    const difference = stored[offset + index] - target[targetOffset + index];
+    if (difference) return difference;
+  }
+  return 0;
+}
+
+function extendedRow(table: ExtendedRow, width: number, history: ArrayLike<number>): number {
+  let low = 0, high = table.backoff.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (compareHistory(table.history, middle, width, history) < 0) low = middle + 1;
+    else high = middle;
+  }
+  return low < table.backoff.length && compareHistory(table.history, low, width, history) === 0 ? low : -1;
+}
+
 export function parseNgram(input: Uint8Array): NgramModel {
   const bytes = input.byteOffset === 0 && input.byteLength === input.buffer.byteLength ? input : input.slice();
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.byteLength >= 32 && String.fromCharCode(...bytes.subarray(0, 8)) === 'LEMMANG2') return parseExtended(bytes, view);
   if (bytes.byteLength < 32 || String.fromCharCode(...bytes.subarray(0, 4)) !== 'LMN1' || view.getUint32(4, true) !== 1) {
     throw new Error('Invalid typeahead model');
   }
@@ -74,6 +159,18 @@ function find(array: Uint16Array | Uint32Array, from: number, to: number, target
 }
 
 const lnUni = (m: NgramModel, w: number) => -m.uniQ[w] * Q_STEP;
+function extendedLog(model: ExtendedNgram, word: number, history: readonly number[]): number {
+  let logBackoff = 0;
+  for (let width = Math.min(history.length, model.rows.length); width > 0; width--) {
+    const table = model.rows[width - 1], row = extendedRow(table, width, history);
+    if (row < 0) continue;
+    const edge = find(table.next, table.start[row], table.start[row + 1], word);
+    if (edge >= 0) return logBackoff + Math.log(table.probability[edge]);
+    logBackoff += Math.log(table.backoff[row]);
+  }
+  return logBackoff + Math.log(model.unigram[word]);
+}
+
 function lnBi(m: NgramModel, w: number, v: number): number {
   const at = find(m.biNext, m.biStart[v], m.biStart[v + 1], w);
   return at >= 0 ? -m.biQ[at] * Q_STEP : m.biBow[v] * B_STEP + lnUni(m, w);
@@ -81,6 +178,7 @@ function lnBi(m: NgramModel, w: number, v: number): number {
 
 /** ln P(w | u, v) for word ids. */
 export function ngramLog(m: NgramModel, w: number, u: number, v: number): number {
+  if (m.extended) return extendedLog(m.extended, w, [u, v]);
   const ctx = find(m.triKey, 0, m.triKey.length, u * 65536 + v);
   if (ctx >= 0) {
     const at = find(m.triNext, m.triStart[ctx], m.triStart[ctx + 1], w);
@@ -92,6 +190,7 @@ export function ngramLog(m: NgramModel, w: number, u: number, v: number): number
 
 /** Ids the context (u, v) makes likely: its stored trigram and bigram continuations, then the commonest words. */
 export function ngramNext(m: NgramModel, u: number, v: number): number[] {
+  if (m.extended) return historyNext(m, [u, v]);
   const out = new Set<number>();
   const ctx = find(m.triKey, 0, m.triKey.length, u * 65536 + v);
   if (ctx >= 0) for (let i = m.triStart[ctx]; i < m.triStart[ctx + 1]; i++) out.add(m.triNext[i]);
@@ -99,6 +198,69 @@ export function ngramNext(m: NgramModel, u: number, v: number): number[] {
   for (const w of m.top) out.add(w);
   return [...out];
 }
+
+interface LegacyMass {
+  readonly unigram: number;
+  readonly bigram: Float64Array;
+  readonly trigram: Float64Array;
+}
+const legacyMass = new WeakMap<NgramModel, LegacyMass>();
+const fromQ = Float64Array.from({length: 256}, (_, value) => Math.exp(-value * Q_STEP));
+
+/** Sum a stored row and the lower-order mass left outside its explicit outcomes. */
+function rowMass(next: Uint16Array, q: Uint8Array, start: number, end: number, weight: number,
+  lowerMass: number, lowerProbability: (word: number) => number): number {
+  let explicit = 0, replaced = 0;
+  for (let edge = start; edge < end; edge++) {
+    explicit += fromQ[q[edge]];
+    replaced += lowerProbability(next[edge]);
+  }
+  return explicit + weight * Math.max(0, lowerMass - replaced);
+}
+
+export function historyLogTotal(model: NgramModel, history: readonly number[]): number {
+  if (model.extended) return 0; // Expanded rows are normalized by the exporter after float32 packing.
+  let mass = legacyMass.get(model);
+  if (!mass) {
+    const bigram = new Float64Array(model.words.length);
+    const trigram = new Float64Array(model.triKey.length);
+    bigram.fill(NaN);
+    trigram.fill(NaN);
+    mass = {unigram: model.uniQ.reduce((sum, q) => sum + fromQ[q], 0), bigram, trigram};
+    legacyMass.set(model, mass);
+  }
+  if (!history.length) return Math.log(mass.unigram);
+  const v = history[history.length - 1];
+  const bi = mass.bigram[v] || (mass.bigram[v] = rowMass(model.biNext, model.biQ, model.biStart[v], model.biStart[v + 1],
+    Math.exp(model.biBow[v] * B_STEP), mass.unigram, word => fromQ[model.uniQ[word]]));
+  if (history.length < 2) return Math.log(bi);
+  const row = find(model.triKey, 0, model.triKey.length, history[history.length - 2] * 65536 + v);
+  if (row < 0) return Math.log(bi);
+  return Math.log(mass.trigram[row] || (mass.trigram[row] = rowMass(model.triNext, model.triQ,
+    model.triStart[row], model.triStart[row + 1], Math.exp(model.triBow[row] * B_STEP), bi,
+    word => Math.exp(lnBi(model, word, v)))));
+}
+
+export function historyLog(model: NgramModel, word: number, history: readonly number[]): number {
+  if (model.extended) return extendedLog(model.extended, word, history);
+  const raw = history.length === 0 ? lnUni(model, word) : history.length === 1
+    ? lnBi(model, word, history[0]) : ngramLog(model, word, history[history.length - 2], history[history.length - 1]);
+  return raw - historyLogTotal(model, history);
+}
+
+export function historyNext(model: NgramModel, history: readonly number[]): number[] {
+  if (!model.extended) return ngramNext(model, history[history.length - 2] ?? BOS, history[history.length - 1] ?? BOS);
+  const result = new Set<number>();
+  for (let width = Math.min(history.length, model.extended.rows.length); width > 0; width--) {
+    const table = model.extended.rows[width - 1], row = extendedRow(table, width, history);
+    if (row < 0) continue;
+    for (let edge = table.start[row]; edge < table.start[row + 1]; edge++) result.add(table.next[edge]);
+  }
+  for (const word of model.top) result.add(word);
+  return [...result];
+}
+
+export const historyWidth = (model: NgramModel): number => model.extended?.rows.length ?? 2;
 
 // ── tokens ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 const MATH_SPAN = /\$\$[\s\S]*?\$\$|\$[^$]*\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)/g;
@@ -115,14 +277,24 @@ export function tokenOf(word: string): string {
   return lower;
 }
 
-/** The ids of the two tokens before the caret in the current sentence (<s> pads a sentence start). */
-export function contextIds(m: NgramModel, before: string): [number, number] {
-  const tail = before.slice(-400).replace(IMAGE, ' ');
+/** Replace complete maths before recognizing punctuation as sentence boundaries. */
+export function recentSentenceTokens(before: string, maximum = 48): string[] {
+  const prose = before.replace(IMAGE, ' ').replace(MATH_SPAN, ' zzmathzz ');
   let start = 0;
-  for (const match of tail.matchAll(BREAK)) start = match.index! + match[0].length;
-  const tokens = (tail.slice(start).replace(MATH_SPAN, ' zzmathzz ').toLowerCase().match(TOKEN) ?? []).map(tokenOf);
-  const ids = tokens.slice(-2).map(token => m.id.get(token) ?? UNK);
-  return [ids.length > 1 ? ids[0] : BOS, ids.length ? ids[ids.length - 1] : BOS];
+  for (const match of prose.matchAll(BREAK)) start = match.index! + match[0].length;
+  return ((prose.slice(start).toLowerCase().match(TOKEN) ?? []).slice(-maximum)).map(tokenOf);
+}
+
+export function historyIds(model: NgramModel, before: string, maximum = historyWidth(model)): number[] {
+  const tokens = recentSentenceTokens(before, maximum);
+  const ids = tokens.map(token => model.id.get(token) ?? UNK);
+  return Array<number>(Math.max(0, maximum - ids.length)).fill(BOS).concat(ids);
+}
+
+/** Legacy two-ID helper retained for callers working with the original trigram. */
+export function contextIds(model: NgramModel, before: string): [number, number] {
+  const [u, v] = historyIds(model, before, 2);
+  return [u, v];
 }
 
 // ── loading ─────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -178,6 +350,72 @@ export const ngramModel = prose.get;
 export const setNgramModel = prose.set;
 export const loadNgram = prose.load;
 /** N235: the LaTeX-token model for the strip inside $…$. */
-export const latexModel = latex.get;
+let expandedLatex: NgramModel | null = null;
+export const latexModel = () => expandedLatex ?? latex.get();
 export const setLatexModel = latex.set;
-export const loadLatexModel = latex.load;
+let latexLoading: Promise<void> | undefined;
+export function loadLatexModel(): Promise<void> {
+  return latexLoading ??= Promise.all([latex.load(), expandedAsset('latex-v2', null, 4 * 1024 * 1024, 'latex')
+    .then(result => {if (result) expandedLatex = result.model;}).catch(() => undefined)]).then(() => undefined);
+}
+
+
+interface ExpandedManifest {
+  readonly version: 2;
+  readonly kind: 'ngram' | 'latex';
+  readonly order: number;
+  readonly file: string;
+  readonly bytes: number;
+  readonly sha256: string;
+  readonly vocabSha256: string;
+  readonly subject: string | null;
+  readonly weight?: number;
+}
+
+const expandedManifests = import.meta.glob<ExpandedManifest>('../../../../../public/models/typeahead/*/manifest.json', {import: 'default'});
+const MiB = 1024 * 1024;
+let expandedGeneral: NgramModel | null = null;
+let expandedFingerprint: string | undefined;
+export function typeaheadNgramFingerprint(): string | undefined {
+  return expandedFingerprint ?? (ngramModel() ? manifest.file.sha256 : undefined);
+}
+let generalLoading: Promise<void> | undefined;
+let subjectSelection: {subject: string; token: object; model?: NgramModel; weight?: number} | undefined;
+export const generalNgram = (): NgramModel | null => expandedGeneral ?? ngramModel();
+export function activeSubjectNgram(subject?: string): {model: NgramModel; weight: number} | undefined {
+  if (!subject || subjectSelection?.subject !== subject || !subjectSelection.model) return undefined;
+  return {model: subjectSelection.model, weight: subjectSelection.weight ?? .2};
+}
+
+async function expandedAsset(set: string, subject: string | null, budget: number, kind: ExpandedManifest['kind'] = 'ngram'): Promise<{model: NgramModel; weight?: number; fingerprint: string} | null> {
+  const load = expandedManifests['../../../../../public/models/typeahead/' + set + '/manifest.json'];
+  if (!load) return null;
+  const file = await load();
+  if (file.version !== 2 || file.kind !== kind || file.subject !== subject || file.order < 4 || file.order > 5 ||
+      !/^[a-f0-9]{64}$/u.test(file.vocabSha256)) return null;
+  const model = parseNgram(await fetchVerifiedTypeaheadFile(set, {...file, path: file.file}, budget, subject === null));
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(model.words.join('\n')));
+  const fingerprint = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  if (fingerprint !== file.vocabSha256 || historyWidth(model) !== file.order - 1) return null;
+  return {model, fingerprint: file.sha256, weight: typeof file.weight === 'number' && Number.isFinite(file.weight) ? Math.min(.65, Math.max(0, file.weight)) : undefined};
+}
+
+export function loadExpandedNgram(): Promise<void> {
+  return generalLoading ??= expandedAsset('ngram-v2', null, 20 * MiB).then(result => {if (result) {expandedGeneral = result.model; expandedFingerprint = result.fingerprint;}})
+    .catch(() => {generalLoading = undefined;});
+}
+
+export async function selectSubjectNgram(subject?: string): Promise<void> {
+  if (subjectSelection?.subject === subject) return;
+  subjectSelection = undefined;
+  if (!subject || !/^[a-z0-9][a-z0-9_-]{0,79}$/u.test(subject)) return;
+  const token = {};
+  subjectSelection = {subject, token};
+  try {
+    const result = await expandedAsset('subject-' + subject, subject, 4 * MiB);
+    const general = generalNgram();
+    if (!result || !general || subjectSelection?.token !== token || result.model.words.length !== general.words.length ||
+        !result.model.words.every((word, index) => general.words[index] === word)) return;
+    subjectSelection = {subject, token, ...result};
+  } catch {/* General model remains the current fallback. */}
+}

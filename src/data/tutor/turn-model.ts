@@ -1,3 +1,4 @@
+import {readTutorAcceptedSpans,type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer'
 import {IMAGE_ONLY_ANSWER,unresolvedTutorImageIds,type TutorAttachment} from './attachment-types'
 import {freezeLocalTutorExcerpt,type LocalTutorExcerpt} from './local-excerpt'
 
@@ -22,6 +23,7 @@ export type TutorThreadHead = Readonly<{
 
 export type TutorComposerDraft = Readonly<{
   question: string
+  acceptedSpans?: readonly TutorAcceptedSpan[]
   selectedContext: readonly TutorContextSelection[]
   localExcerpt?: LocalTutorExcerpt
   attachments?: readonly TutorAttachment[]
@@ -29,6 +31,7 @@ export type TutorComposerDraft = Readonly<{
 
 type TutorQuestionSnapshot = Readonly<{
   question: string
+  acceptedSpans?: readonly TutorAcceptedSpan[]
   selectedContext: readonly TutorContextSelection[]
   localExcerpt?: LocalTutorExcerpt
   attachments?: readonly TutorAttachment[]
@@ -95,8 +98,12 @@ export function submitTutorTurn(
   if (draft.localExcerpt && !localExcerpt) return { kind: 'invalid-local-excerpt' }
   const sequence = head.lastSequence + 1
   // Copy selected scalar fields only. Never retain a pointer into the editor's draft.
+  const question = draft.question.trim() || IMAGE_ONLY_ANSWER
+  const offset = draft.question.length - draft.question.trimStart().length
+  const spans = readTutorAcceptedSpans(question, draft.acceptedSpans?.map(span=>({...span,start:span.start-offset,end:span.end-offset})))
   const snapshot: TutorQuestionSnapshot = Object.freeze({
-    question: draft.question.trim() || IMAGE_ONLY_ANSWER,
+    question,
+    ...(spans.length?{acceptedSpans:Object.freeze(spans.map(span=>Object.freeze(span)))}:{}),
     ...(draft.attachments?.length ? {attachments: Object.freeze(draft.attachments.map(attachment=>Object.freeze({...attachment})))} : {}),
     ...(localExcerpt ? {localExcerpt} : {}),
     selectedContext: Object.freeze(draft.selectedContext.map(({ kind, refId, version, excerpt, page }) =>

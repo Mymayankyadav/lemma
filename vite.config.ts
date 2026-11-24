@@ -64,7 +64,7 @@ export default defineConfig(({mode})=>{const android=mode==='android';return {
  base:'/lemma/',
  // Use the runtime asset Vite sees in the worker's ORT bundle as the versioned
  // file verified by the asset loader. This packages exactly one copy of WASM.
- worker:{rolldownOptions:{output:{assetFileNames:asset=>asset.names.includes(inkModel.files.wasm.path)
+ worker:{format:'es',rolldownOptions:{output:{assetFileNames:asset=>asset.names.includes(inkModel.files.wasm.path)
   ?tutorWasmPath:'assets/[name]-[hash].[ext]'}}},
  ...(android?{define:Object.fromEntries(Object.entries(loadEnv('production',process.cwd(),'VITE_'))
   .filter(([key])=>!(key in process.env)).map(([key,value])=>['import.meta.env.'+key,JSON.stringify(value)]))}:{}),

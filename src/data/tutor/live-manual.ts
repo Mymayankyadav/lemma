@@ -6,10 +6,11 @@ import {tutorLocalScopeActive,writeTutorLocal} from './local-storage'
 import type {TutorComposerDraft,TutorContextSelection} from './turn-model'
 import {tutorMessageKey,withTutorMessageDeletions,type ConnectorDelivery,type ManualTutor,type QuestionnaireSave,type TutorFollowUp,type TutorThreadView} from './manual-api'
 import type {TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
-import type {TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids'
+import {readTutorAcceptedSpans,type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer'
+import {readAnswerAid, type TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids'
 
 type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string;readOnly?:boolean}
-type Command={operation:string;operationId:string;connectorOperationId?:string;attachments?:readonly TutorAttachment[];[key:string]:unknown}
+type Command={operation:string;operationId:string;connectorOperationId?:string;attachments?:readonly TutorAttachment[];acceptedSpans?:readonly TutorAcceptedSpan[];[key:string]:unknown}
 type RpcResult={status:string;operationId:string;grantId?:string;turnId?:string;version?:number;expiresAt?:string}
 type ConnectorReceipt=Pick<ConnectorDelivery,'grantId'|'expiresAt'>
 type ConnectorIntent={operationId:string;version:number;receipt?:ConnectorReceipt}|{stopped:true}
@@ -120,7 +121,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   localStorage.removeItem(prefix+command.operationId)
  }
  function rpcCommand(command:Command){
-  const {connectorOperationId:_,attachments:__ ,...request}=command
+  const {connectorOperationId:_,attachments:__,acceptedSpans:___,...request}=command
   return request
  }
  async function dispatch(command:Command,persist=false):Promise<RpcResult>{
@@ -134,7 +135,9 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    if(remembered!==null && remembered!==serialized)throw new Error('This pending operation changed.')
    writeTutorLocal(scope,key,serialized)
   }
-  const {data,error}=command.attachments
+  const {data,error}=command.acceptedSpans?.length
+   ?await client.rpc('tutor_owner_assisted_start',{...target,p_command:rpcCommand(command),p_attachments:command.attachments??null,p_spans:command.acceptedSpans})
+   :command.attachments
    ?await client.rpc('tutor_owner_ink_command',{...target,p_command:rpcCommand(command),p_attachments:command.attachments})
    :await client.rpc('tutor_owner_command',{...target,p_command:rpcCommand(command)})
   active()
@@ -170,7 +173,9 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  function start(id:string,draft:TutorComposerDraft,sequence:number):Command {
   const objective=draft.selectedContext.find(selection=>selection.kind==='checkpoint')?.excerpt
   const source=draft.selectedContext.find(selection=>selection.kind==='source')
+  const acceptedSpans=readTutorAcceptedSpans(draft.question,draft.acceptedSpans)
   return {operation:'start',operationId:id,expectedVersion:sequence,question:draft.question,
+   ...(acceptedSpans.length?{acceptedSpans}:{}),
    ...(draft.attachments?.length?{attachments:draft.attachments}:{}),
    ...(draft.localExcerpt?{localExcerpt:draft.localExcerpt.text}:{}),...(objective?{objective}:{}),...(source?{source}:{})}
  }
@@ -394,7 +399,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
     const {data,error}=await client.rpc('tutor_answer_aid_state',target)
     active()
     if(error)throw new Error('Could not open the tutor\'s answer aids.')
-    return Array.isArray(data)?data as TutorAnswerAid[]:[]
+    return Array.isArray(data)?data.map(readAnswerAid).filter((aid):aid is TutorAnswerAid=>aid!==undefined):[]
    },
   },
   questionnaires:{

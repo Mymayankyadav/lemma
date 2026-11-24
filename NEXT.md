@@ -6,6 +6,13 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N238 Maths typeahead expansion
+
+Stage: Build · Status: open · Needs: — · Assigned: chat-681#p7s4
+Done = Implement the pinned typeahead review in the existing Tutor composer, verify the eligibility and context invariants, and publish measured model, replay and device evidence.
+Scope: the model and corpus tooling, verified assets, Tutor coaching contract, Typeahead and Equation sheet runtime, local learning, tests and the N238 implementation record. Toolchain dependencies needed for corpus and model development belong to the training scripts.
+Not: default enablement, production migration deployment or account data export.
+
 ## N231 Restore Lemma promptly on offline launch
 
 Owner task: "Ok few issues to fix is offline usauablity of the lemma, first it opens it delays main screen by saying signing in and other like why sign-in doesn't persist."

@@ -98,7 +98,7 @@
 .lemma-tutor .rows{display:flex;flex-direction:column;padding:0 0 2px}
 .lemma-tutor .row{display:flex}
 .lemma-tutor .k{position:relative;isolation:isolate;flex:1 1 0;min-width:0;height:var(--cell);border:0;background:transparent;padding:0;color:var(--v7-role-text-primary);display:grid;place-items:center;font:400 24px/1 var(--v7-sans);transition:none;--capl:3px;--capr:3px}
-.lemma-tutor .k::before{content:"";position:absolute;z-index:-1;top:4px;bottom:4px;left:var(--capl);right:var(--capr);border-radius:8px;background:var(--key);box-shadow:var(--v7-shadow-1)}
+.lemma-tutor .k::before{content:"";position:absolute;z-index:-1;top:4px;bottom:4px;left:var(--capl);right:var(--capr);border-radius:8px;background:var(--tutor-key-press,var(--key));box-shadow:var(--v7-shadow-1)}
 .lemma-tutor .k:active{transform:none}
 .lemma-tutor .k.down::before{background:var(--key-down)}
 .lemma-tutor .k .kl{pointer-events:none;position:absolute;top:0;bottom:0;left:var(--capl);right:var(--capr);display:grid;place-items:center}
@@ -107,7 +107,7 @@
 .lemma-tutor .k.mid{font:500 16px/1 var(--v7-glyph)}
 .lemma-tutor .k.w15{flex-grow:1.5}
 .lemma-tutor .k.fn{color:var(--v7-role-text-primary)}
-.lemma-tutor .k.fn::before{background:var(--key-fn)}
+.lemma-tutor .k.fn::before{background:var(--tutor-key-press,var(--key-fn))}
 .lemma-tutor .k.fn.down::before{background:var(--key-down)}
 .lemma-tutor .k.fn svg,.lemma-tutor .k.go svg{width:24px;height:24px;pointer-events:none}
 .lemma-tutor .k.lbl{font:600 15px/1 var(--v7-sans)}
@@ -115,7 +115,7 @@
 .lemma-tutor .k.fn.lit{color:var(--v7-role-selection-fg)}
 .lemma-tutor .k.pill::before{border-radius:9999px}
 .lemma-tutor .k.go{color:var(--v7-role-text-on-action);flex-grow:1.5}
-.lemma-tutor .k.go::before{background:var(--v7-role-action-bg);border-radius:9999px;box-shadow:none}
+.lemma-tutor .k.go::before{background:var(--tutor-key-press,var(--v7-role-action-bg));border-radius:9999px;box-shadow:none}
 .lemma-tutor .k.go.down::before{background:var(--v7-role-action-bg);filter:brightness(1.15)}
 .lemma-tutor .k.space{flex-grow:4.6}
 .lemma-tutor .k.space .kl{font:500 11px var(--v7-sans);letter-spacing:.16em;color:var(--v7-role-text-disabled);text-transform:uppercase;opacity:.75}

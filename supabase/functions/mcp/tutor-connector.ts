@@ -30,12 +30,15 @@ export const QUESTIONNAIRE_NOTE=[
  */
 export const ANSWER_AID_NOTE=[
   'Answer aids (optional): with your reply you may attach aids for the learner\'s next answer: wording the keyboard may suggest, the terms and symbols of your question, and terms to withhold.',
-  'Use study with command {schemaVersion:1,resource:"tutor_answer_aids",target:{id:<same handoff ID>},operationId:<fresh UUID, also the answer aid ID>,operation:"set",patch:{level,wording,terms,symbols,withhold}}. Setting again replaces the earlier aids.',
+  'Use study with command {schemaVersion:1,resource:"tutor_answer_aids",target:{id:<same handoff ID>},operationId:<fresh UUID>,operation:"set",patch:{level,wording,terms,symbols,withhold,ranking}}. Setting again replaces the earlier aids.',
   'level: scaffold (openers, connectives between given facts, closing lines), light (terms and symbols only) or none. Lower it as the learner masters the concept; Lemma also fades it with their mastery.',
   'wording: up to 24 phrases of up to 80 characters of plain prose, no maths markup, for example "Let U be an open set in Y." or "which is what we wanted to show." terms: up to 40 words or short noun phrases of the question. symbols: up to 16 variables or short expressions of the question.',
   'withhold: up to 24 words or phrases that would reveal the method, a witness or the conclusion (for example complement, finite subcover). They are never suggested, at any prefix, and wording or terms may not contain them.',
   'Never put a step of the solution, the key idea or the conclusion in wording. Accepted wording is tagged in the learner\'s answer so you can tell scaffolding from their reasoning.',
-  'Read the aids you set with get(what=tutor_answer_aids, id=<handoff ID>).',
+  'Optional ranking: {version:1,hints:[{id,entry,kind,aliases?,priority,role,scope?}],declaredSymbols:[{symbol,role,ambient?,domain?,codomain?,binder?:{id,parent?}}]}. Kind is word, phrase or symbol; priority is prefer, neutral or deemphasize; role is given, learner, neutral, alternative or goal. Use one stable ID per entry. Scope may specify subject, step, mode (prose or equation), prefixes and phraseStates.',
+  'Declare symbol roles set, map, ambient, bound or unknown. Use an existing binder ID as parent for a nested scope. Leave uncertain relations unspecified and identify alternatives explicitly. Priorities only rank eligible suggestions. Withhold always overrides priority.',
+  'For an uncertain acknowledgement retry the identical operationId and payload. To undo the latest changed set on this handoff, use a fresh operationId with operation:"undo", expectedVersion from the current aid, and patch:{operationId:<original set operation ID>}.',
+  'Read the aids and the current subject and step scope IDs with get(what=tutor_answer_aids, id=<handoff ID>).',
 ].join(' ')
 
 /**
@@ -88,9 +91,9 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     '23505': 'This questionnaire ID is already used for a different questionnaire. Use a fresh operationId.',
   }
   const answerAidErrors: Record<string, string> = {
-    '40001': 'Reply to the turn before attaching answer aids.',
+    '40001': 'Reply before attaching aids, or read the current aid before retrying a version conflict.',
     '22023': 'Invalid answer aids.',
-    '23505': 'This answer aid ID is already used for a different turn. Use a fresh operationId.',
+    '23505': 'This answer aid operationId is already used. Retry an identical request or use a fresh operationId.',
   }
   async function answerAids(id: unknown, command: Record<string, unknown>) {
     const {turnId, grantOperationId} = tutorHandoffIds(id)
@@ -190,11 +193,20 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     },
     async setAnswerAids(input: StudyInput) {
       const cmd = input.command
-      if (cmd.operation !== 'set') throw new Error('Use set for tutor answer aids.')
       const patch = cmd.patch ?? {}
+      if (cmd.operation === 'undo') {
+        if (Object.keys(patch).length !== 1 || typeof patch.operationId !== 'string' ||
+            !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(patch.operationId) || !cmd.expectedVersion) {
+          throw new Error('Undo needs the original set operationId in the patch and the current expectedVersion.')
+        }
+        return answerAids(cmd.target?.id, {operation: 'undo', aidId: cmd.operationId,
+          undoOperationId: patch.operationId, expectedVersion: cmd.expectedVersion})
+      }
+      if (cmd.operation !== 'set') throw new Error('Use set or undo for tutor answer aids.')
       const issues = answerAidIssues(patch)
       if (issues.length) throw new Error('Invalid answer aids: ' + issues.join('; ').slice(0, 300))
-      return answerAids(cmd.target?.id, {operation: 'set', aidId: cmd.operationId, ...patch})
+      return answerAids(cmd.target?.id, {operation: 'set', aidId: cmd.operationId, ...patch,
+        ...(cmd.expectedVersion === undefined ? {} : {expectedVersion: cmd.expectedVersion})})
     },
     async attachQuestionnaire(input: StudyInput) {
       const cmd = input.command
