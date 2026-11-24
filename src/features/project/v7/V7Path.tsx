@@ -20,6 +20,7 @@ import type {CheckpointView,SessionSummary} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Margin} from '../../../app/v7/Margin';
 import {Button,Chip,Segmented,Skeleton} from '../../../ui/v7/components';
+import {useOnline} from '../../../ui/v7/savedCopy';
 import {MoreActions} from '../../../ui/v7/ActionSheet';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {Emblem} from '../../../ui/v7/Emblem';
@@ -113,7 +114,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
  const [switcher,setSwitcher]=useState(false);
  const tab:Tab=params.get('tab')==='sessions'?'Sessions':params.get('tab')==='sources'?'Sources':params.get('tab')==='cards'?'Cards':'Plan';
- const data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
+ const online=useOnline(),data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
  const estimates=usePathEstimates(cps);
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;
  const detail=useCheckpoint(slug,current?.code??'');
@@ -127,10 +128,12 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   });
   return()=>cancelAnimationFrame(frame);
  },[room,!!data,slug,tab,current?.id]);
- if(query.isPending)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/><Skeleton/><Skeleton/></main>;
- if(query.error||!data)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/>
-  {query.error instanceof LemmaError&&query.error.code==='not_found'?<EmptyMoment title="This path doesn't exist." action={{label:'Back to Paths',to:'/projects'}}/>
-   :<div role="alert" className="v7-path-empty"><p>{navigator.onLine?'Could not open this path.':'You’re offline.'}</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}</main>;
+ const unavailable=query.error instanceof LemmaError&&['not_found','auth'].includes(query.error.code);
+ if(!data||unavailable)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/>
+  {!online?<EmptyMoment title="Connect to open this path." action={{label:'Back to Paths',to:'/projects'}}/>
+   :query.isPending?<><Skeleton/><Skeleton/></>
+   :query.error instanceof LemmaError&&query.error.code==='not_found'?<EmptyMoment title="This path doesn't exist." action={{label:'Back to Paths',to:'/projects'}}/>
+   :<div role="alert" className="v7-path-empty"><p>Could not open this path.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}</main>;
  const project=data.project,subject=kitSubject(data.subject.name),klass=subjectClass(subject);
  const stages=groupCheckpointStages(cps),end=lineEnd(cps);
  const due=dueTotal(cps),cards=home.data?.projects.find(item=>item.id===project.id)?.cardsCount??0;

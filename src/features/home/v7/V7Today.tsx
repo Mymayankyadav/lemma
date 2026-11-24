@@ -11,6 +11,8 @@ import {readWeekdayMinutes,weekdayOwner} from '../../../data/study-weekdays';
 import {useQuery} from '@tanstack/react-query';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getApi} from '../../../data';
+import {authGeneration} from '../../../data/authBoundary';
+import {getMode} from '../../../data/mode';
 import {getStudyApi} from '../../../data/study';
 import {getTaskApi} from '../../../data/tasks';
 import type {TaskRecord} from '../../../data/tasks/contract';
@@ -23,7 +25,7 @@ import {dayBounds,loggedMinutes} from '../../../lib/effort';
 import {Button,Sheet} from '../../../ui/v7/components';
 import {LiveChip,MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {AsOf} from '../../../ui/v7/AsOf';
-import {useSavedCopyAt} from '../../../ui/v7/savedCopy';
+import {useOnline,useSavedCopyAt} from '../../../ui/v7/savedCopy';
 import {overdueSummary} from '../../calendar/v7/overdue';
 import {readTasks} from '../../planner/readTasks';
 import {DEFAULT_PLANNING} from '../../planner/model';
@@ -51,11 +53,13 @@ function SubjectChip({subject,name}:{subject:Subject;name:string}){
 /** PLAN §6.2: Today decides what to do now, in one glance. */
 export default function V7Today(){
  const home=useHome(),settings=useSettings(),navigate=useNavigate(),notify=useToast();
+ const online=useOnline(),canLoad=online||getMode()==='demo';
  const desktop=useMinWidth(1100),nextStepEnabled=isFlagOn('todayNextStep');
  const {entry,refresh:refreshFocus}=useActiveFocus();
  const now=useNow(30_000),date=new Date(now);
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const day=localDay(zone,date);
+ const dayKey=authGeneration()+'|'+day+'|'+zone;
  const [data,setData]=useState<DayData|null>(null),[dataAt,setDataAt]=useState(0),[error,setError]=useState(false),[version,setVersion]=useState(0);
  const [busy,setBusy]=useState(false),[actionError,setActionError]=useState(''),[quick,setQuick]=useState(false);
  const [intention,setIntention]=useState(''),[pathId,setPathId]=useState<string|null>(null);
@@ -65,6 +69,7 @@ export default function V7Today(){
  useEffect(()=>{if(params.get('quick')!=='1')return;setQuick(true);const next=new URLSearchParams(params);next.delete('quick');setParams(next,{replace:true});},[params,setParams]);
  useEffect(()=>{if(!quick)return;let live=true;void loadActiveFocusPresets().then(rows=>{if(live)setPresets(rows);}).catch(()=>{});return()=>{live=false;};},[quick]);
  useEffect(()=>{
+  if(!canLoad)return;
   let live=true;setError(false);
   const study=getStudyApi(),range=dayBounds(day,zone);
   const closed=import('../V6TodayPlan').then(module=>module.readTodayPlan(day,zone)).then(plan=>plan.plan?.status==='closed').catch(()=>false);
@@ -78,19 +83,17 @@ export default function V7Today(){
    const saved=entries.filter(item=>item.status==='saved').map(item=>({id:item.id,status:'saved' as const,subjectId:item.subjectId,
     intervals:item.intervals.filter(interval=>interval.end!==null).map(interval=>({start:interval.start,end:interval.end!,kind:interval.kind}))}));
    const loaded={blocks:blocks.filter(block=>block.status!=='cancelled'),entries,logged:Math.max(0,loggedMinutes(saved,range,zone,new Date().toISOString()).minutes),closed:isClosed,overdue:dueInfo.overdue,tasks:taskRows,topics:dueInfo.topics,answered:answeredCount};
-   const at=Date.now();savedDay={key:day+'|'+zone,data:loaded,at};
+   const at=Date.now();savedDay={key:dayKey,data:loaded,at};
    setData(loaded);setDataAt(at);
   },()=>{
    if(!live)return;
    setError(true);
    // N151: with nothing on screen yet, show the saved copy of this day (it carries its "as of" time).
-   const copy=savedDay?.key===day+'|'+zone?savedDay:null;
+   const copy=savedDay?.key===dayKey?savedDay:null;
    if(copy){setData(current=>current??copy.data);setDataAt(current=>current||copy.at);}
   });
   return ()=>{live=false;};
- },[day,zone,version]);
- // N151: back online, load the day again so the numbers (and their "as of") are the server's.
- useEffect(()=>{window.addEventListener('online',reload);return()=>window.removeEventListener('online',reload);},[reload]);
+ },[day,dayKey,zone,version,canLoad]);
  const projects=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system&&project.status!=='archived'),[home.data]);
  const projectOf=(id:string|null|undefined)=>projects.find(project=>project.id===id);
  const subjectOf=(id:string|null|undefined)=>{const project=projectOf(id);return {subject:kitSubject(project?.subject.name??''),name:project?.subject.name??''};};
@@ -169,18 +172,34 @@ export default function V7Today(){
  };
  const copy=heroCopy[state];
  const weekday=useQuery({queryKey:['study-weekdays',weekdayOwner()],queryFn:readWeekdayMinutes,enabled:nextStepEnabled&&!!weekdayOwner()});
- const firstRun=nextStepEnabled&&state==='first';
+ const firstRun=nextStepEnabled&&state==='first'&&!!home.data&&canLoad;
  const nextCommitment=blocks.find(block=>block.status==='planned'&&Date.parse(block.startsAt)>now);
  const todayLabel=new Intl.DateTimeFormat('en-GB',{timeZone:zone,weekday:'long',day:'numeric',month:'long'}).format(date);
  const nowLeft=stripSegment(localMinute(date,zone),localMinute(date,zone),windowMinutes).left;
+ const continuePaths=projects.length>0&&<section className="v7-today-continue" aria-label="Continue">
+  <div className="v7-card-heading"><h2>Continue</h2><Link to="/projects">All paths<ChevronRight aria-hidden="true"/></Link></div>
+  <div className="v7-today-tiles">{projects.slice(0,nextStepEnabled?3:6).map(project=>{const subject=kitSubject(project.subject.name);
+   return <Link key={project.id} className={'v7-today-tile '+subjectClass(subject)} to={'/p/'+encodeURIComponent(project.slug)}>
+    <span className="v7-today-tile-cover"><Emblem subject={subject} seed={project.id} size={96} tier="tile" animate={false}/></span>
+    <strong>{project.title}</strong><small>{project.current?'Now: '+project.current.title:'Explore the next checkpoint'}</small>
+    <span className="v7-today-tile-meter" role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,project.total)} aria-valuenow={project.done}>
+     <span style={{width:(project.total?Math.min(100,project.done/project.total*100):0)+'%'}}/></span>
+   </Link>;})}</div>
+ </section>;
  return <main id="main-content" className="v7-page v7-today" aria-label="Today">
   <HubHeader title={firstRun?'Welcome to Lemma':nextStepEnabled&&localMinute(date,zone)<240?'Still up?':todayGreeting(date,zone)} date={nextStepEnabled?formatShortDate(day,{zone}):todayLabel} settings display>
    {!nextStepEnabled&&<p className="v7-today-briefing">{ready?briefing:' '}{ready&&asOf!==null&&<> <AsOf at={asOf} zone={zone}/></>}</p>}
   </HubHeader>
-  {!ready?<div className="v7-today-skeleton" role="status" aria-label="Today loading">
-   {error||home.error?<div className="v7-alert" role="alert">Couldn't load Today. Your study data is safe.
-    <Button small onClick={()=>{void home.refetch();reload();}}>Retry</Button></div>:<><span/><span/><span/></>}
-  </div>:<>
+  {!ready?<>
+   {home.data&&<>
+    <p className="v7-today-briefing">{home.data.due} {home.data.due===1?'card':'cards'} due{home.dataUpdatedAt>0&&<> <AsOf at={home.dataUpdatedAt} zone={zone}/></>}</p>
+    {continuePaths}
+   </>}
+   {!canLoad?<p className="v7-subhead">{home.data?'Connect to load today’s schedule.':'Connect once to save Today on this device.'}</p>
+    :error||home.error?<div className="v7-alert" role="alert">Couldn't load Today. Your study data is safe.
+     <Button small onClick={()=>{void home.refetch();reload();}}>Retry</Button></div>
+    :!home.data&&<div className="v7-today-skeleton" role="status" aria-label="Today loading"><span/><span/><span/></div>}
+  </>:<>
    {nextStepEnabled?firstRun?<TodayFirstRun configured={Boolean(typeof weekday.data==='number'?weekday.data:weekday.data?.some(value=>value>0))} tutor={Boolean(settings.data?.connectorLastSeenAt)} onFocus={()=>setQuick(true)}/>
     :<NextStep now={now} day={day} zone={zone} localMinute={localMinute(date,zone)} logged={logged} focusMinutes={settings.data?.focusDefaults?.focus_minutes??25}
       due={due} reviewMinutes={reviewMinutes??10} pending={!!entry} closed={!!data?.closed}
@@ -260,16 +279,7 @@ export default function V7Today(){
     {needs.hidden>0&&<Button variant="ghost" small onClick={()=>setShowAll(true)}>{'Show all ('+needs.total+')'}</Button>}
     {pending>0&&<Link className="v7-today-need" to="/proposals"><span className="v7-today-fan" aria-hidden="true"><i/><i/><i/></span><span><strong>{pending} {pending===1?'proposal':'proposals'} from your tutor</strong><small>Decide in the Inbox.</small></span><ChevronRight aria-hidden="true"/></Link>}
    </section>}
-   {projects.length>0&&<section className="v7-today-continue" aria-label="Continue">
-    <div className="v7-card-heading"><h2>Continue</h2><Link to="/projects">All paths<ChevronRight aria-hidden="true"/></Link></div>
-    <div className="v7-today-tiles">{projects.slice(0,nextStepEnabled?3:6).map(project=>{const subject=kitSubject(project.subject.name);
-     return <Link key={project.id} className={'v7-today-tile '+subjectClass(subject)} to={'/p/'+encodeURIComponent(project.slug)}>
-      <span className="v7-today-tile-cover"><Emblem subject={subject} seed={project.id} size={96} animate={false}/></span>
-      <strong>{project.title}</strong><small>{project.current?'Now: '+project.current.title:'Explore the next checkpoint'}</small>
-      <span className="v7-today-tile-meter" role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,project.total)} aria-valuenow={project.done}>
-       <span style={{width:(project.total?Math.min(100,project.done/project.total*100):0)+'%'}}/></span>
-     </Link>;})}</div>
-   </section>}
+   {continuePaths}
    <StudyModelDetails/>
    {!nextStepEnabled&&offerClose(hourNow,!!data?.closed)&&<section className="v7-card v7-today-close" aria-label="Close the day">
     <span><strong>{minutesLabel(logged)} studied today</strong><small>Look back and set up tomorrow.</small></span>

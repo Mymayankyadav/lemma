@@ -1,4 +1,5 @@
 import {publishAuth} from '../authBoundary';
+import {readDeviceSession} from '../deviceSession'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { LemmaError } from '../api'
 import { supabasePublishableKey, supabaseUrl } from '../env'
@@ -19,6 +20,11 @@ export function liveClient(): SupabaseClient {
       detectSessionInUrl: true,
     },
   })
-  instance.auth.onAuthStateChange((_event,session)=>publishAuth(session?.user?{id:session.user.id,email:session.user.email}:null));
+  instance.auth.onAuthStateChange((event, session) => {
+    // The SDK can emit this after a transient failure refreshing an expired token.
+    // It retains the session in storage and emits SIGNED_OUT for a real logout.
+    if (event === 'INITIAL_SESSION' && !session && readDeviceSession()) return
+    publishAuth(session?.user ? {id:session.user.id,email:session.user.email} : null)
+  })
   return instance
 }

@@ -55,7 +55,7 @@ export interface LemmaApi {
  getAdaptiveData(now?:Date): Promise<import('./adaptive/contract').AdaptiveData>
  readonly mode: 'live' | 'demo'
  /** Read the signed-in owner, or null. */
- getAuth(): Promise<{ email: string } | null>
+ getAuth(): Promise<{ id: string; email: string } | null>
  /** Start Google OAuth. */
  signIn(): Promise<void>
  /** End the owner session. */

@@ -6,6 +6,14 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N231 Restore Lemma promptly on offline launch
+
+Owner task: "Ok few issues to fix is offline usauablity of the lemma, first it opens it delays main screen by saying signing in and other like why sign-in doesn't persist."
+Stage: Harden · Status: done · Needs: — · Assigned: chat-842671#v7q2
+Done = Returning sessions open Today or the requested route while auth loads. After an online visit, a cold offline launch can display saved Today and recently visited Paths. Reconnection refreshes the existing login and study data. OAuth return routing and the owner boundary survive account changes and sign-out.
+Tests: AuthGate, offline snapshot, and the live-adapter browser regressions for offline launch, expired-token refresh, account switching and sign-out.
+Scope: shared app startup, device session lookup, bounded study snapshot and supported offline views, regression tests, and docs/current/N231.md.
+
 ## N230 Apple Pencil palm rejection in scratch pad and equation composer
 
 Owner task: "Ok create a new pr with astra 6 dot agents implementing support for ipencil with palm rejection in scratch pad and equation composer."

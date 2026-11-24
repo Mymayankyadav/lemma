@@ -6,13 +6,21 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import AuthGate from '../../../src/app/AuthGate'
 const state = vi.hoisted(() => ({
  mode: 'live', bootstrap: vi.fn(), refetch: vi.fn(),
- auth: {data: {email: 'owner@example.test'} as {email:string}|null, isPending:false, isError:false},
+ auth: {data: {id:'00000000-0000-4000-8000-000000000001',email:'owner@example.test'} as {id:string;email:string}|null, isPending:false, isError:false},
 }))
+vi.mock('../../../src/data/env', () => ({supabaseUrl:'https://fixture.supabase.co'}))
 vi.mock('../../../src/data', () => ({getApi: () => ({bootstrap: state.bootstrap})}))
 vi.mock('../../../src/data/hooks', () => ({useAuth: () => ({...state.auth, refetch: state.refetch})}))
 vi.mock('../../../src/data/mode', () => ({getMode: () => state.mode}))
 vi.mock('../../../src/ui/Button', () => ({Button: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}/>}))
 let root: Root, host: HTMLDivElement, client: QueryClient
+const owner = '00000000-0000-4000-8000-000000000001'
+const authKey = 'sb-fixture-auth-token'
+function returningSession() {
+ window.history.replaceState(null, '', '/lemma/')
+ const claims = btoa(JSON.stringify({sub:owner,session_id:'00000000-0000-4000-8000-000000000002'}))
+ localStorage.setItem(authKey,JSON.stringify({access_token:`header.${claims}.signature`,refresh_token:'fixture',user:{id:owner}}))
+}
 function Page() {const location = useLocation(); return <p data-page>{location.pathname + location.search}</p>}
 async function render(path = '/') {
  await act(async () => root.render(<StrictMode><QueryClientProvider client={client}>
@@ -24,8 +32,8 @@ async function settle(assertion: () => void) {
 }
 beforeEach(() => {
  Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true})
- sessionStorage.clear(); window.history.replaceState(null, '', '/lemma/?code=example')
- state.mode = 'live'; state.auth = {data:{email:'owner@example.test'},isPending:false,isError:false}
+ localStorage.clear(); sessionStorage.clear(); window.history.replaceState(null, '', '/lemma/?code=example')
+ state.mode = 'live'; state.auth = {data:{id:owner,email:'owner@example.test'},isPending:false,isError:false}
  state.bootstrap.mockReset().mockResolvedValue({}); state.refetch.mockReset()
  client = new QueryClient({defaultOptions:{queries:{retry:false}}})
  host = document.createElement('div');document.body.append(host);root = createRoot(host)
@@ -86,4 +94,41 @@ test('auth errors offer retry without loading protected content or bootstrapping
 test('demo bypasses auth and setup', async () => {
  state.mode = 'demo';state.auth.isPending = true
  await render('/review');expect(host.textContent).toBe('/review');expect(state.bootstrap).not.toHaveBeenCalled()
+})
+test('a returning owner can open their last route before auth responds', async () => {
+ returningSession()
+ state.auth = {data:null,isPending:true,isError:false}
+ await render('/p/analysis?tab=sessions')
+ expect(host.textContent).toBe('/p/analysis?tab=sessions')
+ expect(state.bootstrap).not.toHaveBeenCalled()
+})
+test('an offline auth error and a slow setup keep a returning route visible', async () => {
+ returningSession()
+ state.auth = {data:null,isPending:false,isError:true}
+ await render('/cards')
+ expect(host.textContent).toBe('/cards')
+ state.auth = {data:{id:owner,email:'owner@example.test'},isPending:false,isError:false}
+ state.bootstrap.mockImplementation(() => new Promise(() => {}))
+ await render('/cards')
+ expect(host.textContent).toBe('/cards')
+ expect(state.bootstrap).toHaveBeenCalledTimes(1)
+})
+test('a saved account does not bypass a genuine OAuth callback', async () => {
+ returningSession()
+ window.history.replaceState(null, '', '/lemma/?code=new-sign-in')
+ state.auth = {data:null,isPending:true,isError:false}
+ await render('/cards')
+ expect(host.textContent).toBe('Checking sign-in…')
+ expect(host.querySelector('[data-page]')).toBeNull()
+})
+test('removing the saved session in another tab closes the returning view', async () => {
+ returningSession()
+ state.bootstrap.mockImplementation(() => new Promise(() => {}))
+ await render('/cards')
+ expect(host.textContent).toBe('/cards')
+ await act(async()=>{
+  localStorage.removeItem(authKey)
+  window.dispatchEvent(new StorageEvent('storage',{key:authKey,storageArea:localStorage}))
+ })
+ expect(host.textContent).toBe('/sign-in')
 })

@@ -1,8 +1,10 @@
 import {focusedMilliseconds} from '../../lib/studyTime';
 import {useCallback,useEffect,useState} from 'react';
 import {getStudyApi} from '../../data/study';
+import {getMode} from '../../data/mode';
 import type {StudyEntryRecord} from '../../data/study/contract';
 import {timedPhase} from '../../data/study/phase';
+import {useOnline} from '../../ui/v7/savedCopy';
 
 /**
  * One source for the focus session's state word and clock, so Today's hero, the
@@ -55,19 +57,21 @@ export function announceFocusChange(){if(typeof window!=='undefined')window.disp
 
 /** The active session (running, on a break or paused), refreshed on focus changes and every 30 s. */
 export function useActiveFocus():{entry:StudyEntryRecord|null;loading:boolean;refresh:()=>void}{
+ const online=useOnline(),canLoad=online||getMode()==='demo';
  const [entry,setEntry]=useState<StudyEntryRecord|null>(null),[loading,setLoading]=useState(true),[version,setVersion]=useState(0);
  const refresh=useCallback(()=>setVersion(value=>value+1),[]);
  useEffect(()=>{
+  if(!canLoad)return;
   let live=true;
   getStudyApi().activeStudyEntry().then(next=>{if(live)setEntry(next);},()=>{if(live)setEntry(null);}).finally(()=>{if(live)setLoading(false);});
   return ()=>{live=false;};
- },[version]);
+ },[version,canLoad]);
  useEffect(()=>{
   const timer=window.setInterval(refresh,30_000);
   window.addEventListener(FOCUS_CHANGED,refresh);
   return ()=>{window.clearInterval(timer);window.removeEventListener(FOCUS_CHANGED,refresh);};
  },[refresh]);
- return {entry,loading,refresh};
+ return {entry,loading:canLoad&&loading,refresh};
 }
 /** A one-second clock for live timers. */
 export function useNow(intervalMs=1000):number{

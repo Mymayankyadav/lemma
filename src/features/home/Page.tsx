@@ -213,8 +213,8 @@ function LegacyToday(){
   try{await navigator.clipboard.writeText(prompt);notify('Prompt copied',{tone:'success'})}
   catch{notify('Copy unavailable. Choose your chat app to continue.',{tone:'danger'})}
  }
- if((home.isPending && !home.data)||(live&&(liveDecks.isPending||liveForecast.isPending)))return <LoadingDesk/>;
- if(home.error || !home.data)return <Screen tabBar><TodayHeader pending={0}/>
+ if(!offline&&((home.isPending && !home.data)||(live&&(liveDecks.isPending||liveForecast.isPending))))return <LoadingDesk/>;
+ if(!home.data)return <Screen tabBar><TodayHeader pending={0}/>
   <EmptyState art={offline?'plug':'compass'} title={offline?'You are offline':"Couldn't load your desk"}
    body={offline?'Reconnect to resume studying.':'Your study data is safe. Try loading again.'}
    action={{label:'Try again',onClick:()=>{void home.refetch()}}}/>
