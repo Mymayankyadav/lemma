@@ -182,6 +182,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     }
   },[draftKey,live,ownerId,generation])
   const [busy,setBusy]=useState(false)
+  const [queueSaving,setQueueSaving]=useState(false)
   const [error,setError]=useState('')
   const questionId=useId(),copyId=useId(),selectionId=useId()
   const [copyStatus,setCopyStatus]=useState('')
@@ -289,13 +290,15 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     }
     const hasImages=Boolean(inline?ids.length:inkDraft.strokes.length||inkDraft.photos.length);
     if((session?.thread.offline||session?.thread.head.pendingTurnId)&&hasImages&&!readOnly&&!busy&&!options.keepDraft) {
-      setBusy(true);setError('');
+      setBusy(true);setQueueSaving(true);setError('');
       try {
         await ink.update(current=>current===inkDraft?{...current,queuedText:text}:current);
+        if(ink.snapshot().draft.queuedText!==text)throw new Error('The answer changed before it could be queued.');
       } catch {
-        setError('Could not queue this answer. Your images are still here.');
+        if(text!==question.text)question.change(text);
+        setError('Could not queue this answer. Your answer and images are still here.');
         await ink.update(current=>current.queuedText===text?{...current,queuedText:undefined}:current).catch(()=>{});
-      } finally {setBusy(false);}
+      } finally {setQueueSaving(false);setBusy(false);}
       return;
     }
     const body=text.trim()
@@ -636,7 +639,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       ? 'Continue my Lemma tutor session. Use get(what=tutor_turn, id='+delivery.reference+').'
       : 'Continue my Lemma tutor session. Use get(what=tutor_turn) to find my answer.'}
     pendingStatus={recoveryOnly?'Offline · Saved conversation':!live?'Demo: import a reply to continue':claimed?'Replying…':'Waiting for '+clientName}
-    status={<>{ink.draft.queuedText!==undefined&&<p role="status">{tutorInkIssue(ink.draft.queuedText,ink)?'Queued answer needs its images.':
+    status={<>{queueSaving?<p role="status">Saving queued answer…</p>:ink.draft.queuedText!==undefined&&<p role="status">{tutorInkIssue(ink.draft.queuedText,ink)?'Queued answer needs its images.':
       pending?'Answer queued. It will send after the tutor replies.':thread?.offline?'Answer queued. It will send when you reconnect.':'Answer queued.'}
       <Button small disabled={readOnly||busy||!ink.ready} onClick={()=>{
         const queued=ink.snapshot().draft.queuedText;

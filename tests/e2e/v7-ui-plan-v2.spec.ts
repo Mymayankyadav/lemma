@@ -147,10 +147,11 @@ for (const reason of ['offline', 'waiting for a reply'] as const) test(`Tutor re
   await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads,tutorScratch#/p/logic/cp/CP1/tutor');
   if(!waiting)await page.getByRole('button',{name:'Write a question'}).click();
   else await expect(page.getByRole('log',{name:'Conversation'})).toContainText('The original question.');
+  const answer=page.getByRole('textbox',{name:'Your answer',exact:true});
+  await answer.fill('My answer remains editable.');
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button',{name:'Upload image',exact:true}).click();
   await (await chooser).setFiles(photoFixture);
-  const answer=page.getByRole('textbox',{name:'Your answer',exact:true});
   const removePhoto=answer.getByRole('button',{name:'Remove photo',exact:true});
   const removeDrawing=answer.getByRole('button',{name:'Remove drawing',exact:true});
   await expect(removePhoto).toBeVisible();
@@ -182,10 +183,42 @@ for (const reason of ['offline', 'waiting for a reply'] as const) test(`Tutor re
   await expect(answer.locator('[data-image-id]')).toHaveCount(2);
   await expect(removePhoto).toBeEnabled();
   await expect(removeDrawing).toBeEnabled();
-  await page.getByRole('button',{name:'Queue answer'}).click();
-  await expect(page.getByText('Answer queued',{exact:false})).toBeVisible();
-  // The status is optimistic; the action unlocks only after the queue write settles.
-  await expect(page.getByRole('button',{name:'Keep as draft'})).toBeEnabled();
+  // Exercise an actual abort, then delay delivery of the next transaction's
+  // commit event to the app. Only the commit event may acknowledge queue success.
+  await page.evaluate(()=>{
+    const put=IDBObjectStore.prototype.put;
+    let writes=0;
+    IDBObjectStore.prototype.put=function(value,key){
+      const request=put.call(this,value,key);
+      if(this.name!=='drafts'||this.transaction.db.name!=='lemma-tutor-ink'||typeof value?.queuedText!=='string')return request;
+      const tx=this.transaction;
+      if(++writes===1)tx.abort();
+      else if(writes===2){
+        const complete=tx.oncomplete;
+        tx.oncomplete=event=>{
+          window.addEventListener('release-tutor-queue-commit',()=>complete?.call(tx,event),{once:true});
+          document.documentElement.dataset.tutorQueueCommitHeld='true';
+        };
+      }
+      return request;
+    };
+  });
+  const queue=page.getByRole('button',{name:'Queue answer'});
+  const acknowledgement=page.getByText('Answer queued',{exact:false});
+  await queue.click();
+  await expect(page.getByText('Could not queue this answer.',{exact:false})).toBeVisible();
+  await expect(acknowledgement).toHaveCount(0);
+  await expect(answer).toContainText('My answer remains editable.');
+  await expect(removePhoto).toBeEnabled();
+  await expect(removeDrawing).toBeEnabled();
+  await queue.click();
+  await expect(page.locator('html')).toHaveAttribute('data-tutor-queue-commit-held','true');
+  await expect(page.getByRole('status').filter({hasText:'Saving queued answer'})).toBeVisible();
+  await expect(acknowledgement).toHaveCount(0);
+  expect(submissions).toBe(0);
+  expect(uploads).toHaveLength(0);
+  await page.evaluate(()=>dispatchEvent(new Event('release-tutor-queue-commit')));
+  await expect(acknowledgement).toBeVisible();
   await page.reload();
   await expect(page.getByText('Answer queued',{exact:false})).toBeVisible();
   await expect(removePhoto).toBeDisabled();
