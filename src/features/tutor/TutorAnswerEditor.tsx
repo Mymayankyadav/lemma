@@ -22,6 +22,40 @@ function content(node: Node): string {
   }, '');
 }
 
+/** The text the editor shows, as stored: chips as their source, no selection work. */
+function domText(root: HTMLElement): string {
+  return root.childNodes.length === 1 && root.firstChild instanceof HTMLBRElement ? '' : content(root);
+}
+
+/**
+ * N232: a tap on the answer keyboard changes the text by a few characters. When that change sits inside one plain text
+ * node (no chip, no $, no backslash next to a $), patch that node instead of rebuilding every chip and KaTeX rendering.
+ * Returns false when the editor has to be rebuilt.
+ */
+function patchText(root: HTMLElement, from: string, to: string): boolean {
+  if (domText(root) !== from) return false;
+  let p = 0;
+  const max = Math.min(from.length, to.length);
+  while (p < max && from.charCodeAt(p) === to.charCodeAt(p)) p++;
+  let q = 0;
+  while (q < max - p && from.charCodeAt(from.length - 1 - q) === to.charCodeAt(to.length - 1 - q)) q++;
+  const removed = from.slice(p, from.length - q), inserted = to.slice(p, to.length - q);
+  const risky = /[$\\\[\]]/u;
+  if (risky.test(removed) || risky.test(inserted) || risky.test(to.slice(Math.max(0, p - 1), p)) ||
+      risky.test(to.slice(p + inserted.length, p + inserted.length + 1))) return false;
+  let offset = 0;
+  for (const child of root.childNodes) {
+    const length = content(child).length;
+    if (child.nodeType === Node.TEXT_NODE && p >= offset && p + removed.length <= offset + length) {
+      const node = child as Text, local = p - offset;
+      node.data = node.data.slice(0, local) + inserted + node.data.slice(local + removed.length);
+      return true;
+    }
+    offset += length;
+  }
+  return false;
+}
+
 export function readTutorAnswer(editor: HTMLElement): PadEdit {
   const text = editor.childNodes.length === 1 && editor.firstChild instanceof HTMLBRElement ? '' : content(editor);
   const selection = editor.ownerDocument.getSelection();
@@ -179,14 +213,20 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
   /** N221: an equation was tapped; `source` is its $…$ text at `offset`. */
   onMath?: (source: string, offset: number) => void;
 }) {
-  const rendered = useRef<{signature: string; readOnly: boolean; mark: string}>(null);
+  const rendered = useRef<{signature: string; readOnly: boolean; mark: string; value: string}>(null);
   const mark = marked ? marked.start + ':' + marked.end : '';
   useLayoutEffect(() => {
     const root = editor.current;
     if (!root || composing) return;
     const signature = images.map(image => image.id + image.kind).join('|');
     const previous = rendered.current;
-    rendered.current = {signature, readOnly, mark};
+    rendered.current = {signature, readOnly, mark, value};
+    // N232: a small text change in one text node is patched in place; see patchText.
+    if (previous && previous.value !== value && previous.signature === signature && previous.readOnly === readOnly &&
+        previous.mark === mark && patchText(root, previous.value, value)) {
+      root.toggleAttribute('data-empty', !value);
+      return;
+    }
     const references = tutorAnswerParts(value).filter(part => part.type === 'image');
     const chips = root.querySelectorAll('[data-image-id]');
     const staleChips = references.length !== chips.length || references.some((part, index) => chips[index]?.getAttribute('data-image-id') !== part.id);
@@ -196,7 +236,7 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
     const equations = answerEquations(value);
     const mathChips = [...root.querySelectorAll<HTMLElement>('[data-math]')].map(node => node.dataset.math);
     const staleMath = equations.length !== mathChips.length || equations.some((segment, index) => mathChips[index] !== segment.source);
-    if (readTutorAnswer(root).text !== value || staleChips || staleMath || nestedText || previous?.signature !== signature || previous?.readOnly !== readOnly || previous?.mark !== mark) {
+    if (domText(root) !== value || staleChips || staleMath || nestedText || previous?.signature !== signature || previous?.readOnly !== readOnly || previous?.mark !== mark) {
       const saved = readTutorAnswer(root);
       renderTutorAnswer(root, value, images, readOnly, marked);
       if (root.ownerDocument.activeElement === root) setTutorAnswerSelection(root, padEdit(value, saved.start, saved.end, saved.direction));

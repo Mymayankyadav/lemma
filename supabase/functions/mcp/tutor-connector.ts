@@ -4,6 +4,7 @@ import {tutorGrantHash, tutorHandoffIds} from '../_shared/tutor-connector.ts'
 import type {Context} from './db.ts'
 import {tutorInputSchemas} from './tutor-profile.ts'
 import {QUESTIONNAIRE_PURPOSES,questionnaireIssues} from '../_shared/tutor-questionnaire.ts'
+import {answerAidIssues} from '../_shared/tutor-answer-aids.ts'
 import type {StudyInput} from './tools/study.ts'
 
 export const TUTOR_NEXT_WAIT_MS = 25_000
@@ -21,6 +22,20 @@ export const QUESTIONNAIRE_NOTE=[
   'Say in the reply that a quick questionnaire is attached. The learner sees it under your reply and can answer later; nothing they type is lost.',
   'Read the answers with get(what=tutor_questionnaires, id=<handoff ID>): each has state unseen, started or complete, and its answers (text, an option index, or option indices).',
   'Use them to judge the learner: choose the next question, decide what to reteach, and record what they showed with save_progress. Do not grade unanswered questions.',
+].join(' ')
+
+/**
+ * N234 (Owner: "tutor is aware of questions he can provide lot safe phrases that can act like boiler plate"): what the
+ * tutor is told about answer aids with every handoff.
+ */
+export const ANSWER_AID_NOTE=[
+  'Answer aids (optional): with your reply you may attach aids for the learner\'s next answer: wording the keyboard may suggest, the terms and symbols of your question, and terms to withhold.',
+  'Use study with command {schemaVersion:1,resource:"tutor_answer_aids",target:{id:<same handoff ID>},operationId:<fresh UUID, also the answer aid ID>,operation:"set",patch:{level,wording,terms,symbols,withhold}}. Setting again replaces the earlier aids.',
+  'level: scaffold (openers, connectives between given facts, closing lines), light (terms and symbols only) or none. Lower it as the learner masters the concept; Lemma also fades it with their mastery.',
+  'wording: up to 24 phrases of up to 80 characters of plain prose, no maths markup, for example "Let U be an open set in Y." or "which is what we wanted to show." terms: up to 40 words or short noun phrases of the question. symbols: up to 16 variables or short expressions of the question.',
+  'withhold: up to 24 words or phrases that would reveal the method, a witness or the conclusion (for example complement, finite subcover). They are never suggested, at any prefix, and wording or terms may not contain them.',
+  'Never put a step of the solution, the key idea or the conclusion in wording. Accepted wording is tagged in the learner\'s answer so you can tell scaffolding from their reasoning.',
+  'Read the aids you set with get(what=tutor_answer_aids, id=<handoff ID>).',
 ].join(' ')
 
 /**
@@ -43,6 +58,7 @@ const studyInstructions = [
   'After a completed receipt, immediately call get(what=tutor_next, id=<same handoff ID>) to wait up to 25 seconds for the learner to answer in Lemma.',
   'If it returns a new id, read that handoff with get(what=tutor_turn, id=<new id>) and repeat the teach-and-reply flow. If id is null, call tutor_next again using the same id. Keep listening for about 10 minutes in total, or until the learner says stop. Then tell them where to find the question.',
   QUESTIONNAIRE_NOTE,
+  ANSWER_AID_NOTE,
   FOLLOWUP_NOTE,
 ].join(' ')
 
@@ -70,6 +86,20 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     '40001': 'Reply to the turn before attaching a questionnaire.',
     '22023': 'Invalid questionnaire, or a reply already carries two questionnaires.',
     '23505': 'This questionnaire ID is already used for a different questionnaire. Use a fresh operationId.',
+  }
+  const answerAidErrors: Record<string, string> = {
+    '40001': 'Reply to the turn before attaching answer aids.',
+    '22023': 'Invalid answer aids.',
+    '23505': 'This answer aid ID is already used for a different turn. Use a fresh operationId.',
+  }
+  async function answerAids(id: unknown, command: Record<string, unknown>) {
+    const {turnId, grantOperationId} = tutorHandoffIds(id)
+    const {data, error} = await c.db.rpc('tutor_answer_aid_connector', {
+      p_owner: c.userId, p_connector_hash: await tutorGrantHash(connectorSecret),
+      p_grant_operation_id: grantOperationId, p_command: {...command, turnId},
+    })
+    if (error) throw new Error(answerAidErrors[String(error.code)] ?? unavailable)
+    return data
   }
   async function questionnaires(id: unknown, command: Record<string, unknown>) {
     const {turnId, grantOperationId} = tutorHandoffIds(id)
@@ -153,6 +183,18 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     /** N228: the thread's questionnaires with the learner's answers, for the tutor to judge. */
     async questionnaires(id: unknown) {
       return JSON.stringify(await questionnaires(id, {operation: 'list'}))
+    },
+    /** N234: the aids the tutor set on this thread's replies. */
+    async answerAidList(id: unknown) {
+      return JSON.stringify(await answerAids(id, {operation: 'list'}))
+    },
+    async setAnswerAids(input: StudyInput) {
+      const cmd = input.command
+      if (cmd.operation !== 'set') throw new Error('Use set for tutor answer aids.')
+      const patch = cmd.patch ?? {}
+      const issues = answerAidIssues(patch)
+      if (issues.length) throw new Error('Invalid answer aids: ' + issues.join('; ').slice(0, 300))
+      return answerAids(cmd.target?.id, {operation: 'set', aidId: cmd.operationId, ...patch})
     },
     async attachQuestionnaire(input: StudyInput) {
       const cmd = input.command

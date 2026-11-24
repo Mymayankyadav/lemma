@@ -26,6 +26,7 @@ import type {TutorPageContext} from './TutorLayout'
 import {ReplyActions} from './ReplyActions'
 import {QuestionnaireButton,type QuestionnaireBackup} from './TutorQuestionnaire'
 import type {TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
+import type {TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids'
 import type {TutorFollowUp} from '../../data/tutor/manual-api'
 import './replyActions.css'
 
@@ -48,18 +49,48 @@ function useDraft(key:string,live=false) {
     try { if(active())text=storage().getItem(key) ?? '' } catch {/* No stored draft is available. */}
     return {text,unsaved:false}
   })
-  function change(value: string) {
-    if(!active())return false
+  function persist(value: string) {
     try {
       if (value&&live)writeTutorLocal({ownerId:captured.ownerId!,generation:captured.generation},key,value)
       else if (value) storage().setItem(key,value)
       else storage().removeItem(key)
-      setDraft({text:value,unsaved:false})
       return true
-    } catch {setDraft({text:value,unsaved:true});return false}
+    } catch {return false}
+  }
+  /** N232: a keystroke's draft is saved when typing pauses (and when the page is hidden or the tutor closes), not on every tap. */
+  const waiting=useRef<{value:string;timer:number}|null>(null)
+  function flush() {
+    const held=waiting.current
+    if(!held)return
+    window.clearTimeout(held.timer)
+    waiting.current=null
+    if(active()&&!persist(held.value))setDraft(current=>current.text===held.value?{text:held.value,unsaved:true}:current)
+  }
+  const flushRef=useRef(flush);flushRef.current=flush
+  useEffect(()=>{
+    const hide=()=>{if(document.visibilityState==='hidden')flushRef.current()}
+    const leave=()=>flushRef.current()
+    document.addEventListener('visibilitychange',hide)
+    window.addEventListener('pagehide',leave)
+    return ()=>{document.removeEventListener('visibilitychange',hide);window.removeEventListener('pagehide',leave);flushRef.current()}
+  },[])
+  /** `change` saves at once (the result says whether it was saved); `typed` is for keystrokes and saves after a short pause. */
+  function change(value: string, typed=false) {
+    if(!active())return false
+    if(typed){
+      setDraft({text:value,unsaved:false})
+      if(waiting.current)window.clearTimeout(waiting.current.timer)
+      waiting.current={value,timer:window.setTimeout(()=>flushRef.current(),600)}
+      return true
+    }
+    if(waiting.current){window.clearTimeout(waiting.current.timer);waiting.current=null}
+    const saved=persist(value)
+    setDraft({text:value,unsaved:!saved})
+    return saved
   }
   function clearIfUnchanged(expected: string) {
     if(!active())return
+    flush()
     let cleared=false,failed=false
     try {
       const saved=storage().getItem(key)
@@ -72,6 +103,13 @@ function useDraft(key:string,live=false) {
     })
   }
   return {...draft,change,clearIfUnchanged}
+}
+
+/** N234: the demo tutor's sample answer aids (a real tutor sets its own over MCP; see docs/current/N234.md). */
+const DEMO_ANSWER_AID:TutorAnswerAid={
+  id:'00000000-0000-4000-8000-000000000234',turnId:'00000000-0000-4000-8000-000000000235',level:'scaffold',version:1,
+  wording:['Let U be an open set in Y.','By the definition of continuity,','which is what we wanted to show.'],
+  terms:['preimage','open set','continuous','topological space'],symbols:['f','X','Y','U'],withhold:['complement','finite subcover'],
 }
 
 export function CheckpointTutor(props:EntryProps) {
@@ -117,7 +155,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const followupDraft=useDraft(draftKey+':followup',live)
   function editQuestion(text:string) {
     if(followupDraft.text&&text.trim()!==question.text.trim())followupDraft.clearIfUnchanged(followupDraft.text)
-    return question.change(text)
+    return question.change(text,true)
   }
   const capturedQuestion=useRef(false);
   useEffect(()=>{
@@ -155,6 +193,23 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     try{setFollowups(await followupApi.list())}catch{/* They are shown when the thread reloads. */}
   },[followupApi])
   useEffect(()=>{void loadFollowups()},[loadFollowups,session?.thread.readAt])
+  // N234: the tutor's answer aids (behind tutorAnswerAids): the latest set on this thread shapes the strip while the learner
+  // writes the next answer. The demo tutor has a sample bank, so the feature can be tried without a connected tutor.
+  const answerAidApi=session?.api.answerAids
+  const [threadAids,setThreadAids]=useState<readonly TutorAnswerAid[]>([])
+  useEffect(()=>{
+    if(!answerAidApi||!isFlagOn('tutorAnswerAids')){setThreadAids([]);return}
+    let current=true
+    void answerAidApi.list().then(list=>{if(current)setThreadAids(list)},()=>undefined)
+    return ()=>{current=false}
+  },[answerAidApi,session?.thread.readAt])
+  const answerAid=useMemo<TutorAnswerAid|undefined>(()=>{
+    if(!isFlagOn('tutorAnswerAids'))return undefined
+    if(threadAids.length)return threadAids[threadAids.length-1]
+    return live?undefined:DEMO_ANSWER_AID
+  },[threadAids,live])
+  // A stand-in for the Atlas's evidence until it is wired in: a demonstrated checkpoint is well known, an open one grows with its steps.
+  const mastery=page?(page.detail.view.demonstratedAt?.9:Math.min(.6,page.detail.view.currentStep/Math.max(1,page.detail.view.stepsTotal)*.6)):undefined
   const replaceQuestionnaire=useCallback((next:TutorQuestionnaire)=>setQuestionnaires(list=>list.map(item=>item.id===next.id&&item.version<=next.version?next:item)),[])
   const questionnaireBackup=useMemo<QuestionnaireBackup>(()=>{
     const key=(id:string)=>draftKey+':questionnaire:'+id
@@ -630,7 +685,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         <textarea className="v7-field" aria-label={'Recoverable reply '+(i+1)} readOnly value={item.body}/>
       </div>)}
     </Disclosure>}  </>
-  if(page)return <TutorChat page={page} turns={allTurns} draft={ink.draft.queuedText??question.text} onChange={editQuestion}
+  if(page)return <TutorChat page={page} turns={allTurns} draft={ink.draft.queuedText??question.text} onChange={editQuestion} answerAid={answerAid} mastery={mastery}
     onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread&&!readOnly&&!busy&&!connectorLoading&&!thread.outbox?.length&&
       (pending&&thread.canSubmit!==false||thread.offline&&!pending))} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
     draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}

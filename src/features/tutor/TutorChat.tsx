@@ -9,6 +9,7 @@ import {useToast} from '../../ui/Toast';
 import type {TutorInkState} from './TutorInk';
 import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
 import {TutorComposer} from './TutorComposer';
+import type {TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids';
 import {TutorLayout, TutorOverview, type TutorPageContext} from './TutorLayout';
 import {TutorSelection, type TutorSelectedMessage} from './TutorMessageSelection';
 
@@ -41,6 +42,9 @@ type Props = {
   context: ReactNode;
   connection: ReactNode;
   transcript: ReactNode;
+  /** N234: the tutor's answer aids for the next answer, and the learner's mastery of the concept (0 to 1). */
+  answerAid?: TutorAnswerAid;
+  mastery?: number;
   onDeleteMessages?: (messages: readonly TutorMessageRef[]) => Promise<void>;
 };
 
@@ -51,7 +55,7 @@ function questionPreview(body: string) {
 }
 
 export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOnly, pending, offline,
-  status, pendingStatus, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage, onDeleteMessages}: Props) {
+  status, pendingStatus, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage, onDeleteMessages, answerAid, mastery}: Props) {
   const [view, setView] = useState<'overview' | 'chat'>();
   const [panel, setPanel] = useState<'context' | 'connection' | 'close' | 'question'>();
   const [headerHidden, setHeaderHidden] = useState(false);
@@ -215,7 +219,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
             'Which symbols or proof phrases would help me write my answer to the current question?';
           send(request, {keepDraft:true});
         }}
-        notationContext={[page.detail.view.title, step, question]} readOnly={readOnly} pending={pending} hasContext={hasContext}
+        notationContext={[page.detail.view.title, step, question]} answerAid={answerAid} mastery={mastery} readOnly={readOnly} pending={pending} hasContext={hasContext}
         onContext={() => setPanel('context')}/>
     }
     {!overview && selecting && <div className="tutor-selection-bar" role="group" aria-label="Selected messages">

@@ -244,6 +244,9 @@
 /* Symbol suggestions: glyphs in the word slots, and a bare name's symbol in the left icon's place. */
 .lemma-tutor .kb .strip .symbol-words button {font: 400 1.45rem/1 var(--v7-glyph); color: var(--v7-role-selection-fg); background: transparent;}
 .lemma-tutor .kb .strip .symbol-words button.preferred {font-weight: 600;}
+.lemma-tutor .kb .strip .latex-words button {min-width: 0; overflow: hidden; color: var(--v7-role-selection-fg); background: transparent; font: 400 1.2rem/1 var(--v7-glyph);}
+.lemma-tutor .kb .strip .latex-words button .latex-token {font: 500 .98rem/1 var(--v7-mono, ui-monospace, monospace); background: none; padding: 0; white-space: nowrap;}
+.lemma-tutor .kb .strip .latex-words button.preferred {font-weight: 600;}
 .lemma-tutor .kb .strip .symbol-beside {font: 400 1.35rem/1 var(--v7-glyph);}
 /* After a suggestion is taken, Undo is one key at the strip's left edge (its label stays for screen readers), so the
    symbols and words stay usable; the next keystroke retires it. */

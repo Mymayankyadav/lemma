@@ -15,7 +15,10 @@ import wordList from './vendor/wordlist.txt?raw';
 import wordAssets from './vendor/word-assets.json';
 import compactRanks from './vendor/compact-ranks.json';
 import speedPolicy from './vendor/speed-policy.json';
-import {decodeWord, writingDecoderReady} from './decoder/ngramSpatial';
+import {decodeWord, decoderSeen, decoderSymbols, typeaheadActive, writingDecoderReady} from './decoder/ngramSpatial';
+import {contextIds, MATH_TOKEN, ngramLog, ngramModel} from './decoder/kn';
+import {atSentenceStart, capitalise, grammarAllows} from './grammar';
+import {activeAnswerAid, bankSuggestions, isWithheld} from './answerAids';
 
 // Lemma already offers these spellings. The pinned rank asset includes
 // preimage, while the general-purpose dictionary omits both forms.
@@ -47,6 +50,29 @@ const RISKY_PERSONAL_WORD = /^(?:not|no|or|if|only|all|some|any|neither|never|co
 /** N221 (Owner): words that steer a proof (its reasons and moves) are never offered from a short stem or as the next
  *  word: typing "b" must not suggest "because", nor a space "as". The learner can still type them in full. */
 const PROOF_STEERING = /^(?:because|by|as|since|so|hence|thus|therefore|then|consequently|implies|implying|whence|thereby|follows|clearly|obviously|trivially|suppose|assume|assuming|wlog)$/iu;
+/** N233: the property and logic words (RISKY_PERSONAL_WORD) as a list, for "does this prefix single the word out?". */
+const RISKY_WORDS = RISKY_PERSONAL_WORD.source.replace(/^\^\(\?:|\)\$$/gu, '').split('|');
+/** N233: where the next thing is the learner's own operand, witness, method or claim: no word and no symbol is offered. */
+const OPERAND_GAP = /(?:\b(?:take|choose|witness|equals?|by|implies|therefore|hence|consequently|belongs to|is a subset of)|[=<>≤≥∈∉⊆⊂≠∀∃⇒⇔¬])\s*$/iu;
+
+/**
+ * N233 · the question-aware learner-choice rule (N219 §7): the aid may help write what the learner has already decided and
+ * never supplies a proposition or choice they have not made.
+ *  - A connective that steers a proof (because, by, as, since…) only once strongly typed (5 letters and 80%).
+ *  - A property or logic word (open, continuous, not, bounded…): allowed when the question or the draft already used it
+ *    (restating), or when the typed letters single it out among such words (conti → continuous), or once strongly typed.
+ *    Never at a word boundary, where it would be a new claim.
+ *  - Every other word: allowed.
+ */
+export function learnerChoiceAllows(word: string, prefix: string, seen: ReadonlySet<string>, tagged: boolean): boolean {
+  const lower = word.toLowerCase(), typed = prefix.toLowerCase();
+  if (PROOF_STEERING.test(lower)) return typed.length >= 5 && typed.length / lower.length >= .8;
+  if (!tagged && !RISKY_PERSONAL_WORD.test(lower)) return true;
+  if (seen.has(lower)) return true;
+  if (!typed) return false;
+  if (typed.length >= 3 && !RISKY_WORDS.some(risky => risky !== lower && risky.startsWith(typed))) return true;
+  return typed.length >= 5 && typed.length / lower.length >= .8;
+}
 const phraseEngines = new Map<string, ReturnType<typeof makeRevision>>();
 
 function writtenWord(word: string): boolean {
@@ -82,39 +108,84 @@ function keyProposals(
 ): WritingAidProposal[] {
   const {cursor, mode, anchor} = request;
   if (mode === 'off') return [];
+  // N233: with typeaheadV2 on and the n-gram loaded, the next word is offered at a word boundary and the question-aware
+  // learner-choice rule replaces the blanket word list.
+  const v2 = typeaheadActive();
   const prefix = wordAtCaret(cursor);
   const rangeStart = cursor.end - (prefix?.length ?? 0);
   const before = cursor.text.slice(0, rangeStart);
   const protectedGap = LOGIC_GAP.test(before);
-  if (rangeStart < start || (protectedGap && (!prefix || prefix.length < 5))) return [];
+  if (rangeStart < start || (protectedGap && prefix && prefix.length < 5)) return [];
+  if (!v2 && protectedGap && !prefix) return [];
   if (prefix) {
     if (!LETTERS.test(prefix) || !plainProse(cursor, prefix) || text.slice(-prefix.length) !== prefix ||
         COMPLETE_PROOF_WORDS.has(prefix.toLowerCase()) || anchor?.continuation) return [];
-  } else if (mode === 'strict' || !/[ \t]$/u.test(text) || !LETTERS.test(text.trimEnd().match(/[\p{L}\p{M}]+$/u)?.[0] ?? '')) {
+  } else if (mode === 'strict' || !/[ \t]$/u.test(text) ||
+      (!v2 && !LETTERS.test(text.trimEnd().match(/[\p{L}\p{M}]+$/u)?.[0] ?? ''))) {
     return [];
   }
   const result = aid.predict(text, {mode, surface: 'keys', origin: 'learner', authoredText});
   const proposals: WritingAidProposal[] = [];
-  for (const {word, kind, risk, correction, decoded: fromDecoder} of decoded(result.keys, cursor.text.slice(0, rangeStart), prefix ?? '', rangeStart,
-    text, authoredText)) {
+  const scores = new Map<WritingAidProposal, number>();
+  const seen = v2 ? decoderSeen(before) : undefined;
+  const sentenceStart = v2 && !prefix && atSentenceStart(before);
+  // At a boundary inside a protected gap (let, take, by, =…) the next thing is the learner's own choice: no words.
+  const wordsAllowed = !(v2 && !prefix && protectedGap);
+  for (const {word: candidate, kind, risk, correction, decoded: fromDecoder, score} of wordsAllowed ? decoded(result.keys,
+    cursor.text.slice(0, rangeStart), prefix ?? '', rangeStart, text, authoredText) : []) {
+    const word = sentenceStart ? capitalise(candidate) : candidate;
+    if (isWithheld(word)) continue;
+    if (v2 && !grammarAllows(before, word)) continue;
     if (word.length > MAX_WORD || !LETTERS.test(word) || kind === 'transcription' || proposals.some(item => item.label === word)) continue;
     // N221: a decoded correction replaces the typed letters with the word their taps were nearest to. It is only a
     // choice in the strip, never applied by itself, and never a proof word or a word in a protected gap.
     if (correction) {
       if (!prefix || prefix.length < 2 || mode === 'strict' || protectedGap || risk === 'logic' ||
           RISKY_PERSONAL_WORD.test(word) || word.toLowerCase() === prefix.toLowerCase() || word.length < prefix.length) continue;
-    } else if (prefix ? !(fromDecoder ? word.toLowerCase().startsWith(prefix.toLowerCase()) : word.startsWith(prefix)) ||
+    } else if (v2 ? prefix && (!word.toLowerCase().startsWith(prefix.toLowerCase()) || word === prefix)
+      : prefix ? !(fromDecoder ? word.toLowerCase().startsWith(prefix.toLowerCase()) : word.startsWith(prefix)) ||
         word === prefix : !FILLERS.has(word.toLowerCase())) continue;
     // A wider pool must not promote a proof method, property, quantifier, or
     // polarity from a weak stem merely to fill an alternative slot.
-    if ((risk === 'logic' || RISKY_PERSONAL_WORD.test(word) || PROOF_STEERING.test(word)) &&
+    if (v2 ? !learnerChoiceAllows(word, prefix ?? '', seen!, risk === 'logic')
+      : (risk === 'logic' || RISKY_PERSONAL_WORD.test(word) || PROOF_STEERING.test(word)) &&
         (!prefix || prefix.length < 5 || prefix.length / word.length < .8)) continue;
     if (protectedGap && prefix && prefix.length / word.length < .6) continue;
     if (mode === 'strict' && (!prefix || prefix.length < 4)) continue;
     const insert = word + ' ';
     if (cursor.text.length - (prefix?.length ?? 0) + insert.length > WRITING_AID_LIMIT) continue;
     const proposal = writingAidProposal(request, 'word', rangeStart, cursor.end, insert, word);
-    proposals.push(fromDecoder ? {...proposal, source: 'decoder'} : proposal);
+    const offered = fromDecoder ? {...proposal, source: 'decoder' as const} : proposal;
+    proposals.push(offered);
+    if (score !== undefined) scores.set(offered, score);
+  }
+  // N234: the tutor's wording phrases, one word at a time, ahead of the model's own words. The tutor certified them for this
+  // question; a withheld term is still never offered.
+  if (activeAnswerAid()) {
+    for (const {word, score} of bankSuggestions(before, prefix ?? '').slice(0, 3)) {
+      const insert = word + ' ';
+      if (proposals.some(item => item.label === word) || cursor.text.length - (prefix?.length ?? 0) + insert.length > WRITING_AID_LIMIT) continue;
+      const proposal = {...writingAidProposal(request, 'word', rangeStart, cursor.end, insert, word), source: 'decoder' as const};
+      proposals.unshift(proposal);
+      scores.set(proposal, score);
+    }
+  }
+  // N233: the maths slot. After most words the next thing is a variable ("Let U be…"): the variables in play (the
+  // draft's, then the question's) share the slots with the words in proportion to how likely a maths item is next.
+  if (v2 && !prefix && !OPERAND_GAP.test(before)) {
+    const kn = ngramModel(), symbols = decoderSymbols(before).slice(0, 4);
+    if (kn && symbols.length) {
+      const [u, v] = contextIds(kn, before);
+      const weights = symbols.map((_, index) => 1 / (index + 1)), total = weights.reduce((sum, weight) => sum + weight, 0);
+      symbols.forEach((symbol, index) => {
+        const insert = symbol + ' ';
+        if (proposals.some(item => item.label === symbol) || cursor.text.length + insert.length > WRITING_AID_LIMIT) return;
+        const proposal = {...writingAidProposal(request, 'word', rangeStart, cursor.end, insert, symbol), source: 'decoder' as const};
+        proposals.push(proposal);
+        scores.set(proposal, ngramLog(kn, MATH_TOKEN, u, v) + Math.log(weights[index] / total));
+      });
+      proposals.sort((a, b) => (scores.get(b) ?? -Infinity) - (scores.get(a) ?? -Infinity));
+    }
   }
   // Long-term vocabulary only supplies strongly typed word endings. It never
   // supplies a gap, a full already-written word, a proof choice, or new context.
@@ -139,6 +210,8 @@ function keyProposals(
 
 interface KeyCandidate {
   readonly word: string; readonly kind?: string; readonly risk?: string; readonly correction?: boolean;
+  /** N233: the decoder's ln score, to merge words with the maths slot at a boundary. */
+  readonly score?: number;
   /** From the N221 decoder: may change the case of the typed letters (a capitalised name from the tutor's question). */
   readonly decoded?: boolean;
 }
@@ -154,7 +227,7 @@ function decoded(keys: readonly KeyCandidate[], before: string, prefix: string, 
   authoredText: string): readonly KeyCandidate[] {
   // The decoder never invents a next word, stays out of protected proof gaps, and, like the existing engine, stops
   // after two accepted words in a row.
-  if (!writingDecoderReady() || !prefix || PROTECTED_GAP.test(before) ||
+  if (!writingDecoderReady() || (!prefix && !typeaheadActive()) || PROTECTED_GAP.test(before) ||
       (text.slice(authoredText.length).match(OUTPUT_TOKEN)?.length ?? 0) >= 2) return keys;
   const own = new Map(keys.filter(key => key.kind !== 'transcription').map(key => [key.word.toLowerCase(), key]));
   // A correctly spelled word (in the larger spelling list too) is completed, never corrected into another word.
@@ -166,7 +239,8 @@ function decoded(keys: readonly KeyCandidate[], before: string, prefix: string, 
     const lower = item.word.toLowerCase();
     const existing = own.get(lower);
     seen.add(lower);
-    merged.push(existing ?? {word: item.word, ...(item.risk ? {risk: item.risk} : {}), correction: item.correction, decoded: true});
+    merged.push(existing ? {...existing, score: item.score}
+      : {word: item.word, ...(item.risk ? {risk: item.risk} : {}), correction: item.correction, decoded: true, score: item.score});
   }
   for (const key of keys) if (!seen.has(key.word.toLowerCase())) merged.push(key);
   return merged;

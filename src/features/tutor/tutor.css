@@ -69,6 +69,8 @@
 /* ── composer ── */
 .lemma-tutor .composer{flex:none;padding:4px 0 6px}
 .lemma-tutor .composer textarea{flex:1;min-width:0;height:44px;max-height:120px;border:0;background:transparent;padding:11px 0;color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/1.4 var(--v7-sans);resize:none;caret-color:var(--v7-role-action-bg);overflow-y:auto;outline:none}
+/* N232: the browser sizes the plain answer box to its text, so a tap never measures scrollHeight. */
+@supports (field-sizing: content) {.lemma-tutor .composer textarea{field-sizing:content;height:auto;min-height:44px}}
 .lemma-tutor .composer textarea:focus-visible{outline:none;box-shadow:none}
 .lemma-tutor textarea::placeholder{color:var(--v7-role-text-disabled)}
 .lemma-tutor .send{flex:none;width:var(--v7-touch);height:var(--v7-touch);border:0;border-radius:9999px;background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);display:grid;place-items:center}

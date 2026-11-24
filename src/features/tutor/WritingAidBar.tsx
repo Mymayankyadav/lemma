@@ -2,6 +2,8 @@ import {useRef, type PointerEvent} from 'react';
 import {ArrowRight, RefreshCw, Undo2, X} from 'lucide-react';
 import type {WritingAidProposal} from './writingAid';
 import type {SymbolOption} from './input/latexShortcuts';
+import {SYMBOL_CATALOG} from './input/symbolCatalog';
+import type {LatexSuggestion} from './writingAid/latexGrammar';
 import './writing-aid.css';
 
 const holdCaret = (event: PointerEvent) => event.preventDefault();
@@ -48,6 +50,26 @@ export function SymbolWords({options, disabled, onAccept}: {
       className={index === 1 && option ? 'preferred' : ''} onPointerDown={holdCaret} onClick={() => {if (option) onAccept(option);}}>
       {option ? <span className="symbol-glyph">{option.symbol.glyph}</span> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
     </button>)}
+  </div>;
+}
+
+const GLYPH_OF = new Map(SYMBOL_CATALOG.map(symbol => [symbol.tex, symbol.glyph]));
+
+/** N235: the next LaTeX tokens inside $…$ (best in the middle). A token with a symbol shows its glyph, else its LaTeX. */
+export function LatexWords({options, disabled, onAccept}: {
+  options: readonly LatexSuggestion[]; disabled: boolean; onAccept: (option: LatexSuggestion) => void;
+}) {
+  const slots = [options[1], options[0], options[2]];
+  return <div className="sugg latex-words" role="group" aria-label="LaTeX suggestions">
+    {slots.map((option, index) => {
+      const glyph = option && GLYPH_OF.get(option.label);
+      return <button type="button" key={index} disabled={disabled || !option}
+        aria-label={option ? 'Insert ' + option.label : 'No suggestion'} title={option?.label}
+        className={index === 1 && option ? 'preferred' : ''} onPointerDown={holdCaret} onClick={() => {if (option) onAccept(option);}}>
+        {option ? glyph ? <span className="symbol-glyph">{glyph}</span> : <code className="latex-token">{option.label}</code>
+          : <span aria-hidden="true" className="writing-aid-empty">·</span>}
+      </button>;
+    })}
   </div>;
 }
 

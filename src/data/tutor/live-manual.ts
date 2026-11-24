@@ -6,6 +6,7 @@ import {tutorLocalScopeActive,writeTutorLocal} from './local-storage'
 import type {TutorComposerDraft,TutorContextSelection} from './turn-model'
 import {tutorMessageKey,withTutorMessageDeletions,type ConnectorDelivery,type ManualTutor,type QuestionnaireSave,type TutorFollowUp,type TutorThreadView} from './manual-api'
 import type {TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
+import type {TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids'
 
 type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string;readOnly?:boolean}
 type Command={operation:string;operationId:string;connectorOperationId?:string;attachments?:readonly TutorAttachment[];[key:string]:unknown}
@@ -384,6 +385,16 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
      ?'The tutor has just replied. Send this as your next answer.'
      :error.code==='22023'?'Wait for the tutor to reply before posting more.':'Could not confirm your message. It is still in the box.')
     return (data as {followup:TutorFollowUp}).followup
+   },
+  },
+  /** N234: the tutor's answer aids on this thread, oldest turn first. */
+  answerAids:{
+   async list(){
+    active()
+    const {data,error}=await client.rpc('tutor_answer_aid_state',target)
+    active()
+    if(error)throw new Error('Could not open the tutor\'s answer aids.')
+    return Array.isArray(data)?data as TutorAnswerAid[]:[]
    },
   },
   questionnaires:{

@@ -17,6 +17,8 @@
 import compactRanks from '../vendor/compact-ranks.json';
 import wordAssets from '../vendor/word-assets.json';
 import {createDecoderLexicon, type DecoderLexicon, type DecoderLexiconIndex} from './lexicon';
+import {isFlagOn} from '../../../../flags';
+import {contextIds, EOS, loadLatexModel, loadNgram, ngramLog, ngramModel, ngramNext, type NgramModel} from './kn';
 
 export interface KeyTouch {
   /** Horizontal position in key pitches from the left edge of the letter rows (q's centre is 0.5). */
@@ -119,15 +121,46 @@ export function writingDecoderReady(): boolean {
   return model !== null;
 }
 
+/** N233: the Kneser-Ney model, only behind the typeaheadV2 flag and once it has loaded and been checked. */
+export function typeaheadActive(): boolean {
+  return isFlagOn('typeaheadV2') && model !== null && ngramModel() !== null;
+}
+export function prepareTypeahead(): Promise<void> {
+  return isFlagOn('typeaheadV2') ? Promise.all([loadNgram(), loadLatexModel()]).then(() => undefined) : Promise.resolve();
+}
+/** Likelihood of a word the n-gram has never seen (rarer than any it stores), still ordered by the general frequency. */
+const UNSEEN_LOG = Math.log(1e-8);
+function knLog(kn: NgramModel, word: string, ids: readonly [number, number]): number {
+  const id = kn.id.get(word);
+  if (id === undefined || id <= EOS) return UNSEEN_LOG + LAMBDA * ((model?.frequency.get(word) ?? 120) - 255);
+  return ngramLog(kn, id, ids[0], ids[1]);
+}
+
 // ── conversation cache ──────────────────────────────────────────────────────────────────────────────────────────────
 let context = new Map<string, number>();
 let contextTotal = 0;
 /** How a cached word is written: a name such as "Cauchy" keeps its capital unless it also appeared in lower case. */
 let forms = new Map<string, string>();
 const WORDS = /[A-Za-z]{2,32}/g;
+/** N233: a single letter standing alone (f, X, U): a variable, not part of a word or a LaTeX command. "a" and "I" are words. */
+const SYMBOL = /(?<![A-Za-z\\])[A-Za-z](?![A-Za-z])/g;
+let contextSymbols: string[] = [];
+function symbolsIn(text: string, latestFirst: boolean): string[] {
+  const found = [...text.matchAll(SYMBOL)].map(match => match[0]).filter(letter => letter !== 'a' && letter !== 'I');
+  return [...new Set(latestFirst ? found.reverse() : found)];
+}
+/** N233: the variables in play, the draft's (latest first) before the question's: what a maths slot can offer. */
+export function decoderSymbols(before: string): string[] {
+  return [...new Set([...symbolsIn(before.slice(-600), true), ...contextSymbols])].slice(0, 8);
+}
+/** N233: words the question or the learner's draft already used. A learner may restate these (see engine.ts, learner choice). */
+export function decoderSeen(before: string): ReadonlySet<string> {
+  return new Set(cacheFor(before).counts.keys());
+}
 
 /** The tutor's question, the checkpoint title and step: their words rank higher while the learner answers. */
 export function setDecoderContext(texts: readonly (string | undefined)[]): void {
+  contextSymbols = symbolsIn(texts.join('\n'), false);
   context = new Map();
   contextTotal = 0;
   forms = new Map();
@@ -212,13 +245,19 @@ function completions(index: DecoderLexiconIndex, prefix: string, limit: number):
 }
 
 /** log P(word | previous, cache): a smoothed bigram mixed with the conversation cache. */
-export function languageLog(word: string, previous: string, cache?: {counts: Map<string, number>; total: number}): number {
+export function languageLog(word: string, previous: string, cache?: {counts: Map<string, number>; total: number},
+  knContext?: readonly [number, number]): number {
   if (!model) return -Infinity;
-  const frequency = model.frequency.get(word) ?? 120;
-  const unigram = Math.exp(LAMBDA * (frequency - 255) - model.logZ);
-  const total = previous ? previousTotal(previous) : 0;
-  const pair = previous ? bigramCount.get(previous)?.get(word) ?? 0 : 0;
-  const ngram = (pair + MU * unigram) / (total + MU);
+  const kn = knContext ? ngramModel() : null;
+  let ngram: number;
+  if (kn && knContext) ngram = Math.exp(knLog(kn, word, knContext));
+  else {
+    const frequency = model.frequency.get(word) ?? 120;
+    const unigram = Math.exp(LAMBDA * (frequency - 255) - model.logZ);
+    const total = previous ? previousTotal(previous) : 0;
+    const pair = previous ? bigramCount.get(previous)?.get(word) ?? 0 : 0;
+    ngram = (pair + MU * unigram) / (total + MU);
+  }
   const cached = cache && cache.total ? (cache.counts.get(word) ?? 0) / cache.total : 0;
   return Math.log(cached ? (1 - CACHE_WEIGHT) * ngram + CACHE_WEIGHT * cached : ngram);
 }
@@ -238,6 +277,8 @@ export function decodeWord(before: string, typed: string, start: number, extra: 
   const {index, risky} = model;
   const previous = /([A-Za-z]+)[^A-Za-z.!?;:\n]*$/.exec(before)?.[1]?.toLowerCase() ?? '';
   const cache = cacheFor(before);
+  const kn = typeaheadActive() ? ngramModel() : null;
+  const ids = kn ? contextIds(kn, before) : undefined;
   const lower = typed.toLowerCase();
   const touches = touchesFor(lower, start);
   const scored = new Map<string, DecodedWord>();
@@ -246,12 +287,18 @@ export function decodeWord(before: string, typed: string, start: number, extra: 
     if (scored.has(word)) return;
     const correction = !word.startsWith(lower);
     scored.set(word, {word: casing(word, typed),
-      score: languageLog(word, previous, cache) + spatial - (correction && typedIsPrefix ? CORRECTION_COST : 0),
+      score: languageLog(word, previous, cache, ids) + spatial - (correction && typedIsPrefix ? CORRECTION_COST : 0),
       correction, ...(risky.has(word) ? {risk: 'logic' as const} : {})});
   };
   if (!lower) {
-    // Next word: what usually follows the previous word, then the commonest words.
-    for (const word of [...bigramCount.get(previous)?.keys() ?? [], ...wordAssets.boundary, 'a']) add(word, 0);
+    // Next word: what usually follows the previous words, then the commonest words.
+    if (kn && ids) {
+      for (const id of ngramNext(kn, ids[0], ids[1])) {
+        const word = kn.words[id];
+        if (id > EOS && /^[a-z]{2,32}$/.test(word)) add(word, 0);
+      }
+      add('a', 0);
+    } else for (const word of [...bigramCount.get(previous)?.keys() ?? [], ...wordAssets.boundary, 'a']) add(word, 0);
   } else {
     let beams = [{prefix: '', spatial: 0}];
     for (const [i, touch] of touches.entries()) {
@@ -278,8 +325,11 @@ export function decodeWord(before: string, typed: string, start: number, extra: 
         add(variant, exactSpatial - EDIT_COST);
       }
     }
+    const following = kn && ids ? ngramNext(kn, ids[0], ids[1]).map(id => kn.words[id]) : [];
     for (const beam of beams) {
       for (const word of completions(index, beam.prefix, PER_PREFIX)) add(word, beam.spatial);
+      // N233: words the n-gram expects after the previous two, even when they are rarer overall.
+      for (const word of following) if (word.startsWith(beam.prefix) && model.frequency.has(word)) add(word, beam.spatial);
       // Words the bigram or the conversation favour, even when they are rarer overall.
       for (const word of bigramCount.get(previous)?.keys() ?? []) {
         if (word.startsWith(beam.prefix) && model.frequency.has(word)) add(word, beam.spatial);
@@ -302,7 +352,7 @@ export function decodeWord(before: string, typed: string, start: number, extra: 
   if (typedIsPrefix) {
     const best = ranked.find(item => !item.correction)?.score ?? -Infinity;
     const typedWord = index.entries[lowerBound(index, lower)]?.word === lower
-      ? languageLog(lower, previous, cache) + touches.reduce((sum, touch, i) => sum + spatialLog(touch, lower[i]), 0) + REAL_WORD_MARGIN
+      ? languageLog(lower, previous, cache, ids) + touches.reduce((sum, touch, i) => sum + spatialLog(touch, lower[i]), 0) + REAL_WORD_MARGIN
       : -Infinity;
     ranked = ranked.filter(item => !item.correction || item.score >= Math.max(best, typedWord));
   }

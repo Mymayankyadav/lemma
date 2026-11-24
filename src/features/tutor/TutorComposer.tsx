@@ -1,4 +1,4 @@
-import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
+import {startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
 import {createPortal} from 'react-dom';
 import {ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, HelpCircle, Keyboard, MoveRight, Paperclip, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
 import {isFlagOn} from '../../flags';
@@ -27,7 +27,10 @@ import {useTutorInputPreferences} from './input/inputPreferences';
 import {sameEditTarget} from './input/recognitionPolicy';
 import type {EditTarget} from './input/types';
 import {useWritingAid, useWritingAidPreferences, WritingAidSettings, advanceWritingAidAnchor, continueWritingAidAnchor, applyWritingAidProposal, type WritingAidAnchor, type WritingAidProposal} from './writingAid';
-import {SymbolWords, WritingAidBar, WritingAidWords} from './WritingAidBar';
+import {LatexWords, SymbolWords, WritingAidBar, WritingAidWords} from './WritingAidBar';
+import {latexSuggestions, unfinishedMath, type LatexSuggestion} from './writingAid/latexGrammar';
+import {setAnswerAid} from './writingAid/answerAids';
+import {effectiveAidLevel, type TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids';
 import {typedEquationAt} from './input/typedEquation';
 import {useAutoeqReadings} from './input/useAutoeqReadings';
 import {latexSymbolOptions, type SymbolOption} from './input/latexShortcuts';
@@ -35,7 +38,7 @@ import {TutorEquationPanel} from './input/TutorEquationPanel';
 import {INK_VIEWPORT} from './input/TutorInkPad';
 import {resampleInkPath} from './input/inkGeometry';
 import {PAD_PAPER, type PadStrokes} from '../../ui/v7/ink/ink';
-import {prepareWritingDecoder, recordKeyTouch, setDecoderContext, writingDecoderReady, type KeyTouch} from './writingAid/decoder/ngramSpatial';
+import {prepareTypeahead, prepareWritingDecoder, recordKeyTouch, setDecoderContext, typeaheadActive, writingDecoderReady, type KeyTouch} from './writingAid/decoder/ngramSpatial';
 import './keyboard.css';
 import './input/input.css';
 import './writing-aid.css';
@@ -66,6 +69,9 @@ interface Props {
   onCloseActions: () => void;
   answerActions: HTMLElement | null;
   notationContext?: readonly string[];
+  /** N234: the tutor's answer aids for this answer (behind tutorAnswerAids), and how well the learner knows the concept (0 to 1). */
+  answerAid?: TutorAnswerAid;
+  mastery?: number;
   ink?: TutorInkState;
   canQueueImage?: boolean;
   inputScopeKey?: string;
@@ -100,6 +106,14 @@ export function TutorComposer(props: Props) {
   const composing = compositionText !== null;
   const history = useRef(createPadTextHistory(padEdit(props.value)));
   const [cursor, setCursor] = useState(history.current.present);
+  /**
+   * N232: the composer owns the text being typed. `cursor.text` is the live draft, painted at once; the page above is told in a
+   * transition (below), so a tap never waits for the transcript to re-render. `emitted` remembers what the page has been
+   * told but may not have rendered yet, so a late render of an older value is not mistaken for an outside change.
+   */
+  const value = cursor.text;
+  const emitted = useRef<string[]>([]);
+  const lastProp = useRef(props.value);
   const [mountId] = useState(()=>crypto.randomUUID());
   const revision = useRef({editorRevision:0,selectionRevision:0,modeRevision:0});
   const pendingSelection = useRef<PadEdit | null>(history.current.present);
@@ -122,18 +136,18 @@ export function TutorComposer(props: Props) {
   const [dismissedAid, setDismissedAid] = useState<string | null>(null);
   const rejectedEdits = useRef(new Set<string>());
   const writingPrefs = useWritingAidPreferences();
-  const incomplete = props.value.includes('□');
+  const incomplete = value.includes('□');
   const images = props.ink?.draft.photos;
   const availableIds = useMemo(() => new Set(images?.map(image => image.id.toLowerCase())), [images]);
   const previousIds = useRef(availableIds);
-  const imageReferences = useMemo(() => referencedImageIds(props.value), [props.value]);
+  const imageReferences = useMemo(() => referencedImageIds(value), [value]);
   const refs = imageReferences.filter(id => availableIds.has(id));
   const hasImage = refs.length > 0;
-  const imageTarget = drawingSelection.current?.text === props.value ? drawingSelection.current : cursor;
-  const canInsertImage = props.value.length - (imageTarget.end - imageTarget.start) + IMAGE_REFERENCE_LENGTH <= MAX_ANSWER_LENGTH;
+  const imageTarget = drawingSelection.current?.text === value ? drawingSelection.current : cursor;
+  const canInsertImage = value.length - (imageTarget.end - imageTarget.start) + IMAGE_REFERENCE_LENGTH <= MAX_ANSWER_LENGTH;
   const inkDraft = props.ink?.draft;
   const readOnly = props.readOnly || inkDraft?.queuedText !== undefined;
-  const imageIssue = tutorInkIssue(props.value, props.ink);
+  const imageIssue = tutorInkIssue(value, props.ink);
   const recoveryIssue = imageIssue ?? (props.ink?.status === 'failed' ? 'failed' : undefined);
   const unfinishedId = inkDraft?.editingDrawing && refs.includes(inkDraft.editingDrawing.id) ? inkDraft.editingDrawing.id : null;
   const unfinished = props.ink?.ready && Boolean(inkDraft?.strokes.length || unfinishedId);
@@ -199,8 +213,14 @@ export function TutorComposer(props: Props) {
    * them that show the first of: autoeq's readings of a typed equation; the symbols for a LaTeX command, short form or
    * name (\al, ->, eps); the word suggestions; and, with nothing to suggest, ∀ ∈ ⇒.
    */
-  const slots: 'equation' | 'symbols' | 'words' | 'quick' = typedEquation && equationReadings.length ? 'equation'
-    : symbolOptions.length ? 'symbols' : writingWords.length ? 'words' : 'quick';
+  // N235: inside an unfinished $…$ the slots offer the next LaTeX tokens (grammar-checked), behind typeaheadV2.
+  const latexOptions = useMemo<LatexSuggestion[]>(() => {
+    if (!shown || scratch || writingPrefs.mode === 'off' || editingDisabled || !decoderReady || !typeaheadActive()) return [];
+    const span = unfinishedMath(cursor);
+    return span ? latexSuggestions(span.math, span.typed, cursor.text.slice(0, span.start)) : [];
+  }, [cursor, shown, scratch, writingPrefs.mode, editingDisabled, decoderReady]);
+  const slots: 'equation' | 'symbols' | 'latex' | 'words' | 'quick' = typedEquation && equationReadings.length ? 'equation'
+    : symbolOptions.length ? 'symbols' : latexOptions.length ? 'latex' : writingWords.length ? 'words' : 'quick';
   const symbolSlots = slots === 'symbols' ? symbolOptions : [];
   /** The strip frames word slots (Gboard's typing strip) rather than spreading its idle icons. */
   const stripActive = slots !== 'quick' || reviewChoice;
@@ -223,7 +243,8 @@ export function TutorComposer(props: Props) {
   useEffect(() => {
     if (!shown) return;
     let live = true;
-    void prepareWritingDecoder().then(() => {
+    // N233: the Kneser-Ney model loads beside the lexicon (only with typeaheadV2); both must be ready before the strip is re-worked.
+    void Promise.all([prepareWritingDecoder(), prepareTypeahead()]).then(() => {
       if (!live || !writingDecoderReady()) return;
       setDecoderReady(true);
       if (decoderSeen.current || shownSuggestions.current) return;
@@ -233,7 +254,16 @@ export function TutorComposer(props: Props) {
     });
     return () => {live = false;};
   }, [shown]);
-  const decoderContext = JSON.stringify(props.notationContext ?? []);
+  // N234: the tutor's terms and symbols join the question's own words (unless the aids have faded away with mastery).
+  const aid = isFlagOn('tutorAnswerAids') ? props.answerAid : undefined;
+  const aidTexts = useMemo(() => aid && effectiveAidLevel(aid.level, props.mastery) !== 'none' ? [...aid.terms, ...aid.symbols] : [],
+    [aid, props.mastery]);
+  useEffect(() => {
+    setAnswerAid(aid ?? null, props.mastery);
+    setCursor(current => ({...current}));
+    return () => setAnswerAid(null);
+  }, [aid, props.mastery]);
+  const decoderContext = JSON.stringify([...(props.notationContext ?? []), ...aidTexts]);
   useEffect(() => {setDecoderContext(JSON.parse(decoderContext) as string[]);}, [decoderContext]);
 
   useEffect(() => {
@@ -292,6 +322,14 @@ export function TutorComposer(props: Props) {
     const next = insertTutorSymbol(base, option.symbol.id) ?? insertNotation(base, option.symbol.glyph);
     if (commit(changePadText(history.current, next), true)) haptic('snap');
   }
+  /** N235: a LaTeX token goes in at the caret, replacing the command being typed; a pair of braces leaves the caret inside. */
+  function acceptLatex(option: LatexSuggestion) {
+    remember();
+    const edit = history.current.present, span = unfinishedMath(edit);
+    if (editingDisabled || !span) return;
+    const text = edit.text.slice(0, span.start) + option.insert + edit.text.slice(edit.end);
+    if (commit(changePadText(history.current, padEdit(text, span.start + option.caret)), true)) haptic('snap');
+  }
   function undoWriting() {
     const saved = acceptedSuggestion.current;
     if (!saved || saved.after.text !== history.current.present.text || editingDisabled) return;
@@ -303,7 +341,12 @@ export function TutorComposer(props: Props) {
   useLayoutEffect(() => {
     const input = fieldElement();
     if (!input) return;
-    if (input instanceof HTMLTextAreaElement) {
+    // N232: with field-sizing the browser grows the box itself (see tutor.css); measuring scrollHeight on every tap forced a layout.
+    const nativeSizing = typeof CSS !== 'undefined' && CSS.supports?.('field-sizing', 'content');
+    if (input instanceof HTMLTextAreaElement && nativeSizing && !ghostSuffix) {
+      input.style.paddingBottom = '';
+      input.style.height = '';
+    } else if (input instanceof HTMLTextAreaElement) {
       input.style.paddingBottom = '';
       input.style.height = '44px';
       const mirror = input.previousElementSibling instanceof HTMLElement ? input.previousElementSibling : null;
@@ -320,7 +363,11 @@ export function TutorComposer(props: Props) {
         mirror.scrollTop = input.scrollTop;
       }
     }
-    if (history.current.present.text !== props.value) {
+    const propChanged = lastProp.current !== props.value;
+    lastProp.current = props.value;
+    if (history.current.present.text === props.value) emitted.current = [];
+    if (propChanged && history.current.present.text !== props.value && !emitted.current.includes(props.value)) {
+      emitted.current = [];
       revision.current.editorRevision++;
       revision.current.selectionRevision++;
       assist.stop();
@@ -345,7 +392,7 @@ export function TutorComposer(props: Props) {
       selectField(edit);
       pendingSelection.current = null;
     }
-  }, [props.value, compositionText, assist.picker, assist.drawing, ghostSuffix]);
+  }, [props.value, value, compositionText, assist.picker, assist.drawing, ghostSuffix]);
 
   useLayoutEffect(() => {
     const previous = previousIds.current;
@@ -416,7 +463,9 @@ export function TutorComposer(props: Props) {
       }
       setAnswerError('');
       if (restore) pendingSelection.current = edit;
-      props.onChange(edit.text);
+      emitted.current.push(edit.text);
+      if (emitted.current.length > 64) emitted.current.shift();
+      startTransition(() => props.onChange(edit.text));
     } else if (restore) {
       if(fromAssist)pendingSelection.current=edit;
       else selectField(edit);
@@ -518,10 +567,11 @@ export function TutorComposer(props: Props) {
     if (notation[next]) setLastMath(next);
   }
   function send() {
-    if (!blocked && (props.value.trim()||hasImage)) {
+    if (!blocked && (history.current.present.text.trim()||hasImage)) {
       revision.current.modeRevision++;
       assist.stop();
-      props.onSend(props.value);
+      emitted.current = [];
+      props.onSend(history.current.present.text);
     }
   }
 
@@ -688,7 +738,7 @@ export function TutorComposer(props: Props) {
   }
   function inputChanged(input: HTMLElement, manuallyTyped = true) {
     if (readOnly) {
-      if (input === richField.current) renderTutorAnswer(input, props.value, images ?? [], true);
+      if (input === richField.current) renderTutorAnswer(input, value, images ?? [], true);
       return;
     }
     const edit = fieldSelection(input);
@@ -895,7 +945,7 @@ export function TutorComposer(props: Props) {
   }
   function focusAnswer() {
     const pending=pendingSelection.current;
-    if(pending && pending.text===props.value) {
+    if(pending && pending.text===value) {
       selectField(pending);
       pendingSelection.current=null;
     }
@@ -920,16 +970,16 @@ export function TutorComposer(props: Props) {
   const keysButton = <button className="sbtn" type="button" aria-label="Keys" onPointerDown={keepSelection}
     onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></button>;
   return <div ref={composerRoot} className="keyboard-composer" hidden={props.suspended} data-keyboard={shown && !props.suspended ? 'math' : 'hidden'} data-symbols={shown && !props.suspended && Boolean(notation[view]) || undefined}>
-    {props.value.includes('$') && !props.ink && <div className="composer-preview"><MathText source={tutorAnswerParts(props.value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
+    {value.includes('$') && !props.ink && <div className="composer-preview"><MathText source={tutorAnswerParts(value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
     {answerError && <p className="composer-status" role="alert">{answerError}</p>}
     {recoveryIssue && <div className="composer-status" role={recoveryIssue==='loading'?'status':'alert'}>
       {inkIssueText[recoveryIssue]}
       {props.ink && (recoveryIssue==='failed'||recoveryIssue==='missing') &&
         <Button small type="button" onClick={props.ink.retry}>Retry restoring images</Button>}
-      {props.ink && imageIssue==='failed' && !imageReferences.length && !editingDisabled && props.value.trim() &&
+      {props.ink && imageIssue==='failed' && !imageReferences.length && !editingDisabled && value.trim() &&
         <Button small type="button" onClick={()=>{props.ink?.continueWithText();setScratch(false);}}>Continue with text</Button>}
       {!props.ink && imageIssue==='unavailable' && !editingDisabled &&
-        <Button small type="button" onClick={()=>change(padEdit(removeTutorImageReferences(props.value)))}>Remove image references</Button>}
+        <Button small type="button" onClick={()=>change(padEdit(removeTutorImageReferences(value)))}>Remove image references</Button>}
     </div>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
     <form className="composer" onSubmit={event => {event.preventDefault(); send();}}>
@@ -937,7 +987,7 @@ export function TutorComposer(props: Props) {
         onPointerDownCapture={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={stopSwipe}
         onLostPointerCapture={event => {if (event.target === event.currentTarget && swipe.current) stopSwipe();}}>
       <div className="field">
-        {props.ink ? <TutorAnswerEditor editor={richField} value={props.value} images={props.ink.draft.photos}
+        {props.ink ? <TutorAnswerEditor editor={richField} value={value} images={props.ink.draft.photos}
           placeholder={followUp ? 'Add to your question…' : props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
           composing={composing} ghost={ghostSuffix} marked={writingEdit ? {start: writingEdit.start, end: writingEdit.end} : undefined} onSelection={remember} onChip={chipAction} onMath={openEquation} onFocus={event=>{
             if (event.target === event.currentTarget) focusAnswer();
@@ -955,10 +1005,10 @@ export function TutorComposer(props: Props) {
           onPaste={pasteAnswer}
           onDrop={event=>event.preventDefault()}
         /> : <div className="writing-editor-wrap">{(ghostSuffix || writingEdit) && <div className="writing-editor-mirror" aria-hidden="true">
-          <span>{writingEdit ? <>{props.value.slice(0, writingEdit.start)}<span data-writing-aid-source="">{props.value.slice(writingEdit.start, writingEdit.end)}</span>{props.value.slice(writingEdit.end)}</> : props.value}</span>{ghostSuffix}
+          <span>{writingEdit ? <>{value.slice(0, writingEdit.start)}<span data-writing-aid-source="">{value.slice(writingEdit.start, writingEdit.end)}</span>{value.slice(writingEdit.end)}</> : value}</span>{ghostSuffix}
         </div>}<textarea ref={field} aria-label="Your answer" placeholder={followUp ? 'Add to your question…' : props.pending ? 'Draft your next answer…' : 'Write your answer…'}
           inputMode="none" rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
-          value={compositionText ?? props.value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={focusAnswer}
+          value={compositionText ?? value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={focusAnswer}
           onPointerDown={() => {
             if (!shown && !readOnly) {
               setShown(true);
@@ -999,7 +1049,7 @@ export function TutorComposer(props: Props) {
             aria-pressed={props.headerHidden} onPointerDown={keepSelection} onClick={props.onToggleHeader}>
             {props.headerHidden?<EyeOff aria-hidden="true"/>:<Eye aria-hidden="true"/>}
           </IconButton>}
-          <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !props.value.trim()&&!hasImage}
+          <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !value.trim()&&!hasImage}
             onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
         </div>
       </div>
@@ -1052,7 +1102,7 @@ export function TutorComposer(props: Props) {
     {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoActions={photoActions} photoDisabled={editingDisabled}
       onPickPhoto={()=>{remember();assist.stop();drawingSelection.current=history.current.present;}}
       editingImageId={editingImageId} canMigrate={!readOnly} onInsertEquation={insertEquation}
-      leading={<IconButton label="Keys" type="button" onPointerDown={keepSelection} onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></IconButton>} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
+      leading={<IconButton label="Keys" type="button" onPointerDown={keepSelection} onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></IconButton>} answerLength={value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
     {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}
       data-surface={surface}>
       {surface === 'equation' ? <>
@@ -1085,6 +1135,7 @@ export function TutorComposer(props: Props) {
             : <button key={'empty' + index} type="button" disabled aria-label="No suggestion"><span aria-hidden="true" className="writing-aid-empty">·</span></button>)}
         </div>}
         {symbolSlots.length > 0 && <SymbolWords options={symbolSlots} disabled={editingDisabled} onAccept={acceptSymbol}/>}
+        {slots === 'latex' && <LatexWords options={latexOptions} disabled={editingDisabled} onAccept={acceptLatex}/>}
         <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting} hidden={slots !== 'words'}/>
         {slots === 'quick' && <div className="sugg tutor-quick-math" role="group" aria-label="Quick math symbols">
           {['∀', '∈', ...(props.ink && incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="qsym" aria-label={symbol}
