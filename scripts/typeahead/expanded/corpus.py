@@ -170,12 +170,52 @@ def group_identity(reference):
     return 'arxiv.org/' + arxiv.group(1).lower() if arxiv else text
 
 
+DNS_LABEL = r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?'
+BARE_PUBLISHER_HOST = re.compile(rf'{DNS_LABEL}(?:\.{DNS_LABEL})+')
+QUALIFIED_LABEL = r'[A-Za-z0-9_](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?'
+QUALIFIED_PUBLISHER_HOST = re.compile(rf'{QUALIFIED_LABEL}(?:\.{QUALIFIED_LABEL})+')
+
+
+def finemath_audit_identity(reference, *, archived_query_policy=False):
+    """Recognize FineMath's absolute URLs and verified bare publisher hosts."""
+    text = str(reference)
+    if re.search(r'[\x00-\x20\x7f\\]', text):
+        return '', False
+    bare_host = text.removesuffix('.')
+    bare = len(bare_host) <= 253 and bool(BARE_PUBLISHER_HOST.fullmatch(bare_host))
+    try:
+        url = urlsplit('https://' + text if bare else text)
+        host, port = url.hostname, url.port
+    except ValueError:
+        return '', bare
+    hostname = host.removesuffix('.') if host else ''
+    valid_authority = url.netloc.casefold() == (host or '') or (
+        port is not None and url.netloc.casefold().rsplit(':', 1)[0] == host
+    )
+    if (url.scheme not in ('http', 'https') or not valid_authority or len(hostname) > 253 or
+            not QUALIFIED_PUBLISHER_HOST.fullmatch(hostname)):
+        return '', bare
+    if host != hostname:
+        url = url._replace(netloc=re.sub(r'\.(?=:[0-9]+$|$)', '', url.netloc))
+    if archived_query_policy:
+        url = url._replace(query='')
+    return group_identity(url.geturl()), bare
+
+
 def publisher_reference(raw, source):
     fields = source.get('groupFields', (source.get('groupField', 'url'),))
     value = next((value for field in fields if (value := select(raw, field)) and type(value) in (str, int)), None)
     if value and source.get('groupPrefix') and str(value).isdigit():
         return source['groupPrefix'] + str(value)
     return value
+
+
+def publisher_identity(reference, family):
+    if not reference:
+        return ''
+    if family == 'HuggingFaceTB/finemath':
+        return finemath_audit_identity(reference)[0]
+    return group_identity(reference)
 
 
 def group_preflight(path, source, sample=32):
@@ -185,9 +225,10 @@ def group_preflight(path, source, sample=32):
         if any(select(raw, field) != value for field, value in source.get('filter', {}).items()):
             continue
         reference = publisher_reference(raw, source)
-        if not reference or not group_identity(reference):
+        identity = publisher_identity(reference, source['id'])
+        if not identity:
             raise ValueError(f"Missing publisher provenance key in sampled {source['id']} record")
-        groups.add(text_hash(group_identity(reference)))
+        groups.add(text_hash(identity))
         checked += 1
         if checked >= sample:
             break
@@ -276,20 +317,21 @@ def ingest(db, specs, base, exclusions):
                 content = fingerprint(text)
                 group_key = publisher_reference(raw, source)
                 family = source['id']
-                if group_key:
+                identity = publisher_identity(group_key, family)
+                if identity:
                     stats['publisherGroupPresent:' + family] += 1
                 else:
                     stats['publisherGroupMissing:' + family] += 1
                     if source.get('allowQuestionFingerprint'):
                         prompt, _ = tutor_pair({'source': family, 'text': text})
                         if prompt:
-                            group_key = 'question:' + fingerprint(prompt)
+                            group_key = identity = 'question:' + fingerprint(prompt)
                             stats['questionFingerprintFallback:' + family] += 1
-                    if not group_key and source.get('requirePublisherGroup'):
+                    if not identity and source.get('requirePublisherGroup'):
                         raise ValueError(f"Missing publisher group in {family}, {shard['path']} row {index}")
-                    if not group_key:
+                    if not identity:
                         stats['contentFingerprintFallback:' + family] += 1
-                group = text_hash(group_identity(group_key)) if group_key else content
+                group = text_hash(identity) if identity else content
                 join(db, group, group)
                 if content in exclusions or group in exclusions:
                     db.execute('INSERT OR IGNORE INTO excluded VALUES (?)', (group,))
@@ -413,10 +455,23 @@ def documents(directory, split):
             yield from records(path)
 
 
-def audit_groups(pool, development, scratch):
+ARCHIVED_FINE_MATH = {
+    'sourceArchiveSha256': '98eb804bf6c3c2870f401d367caf823c357938c6bd4ba104533979b35c1ec223',
+    'corpusSha256': '1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b',
+    'developmentSha256': 'cf2e81d637fb54af5ea092b796dcd98d506c6bd16c5d8d7f57e7724e07fcc099',
+}
+
+
+def audit_groups(pool, development, scratch, *, archived_recovery=None):
     """Assert publisher-group and document isolation on the emitted, hashed shards."""
     from tempfile import TemporaryDirectory
     audit = Counter()
+    archived = archived_recovery is not None
+    if archived and (not development or archived_recovery != ARCHIVED_FINE_MATH['sourceArchiveSha256'] or
+                     file_hash(pool / 'manifest.json') != ARCHIVED_FINE_MATH['corpusSha256'] or
+                     file_hash(development / 'manifest.json') != ARCHIVED_FINE_MATH['developmentSha256']):
+        raise ValueError('Archived FineMath recovery requires the exact pinned source and corpus manifests')
+    mapping = {}
     if development:
         manifests = [json.loads((path / 'manifest.json').read_text()) for path in (pool, development)]
         for split in SPLITS[1:]:
@@ -426,25 +481,36 @@ def audit_groups(pool, development, scratch):
                 raise ValueError('Raw development holdout differs from the full corpus')
     with TemporaryDirectory(prefix='lemma-groups-', dir=scratch) as temp:
         with sqlite3.connect(Path(temp) / 'audit.sqlite') as db:
-            db.execute('CREATE TABLE publisher(id TEXT PRIMARY KEY, group_id TEXT NOT NULL) WITHOUT ROWID')
+            db.execute('CREATE TABLE publisher(id TEXT PRIMARY KEY, group_id TEXT NOT NULL, split TEXT NOT NULL, source TEXT NOT NULL) WITHOUT ROWID')
+            db.execute('CREATE TABLE groups(id TEXT PRIMARY KEY, parent TEXT NOT NULL) WITHOUT ROWID')
+            db.execute('CREATE TABLE alias_publishers(id TEXT PRIMARY KEY) WITHOUT ROWID')
             db.execute('CREATE TABLE documents(id TEXT PRIMARY KEY, split TEXT NOT NULL, group_id TEXT NOT NULL) WITHOUT ROWID')
             for split in SPLITS:
                 for document in documents(pool, split):
                     source = document['source']
-                    reference = group_identity(document['reference'])
+                    if source == 'HuggingFaceTB/finemath':
+                        reference, bare = finemath_audit_identity(
+                            document['reference'], archived_query_policy=archived,
+                        )
+                        audit['fineMathBarePublisherRefs' if bare else 'fineMathQualifiedPublisherRefs'] += 1
+                    else:
+                        reference = group_identity(document['reference'])
                     if (not reference or source == 'EleutherAI/proof-pile-2' and not reference.startswith('arxiv.org/') or
-                            source == 'hoskinson-center/proof-pile' and not reference.startswith('math.stackexchange.com/questions/') or
-                            source == 'HuggingFaceTB/finemath' and not urlsplit(str(document['reference'])).netloc):
+                            source == 'hoskinson-center/proof-pile' and not reference.startswith('math.stackexchange.com/questions/')):
                         audit['missingPublisherIdentity:' + source] += 1
                         raise ValueError(f'Emitted corpus missing a publisher identity for {source}')
                     group = document['group']
                     if split_for(group) != split:
                         raise ValueError('Emitted document split differs from its frozen group split')
-                    existing = db.execute('SELECT group_id FROM publisher WHERE id=?', (reference,)).fetchone()
+                    existing = db.execute('SELECT group_id,split,source FROM publisher WHERE id=?', (reference,)).fetchone()
                     if existing is None:
-                        db.execute('INSERT INTO publisher VALUES (?,?)', (reference, group))
+                        db.execute('INSERT INTO publisher VALUES (?,?,?,?)', (reference, group, split, source))
                     elif existing[0] != group:
-                        raise ValueError('A publisher identity has inconsistent connected groups')
+                        if not (archived and split == existing[1] == 'train' and
+                                source == existing[2] == 'HuggingFaceTB/finemath'):
+                            raise ValueError('A publisher identity has inconsistent connected groups')
+                        join(db, group, existing[0])
+                        db.execute('INSERT OR IGNORE INTO alias_publishers VALUES (?)', (reference,))
                     db.execute('INSERT INTO documents VALUES (?,?,?)', (document['id'], split, group))
                     audit['publisherIdentityVerified:' + source] += 1
                     audit['documents:' + split] += 1
@@ -458,6 +524,24 @@ def audit_groups(pool, development, scratch):
                         if current != (split, document['group']):
                             raise ValueError('Development document is missing from the full pool or in another group/split')
                         audit['nestedDevelopment:' + split] += 1
+            if archived:
+                for group, in db.execute('SELECT id FROM groups ORDER BY id'):
+                    canonical = join(db, group, group)
+                    if canonical != group:
+                        if split_for(group) != 'train' or split_for(canonical) != 'train':
+                            raise ValueError('Archived canonical component touches a held-out group')
+                        mapping[group] = canonical
+                audit['archivedTrainPublisherAliases'] = db.execute('SELECT COUNT(*) FROM alias_publishers').fetchone()[0]
+    if archived:
+        physical = {split: audit['groups:' + split] for split in SPLITS}
+        canonical = {**physical, 'train': physical['train'] - len(mapping)}
+        audit['archiveRecovery'] = {
+            **ARCHIVED_FINE_MATH,
+            'policy': 'FineMath qualified-or-DNS-host, canonical DNS root dot, archived query omission, train-only union',
+            'physicalGroupCounts': physical, 'canonicalGroupCounts': canonical,
+            'canonicalTrainGroupMapping': mapping,
+            'canonicalTrainGroupMappingSha256': text_hash(json.dumps(mapping, sort_keys=True, separators=(',', ':'))),
+        }
     return dict(audit)
 
 

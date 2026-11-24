@@ -46,7 +46,7 @@ if stage == 'provenance':
 elif stage == 'group-audit':
     from corpus import audit_groups, file_hash
     pool, development = locate('corpus'), locate('corpus-dev')
-    report = {'passed': True, 'counts': audit_groups(pool, development, '/tmp'),
+    report = {'passed': True, 'counts': audit_groups(pool, development, '/tmp', archived_recovery=archived_group_source),
               'corpusSha256': file_hash(pool / 'manifest.json'),
               'developmentSha256': file_hash(development / 'manifest.json')}
     (work / 'group-audit.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
@@ -492,6 +492,7 @@ def main():
     parser.add_argument('--slug', required=True)
     parser.add_argument('--stage', choices=('provenance', 'group-audit', 'cpu', 'tokenizer', 'prepare', 'prepared-audit', 'gpu', 'export', 'ngram', 'ngram-vocab', 'ngram-counts', 'ngram-pack', 'ngram-select'), required=True)
     parser.add_argument('--input', action='append', default=[])
+    parser.add_argument('--archived-group-source', help='Pinned source archive SHA for the FineMath TRAIN-only group audit recovery')
     parser.add_argument('--ngram-task', choices=('prose', 'latex', 'both'), default='both')
     parser.add_argument('--ngram-orders', nargs='+', type=int, choices=(3, 4, 5), default=[3, 4, 5])
     parser.add_argument('--pruning-methods', nargs='+', choices=('count', 'entropy'), default=['count', 'entropy'])
@@ -536,6 +537,9 @@ def main():
     parser.add_argument('--learning-rate', type=float, default=.0004)
     parser.add_argument('--commit', required=True)
     args = parser.parse_args()
+    if args.archived_group_source and (args.stage != 'group-audit' or
+                                       not re.fullmatch(r'[a-f0-9]{64}', args.archived_group_source)):
+        parser.error('Archived source recovery requires group-audit and an exact SHA-256')
     values = vars(args).copy()
     if not re.fullmatch(r'(?:best|latest|tokens-[0-9]+)\.pt', args.checkpoint_file):
         parser.error('Choose best.pt, latest.pt or a saved exposure checkpoint')

@@ -122,3 +122,25 @@ stored and absent histories are also checked over the full vocabulary, along wit
 support and LaTeX identifier allocation. The report records exact input hashes and byte counts, the
 verifier and source snapshot hashes, coverage, and worst errors. The verifier reads model assets
 and corpus metadata without opening replay events, labels or source documents.
+
+### Run frozen browser comparisons
+
+From the repository root, run `python scripts/typeahead/expanded/run_frozen_replay.py CONFIG OUTPUT --phase capture`
+with Vite and Playwright installed. The runner archives the exact `commit` from `CONFIG`, checks the
+`calibration` and `validation` schedule directories, and builds once with the named `assets` directories.
+Use absolute paths for inputs, and optionally set `chromiumExecutable` to a local browser. The preview uses a
+local Tutor fixture and a synthetic sign-in. The capture phase leaves the final test schedule unopened.
+
+For `--phase final-kn` or `--phase final`, include the frozen `test` directory, `scheduleManifestSha256`,
+`groupAudit` and its SHA-256, both corpus manifests, and `auditedAssetManifestSha256` for the selected packs.
+If using a validated `mixture` or `neuralCalibration`, provide the corresponding capture inventory, its
+SHA-256, and both hashed calibration inputs in `mixtureCapture` or `neuralCalibrationCapture`. The runner
+checks these against the files that the earlier capture produced. `--locked-neural-trial` keeps the
+backend byte cap and edit deadline in force and labels the candidate unqualified.
+
+`--phase neural-controls` uses the full prepared-data audit, three audited prepared manifests, the shared
+held-out manifest, and the seven named `neuralControls` records with pinned validation metrics, ledgers and
+graph-file hashes. Supply the provider completion status and allocated GPU-hours from the provider record.
+The three main checkpoints must share one ledger from the completed 500M-target run. It keeps fitted behavioral calibration out of the controlled comparison and preserves
+fallback and unavailable outcomes. Keep configs, model binaries, source schedules and raw outputs in the
+experiment workspace. The output inventory identifies the fixture input, assets and source for review.
