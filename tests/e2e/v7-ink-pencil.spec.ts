@@ -232,3 +232,37 @@ test('iPad long-press eraser choice switches between pixel cuts and whole stroke
   await dispatchContacts(svg,erase(88));
   await expect(saved).toHaveCount(0);
 });
+
+test('phone equation header keeps eraser controls off the writing area',async({page})=>{
+  await page.setViewportSize({width:393,height:873});
+  const {svg,paperRegion}=await enterPaper(page,'equation');
+  const paper=paperRegion.locator('.tutor-equation-paper');
+  const box=(await paper.boundingBox())!;
+  // Use real hit testing and the same upper-paper start that was covered by
+  // the widened floating toolbar. A synthetic event sent to SVG would miss it.
+  const x=box.x+8+0.75*(box.width*0.6-16);
+  const y=box.y+6+0.1*(box.height-12);
+  const draw=async()=>{
+    await page.mouse.move(x,y);
+    await page.mouse.down();
+    await page.mouse.move(x,box.y+box.height-16,{steps:6});
+    await page.mouse.up();
+  };
+  await draw();
+  await expect(paths(svg)).toHaveCount(1);
+
+  // Keyboard access still changes the paper tool without widening the floating actions.
+  const type=paperRegion.getByRole('button',{name:'Eraser type',exact:true});
+  await type.focus();
+  await page.keyboard.press('Enter');
+  const options=page.getByRole('dialog',{name:'Eraser types',exact:true});
+  await expect(options).toBeVisible();
+  await options.getByRole('button',{name:'Whole stroke',exact:true}).click();
+  await expect(svg).toHaveAttribute('data-mode','eraser');
+  await draw();
+  await expect(paths(svg)).toHaveCount(0);
+  await paperRegion.getByRole('button',{name:'Pen',exact:true}).click();
+  await expect(svg).toHaveAttribute('data-mode','pen');
+  await draw();
+  await expect(paths(svg)).toHaveCount(1);
+});

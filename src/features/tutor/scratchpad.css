@@ -140,7 +140,6 @@
 .lemma-tutor .tutor-paper-input-button span {font-size:.75rem;}
 .lemma-tutor .tutor-paper-eraser {display:inline-flex;flex:none;}
 .lemma-tutor .tutor-paper-eraser-more {padding-inline:0;min-width:28px;}
-.lemma-tutor .tutor-equation-float .tutor-paper-input-button {min-height:34px;min-width:28px;}
 .tutor-paper-eraser-choices {display:grid;gap:8px;}
 .tutor-paper-eraser-choices button {padding:10px;border:1px solid currentColor;border-radius:var(--v7-radius-2);text-align:start;}
 .tutor-paper-eraser-choices button[aria-pressed=true] {background:var(--v7-role-surface-muted);}

@@ -175,6 +175,12 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
             <RotateCcw aria-hidden="true"/></button></span>}
         {!inked && <span className="tutor-equation-hint">{replacing ? 'Write the equation again' : 'Write a symbol or an equation'}</span>}
       </div>
+      {/* Keep mode controls in the strip. Widening the floating actions covers
+          inkable paper at phone widths and can swallow a stroke's pointerdown. */}
+      {tool==='eraser'&&<button type="button" className="tutor-paper-input-button" aria-label="Pen"
+        disabled={disabled} onClick={()=>setTool('pen')}><Pencil aria-hidden="true"/></button>}
+      <PaperEraserControl kind={input.eraserKind} active={tool==='eraser'} disabled={disabled}
+        onSelect={()=>setTool('eraser')} onKind={input.setEraserKind}/>
       {input.isIPad&&<PencilOnlyControl enabled={input.enabled} onToggle={input.toggle}/>}
       {trailing}
     </div>
@@ -219,9 +225,6 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
       <div className="tutor-equation-float" role="group" aria-label="Paper tools" data-hidden={stroking || undefined}>
         <button type="button" className="tutor-equation-read" aria-label="Read equation" disabled={disabled || !inked || reading.phase === 'reading' || reading.phase === 'download'}
           onPointerDown={event => event.preventDefault()} onClick={() => {haptic('snap'); void read();}}><ScanText aria-hidden="true"/><span>Read</span></button>
-        {tool==='eraser'&&<button type="button" className="sbtn" aria-label="Pen" onClick={()=>setTool('pen')}><Pencil aria-hidden="true"/></button>}
-        <PaperEraserControl kind={input.eraserKind} active={tool==='eraser'} disabled={disabled}
-          onSelect={()=>setTool('eraser')} onKind={input.setEraserKind}/>
         <button type="button" className="sbtn" aria-label="Undo stroke" disabled={disabled || (!history.undo.length&&!pendingDot)}
           onPointerDown={event => event.preventDefault()} onClick={() => change(undoPadInk(flushDot()))}><Undo2 aria-hidden="true"/></button>
         <button type="button" className="sbtn" aria-label="Clear writing" disabled={disabled || !inked}
