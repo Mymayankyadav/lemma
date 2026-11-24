@@ -12,6 +12,8 @@ import {historyIds, historyLog, historyLogTotal, historyNext, parseNgram, setNgr
 import {decodeWord, mixtureProbability, prepareLanguage, setDecoderLexicon} from '../../../src/features/tutor/writingAid/decoder/ngramSpatial';
 import {isNeuralBoundary, neuralWordPrompt, promptIds, readNeuralTokenizer, wordTrie} from '../../../src/features/tutor/writingAid/decoder/neuralTokenizer';
 import {insertionEligible} from '../../../src/features/tutor/writingAid/eligibility';
+import {offerFamilies} from '../../../src/features/tutor/writingAid/offerFamilies';
+import {selectWritingAidPool} from '../../../src/features/tutor/writingAid/poolRanking';
 import {advanceWritingAidAnchor, applyWritingAidProposal, proposalEligible, writingAidProposal, type WritingAidRequest} from '../../../src/features/tutor/writingAid/policy';
 import type {TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer';
 import {padEdit} from '../../../src/features/pad/padEdit';
@@ -77,6 +79,22 @@ describe('normalized typeahead distributions', () => {
 });
 
 describe('scoped guidance and exact insertion guard', () => {
+  it('keeps X and x distinct in symbol identities, aliases and authored scope prefixes', () => {
+    const ranking = {version: 1 as const, hints: [
+      {id: 'set', kind: 'symbol', entry: 'X', aliases: ['\\Xi'], priority: 'prefer', role: 'given', scope: {prefixes: ['X']}},
+      {id: 'point', kind: 'symbol', entry: 'x', aliases: ['\\xi'], priority: 'deemphasize', role: 'goal', scope: {prefixes: ['x']}},
+    ] satisfies AidHint[]};
+    const context: AidRankingContext = {...scope, mode: 'equation', before: '$', prefix: 'X', aid: {...aid, ranking}};
+    expect(validAidRanking(ranking)).toBe(true);
+    expect(tutorHint(context, 'X')).toMatchObject({role: 'given', adjustment: Math.log(2)});
+    expect(tutorHint(context, '\\Xi').role).toBe('given');
+    expect(tutorHint(context, 'x')).toEqual({adjustment: 0, role: undefined});
+    expect(tutorHint({...context, prefix: 'x'}, 'X')).toEqual({adjustment: 0, role: undefined});
+    expect(tutorHint({...context, prefix: 'x'}, '\\xi')).toMatchObject({role: 'goal', adjustment: -Math.log(2)});
+    expect(insertionEligible({text: '$X', start: 1, end: 2, insert: 'X', mode: 'equation', authoredPrefix: 'X',
+      role: 'given', aid: {...aid, ranking, withhold: ['x']}})).toBe(false);
+  });
+
   it('promotes and demotes only an eligible matching entry with the narrowest cue', () => {
     const hints: AidHint[] = [
       hint, {...hint, scope: {prefixes: ['de']}},
@@ -132,6 +150,32 @@ describe('scoped guidance and exact insertion guard', () => {
     const ghostRequest = {...request, cursor: ghostCursor, anchor: {text: ghostCursor.text, start: 0}, aid: goal};
     expect(proposalEligible(ghostRequest, writingAidProposal(ghostRequest, 'ghost', 4, 4, 'canonical homeomorphism '))).toBe(false);
   });
+});
+
+it('shares families only for offered regular inflections and explicitly declared aliases', () => {
+  const independent = ['contract', 'contradiction', 'contrapositive', 'compact', 'compare'];
+  const equivalent = ['function', 'functions', 'mapping'];
+  const verbs = ['define', 'defines', 'defined', 'defining'];
+  const words = [...independent, ...equivalent, ...verbs].map(label => ({label}));
+  const symbols = ['X', 'x'].map(label => ({label, source: 'symbol' as const}));
+  const cursor = padEdit('Use ');
+  const request: WritingAidRequest = {cursor, subject: 'topology', mode: 'balanced', readOnly: false, composing: false,
+    target: {scopeKey: 'scope', mountId: 'editor', editorRevision: 1, selectionRevision: 1, modeRevision: 0},
+    aid: {...aid, ranking: {version: 1, hints: [{...hint, entry: 'function', aliases: ['mapping'], scope: {subject: 'topology'}}]}}};
+  const proposals = (input: WritingAidRequest) => [...words, ...symbols].map(offer =>
+    ({...writingAidProposal(input, 'word', cursor.end, cursor.end, offer.label), ...offer}));
+  const family = offerFamilies(proposals(request));
+  expect(new Set(independent.map(label => family({label}))).size).toBe(independent.length);
+  expect(new Set(equivalent.map(label => family({label}))).size).toBe(1);
+  expect(new Set(verbs.map(label => family({label}))).size).toBe(1);
+  expect(family(symbols[0])).not.toBe(family(symbols[1]));
+  const unrelated = offerFamilies(proposals({...request, subject: 'linear-algebra'}));
+  expect(unrelated({label: 'function'})).not.toBe(unrelated({label: 'mapping'}));
+  const order = ['function', 'mapping', 'functions', 'contract', 'contradiction', 'contrapositive'];
+  const pool = proposals(request);
+  const scored = order.map((label, index) => ({...pool.find(item => item.label === label)!, score: -index}));
+  expect(selectWritingAidPool({words: scored, edit: [], ghost: []}).words.map(item => item.label))
+    .toEqual(['function', 'contract', 'contradiction']);
 });
 
 it('encodes 512-token role prompts with recent draft and retaining math bytes', () => {

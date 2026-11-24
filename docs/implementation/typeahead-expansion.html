@@ -335,20 +335,26 @@ load. These recovered records lack per-event active asset hashes and do not qual
 <tr><th scope="row">Guard and provenance</th><td data-label="Observation">Curated tests verify actual word and equation
 acceptance, withholding across the caret, stale-offer rejection, preserved partial assisted text and draft reload.
 The local Tutor draft stops offering additional insertions at its 32-range provenance limit.</td></tr>
-<tr><th scope="row">Phone-sized Chromium at 4× throttling</th><td data-label="Observation">An isolated run with
-the verified fifth-order pilot and 100 warm taps per condition measured 51.0 ms p95 tap-to-frame empty and 38.6 ms
-with eight equations. The empty setup missed 32 ms and the eight-equation setup met 50 ms. Worker p95 was 6.9 ms empty
-and 0.3 ms with equations. The inert control was 8.8 ms. Physical phone testing remains open.</td></tr>
+<tr><th scope="row">Phone-sized Chromium at 4× throttling</th><td data-label="Observation">The latest isolated run
+used the verified fifth-order pilot and 100 warm taps per condition. Tap-to-frame p95 was 37.2 ms empty and 33.9 ms
+with eight equations. The empty setup missed 32 ms and the eight-equation setup met 50 ms. Worker p95 was 4.5 ms empty
+and 0.3 ms with equations. The inert control was 10.5 ms. Physical phone testing remains open.</td></tr>
 <tr><th scope="row">Neural export</th><td data-label="Observation">A 34,587,365-byte weight-only int8 bundle
 matched the float graph’s top-three set in 297 of 300 validation contexts on native ONNX. This establishes export parity
 under that test. The browser probe produced zero scored requests within the edit deadline on WASM (77 dropped requests)
 or in the forced SwiftShader trial (45 dropped). Default Chromium exposed no WebGPU adapter. A hardware WebGPU tier
 remains unmeasured. The WebGPU JSEP runtime adds 24,254,953 transfer bytes beyond the existing 13,479,978-byte ink WASM.
 These runtime bytes are separate from the model package.</td></tr>
+<tr><th scope="row">Smaller neural packages</th><td data-label="Observation">The 19.64 MB int4 pilot matched 251 of
+300 float top-three sets on prefill and 205 of 240 on cached transitions. The best 24.22 MB mixed int4/int8 pilot
+matched 273 of 300 prefills and 218 of 240 cached transitions. Both missed export parity.</td></tr>
 <tr><th scope="row">JSPI WebGPU diagnostic</th><td data-label="Observation">ONNX Runtime Web 1.27.0 fetched
 15,046,878 runtime bytes in a Chromium worker using SwiftShader. The quantized pilot left its attention state on
 the GPU, and incremental and full-context logits agreed to 0.000004 with the same top-three set. Software took
 3.84 seconds for prefill and 4.02 seconds for one incremental token. Hardware latency and memory remain open.</td></tr>
+<tr><th scope="row">Neural cache lifecycle</th><td data-label="Observation">Worker tests verify that a late prefill can
+warm the next request in the same composer epoch without emitting late scores. Token-prefix edits, turn changes
+and resets invalidate incompatible attention state.</td></tr>
 </tbody></table></div>
 <p>The public diagnostic is not a prospective measure of ordinary learner acceptance, retention or time saved. The model
 and feature gates stay in place while device, quality and calibration evidence is collected.</p>
@@ -357,6 +363,7 @@ and feature gates stay in place while device, quality and calibration evidence i
 <a href="typeahead-evidence/corrected-v1-diagnostic.json">Corrected trigram diagnostic</a>
 <a href="typeahead-evidence/concurrent-diagnostic.json">Recovered concurrent diagnostics</a>
 <a href="typeahead-evidence/phone-tap-timings.json">Phone-sized Chromium timings</a>
+<a href="../../scripts/typeahead/expanded/evidence/primary-mixed-precision-validation.json">Mixed precision validation</a>
 <a href="typeahead-evidence/jspi-software-smoke.json">JSPI software smoke</a></p>
 </section>
 

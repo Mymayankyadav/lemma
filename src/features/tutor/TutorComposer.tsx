@@ -2,7 +2,7 @@ import {startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState, 
 import {createPortal} from 'react-dom';
 import {ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, HelpCircle, Keyboard, MoveRight, Paperclip, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
 import {isFlagOn} from '../../flags';
-import {TutorInkTray,type TutorInkState} from './TutorInk';
+import {needsTutorInkMigration,TutorInkTray,type TutorInkState} from './TutorInk';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {authGeneration,authOwner} from '../../data/authBoundary';
 import {tutorOwnerDeleted} from '../../data/tutor/local-storage';
@@ -34,6 +34,7 @@ import {currentTypeaheadArm, typeaheadGraphTrial, typeaheadReplayEnabled, usesTu
 import {tutorHint} from './writingAid/answerAids';
 import {ACCEPTED_SPAN_LIMIT, addAuthoredSpan, moveAcceptedSpans} from './writingAid/authorship';
 import {insertionEligible} from './writingAid/eligibility';
+import {offerFamilies} from './writingAid/offerFamilies';
 import {eligibleGhostContext, writingAidProposalKey} from './writingAid/policy';
 import {effectiveAidLevel, type AidRole, type TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids';
 import {typedEquationAt} from './input/typedEquation';
@@ -54,6 +55,7 @@ const keepSelection = (event: PointerEvent) => event.preventDefault();
 const ANSWER_CLIPBOARD = 'application/x-lemma-tutor-answer';
 const MAX_ANSWER_LENGTH = 2000;
 const EMPTY_WRITING_WORDS: readonly WritingAidProposal[] = Object.freeze([]);
+const EMPTY_IMAGE_IDS: readonly string[] = Object.freeze([]);
 const IMAGE_REFERENCE_LENGTH = imageReference('00000000-0000-0000-0000-000000000000').length;
 
 export function keepsKeyboardOpenFor(target: Element) {
@@ -142,9 +144,17 @@ export function TutorComposer(props: Props) {
   const shownSuggestions = useRef(0);
   const [swipeProgress, setSwipeProgress] = useState(0);
   const swipe = useRef<{pointer: number; x: number; y: number; time: number; proposal: WritingAidProposal; cursor: PadEdit} | null>(null);
-  const [aidSettings, setAidSettings] = useState(false);
+  const scopeKey = props.inputScopeKey ?? 'tutor-preview';
+  const sheetScope = scopeKey + '|' + authGeneration();
+  const [settingsScope, setSettingsScope] = useState<string | null>(null);
   /** N221: the equation chip being edited: its $…$ source at `offset`, and the LaTeX in the sheet. */
-  const [equationEdit, setEquationEdit] = useState<{source: string; offset: number; tex: string; acceptedSpans: readonly TutorAcceptedSpan[]; remainingSlots: number; error?: string} | null>(null);
+  const [equationDraft, setEquationEdit] = useState<{scope: string; source: string; offset: number; tex: string; acceptedSpans: readonly TutorAcceptedSpan[]; remainingSlots: number; error?: string} | null>(null);
+  const aidSettings = !props.suspended && settingsScope === sheetScope;
+  const equationEdit = !props.suspended && equationDraft?.scope === sheetScope ? equationDraft : null;
+  useLayoutEffect(() => {
+    setSettingsScope(scope => !props.suspended && scope === sheetScope ? scope : null);
+    setEquationEdit(draft => !props.suspended && draft?.scope === sheetScope ? draft : null);
+  }, [props.suspended, sheetScope]);
   /** N221 (Owner): equation mode, where the keys give way to paper; `writeReplace` is the equation it will replace, if any. */
   const [equationMode, setEquationMode] = useState(false);
   const [writeReplace, setWriteReplace] = useState<{source: string; offset: number} | null>(null);
@@ -158,11 +168,14 @@ export function TutorComposer(props: Props) {
   const availableIds = useMemo(() => new Set(images?.map(image => image.id.toLowerCase())), [images]);
   const previousIds = useRef(availableIds);
   const imageReferences = useMemo(() => referencedImageIds(value), [value]);
-  const refs = imageReferences.filter(id => availableIds.has(id));
+  const refs = useMemo(() => imageReferences.length ? imageReferences.filter(id => availableIds.has(id)) : EMPTY_IMAGE_IDS,
+    [imageReferences, availableIds]);
   const hasImage = refs.length > 0;
   const imageTarget = drawingSelection.current?.text === value ? drawingSelection.current : cursor;
   const canInsertImage = value.length - (imageTarget.end - imageTarget.start) + IMAGE_REFERENCE_LENGTH <= MAX_ANSWER_LENGTH;
   const inkDraft = props.ink?.draft;
+  // Legacy recovery retries after the draft is shortened. Other ink controls only need insertion capacity.
+  const migrationAnswerLength = needsTutorInkMigration(inkDraft) ? value.length : 0;
   const readOnly = props.readOnly || inkDraft?.queuedText !== undefined;
   const imageIssue = tutorInkIssue(value, props.ink);
   const recoveryIssue = imageIssue ?? (props.ink?.status === 'failed' ? 'failed' : undefined);
@@ -175,7 +188,6 @@ export function TutorComposer(props: Props) {
   const blocked = readOnly || !queue&&!props.canSend || incomplete || composing || scratch || uncommitted || Boolean(imageIssue);
   const editingDisabled = readOnly || composing;
   const inputPrefs = useTutorInputPreferences();
-  const scopeKey = props.inputScopeKey ?? 'tutor-preview';
   const editTarget = ():EditTarget => ({scopeKey:scopeKey+'|'+authGeneration(),mountId,...revision.current});
   const assist = useTutorInputAssist({scopeKey,enabled:inputPrefs.recognition,automatic:inputPrefs.automatic,readOnly,composing,
     target:editTarget,insert:(id,target)=>{
@@ -294,8 +306,11 @@ export function TutorComposer(props: Props) {
       addNotation('latex:' + option.insert, option.score ?? Math.log(.35 / (index + 1)), 'Insert ' + option.label,
         {start: span.start, end: cursor.end, insert: option.insert, equation: true}, next, option.label);
     });
-    if (enhancedMenu) rankedWritingWords.forEach(word => entries.push({key: 'word:' + writingAidProposalKey(word), slotKey: word.start + ':word:' + word.insert.toLowerCase(), score: word.score ?? -10,
-      label: 'Insert ' + word.label, display: word.label, word}));
+    if (enhancedMenu) rankedWritingWords.forEach(word => {
+      const identity = word.source === 'symbol' ? 'symbol:' + word.insert : 'word:' + word.insert.toLowerCase();
+      entries.push({key: 'word:' + writingAidProposalKey(word), slotKey: word.start + ':' + identity,
+        score: word.score ?? -10, label: 'Insert ' + word.label, display: word.label, word});
+    });
   }
   const dedupedEntries = new Map<string, MenuEntry>();
   for (const entry of entries) {
@@ -308,8 +323,8 @@ export function TutorComposer(props: Props) {
   const stableScope = [scopeKey, mountId, aidContextKey, writingPrefs.mode, shown, editingDisabled].join('|');
   const prior = slotHistory.current.epoch === stableScope ? slotHistory.current.entries : [];
   const eligibleByKey = new Map(rankedEntries.map(entry => [entry.slotKey, entry]));
-  const familyOf = (entry: MenuEntry) => entry.word && entry.word.source !== 'symbol'
-    ? entry.word.label.toLowerCase().replace(/(?:ing|ers?|ed|es|s|ly|ment|ions?|al)$/u, '').slice(0, 5) : entry.slotKey;
+  const wordFamily = useMemo(() => offerFamilies(rankedWritingWords), [rankedWritingWords]);
+  const familyOf = (entry: MenuEntry) => entry.word ? wordFamily(entry.word) : entry.slotKey;
   const menuEntries: MenuEntry[] = [];
   const families = new Set<string>();
   for (const entry of rankedEntries) {
@@ -662,7 +677,7 @@ export function TutorComposer(props: Props) {
     const {tex} = equationFences(source);
     const current = history.current.present;
     const {inside, outsideCount} = equationOrigins(current.text, acceptedSpans.current.get(current) ?? [], source, offset);
-    setEquationEdit({source, offset, tex, acceptedSpans: inside, remainingSlots: Math.max(inside.length, ACCEPTED_SPAN_LIMIT - outsideCount)});
+    setEquationEdit({scope: sheetScope, source, offset, tex, acceptedSpans: inside, remainingSlots: Math.max(inside.length, ACCEPTED_SPAN_LIMIT - outsideCount)});
   }
   /** Closing the equation sheet puts the caret just after the equation, not where the focus lands. */
   function closeEquation() {
@@ -681,7 +696,7 @@ export function TutorComposer(props: Props) {
   /** Keep the saved equation's delimiters and atomically move any retained origins. */
   function saveEquation(tex: string) {
     const target = equationEdit;
-    if (!target || readOnly) return;
+    if (!target || readOnly || target.scope !== scopeKey + '|' + authGeneration()) return;
     const current = history.current.present;
     const {text} = current;
     if (text.slice(target.offset, target.offset + target.source.length) !== target.source) {setEquationEdit(null); return;}
@@ -1174,6 +1189,38 @@ export function TutorComposer(props: Props) {
     wordBefore: () => keyboardActions.current?.wordBefore?.() ?? '',
   }), []);
 
+  type InkActions = Pick<ComponentProps<typeof TutorInkTray>, 'onPickPhoto' | 'onInsertImage' | 'onCloseDrawing' | 'onMigrateImages'> & {
+    onInsertEquation: (latex: string) => boolean; showKeys: () => void;
+  };
+  const inkBinding = props.ink?.update;
+  const inkGeneration = authGeneration();
+  const inkActions = useRef<{binding: typeof inkBinding; scope: string; generation: number; actions: InkActions} | null>(null);
+  // Pending photo and migration actions must use the latest committed edit within their original owner and source.
+  useLayoutEffect(() => {
+    inkActions.current = {binding: inkBinding, scope: scopeKey, generation: inkGeneration, actions: {
+      onPickPhoto: () => {remember(); assist.stop(); drawingSelection.current = history.current.present;},
+      onInsertImage: insertImage, onCloseDrawing: closeDrawing, onMigrateImages: migrateImages,
+      onInsertEquation: insertEquation, showKeys: () => {haptic('snap'); selectSurface('keys');},
+    }};
+    return () => {inkActions.current = null;};
+  });
+  const inkListeners = useMemo(() => {
+    const current = () => {
+      const bound = inkActions.current;
+      return bound?.binding === inkBinding && bound?.scope === scopeKey && bound.generation === inkGeneration &&
+        authGeneration() === inkGeneration ? bound.actions : undefined;
+    };
+    return {
+      onPickPhoto: () => current()?.onPickPhoto(),
+      onInsertImage: (id: string, replacesId?: string) => current()?.onInsertImage(id, replacesId) ?? false,
+      onCloseDrawing: () => current()?.onCloseDrawing(),
+      onMigrateImages: (ids: string[]) => current()?.onMigrateImages(ids) ?? false,
+      onInsertEquation: (latex: string) => current()?.onInsertEquation(latex) ?? false,
+      leading: <IconButton label="Keys" type="button" onPointerDown={keepSelection}
+        onClick={() => current()?.showKeys()}><Keyboard aria-hidden="true"/></IconButton>,
+    };
+  }, [inkBinding, inkGeneration, scopeKey]);
+
   const keyboardVisible = shown && !props.suspended;
   const symbolKeysVisible = keyboardVisible && Boolean(notation[view]);
   useLayoutEffect(() => {
@@ -1280,7 +1327,7 @@ export function TutorComposer(props: Props) {
       </div>
     </form>
     {editMenu && props.answerActions && createPortal(<>
-        {isFlagOn('writingAidSettings') && <Button onClick={() => {props.onCloseActions(); setAidSettings(true);}}><SlidersHorizontal aria-hidden="true"/>Writing assistance</Button>}
+        {isFlagOn('writingAidSettings') && <Button onClick={() => {props.onCloseActions(); setSettingsScope(sheetScope);}}><SlidersHorizontal aria-hidden="true"/>Writing assistance</Button>}
         {refreshable && <Button disabled={editingDisabled} onClick={() => {
           refreshWriting();
           const caret = history.current.present;
@@ -1303,8 +1350,8 @@ export function TutorComposer(props: Props) {
         <Button disabled={!history.current.future.length||editingDisabled} onClick={()=>{props.onCloseActions();undo(true);}}><Redo2 aria-hidden="true"/>Redo typing</Button>
       </>, props.answerActions)}
     {/* N221 (Owner): an equation in the answer is edited here: its rendering updates as the LaTeX changes. */}
-    <Sheet open={Boolean(equationEdit)} onClose={closeEquation} title="Equation">
-      {equationEdit && <div className="tutor-equation-edit">
+    {equationEdit && <Sheet open onClose={closeEquation} title="Equation">
+      <div className="tutor-equation-edit">
         <div className="tutor-equation-preview" aria-label="Preview"><MathText source={equationEdit.tex.trim() ? '$' + equationEdit.tex + '$' : ''}/></div>
         <EquationLatexField value={equationEdit.tex} acceptedSpans={equationEdit.acceptedSpans}
           remainingSlots={equationEdit.remainingSlots}
@@ -1323,13 +1370,12 @@ export function TutorComposer(props: Props) {
           }}><Signature aria-hidden="true"/>Write by hand</Button>
           <Button onClick={() => saveEquation('')}><X aria-hidden="true"/>Remove</Button>
         </div>
-      </div>}
-    </Sheet>
-    <Sheet open={aidSettings} onClose={() => setAidSettings(false)} title="Writing assistance">{aidSettings && <WritingAidSettings showTitle={false}/>}</Sheet>
-    {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoActions={photoActions} photoDisabled={editingDisabled}
-      onPickPhoto={()=>{remember();assist.stop();drawingSelection.current=history.current.present;}}
-      editingImageId={editingImageId} canMigrate={!readOnly} onInsertEquation={insertEquation}
-      leading={<IconButton label="Keys" type="button" onPointerDown={keepSelection} onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></IconButton>} answerLength={value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
+      </div>
+    </Sheet>}
+    {aidSettings && <Sheet open onClose={() => setSettingsScope(null)} title="Writing assistance"><WritingAidSettings showTitle={false}/></Sheet>}
+    {props.ink&&<TutorInkTray {...inkListeners} ink={props.ink} shown={scratch} photoActions={photoActions} photoDisabled={editingDisabled}
+      editingImageId={editingImageId} canMigrate={!readOnly} answerLength={migrationAnswerLength}
+      canInsertImage={canInsertImage} referencedImageIds={refs}/>}
     {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}
       data-surface={surface}>
       {surface === 'equation' ? <>

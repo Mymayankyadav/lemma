@@ -1,4 +1,5 @@
 import {moveAcceptedSpans} from './authorship';
+import {normalizeAidScopePrefix} from './answerAids';
 import {exposureIdentity, visibleTime} from './visibleTime';
 import {typeaheadFrozenProfile, typeaheadGraphTrial, typeaheadReplayEnabled, usesNeural, usesPersonalization, usesTutorBias} from './replayArm';
 import {countPersonalTransition, learnSlateChoice, observeLocalCalibration, writingAidWeek} from './adaptation';
@@ -479,7 +480,8 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
           .filter(hint => !hint.scope?.subject || hint.scope.subject === subject)
           .filter(hint => !hint.scope?.step || hint.scope.step === step)
           .filter(hint => !hint.scope?.mode || hint.scope.mode === 'prose')
-          .filter(hint => !hint.scope?.prefixes?.length || hint.scope.prefixes.some(value => prefix.toLowerCase().startsWith(value.toLowerCase())))
+          .filter(hint => !hint.scope?.prefixes?.length || hint.scope.prefixes.some(value =>
+            normalizeAidScopePrefix(hint.kind, prefix).startsWith(normalizeAidScopePrefix(hint.kind, value))))
           .filter(hint => !hint.scope?.phraseStates?.length && hint.priority !== 'deemphasize')
           .map(hint => hint.entry) ?? []].join(' ');
       void client.predict({epoch: neuralEpoch, prompt: {question: question?.filter(Boolean).join('\n') ?? '', aids, draft},

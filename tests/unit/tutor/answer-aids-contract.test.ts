@@ -36,6 +36,16 @@ describe('versioned tutor answer aids', () => {
     expect(validAidRanking({version: 1, declaredSymbols: [inner]})).toBe(false);
     expect(validAidRanking({version: 1, declaredSymbols: [{...outer, binder: {id: 'a', parent: 'b'}}, inner]})).toBe(false);
   });
+
+  it('drops conflicting alias ownership before scoped hints can reach the editor', () => {
+    const global: AidHint = {...hint, id: 'function', entry: 'function', aliases: ['mapping'], scope: undefined};
+    const scoped: AidHint = {...global, id: 'map', entry: 'map', scope: {prefixes: ['map']}};
+    for (const hints of [[global, scoped], [scoped, global]]) {
+      const ranking = {version: 1, hints};
+      expect(answerAidIssues({ranking})).not.toEqual([]);
+      expect(readAnswerAid({...legacy, ranking})).toEqual(legacy);
+    }
+  });
 });
 
 describe('answer provenance', () => {

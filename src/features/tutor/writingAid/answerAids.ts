@@ -8,7 +8,7 @@
  * The level the tutor sets is a ceiling that fades with the learner's mastery (effectiveAidLevel). Nothing here applies a
  * suggestion: the learner taps, as with every other suggestion.
  */
-import {aidEntryKey, effectiveAidLevel, type AidRole, type TutorAnswerAid} from '../../../../supabase/functions/_shared/tutor-answer-aids';
+import {aidEntryKey, effectiveAidLevel, type AidEntryKind, type AidHint, type AidRole, type TutorAnswerAid} from '../../../../supabase/functions/_shared/tutor-answer-aids';
 
 const BREAK = /[.!?]\s+|\n\s*/gu;
 
@@ -35,22 +35,49 @@ function normalized(value: string): string {
   return value.normalize('NFKC').toLowerCase().trim().replace(/\s+/gu, ' ');
 }
 
+export function normalizeAidScopePrefix(kind: AidEntryKind, value: string): string {
+  return kind === 'symbol' ? value.trim().replace(/\s+/gu, ' ') : normalized(value);
+}
+
+export function aidScopeSpecificity(hint: AidHint, context: AidRankingContext, sentence?: string): number | undefined {
+  const scope = hint.scope;
+  if (!scope) return 0;
+  if (scope.subject !== undefined && scope.subject !== context.subject || scope.step !== undefined && scope.step !== context.step ||
+      scope.mode !== undefined && scope.mode !== context.mode) return undefined;
+  let prefixMatch = 0;
+  if (scope.prefixes?.length) {
+    const typed = normalizeAidScopePrefix(hint.kind, context.prefix);
+    for (const value of scope.prefixes) {
+      const expected = normalizeAidScopePrefix(hint.kind, value);
+      if (typed.startsWith(expected)) prefixMatch = Math.max(prefixMatch, expected.length);
+    }
+    if (!prefixMatch) return undefined;
+  }
+  let phraseMatch = 0;
+  if (scope.phraseStates?.length) {
+    const tail = sentence ?? normalized(sentenceTail(context.before));
+    for (const value of scope.phraseStates) {
+      const phrase = normalized(value);
+      if (tail === phrase || tail.endsWith(' ' + phrase)) phraseMatch = Math.max(phraseMatch, phrase.length);
+    }
+    if (!phraseMatch) return undefined;
+  }
+  // More matching axes take precedence. With tied axes, a longer match is narrower.
+  const axes = Number(scope.subject !== undefined) + Number(scope.step !== undefined) +
+    Number(scope.mode !== undefined) + Number(Boolean(prefixMatch)) + Number(Boolean(phraseMatch));
+  return 256 * axes + prefixMatch + phraseMatch;
+}
+
 export function tutorHint(context: AidRankingContext, insertion: string): {adjustment: number; role?: AidRole} {
-  const {aid, mode, subject, step, before, prefix} = context;
+  const {aid, before} = context;
   if (!aid?.ranking) return {adjustment: 0};
   const faded = effectiveAidLevel(aid.level, context.mastery) === 'none';
   const sentence = normalized(sentenceTail(before));
   const entries = new Map<string, {specificity: number; values: Set<number>; role: AidRole; strength: number}>();
   let restrictive: AidRole | undefined;
   for (const hint of aid.ranking.hints ?? []) {
-    const scope = hint.scope ?? {};
-    if (scope.subject !== undefined && scope.subject !== subject || scope.step !== undefined && scope.step !== step ||
-        scope.mode !== undefined && scope.mode !== mode) continue;
-    const prefixMatch = scope.prefixes?.reduce((longest, value) => normalized(prefix).startsWith(normalized(value))
-      ? Math.max(longest, normalized(value).length) : longest, 0) ?? 0;
-    const phraseMatch = scope.phraseStates?.reduce((longest, value) => sentence === normalized(value) || sentence.endsWith(' ' + normalized(value))
-      ? Math.max(longest, normalized(value).length) : longest, 0) ?? 0;
-    if (scope.prefixes?.length && !prefixMatch || scope.phraseStates?.length && !phraseMatch) continue;
+    const specificity = aidScopeSpecificity(hint, context, sentence);
+    if (specificity === undefined) continue;
     const equal = hint.kind === 'symbol' ? (a: string, b: string) => a.trim() === b.trim()
       : (a: string, b: string) => normalized(a) === normalized(b);
     const targets = [hint.entry, ...hint.aliases ?? []];
@@ -59,11 +86,6 @@ export function tutorHint(context: AidRankingContext, insertion: string): {adjus
       ? Math.max(...targets.map(value => phraseStepWeight(value, sentence, insertion))) : 0;
     if (!strength) continue;
     if ((hint.role === 'alternative' || hint.role === 'goal') && (!restrictive || roleOrder[hint.role] > roleOrder[restrictive])) restrictive = hint.role;
-    // The number of applicable axes takes precedence over prefix/phrase
-    // length. Among equal axes, a longer matching condition narrows the scope.
-    const axes = Number(scope.subject !== undefined) + Number(scope.step !== undefined) +
-      Number(scope.mode !== undefined) + Number(Boolean(prefixMatch)) + Number(Boolean(phraseMatch));
-    const specificity = 256 * axes + prefixMatch + phraseMatch;
     const key = aidEntryKey(hint.kind, hint.entry);
     const saved = entries.get(key);
     if (!saved || specificity > saved.specificity) {

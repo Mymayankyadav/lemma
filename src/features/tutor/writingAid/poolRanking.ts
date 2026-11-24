@@ -1,6 +1,7 @@
 import {plainProse, trailingSpace, wordAtCaret} from '../input/completionPolicy';
 import {tutorHint} from './answerAids';
 import {scoreWritingAidProposal, type WritingAidModel} from './learning';
+import {offerFamilies} from './offerFamilies';
 import {proposalEligible, writingAidProposal, writingAidProposalKey, WRITING_AID_LIMIT,
   type WritingAidProposal, type WritingAidRequest, type WritingAidSuggestions} from './policy';
 
@@ -11,10 +12,8 @@ export interface WritingAidPool {
   readonly ghost: readonly WritingAidProposal[];
   readonly edit: readonly WritingAidProposal[];
 }
-/** A small morphological family heuristic avoids showing three near-identical endings. */
-function family(proposal: WritingAidProposal): string {
-  return proposal.label.toLocaleLowerCase().replace(/(?:ing|ers?|ed|es|s|ly|ment|ions?|al)$/u, '').slice(0, 5);
-}
+const legacyFamily = (proposal: WritingAidProposal): string =>
+  proposal.label.toLocaleLowerCase().replace(/(?:ing|ers?|ed|es|s|ly|ment|ions?|al)$/u, '').slice(0, 5);
 
 export function selectWritingAidPool(
   pool: WritingAidPool, model?: WritingAidModel,
@@ -31,6 +30,7 @@ export function selectWritingAidPool(
   const candidates = ranked(pool.words, excluded.words);
   const words: WritingAidProposal[] = [], families = new Set<string>();
   const unified = candidates.some(proposal => proposal.score !== undefined);
+  const family = unified ? offerFamilies(candidates) : legacyFamily;
   // N221: a decoder word yields its family's slot to the existing engine's word (notation, not notate), and can still
   // fill a slot left over below.
   const engineFamilies = new Set(unified ? [] : candidates.filter(proposal => proposal.source !== 'decoder').map(family));

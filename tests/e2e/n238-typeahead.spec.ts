@@ -88,8 +88,17 @@ const refresh = (page: Page) => page.evaluate(() => window.dispatchEvent(new Eve
 test('the Equation sheet completes a nested root argument, supports Undo, and preserves the caret', async ({page}, info) => {
   const answer = await answerField(page, demo);
   await page.keyboard.type('Given $x=1$.');
-  await answer.getByRole('button', {name: 'Edit equation x=1', exact: true}).click();
+  const body = page.locator('body');
+  const overflow = await body.evaluate(element => element.style.overflow);
+  const equation = answer.getByRole('button', {name: 'Edit equation x=1', exact: true});
+  await equation.click();
   const sheet = page.getByRole('dialog', {name: 'Equation', exact: true});
+  await expect(sheet).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+  await expect(answer).toBeFocused();
+  await expect.poll(() => body.evaluate(element => element.style.overflow)).toBe(overflow);
+  await equation.click();
   const latex = sheet.getByRole('textbox', {name: 'LaTeX', exact: true});
   await latex.fill('\\begin{pmatrix}\\frac{1}{2}&\\sqrt{3}\\\\x&y\\end{pmatrix}');
   await expect(sheet.locator('.tutor-equation-preview .katex')).toBeVisible();
@@ -236,6 +245,16 @@ test('signing out in another tab retires an open suggestion menu', async ({page,
   await expect(answer).toHaveCount(0);
   await expect(strip(page)).toHaveCount(0);
   expect(setup.submissions).toEqual([]);
+});
+
+test('photo actions track answer capacity while the scratch pad stays closed', async ({page}) => {
+  const answer = await answerField(page, demo);
+  const upload = page.getByRole('button', {name: 'Upload image', exact: true});
+  await expect(upload).toBeEnabled();
+  await answer.fill('a'.repeat(2000));
+  await expect(upload).toBeDisabled();
+  await answer.fill('My answer');
+  await expect(upload).toBeEnabled();
 });
 
 test('writing assistance shows local weekly evidence and a reset control', async ({page}, info) => {

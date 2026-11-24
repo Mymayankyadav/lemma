@@ -41,7 +41,7 @@ async function slate(page: Page) {
   const items = await slots.evaluateAll(nodes => nodes.map(node => {
     const button = node as HTMLButtonElement;
     const text = button.dataset.typeaheadInsert!;
-    const family = button.dataset.typeaheadFamily ?? text.trim().toLowerCase().replace(/(?:ing|ers?|ed|es|s|ly|ment|ions?|al)$/u, '').slice(0, 5);
+    const family = button.dataset.typeaheadFamily ?? text.trim();
     return {text, family, start: Number(button.dataset.typeaheadStart), end: Number(button.dataset.typeaheadEnd)};
   }));
   expect(items.length).toBeLessThanOrEqual(3);

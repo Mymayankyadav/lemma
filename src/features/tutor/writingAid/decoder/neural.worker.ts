@@ -179,22 +179,27 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   const timing = (scored = 0): NonNullable<NeuralReply['timing']> =>
     ({cold, provider, attempted, scored, reusedPrefix, elapsedMs: performance.now() - started, late: Date.now() > request.deadline});
   const currentGeneration = generation;
-  const current = () => !latest && generation === currentGeneration && Date.now() <= request.deadline;
+  const sameGeneration = () => generation === currentGeneration;
+  const sameEpoch = () => sameGeneration() && epoch === request.epoch && (!latest || latest.epoch === epoch);
+  const current = () => !latest && sameGeneration() && Date.now() <= request.deadline;
   const active = await prepare(request.trial);
   provider = active?.provider;
-  if (!active || !current()) return {id, timing: timing()};
+  if (!active || latest || !sameGeneration()) return {id, timing: timing()};
   if (epoch !== request.epoch) {epoch = request.epoch; dispose(cached); cached = undefined; wordScores.clear();}
   const stable = neuralWordPrompt(prompt, prefix);
   // Leave room for complete candidate words before absolute-position rollover.
   const ids = promptIds(active.tokenizer, stable, active.manifest.context - 36);
   reusedPrefix = Boolean(cached?.ids.every((token, index) => token === ids[index]));
   const state = await stateFor(active, ids, current);
-  if (!current() || state.ids.length !== ids.length) {
+  // One completed prefix can warm the next edit even after this slate's
+  // deadline. stateFor checks the exact tokens again before reusing it.
+  if (!sameEpoch()) {
     if (state !== cached) dispose(state);
     return {id, timing: timing()};
   }
   if (state !== cached) {dispose(cached); wordScores.clear();}
   cached = state;
+  if (!current() || state.ids.length !== ids.length) return {id, timing: timing()};
 
   const extras = [...state.logs.keys()].filter(index => /^[\p{L}\p{M}]{2,32}$/u.test(active.pieces[index]) &&
     active.pieces[index].toLowerCase().startsWith(prefix.toLowerCase()))
@@ -284,6 +289,7 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
       }
     } finally {if (stateAt !== cached) dispose(stateAt);}
   }
+  if (!current()) return {id, timing: timing(scores.length)};
   return {id, scores, continuation, assetSha256: active.manifest.files.prefill.sha256, blendWeight: active.manifest.blendWeight,
     timing: timing(scores.length)};
 }

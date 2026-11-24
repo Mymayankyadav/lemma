@@ -45,9 +45,9 @@ afterEach(async () => {
   setHapticsEnabled(true);
 });
 function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = () => {},
-  hintLevel, pending = false, ink, suspended = false}: {
+  hintLevel, pending = false, ink, suspended = false, inputScopeKey}: {
   initial?: string; onSend?: (text: string) => void; onAsk?: (kind: 'hint' | 'stuck' | 'notation') => void;
-  onChange?: (value: string) => void; hintLevel?: number; pending?: boolean; ink?: TutorInkState; suspended?: boolean;
+  onChange?: (value: string) => void; hintLevel?: number; pending?: boolean; ink?: TutorInkState; suspended?: boolean; inputScopeKey?: string;
 }) {
   const [value, setValue] = useState(initial);
   const [sessionActionsOpen, setSessionActionsOpen] = useState(false);
@@ -56,7 +56,7 @@ function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = 
     <button onClick={() => setSessionActionsOpen(true)}>Session actions</button>
     <dialog open={sessionActionsOpen}><div ref={setAnswerActions}/></dialog>
     <TutorComposer value={value} onChange={text => {setValue(text); onChange(text);}} onSend={onSend} onAsk={onAsk}
-    canSend={!pending} ink={ink} suspended={suspended} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
+    canSend={!pending} ink={ink} suspended={suspended} inputScopeKey={inputScopeKey} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
     onContext={() => {}} sessionActionsOpen={sessionActionsOpen} onCloseActions={() => setSessionActionsOpen(false)}
     answerActions={answerActions} notationContext={['What is the preimage f⁻¹(B)?']}/>
   </>;
@@ -89,6 +89,23 @@ test('publishes explicit page surface state through keyboard suspension and clos
   expect(host.hasAttribute('data-tutor-keyboard')).toBe(false);
   await act(async () => root.render(null));
   expect(host.hasAttribute('data-tutor-composer')).toBe(false);
+});
+
+test('closes the writing settings sheet on suspension and scope changes', async () => {
+  const closed = () => expect(host.querySelector('dialog.v7-sheet')).toBeNull();
+  await act(async () => root.render(<Harness inputScopeKey="first"/>));
+  closed();
+  await answerAction('Writing assistance');
+  expect(host.querySelector('dialog.v7-sheet[open]')).not.toBeNull();
+  await act(async () => root.render(<Harness inputScopeKey="first" suspended/>));
+  closed();
+  expect(document.body.style.overflow).toBe('');
+  await act(async () => root.render(<Harness inputScopeKey="first"/>));
+  closed();
+  await answerAction('Writing assistance');
+  await act(async () => root.render(<Harness inputScopeKey="second"/>));
+  closed();
+  expect(document.body.style.overflow).toBe('');
 });
 
 // N223: the word slots when the strip shows words; otherwise the whole strip (its slots then hold symbols or ∀ ∈ ⇒).

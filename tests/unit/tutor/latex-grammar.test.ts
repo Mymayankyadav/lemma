@@ -72,4 +72,16 @@ describe('LaTeX continuations', () => {
       {symbol: 'U', role: 'set', ambient: 'Y'}, {symbol: 'U', role: 'set', ambient: 'X'},
     ])).toEqual([{symbol: 'U', role: 'unknown'}]);
   });
+
+  it('keeps a set and point with distinct case separate in ambient and map relations', () => {
+    const declarations: DeclaredSymbol[] = [
+      {symbol: 'X', role: 'set', ambient: 'U'}, {symbol: 'x', role: 'unknown'},
+      {symbol: 'F', role: 'map', domain: 'X', codomain: 'Y'}, {symbol: 'f', role: 'map', domain: 'x', codomain: 'y'},
+    ];
+    expect(declaredOperand('X \\subseteq', declarations)).toBe('U');
+    expect(declaredOperand('x \\in', declarations)).toBeUndefined();
+    expect(declaredOperand('F:X\\to', declarations)).toBe('Y');
+    expect(declaredOperand('F:x\\to', declarations)).toBeUndefined();
+    expect(declaredOperand('f:x\\to', declarations)).toBe('y');
+  });
 });
