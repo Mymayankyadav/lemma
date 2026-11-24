@@ -1,7 +1,8 @@
 import {moveAcceptedSpans} from './authorship';
 import {normalizeAidScopePrefix} from './answerAids';
 import {exposureIdentity, visibleTime} from './visibleTime';
-import {typeaheadFrozenProfile, typeaheadGhostProbe, typeaheadGraphTrial, typeaheadReplayEnabled, usesNeural, usesPersonalization, usesTutorBias} from './replayArm';
+import {typeaheadFrozenProfile, typeaheadGhostProbe, typeaheadGraphTrial, typeaheadReplayEnabled, typeaheadStrictGraphTrial,
+  usesNeural, usesPersonalization, usesTutorBias} from './replayArm';
 import {countPersonalTransition, learnSlateChoice, observeLocalCalibration, writingAidWeek} from './adaptation';
 import {isFlagOn} from '../../../flags';
 import {createNgramClient, type NgramClient} from './decoder/ngramClient';
@@ -195,7 +196,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   useEffect(() => {
     if (!isFlagOn('typeaheadV2') || !usesNeural(arm) || mode === 'off' || readOnly) return;
     let closed = false;
-    void createNeuralClient(typeaheadGraphTrial()).then(client => {
+    void createNeuralClient(typeaheadGraphTrial(), typeaheadStrictGraphTrial()).then(client => {
       if (closed) client?.close();
       else neural.current = client;
     }).catch(() => undefined);
@@ -522,6 +523,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
             !sameWritingAidRequest(snapshot, live.current.snapshot)) return;
         if (probe) ghostProbe.current = {snapshot, learningScope, reply};
         const updated = applyNeuralReply(pool, snapshot, reply);
+        if (!reply.scores?.length && updated.ghost === pool.ghost) return;
         const selected = selectWritingAidPool(updated, model, cycle.current.excluded);
         setResult({snapshot, sequence, learningScope, pool: updated, suggestions: selected, assets: {...assets, neural: reply.assetSha256}});
       }).catch(() => undefined);

@@ -429,5 +429,11 @@ it('selects only a qualified cold backend and accounts for both WebGPU runtimes'
   expect(selectNeuralBackend(manifest, 'neural-v2', true, true, false)).toBe('webgpuJspi');
   expect(selectNeuralBackend(manifest, 'neural-v2', true, false, false)).toBeUndefined();
   expect(selectNeuralBackend(manifest, 'neural-v2', true, false, true)).toBe('webgpu');
+  const pending = {...manifest, qualification: {parity: true}};
+  expect(selectNeuralBackend(pending, 'neural-v2', true, true, true, true)).toBe('webgpuJspi');
+  expect(selectNeuralBackend(pending, 'neural-v2', true, false, true, true)).toBe('wasm');
+  const oversized = {...pending, files: {...pending.files, weights: {...pending.files.weights!, bytes: 28_000_000}}};
+  expect(selectNeuralBackend(oversized, 'neural-v2', true, true, true, true)).toBeUndefined();
+  expect(selectNeuralBackend({...manifest, qualification: {parity:false}}, 'neural-v2', true, true, true, true)).toBeUndefined();
   expect(selectNeuralBackend({...manifest,qualification:{parity:true}}, 'neural-v2', true, true, false)).toBeUndefined();
 });

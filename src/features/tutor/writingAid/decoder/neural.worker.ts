@@ -2,7 +2,8 @@ import {ghostQualified, neuralCalibrationFingerprint} from '../calibration';
 import type {InferenceSession, Tensor} from 'onnxruntime-web/wasm';
 import {loadTutorModelWasm} from '../../input/modelAssets';
 import {fetchVerifiedTypeaheadFile} from './assets';
-import {neuralManifest, selectNeuralBackend, TYPEAHEAD_RUNTIME_VERSION, type NeuralBackend, type NeuralManifest, type NeuralTier} from './neuralManifest';
+import {neuralColdTransfer, neuralManifest, selectNeuralBackend, TYPEAHEAD_RUNTIME_VERSION,
+  type NeuralBackend, type NeuralManifest, type NeuralTier} from './neuralManifest';
 import {isNeuralBoundary, neuralWordPrompt, promptIds, readNeuralTokenizer, wordTrie, type NeuralPrompt, type NeuralTokenizer} from './neuralTokenizer';
 
 export interface NeuralRequest {
@@ -16,13 +17,15 @@ export interface NeuralRequest {
   readonly ghost: boolean;
   readonly probeGhost?: boolean;
   readonly trial?: boolean;
+  readonly strictTrial?: boolean;
 }
 export interface NeuralReply {
   readonly id: number;
   readonly assetSha256?: string;
   readonly modelFingerprint?: string;
   readonly blendWeight?: number;
-  readonly timing?: Readonly<{cold: boolean; provider?: string; attempted: number; scored: number; reusedPrefix: boolean; elapsedMs: number; late: boolean}>;
+  readonly timing?: Readonly<{cold: boolean; provider?: string; admission?: Admission; attempted: number; scored: number;
+    reusedPrefix: boolean; elapsedMs: number; late: boolean; strictTrial: boolean}>;
   readonly scores?: readonly (readonly [string, number])[];
   readonly continuation?: {text: string; logProbability: number};
   readonly ghostProbe?: readonly {text: string; logProbability: number; context: 'prefix' | 'boundary'; elapsedMs: number}[];
@@ -38,18 +41,22 @@ interface ActiveModel {
   readonly pieces: readonly string[];
   readonly boundary: readonly number[];
   readonly provider: NeuralBackend;
+  readonly modelFingerprint: string;
 }
 interface State {
   readonly ids: readonly number[];
   readonly tensors: InferenceSession.ReturnType;
   readonly logs: Float32Array;
 }
+type Admission = ReturnType<typeof neuralColdTransfer> &
+  Readonly<{provider: NeuralBackend; result: 'selected' | 'cold-budget' | 'load-failed'}>;
 const scope = self as unknown as {
-  onmessage: ((event: MessageEvent<NeuralRequest | {reset: true} | {prepare: true; trial: boolean}>) => void) | null;
+  onmessage: ((event: MessageEvent<NeuralRequest | {reset: true} | {prepare: true; trial: boolean; strictTrial?: boolean}>) => void) | null;
   postMessage: (reply: NeuralReply) => void;
 };
 let model: Promise<ActiveModel | undefined> | undefined;
 let modelLoaded = false;
+let admission: Admission | undefined;
 let epoch = '';
 let cached: State | undefined;
 const wordScores = new Map<string, number>();
@@ -86,25 +93,36 @@ async function load(tier: NeuralTier, manifest: NeuralManifest, device: NeuralBa
     const second = await runtime.InferenceSession.create(incremental, options);
     const pieces = Array.from({length: tokenizer.size}, (_, id) => tokenizer.piece(id));
     const boundary = pieces.flatMap((piece, id) => isNeuralBoundary(id, piece) ? [id] : []);
-    return {manifest, tokenizer, runtime, prefill: first, incremental: second, pieces, boundary, provider: device};
+    return {manifest, tokenizer, runtime, prefill: first, incremental: second, pieces, boundary, provider: device,
+      modelFingerprint: neuralCalibrationFingerprint(manifest.files)};
   } catch (error) {
     await first?.release();
     throw error;
   } finally {delete runtime.env.wasm.wasmBinary;}
 }
 
-async function available(trial = false): Promise<ActiveModel | undefined> {
+async function available(trial = false, strictTrial = false): Promise<ActiveModel | undefined> {
   const gpu = (navigator as Navigator & {gpu?: {requestAdapter: () => Promise<{info?: {isFallbackAdapter?: boolean}} | null>}}).gpu;
   const adapter = await Promise.race([gpu?.requestAdapter().catch(() => null), new Promise<null>(resolve => setTimeout(() => resolve(null), 300))]);
-  const gpuAvailable = Boolean(adapter && (trial || adapter.info?.isFallbackAdapter !== true));
+  const gpuAvailable = Boolean(adapter && (trial && !strictTrial || adapter.info?.isFallbackAdapter !== true));
   const jspi = typeof WebAssembly !== 'undefined' && 'Suspending' in WebAssembly && 'promising' in WebAssembly;
   for (const tier of ['neural-large-v2', 'neural-v2'] as const) {
     const manifest = await neuralManifest(tier);
-    const device = manifest && selectNeuralBackend(manifest, tier, gpuAvailable, jspi, trial);
-    if (!manifest || !device) continue;
+    if (!manifest) continue;
+    const device = selectNeuralBackend(manifest, tier, gpuAvailable, jspi, trial, strictTrial);
+    if (!device) {
+      const blocked = trial && strictTrial && selectNeuralBackend(manifest, tier, gpuAvailable, jspi, trial);
+      if (blocked && !admission) admission = {provider: blocked, result: 'cold-budget', ...neuralColdTransfer(manifest, tier, blocked)};
+      continue;
+    }
+    const transfer = neuralColdTransfer(manifest, tier, device);
+    admission = {provider: device, result: 'selected', ...transfer};
     // A failing backend returns to the n-gram. Stacking a second cold
     // download after failure could exceed the same installation budget.
-    return load(tier, manifest, device).catch(() => undefined);
+    return load(tier, manifest, device).catch(() => {
+      admission = {provider: device, result: 'load-failed', ...transfer};
+      return undefined;
+    });
   }
 }
 
@@ -180,12 +198,13 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   let provider: string | undefined;
   let reusedPrefix = false, attempted = 0;
   const timing = (scored = 0): NonNullable<NeuralReply['timing']> =>
-    ({cold, provider, attempted, scored, reusedPrefix, elapsedMs: performance.now() - started, late: Date.now() > request.deadline});
+    ({cold, provider, admission, attempted, scored, reusedPrefix, elapsedMs: performance.now() - started,
+      late: Date.now() > request.deadline, strictTrial: Boolean(request.strictTrial)});
   const currentGeneration = generation;
   const sameGeneration = () => generation === currentGeneration;
   const sameEpoch = () => sameGeneration() && epoch === request.epoch && (!latest || latest.epoch === epoch);
   const current = () => !latest && sameGeneration() && Date.now() <= request.deadline;
-  const active = await prepare(request.trial);
+  const active = await prepare(request.trial, request.strictTrial);
   provider = active?.provider;
   if (!active || latest || !sameGeneration()) return {id, timing: timing()};
   if (epoch !== request.epoch) {epoch = request.epoch; dispose(cached); cached = undefined; wordScores.clear();}
@@ -301,7 +320,7 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   }
   if (!current()) return {id, timing: timing(scores.length)};
   return {id, scores, continuation, ghostProbe: request.probeGhost ? ghostProbe : undefined,
-    modelFingerprint: request.probeGhost ? neuralCalibrationFingerprint(active.manifest.files) : undefined,
+    modelFingerprint: active.modelFingerprint,
     assetSha256: active.manifest.files.prefill.sha256, blendWeight: active.manifest.blendWeight,
     timing: timing(scores.length)};
 }
@@ -322,13 +341,13 @@ async function drain() {
   }
 }
 
-function prepare(trial?: boolean): Promise<ActiveModel | undefined> {
-  return model ??= available(trial).then(active => {modelLoaded = Boolean(active); return active;});
+function prepare(trial?: boolean, strictTrial?: boolean): Promise<ActiveModel | undefined> {
+  return model ??= available(trial, strictTrial).then(active => {modelLoaded = Boolean(active); return active;});
 }
 
 scope.onmessage = event => {
   const message = event.data;
-  if ('prepare' in message) {void prepare(message.trial); return;}
+  if ('prepare' in message) {void prepare(message.trial, message.strictTrial); return;}
   if ('reset' in message) {
     generation++;
     wordScores.clear();

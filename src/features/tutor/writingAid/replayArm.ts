@@ -36,6 +36,10 @@ export function typeaheadGraphTrial(): boolean {
   return arm === 'neural' || arm === 'tutor' || arm === 'personal';
 }
 
+/** A replay may bypass release qualification while keeping the production cold-transfer caps. */
+export function typeaheadStrictGraphTrial(): boolean {
+  return typeaheadGraphTrial() && new URLSearchParams(window.location.search).get('typeahead-strict-trial') === '1';
+}
 
 export function typeaheadFrozenProfile(): boolean {
   return typeaheadReplayEnabled() && new URLSearchParams(window.location.search).get('typeahead-frozen-profile') === '1';

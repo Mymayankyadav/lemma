@@ -208,7 +208,9 @@ def freeze(data, output, split, maximum, legacy, pilot, excluded_files, stratifi
         group = document.get('group') or fingerprint(question)
         if group in groups or group in excluded_groups:
             continue
-        subject = document.get('subject') or coverage(question)
+        # Corpus coverage may include the reply. Browser routing and the
+        # subject pack must use context already available before writing.
+        subject = coverage(question)
         route = SUBJECT_ROUTE.get(subject, DEFAULT_ROUTE)
         bucket = 'unstratified'
         if stratified:
@@ -253,7 +255,8 @@ def freeze(data, output, split, maximum, legacy, pilot, excluded_files, stratifi
     manifest = {'version': 1, 'answers': len(answers), 'subjects': subjects, 'events': len(events), 'split': split,
                 'legacyHoldoutOnly': legacy, 'dataSha256': file_hash(data / 'manifest.json'),
                 'source': 'Math StackExchange through hoskinson-center/proof-pile, CC BY-SA',
-                'questionContext': 'source question available separately from reply', 'pilot': pilot,
+                'questionContext': 'source question available separately from reply',
+                'replaySubjectMethod': 'question-only', 'pilot': pilot,
                 'strata': strata, 'targetCounts': targets, 'sourceCoverage': sources,
                 'answerCodepoints': sum(len(row['answer']) for row in answers),
                 'sampling': 'Notation-enriched complete sentence excerpts. No population estimate.' if stratified else 'Deterministic eligible-answer excerpts',

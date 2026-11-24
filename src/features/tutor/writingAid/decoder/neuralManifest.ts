@@ -50,18 +50,24 @@ const COLD_RUNTIME_BYTES: Record<NeuralBackend, number> = {
 };
 
 /** Charge the selected backend as a cold download and reserve the n-gram/subject/equation budget. */
-export function neuralFitsColdBudget(model: NeuralManifest, tier: NeuralTier, device: NeuralBackend): boolean {
+export function neuralColdTransfer(model: NeuralManifest, tier: NeuralTier, device: NeuralBackend) {
   const files = Object.values(model.files).filter((file): file is DecoderAssetFile => Boolean(file));
-  const assets = [...new Map(files.map(file => [file.sha256, file.bytes])).values()].reduce((sum, bytes) => sum + bytes, 0);
-  const limit = (tier === 'neural-v2' ? 68 : 76) * MiB;
-  return assets + COLD_RUNTIME_BYTES[device] + 29 * MiB <= limit;
+  const modelBytes = [...new Map(files.map(file => [file.sha256, file.bytes])).values()].reduce((sum, bytes) => sum + bytes, 0);
+  const runtimeBytes = COLD_RUNTIME_BYTES[device], supportReserveBytes = 29 * MiB;
+  return {modelBytes, runtimeBytes, supportReserveBytes, totalBytes: modelBytes + runtimeBytes + supportReserveBytes,
+    limitBytes: (tier === 'neural-v2' ? 68 : 76) * MiB};
+}
+
+export function neuralFitsColdBudget(model: NeuralManifest, tier: NeuralTier, device: NeuralBackend): boolean {
+  const {totalBytes, limitBytes} = neuralColdTransfer(model, tier, device);
+  return totalBytes <= limitBytes;
 }
 
 export function selectNeuralBackend(model: NeuralManifest, tier: NeuralTier, gpuAvailable: boolean, supportsJspi: boolean,
-  trial: boolean): NeuralBackend | undefined {
+  trial: boolean, strictTrial = false): NeuralBackend | undefined {
   const choices: readonly NeuralBackend[] = gpuAvailable
     ? supportsJspi ? ['webgpuJspi', 'webgpu', 'wasm'] : ['webgpu', 'wasm']
     : ['wasm'];
   return choices.find(device => (device !== 'wasm' || tier === 'neural-v2') && qualifiedNeuralTier(model, device, trial) &&
-    (trial || neuralFitsColdBudget(model, tier, device)));
+    (trial && !strictTrial || neuralFitsColdBudget(model, tier, device)));
 }

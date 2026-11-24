@@ -1,5 +1,6 @@
 import {afterEach, expect, test, vi} from 'vitest';
 import type {NeuralReply, NeuralRequest} from '../../../src/features/tutor/writingAid/decoder/neural.worker';
+import {createNeuralClient} from '../../../src/features/tutor/writingAid/decoder/neuralClient';
 
 const ort = vi.hoisted(() => ({prefill: vi.fn(), incremental: vi.fn()}));
 vi.mock('onnxruntime-web/wasm', () => ({
@@ -13,6 +14,9 @@ vi.mock('../../../src/features/tutor/input/modelAssets', () => ({loadTutorModelW
 vi.mock('../../../src/features/tutor/writingAid/decoder/neuralManifest', () => ({
   TYPEAHEAD_RUNTIME_VERSION: '1.27.0',
   selectNeuralBackend: () => 'wasm',
+  qualifiedNeuralTier: () => true,
+  neuralColdTransfer: () => ({modelBytes: 3, runtimeBytes: 13_479_978, supportReserveBytes: 29 * 2**20,
+    totalBytes: 13_479_981 + 29 * 2**20, limitBytes: 68 * 2**20}),
   neuralManifest: async () => ({
     context: 512, layers: 1, vocabSize: 262,
     files: {tokenizer: {path: 'tokenizer', sha256: 'tokens'}, prefill: {path: 'prefill', sha256: 'checked'},
@@ -143,4 +147,44 @@ test.each(['late', 'reset'] as const)('discards a %s probe even if its first bou
   expect(discarded.ghostProbe).toBeUndefined();
   expect(final.present_key_0.dispose).toHaveBeenCalledTimes(1);
   decoder.reset();
+});
+
+test('distinguishes stale and late arrivals from a delivered neural score', async () => {
+  let instance: TestWorker;
+  class TestWorker {
+    onmessage?: (message: {data: NeuralReply}) => void;
+    constructor() {instance = this;}
+    postMessage() {}
+    terminate() {}
+  }
+  vi.stubGlobal('Worker', TestWorker);
+  let now = 100;
+  vi.spyOn(Date, 'now').mockImplementation(() => now);
+  const mark = vi.spyOn(performance, 'mark');
+  const client = (await createNeuralClient(true, true))!;
+  const request = {epoch: 'same-turn', prefix: 'def', words: ['definition'], startedAt: 100,
+    deadline: 160, ghost: false, prompt: {question: '', aids: '', draft: 'State the def'}};
+  const deliver = (id: number) => {
+    const reply: NeuralReply = {id, scores: [['definition', -3]], modelFingerprint: 'verified-bundle',
+      timing: {cold: false, attempted: 1, scored: 1, reusedPrefix: true, elapsedMs: 10, late: false, strictTrial: true}};
+    instance!.onmessage!({data: reply});
+  };
+  const expired = client.predict(request);
+  now = 170;
+  deliver(1);
+  expect(await expired).toBeUndefined();
+  expect(mark).toHaveBeenLastCalledWith('lemma.typeahead.neural.coverage', {detail: expect.objectContaining({
+    matchedPending: true, arrivedBeforeDeadline: false,
+  })});
+  const live = client.predict({...request, startedAt: 170, deadline: 230});
+  deliver(1);
+  expect(mark).toHaveBeenLastCalledWith('lemma.typeahead.neural.coverage', {detail: expect.objectContaining({
+    matchedPending: false, arrivedBeforeDeadline: false,
+  })});
+  deliver(2);
+  expect((await live)?.scores).toEqual([['definition', -3]]);
+  expect(mark).toHaveBeenLastCalledWith('lemma.typeahead.neural.coverage', {detail: expect.objectContaining({
+    matchedPending: true, arrivedBeforeDeadline: true,
+  })});
+  client.close();
 });

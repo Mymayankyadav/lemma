@@ -82,7 +82,11 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   const flags = process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS ?? 'typeaheadV2,tutorAnswerAids,proofAssistGhost';
   const arm = process.env.LEMMA_TYPEAHEAD_REPLAY_ARM;
   const graphTrial = process.env.LEMMA_TYPEAHEAD_REPLAY_GRAPH_TRIAL === '1';
+  const strictGraphTrial = process.env.LEMMA_TYPEAHEAD_REPLAY_STRICT_GRAPH_TRIAL === '1';
   const expectedNeural = process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NEURAL_FINGERPRINT;
+  if (strictGraphTrial && (!graphTrial || !expectedNeural)) {
+    throw new Error('Strict graph trial requires a pinned candidate bundle fingerprint');
+  }
   const modelAssets = new Set<string>();
   const assetCounts = {ngram: 0, subject: 0, latex: 0, neural: 0, empty: 0, ineligible: 0, 'no-current-model': 0};
   const subjectAssets = new Map<string, Set<string>>();
@@ -141,6 +145,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     }
     if (expectedNgram && model.ngram) expect(model.ngram, 'active n-gram fingerprint during replay').toBe(expectedNgram);
     if (expectedLatex && model.latex) expect(model.latex, 'active LaTeX fingerprint during replay').toBe(expectedLatex);
+    if (expectedNeural && model.neural) expect(model.neural, 'active neural prefill fingerprint during replay').toBe(expectedNeural.split(':')[0]);
     if (arm === 'corrected-v1') expect(model.subjectPack, 'corrected baseline must not use a subject pack').toBeUndefined();
     if (model.ngram && model.subject && Object.hasOwn(expectedSubjectPacks, model.subject)) {
       expect(model.subjectPack, 'active subject model fingerprint during replay').toBe(expectedSubjectPacks[model.subject]);
@@ -226,7 +231,8 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       active = context;
       const query = '/lemma/?typeahead-replay=1&demo=' + (hasQuestion ? '0' : '1') + '&flags=v7Shell,v6Shell,tutorScratch,' + encodeURIComponent(flags)
         + (arm ? '&typeahead-arm=' + encodeURIComponent(arm) : '') + (frozen ? '&typeahead-frozen-profile=1' : '')
-        + (graphTrial ? '&typeahead-graph-trial=1' : '') + (ghostCalibration ? '&typeahead-ghost-probe=1' : '');
+        + (graphTrial ? '&typeahead-graph-trial=1' : '') + (strictGraphTrial ? '&typeahead-strict-trial=1' : '')
+        + (ghostCalibration ? '&typeahead-ghost-probe=1' : '');
       await page.goto(query + '#' + destination);
       editor = page.getByRole('textbox', {name: 'Your answer', exact: true});
       await expect(open.or(editor).first()).toBeVisible({timeout: eventInput || answerInput ? 15000 : 5000});
@@ -253,6 +259,14 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     await page.keyboard.type(event.prefix);
     await expect.poll(() => exactDraft(answer)).toBe(event.prefix);
     await painted(page);
+    const functionalTarget = !eventInput && process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS === undefined ? event.target : undefined;
+    if (functionalTarget) {
+      // The built-in fixture is a functional check. Let its cold worker publish
+      // the exact offer before asserting acceptance. Frozen input replay keeps
+      // the same frame-bounded observation window for every arm.
+      await expect.poll(async () => (await slate(page)).items.map(item => item.text),
+        {message: 'Expected exact offer for the synthetic ' + event.eventId + ' fixture'}).toContain(functionalTarget);
+    }
     const {slots, items} = await slate(page);
     const assets = await observeAssets(event.answerId, event.prefix);
     if (!eventInput && event.eventId === 'blocked') {
@@ -296,11 +310,12 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       }
     }
     const chosen = items.findIndex(item => item.text === event.target);
-    if (!eventInput && process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS === undefined && event.target) expect(chosen).toBeGreaterThanOrEqual(0);
+    if (functionalTarget) expect(chosen).toBeGreaterThanOrEqual(0);
     if (chosen >= 0) {
       await slots.nth(chosen).click();
       await expect.poll(() => exactDraft(answer)).toBe(apply(event.prefix, items[chosen]));
     }
+    if (graphTrial) await drainCoverage();
   }
 
   // Start each answer empty. Count every key or accepted exact offer once.
@@ -355,8 +370,28 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   for (const [subject, fingerprint] of Object.entries(expectedSubjectPacks)) {
     expect(subjectAssets.get(subject)?.has(fingerprint), 'subject pack was observed on a replay edit in ' + subject).toBe(true);
   }
+  const observedNeuralFingerprints = [...new Set(neuralCoverage.map(event => event.modelFingerprint)
+    .filter((value): value is string => typeof value === 'string'))].sort();
+  if (expectedNeural) for (const fingerprint of observedNeuralFingerprints) {
+    expect(fingerprint, 'observed neural bundle fingerprint during replay').toBe(expectedNeural);
+  }
+  const neuralResults = {
+    observedFingerprints: observedNeuralFingerprints,
+    deliveredOnTimeScoredReplies: neuralCoverage.filter(event => event.modelFingerprint && event.matchedPending &&
+      event.arrivedBeforeDeadline && !event.late && Number(event.scored) > 0).length,
+    deliveredOnTimeContinuationReplies: neuralCoverage.filter(event => event.modelFingerprint && event.matchedPending &&
+      event.arrivedBeforeDeadline && !event.late && event.hasContinuation).length,
+    lateReplies: neuralCoverage.filter(event => event.late).length,
+    admissions: [...new Map(neuralCoverage.filter(event => event.admission)
+      .map(event => [JSON.stringify(event.admission), event.admission])).values()],
+  };
+  if (strictGraphTrial) for (const detail of neuralResults.admissions) {
+    const admission = detail as {result: string; totalBytes: number; limitBytes: number};
+    if (admission.result === 'selected') expect(admission.totalBytes).toBeLessThanOrEqual(admission.limitBytes);
+  }
   const totalObservations = assetCounts.ngram + assetCounts.empty + assetCounts.ineligible + assetCounts['no-current-model'];
-  const audit = {arm: arm ?? 'personal', graphTrial, captureOnly, ghostCalibration, assetSha256: [...modelAssets].sort(),
+  const audit = {arm: arm ?? 'personal', graphTrial, strictGraphTrial, expectedNeuralFingerprint: expectedNeural,
+    neuralResults, captureOnly, ghostCalibration, assetSha256: [...modelAssets].sort(),
     subjectAssetSha256: Object.fromEntries([...subjectAssets].map(([subject, fingerprints]) => [subject, [...fingerprints].sort()])),
     assetCounts, withoutCurrentFingerprint: {subject: totalObservations - assetCounts.subject, latex: totalObservations - assetCounts.latex,
       neural: totalObservations - assetCounts.neural}, events: impressions.length, answers: keys.length};

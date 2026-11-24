@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -12,7 +13,7 @@ from corpus import SPLITS, build, file_hash, fingerprint, group_identity, group_
 from fit import fit_calibration, fit_mixtures, mixture, mixture_records, PRIOR, threshold
 from ngram import SPECIAL, accumulate, build_models, compile_model, count_checkpoint, encode, entropy_cost, high_priority, key, pack_checkpoint, publish_checkpoint
 from replay_metrics import paired, summarize
-from replay_sample import boundary_cases, math_spans
+from replay_sample import boundary_cases, freeze, math_spans
 from score_assets import model_file
 from subwords import Encoder, audit_prepared_membership, prompt_ids
 
@@ -282,6 +283,22 @@ class PipelineTests(unittest.TestCase):
         report, _, _ = summarize(gold, impressions, keys, 7)
         self.assertEqual(report['rates']['ghost']['rate'], 1.)
         self.assertEqual(report['ghost']['counts']['acceptanceObserved'], 0)
+
+    def test_frozen_replay_subject_uses_only_the_visible_question(self):
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'manifest.json').write_text('{}')
+            for subject, reply in (
+                ('linear-algebra', 'The determinant of this matrix is nonzero in the vector space.'),
+                ('probability', 'The distribution of this random variable has finite expectation.'),
+            ):
+                source = {'question': 'Why is this Hausdorff space compact?', 'text': reply, 'subject': subject,
+                          'source': 'hoskinson-center/proof-pile', 'group': 'same-visible-question'}
+                output = root / subject
+                with patch('replay_sample.documents', return_value=iter([source])):
+                    freeze(root, output, 'test', 1, False, False, [])
+                self.assertEqual(list(records(output / 'answers.jsonl'))[0]['subject'], 'topology')
+                self.assertEqual({row['subject'] for row in records(output / 'gold.jsonl')}, {'topology'})
 
     def test_replay_uses_unicode_compounds_and_balanced_unescaped_math(self):
         answer = 'Évariste calls it non‑Archimedean and he’s paying ' + chr(92) + '$5. '
