@@ -6,6 +6,16 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N230 Apple Pencil palm rejection in scratch pad and equation composer
+
+Owner task: "Ok create a new pr with astra 6 dot agents implementing support for ipencil with palm rejection in scratch pad and equation composer."
+Owner follow-up: iPad defaults to Apple Pencil-only ink, with a setting in both paper headers to allow finger drawing, tip double-tap for a one-stroke eraser, and responsive drawing. Long-press the eraser for stroke-wise and pixel-wise modes.
+Stage: Harden · Status: done · Needs: — · Assigned: chat-563902#p4nc
+Done = Both Tutor papers default to Pencil-only ink on iPad and share a persistent header opt-out; rejected palms cannot mark or erase, and finger navigation remains available. Two Pencil-tip taps arm the selected eraser for one Pencil stroke and normal drawing returns on lift/cancel. The eraser offers whole-stroke or swept partial erasing via long press and an accessible menu. Undo restores one eraser gesture. Finger mode and Android retain existing behaviors. Record automated validation and hardware limits.
+Tests: tests/unit/pad/{ink-pencil.test.tsx,pixel-eraser.test.ts}; tests/unit/tutor/**; tests/e2e/v7-ink-pencil.spec.ts; existing ink and Tutor full-screen/gesture regression suites.
+Scope: src/ui/v7/ink/**; src/features/tutor/**; tests/unit/{pad,tutor}/**; tests/e2e/v7-ink-*.spec.ts; docs/current/N230.md; NEXT.md.
+Not: new dependencies, native Android changes, protected CI changes, treating simulated input as physical Apple Pencil validation, merge or deployment.
+
 ## N229 Simplify Tutor chat and fix Android full-screen drawing
 
 Owner task: "Fix all the issues in lemma app of lemma repo on my github"
