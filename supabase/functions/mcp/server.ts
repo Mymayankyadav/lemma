@@ -41,7 +41,7 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
           if(a.what==='tutor_questionnaires')return {content:[{type:'text' as const,text:await tutor.questionnaires(a.id)}]};
           if(a.what==='tutor_answer_aids')return {content:[{type:'text' as const,text:await tutor.answerAidList(a.id)}]};
           if(a.what==='tutor_attachment')return {content:await tutor.attachment(a.id)};
-          if(a.what==='tutor_turn')return {content:await tutor.content(a.id)};
+          if(a.what==='tutor_turn')return {content:await tutor.content(a.id,a.cursor)};
           return {content:[{type:'text' as const,text:await tutor.next(a.id,toolContext.mcpReq.signal)}]};
         }
         const ctx:Context=readOnly?c:{...c,batch:[]};

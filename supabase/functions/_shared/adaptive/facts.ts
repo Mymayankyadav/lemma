@@ -9,7 +9,9 @@ import {evaluate,prune,type PruneResult,type PruneState} from './prune.ts';
 import {lintText} from './lint.ts';
 import type {EvidenceFact} from './digest.ts';
 
+import {examBlock,type ExamInput} from '../exam/block.ts';
 export type Rows={
+  examInputs?:ExamInput[];
   settings:any;projects:any[];checkpoints:any[];prereqs:any[];cpConcepts:any[];concepts:any[];conceptLinks:any[];
   evidence:any[];misconceptions:any[];decisions:any[];baselines:any[];overrides:any[];sessions:any[];intervals:any[];busy:any[];
   dueCards:Record<string,number>;frozen?:any[];
@@ -20,7 +22,7 @@ export type Rows={
 export type ProjectView={
   id:string;slug:string;title:string;time:ProjectTime;mode:Mode;firstSession:DateStr|null;
   feasibility:{raw:number;supply:number;required:number;review:number;slack:number;buffer:number}|null;
-  block:string;atRisk:boolean;unconfirmed:boolean;
+  examActive?:boolean;block:string;atRisk:boolean;unconfirmed:boolean;
 };
 export type State={
   today:DateStr;zone:string;flags:Record<string,boolean>;capacityToday:Capacity;usedToday:number;
@@ -175,7 +177,7 @@ export function assemble(r:Rows,now:Date):State{
       cps:cps.filter(c=>c.project_id===p.id).map(c=>({id:c.id,code:c.code,done:c.status==='demonstrated',inactive:c.planState!=='active',position:c.position})),
       baseline,capacityToday,usedToday});
     const f=ev[p.id];
-    proj[p.id]={id:p.id,slug:p.slug,title:p.title,time:t,mode:modeOf(today,t),firstSession:first,
+    proj[p.id]={...(r.examInputs?.some(x=>x.sitting.project_id===p.id&&x.sitting.status==='active')?{examActive:true}:{}),id:p.id,slug:p.slug,title:p.title,time:t,mode:modeOf(today,t),firstSession:first,
       feasibility:f&&t.lastStudyOn?{raw:Math.round(f.raw),supply:Math.round(f.supply),required:Math.round(f.required),review:Math.round(f.review),slack:Math.round(f.slack),buffer:Math.round(f.buffer)}:null,
       block,atRisk:pr.atRisk.some(a=>a.project_id===p.id),unconfirmed:!t.confirmed};
   }
@@ -198,7 +200,11 @@ export function assemble(r:Rows,now:Date):State{
   if(dueCards>0)reviews.push({type:'cards',ref:'cards:'+dueCards,classId:'cards',system:null,minutes:dueCards*DEFAULTS.cardMinutes,retrievability:0.7,importance:1,prereqOfToday:false});
   const primary=order.length?proj[order[0].id]:null;
   const mode:Mode=order.length?(order.some(p=>proj[p.id].mode==='normal')?'normal':order.every(p=>proj[p.id].mode==='post_deadline')?'post_deadline':order.some(p=>proj[p.id].mode==='deadline_today')?'deadline_today':'normal'):'no_deadline';
-  const queue=buildQueue({today,mode:primary?mode:'normal',capacity:capacityToday.minutes,configured:capacityToday.configured,used:usedToday,
+  const examBlocks=(r.examInputs??[]).filter(input=>proj[input.sitting.project_id]).flatMap(input=>{
+    const block=examBlock(input,now.toISOString(),Math.max(0,capacityToday.minutes-usedToday));
+    return block?[block]:[];
+  });
+  const queue=buildQueue({today,examBlocks,mode:primary?mode:'normal',capacity:capacityToday.minutes,configured:capacityToday.configured,used:usedToday,
     reviewShare:pstate.reviewShare,reviewBudgetMinutes:st.review_budget?.minutes??20,reviews,projects:planProjects,
     cps:pstate.cps,nextStudyDays:[1,2,3].map(n=>addDays(today,n)).filter(d=>order.some(p=>p.lastStudyOn&&d<=p.lastStudyOn)),
     absentDays,probeConcepts:[...needed].map(id=>concepts.get(id)?.name).filter(Boolean)});

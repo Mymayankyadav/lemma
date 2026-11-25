@@ -20,7 +20,7 @@ export function useNotebookSnapshot(owner:string):void {
   const unwatch=client.getQueryCache().subscribe(event=>{
    if(event.type!=='updated'||event.action.type!=='success'||event.action.manual)return
    const {queryKey,state}=event.query
-   if(!isOfflineKey(queryKey)||authOwner()!==owner||!canRead())return
+   if(!isOfflineKey(queryKey,owner)||authOwner()!==owner||!canRead())return
    const generation=authGeneration(),canWrite=()=>canRead()&&authGeneration()===generation
    stageOfflineHandoff(owner,queryKey,state.data,state.dataUpdatedAt)
    void saveOfflineSnapshot(owner,client,Date.now(),canWrite).catch(()=>undefined)

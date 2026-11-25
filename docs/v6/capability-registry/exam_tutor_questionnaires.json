@@ -1,0 +1,97 @@
+{
+  "table": "exam_tutor_questionnaires",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "turn_id": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "title": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "purpose": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "questions": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "answers": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "version": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "created_at": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "opened_at": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "submitted_at": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "updated_at": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor questionnaire state and answer save",
+      "mcpPath": "Grant-bound tutor_questionnaire_connector",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    }
+  }
+}

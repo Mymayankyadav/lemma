@@ -7,6 +7,8 @@ import { requestedAlgorithm, type AgendaDecision } from './contract.ts';
 import { decideAgenda, holdReceipt, type ShadowResult } from './decision.ts';
 import type { Commitment, Fixed, Observation, Snapshot, Task, Window } from './types.ts';
 
+import {examBlock,describeBlock} from '../exam/block.ts';
+
 interface CalendarBlock {
   id:string; revision:number; startsAt:string; endsAt:string; projectId?:string|null;
   bufferBeforeMinutes?:number; bufferAfterMinutes?:number; capacityMinutes?:number|null; capacityDate?:string;
@@ -71,6 +73,10 @@ function calendarWindows(blocks:CalendarBlock[],fixed:Fixed[],now:number,end:num
   }
   return out;
 }
+function planMinimum(input:NonNullable<Action['exam']>,asOf:string,maximum:number) {
+  for(const n of [1,2,5,6,8,10,15,20])if(n<=maximum&&examBlock(input,asOf,n))return n;
+  return maximum;
+}
 export type OwnerRead = {decision:AgendaDecision; label?:string; baselineLabel?:string; practice?:ForecastPractice; candidate:AgendaDecision; elapsedMs:number; hardViolations:number};
 /** Accepts only the result of the owner-bound DB adapter. No user request fields enter the snapshot. */
 export function ownerAgenda(owner:string,host:HostData,released:boolean,clock?:()=>number):OwnerRead {
@@ -101,12 +107,17 @@ export function ownerAgenda(owner:string,host:HostData,released:boolean,clock?:(
   const nextByProject=new Map<string,typeof liveCheckpoints[number]>();
   for(const checkpoint of liveCheckpoints.slice().sort((a,b)=>a.position-b.position||String(a.id).localeCompare(String(b.id))))
     if(!nextByProject.has(checkpoint.project_id))nextByProject.set(checkpoint.project_id,checkpoint);
-  const tasks:Task[]=candidates.flatMap(action=>{
+  const tasks:Task[]=candidates.flatMap<Task>(action=>{
     const project=action.project_id??action.home;
     if(project && !liveProjects.has(project)||action.kind==='close'||action.minutes<=0)return [];
     const checkpoint=project?nextByProject.get(project):undefined;
     const id=project?project+'/'+action.id:action.id, deadline=action.needAt===undefined?end:action.needAt/60000;
     actionsById.set(id,action);
+    if(action.exam) {
+      labels.set(id,'Exam prep · '+action.exam.sitting.title);
+      return [{id,nativeId:action.id,kind:'course' as const,remaining:action.minutes,due:deadline,expiry:deadline,splittable:true,
+        minChunk:Math.min(action.minutes,planMinimum(action.exam,host.asOf,action.minutes)),importance:action.weight??1,projectId:project,core:false,atlasAction:action}];
+    }
     const core=checkpoint?.tier==='core'&&rows.cpConcepts.some(c=>c.checkpoint_id===checkpoint.id&&c.concept_id===action.concept_id);
     if(core && action.forced && rows.projects.some(p=>p.id===project&&p.time_confirmed===true&&p.last_study_on) && (action.kind==='teach'||action.kind==='check'))commitments.set(id,{
       taskId:id,source:'atlas-v3',confirmedCore:true,forced:true,actionKind:action.kind,conceptId:action.concept_id,
@@ -134,6 +145,11 @@ export function ownerAgenda(owner:string,host:HostData,released:boolean,clock?:(
   if(unsized.length)read.decision.unresolved=[...(read.decision.unresolved??[]),...unsized];
   const picked=read.decision.outcome;
   const action=picked.kind==='action'?actionsById.get(picked.taskId):undefined;
+  if(action?.exam&&picked.kind==='action'){
+    const block=examBlock(action.exam,new Date(picked.start*60000).toISOString(),picked.end-picked.start);
+    if(block){read.decision.exam=block;read.decision.reason=describeBlock(block);}
+    return read;
+  }
   if(action&&picked.kind==='action'){
     // The owner's engine choice covers learning as well as scheduling. Keep trial enrollment intact while opting out of serving it.
     const newLearning=requested==='new',bank=host.practiceBank??[];

@@ -417,7 +417,7 @@ test('opts into the expanded predictor from Tutor settings and returns to the us
   await expect(optional).toHaveCount(0);
   await answerField(page, tutor);
   await page.keyboard.type('Please clarify the nota');
-  await expect(strip(page).getByRole('button', {name: 'Insert notation', exact: true})).toBeVisible();
+  await expect(page.getByRole('button', {name: 'Insert notation', exact: true})).toBeVisible();
   await expect(composer).not.toHaveAttribute('data-typeahead-ngram-sha', /./u);
   expect(downloads).toEqual([]);
 
@@ -430,6 +430,17 @@ test('opts into the expanded predictor from Tutor settings and returns to the us
   await expect(composer).toHaveAttribute('data-typeahead-ngram-sha', /^[a-f0-9]{64}$/u);
   expect(downloads).toEqual([expect.stringMatching(/\/ngram-v2\/model\.bin$/u)]);
 
+  const pack = process.env.LEMMA_ANDROID_PACK;
+  if (pack) {
+    await page.goto(settings);
+    await optional.getByLabel('Install model file').setInputFiles(pack);
+    await expect(optional.getByRole('button', {name: 'Remove model'})).toBeVisible({timeout: 90_000});
+    const neuralStarted = page.waitForEvent('worker', worker => worker.url().includes('neural.worker'));
+    await answerField(page, tutor);
+    await page.keyboard.type('The count model ');
+    await neuralStarted;
+  }
+
   await page.goto(settings);
   await expect(toggle).toBeChecked();
   await toggle.click();
@@ -437,6 +448,13 @@ test('opts into the expanded predictor from Tutor settings and returns to the us
   await answerField(page, tutor);
   await page.keyboard.type('pre');
   await expect(composer).not.toHaveAttribute('data-typeahead-ngram-sha', /./u);
+  expect(page.workers().some(worker => worker.url().includes('neural.worker'))).toBe(false);
+  if (pack) {
+    await page.goto(settings);
+    const remove = optional.getByRole('button', {name: 'Remove model'});
+    await remove.click();
+    await expect(optional).toHaveCount(0);
+  }
 });
 
 test('reports tap-to-paint for empty, eight-equation, boundary and interior edits at 4× CPU', async ({page}, info) => {

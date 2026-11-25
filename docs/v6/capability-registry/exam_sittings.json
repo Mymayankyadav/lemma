@@ -1,0 +1,244 @@
+{
+  "table": "exam_sittings",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "project_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "title": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "starts_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "time_zone": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "duration_minutes": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "study_minutes": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "study_minutes_set_at": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "activation_study_minutes": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "last_study_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "objective": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "pass_marks": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "total_marks": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "format": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "sources": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "blueprint": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "blueprint_version": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "ledger": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "phase": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "card_mode": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "bookmark": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "plan_note": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "next_question": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "activated_at": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "paused_at": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "finished_at": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "happened": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "result_marks": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "result_note": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study exam_sittings (create, update, set_disposition, activate, pause, finish, reopen, cancel), get(what=exam_sittings), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    }
+  }
+}

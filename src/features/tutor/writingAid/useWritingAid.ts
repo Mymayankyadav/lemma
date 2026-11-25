@@ -105,16 +105,16 @@ const sameProposal = (a: WritingAidProposal, b: WritingAidProposal) =>
 
 /** The model and draft stay local. Stale and hidden proposals cannot be fed back. */
 export function useWritingAid(request: WritingAidRequest): WritingAidView {
-  const {cursor, anchor, target, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool, fasterTyping} = request;
-  const expanded = request.expanded ?? isFlagOn('typeaheadV2');
+  const {cursor, anchor, target, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool, fasterTyping, expanded: requestedExpansion} = request;
+  const expanded = requestedExpansion ?? isFlagOn('typeaheadV2');
   const {scopeKey, mountId, editorRevision, selectionRevision, modeRevision} = target;
   const {words, replace, correction, ghost} = request.surfaces ?? ALL_WRITING_AID_SURFACES;
   const snapshot = useMemo<WritingAidRequest>(() => ({
     cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool,
-    expanded, fasterTyping,
+    expanded: requestedExpansion, fasterTyping,
     target: {scopeKey, mountId, editorRevision, selectionRevision, modeRevision},
     surfaces: {words, replace, correction, ghost},
-  }), [cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool, expanded, fasterTyping, scopeKey, mountId, editorRevision, selectionRevision, modeRevision,
+  }), [cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool, requestedExpansion, fasterTyping, scopeKey, mountId, editorRevision, selectionRevision, modeRevision,
     words, replace, correction, ghost]);
   const storedPersonalization = useWritingAidPersonalization();
   const personalization = usesPersonalization(arm) && !typeaheadFrozenProfile() ? storedPersonalization : {...storedPersonalization, enabled: false};
@@ -261,7 +261,8 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     if (proposal.source === 'notation' || proposal.source === 'equation') return !snapshot.readOnly && !snapshot.composing;
     if (!prediction) return false;
     const surface = surfaceOf(proposal);
-    const choices = surface === 'words' && snapshot.expanded ? prediction.pool.words : proposalsFor(prediction.suggestions, surface);
+    const choices = surface === 'words' && (snapshot.expanded ?? isFlagOn('typeaheadV2'))
+      ? prediction.pool.words : proposalsFor(prediction.suggestions, surface);
     return !cycle.current.excluded[surface].has(writingAidProposalKey(proposal)) &&
       choices.some(item => sameProposal(item, proposal));
   }, []);

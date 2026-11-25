@@ -153,22 +153,26 @@ export async function readRegisteredResource(c:Context,args:GenericReadArgs,mode
  if(id!==null&&(typeof id!=='string'||!id.length||id.length>80))
   throw Error('Invalid registered record ID');
  const status=args.status??null;
- if(status!==null&&(!info.fields.includes('status')||
+ const attemptFilter=info.resource==='exam_attempts'&&(status==='live'||status==='voided');
+ if(status!==null&&!attemptFilter&&(!info.fields.includes('status')||
   typeof status!=='string'||status.length>80))
   throw Error('Status filter is not registered for this resource');
  const query=mode==='search'?args.query?.trim()??null:null;
  if(mode==='search'&&(!query||query.length<2||query.length>120))
   throw Error('Registered text search requires 2..120 characters');
- const textField=mode==='search'?TEXT_FIELDS.find(k=>info.fields.includes(k))??null:null;
+ const searchFields=info.resource==='card_ideas'?['target']:info.resource==='exam_attempts'?['prompt']:TEXT_FIELDS;
+ const textField=mode==='search'?searchFields.find(k=>info.fields.includes(k))??null:null;
  if(mode==='search'&&!textField)throw Error('No registered searchable text field');
  const base={v:1 as const,mode,resource,query,status,id};
  const offset=cursorDecode(args.cursor,base);
  if(offset+limit>MAX_OFFSET+50)throw Error('Registered page offset exceeded');
  // Only mcp_ok registry entries may authorize this table name. Owner filter
  // is part of the database query, not post-fetch filtering of an unscoped page.
- let q=c.db.from(info.resource).select('*',{count:'exact'}).eq('user_id',c.userId);
+ const select=info.resource==='card_ideas'?'*,proposal:proposals(no,status)':'*';
+ let q=c.db.from(info.resource).select(select,{count:'exact'}).eq('user_id',c.userId);
  if(id!==null)q=q.eq('id',id);
- if(status!==null)q=q.eq('status',status);
+ if(attemptFilter)q=status==='live'?q.is('voided_at',null):q.not('voided_at','is',null);
+ else if(status!==null)q=q.eq('status',status);
  if(query!==null&&textField!==null)q=q.ilike(textField,'%'+safeLike(query)+'%');
  const {data,error,count}=await q.order('id',{ascending:true})
   .range(offset,offset+limit-1);

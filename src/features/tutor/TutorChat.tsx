@@ -1,3 +1,4 @@
+import {BackToStudy,type TutorExamPanel} from '../exam/TutorExamTools';
 import {authGeneration,authOwner} from '../../data/authBoundary';
 import {getDemoProfile,getMode} from '../../data/mode';
 import {useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
@@ -46,6 +47,7 @@ type Props = {
   /** N234: the tutor's answer aids for the next answer, and the learner's mastery of the concept (0 to 1). */
   answerAid?: TutorAnswerAid;
   mastery?: number;
+  timedLabel?:string;
   onDeleteMessages?: (messages: readonly TutorMessageRef[]) => Promise<void>;
 };
 
@@ -56,7 +58,8 @@ function questionPreview(body: string) {
 }
 
 export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, canSend, readOnly, pending, offline,
-  status, pendingStatus, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage, onDeleteMessages, answerAid, mastery}: Props) {
+  status, pendingStatus, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage, onDeleteMessages, answerAid, mastery, timedLabel}: Props) {
+  const [examPanel,setExamPanel]=useState<TutorExamPanel>();
   const [view, setView] = useState<'overview' | 'chat'>();
   const [panel, setPanel] = useState<'context' | 'connection' | 'close' | 'question'>();
   const [headerHidden, setHeaderHidden] = useState(false);
@@ -79,7 +82,7 @@ export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, 
   const hasInk=Boolean(inkDraft?.strokes.length||inkDraft?.queuedText!==undefined||
     (refs?inkDraft?.photos.some(image=>refs.has(image.id))||inkDraft?.editingDrawing&&refs.has(inkDraft.editingDrawing.id)
       :inkDraft?.photos.length));
-  const overview = (view ?? (last || draft || hasInk ? 'chat' : 'overview')) === 'overview';
+  const overview = (view ?? (last || draft || hasInk || page.exam ? 'chat' : 'overview')) === 'overview';
   const latestCompleted = turns.filter(turn => turn.status === 'completed').at(-1);
   const latestReply = latestCompleted?.replyDeleted ? undefined : latestCompleted;
   const question = latestReply?.status === 'completed' ? latestReply.finalReply.nextQuestion || questionPreview(latestReply.finalReply.body) : '';
@@ -180,6 +183,7 @@ export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, 
   const hideHeader = !overview && headerHidden;
   return <TutorLayout page={page} sequence={latestCompleted?.sequence ?? 0} offline={offline} overview={overview} headerHidden={hideHeader} listenerSeenAt={listenerSeenAt} resumePrompt={resumePrompt}
     onContext={overview?()=>setPanel('context'):undefined} claimExpiresAt={last?.status==='awaiting-tutor'?last.claimExpiresAt:undefined}
+    examPanel={examPanel} onExamPanel={setExamPanel}
     sessionActionsOpen={sessionActionsOpen} onSessionActions={setSessionActionsOpen} answerActions={setAnswerActions}
     onOverview={!overview ? () => {setSelected(new Map()); setView('overview');} : undefined}
     onQuestion={!overview && question ? () => {
@@ -209,6 +213,15 @@ export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, 
         </>}
     </div>
     {panel !== 'context' && draftWarning && <p className="composer-status" role="alert">{draftWarning}</p>}
+    {!overview&&page.exam&&<div className="v7-exam-actions v7-exam-composer-actions" aria-label="Exam actions">
+     {timedLabel&&<span className="v7-exam-chip" aria-live="off">{timedLabel}</span>}
+     <Button small disabled={!canSend||readOnly} onClick={()=>send('Give me the next hint for this question.',{keepDraft:true})}>Hint</Button>
+     <Button small disabled={!canSend||readOnly} onClick={()=>send('Skip this item and record it as unknown. Give me the next question.',{keepDraft:true})}>Skip</Button>
+     {page.exam.status!=='finished'&&<>
+      <Button small disabled={offline} onClick={()=>setExamPanel('budget')}>I have {page.exam.study_minutes??0} min</Button>
+      <BackToStudy project={page.project} sitting={page.exam}/>
+     </>}
+    </div>}
     {!overview &&
       <TutorComposer inputScopeKey={inputScopeKey} ink={ink} canQueueImage={canQueueImage} value={draft} acceptedSpans={acceptedSpans} onChange={onChange} onSend={(text, acceptedSpans) => send(text, {acceptedSpans})} canSend={canSend} suspended={selecting}
         headerHidden={hideHeader} onToggleHeader={()=>setHeaderHidden(hidden=>!hidden)}

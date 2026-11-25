@@ -1,3 +1,4 @@
+import {TodayExams} from '../../exam/TodayExams';
 import {Disclosure} from '../../../ui/v7/Disclosure';
 import {StudyModelDetails} from '../../adaptive/panels/LearningDetails';
 import {formatShortDate} from '../../../lib/format';
@@ -190,6 +191,7 @@ export default function V7Today(){
   <HubHeader title={firstRun?'Welcome to Lemma':nextStepEnabled&&localMinute(date,zone)<240?'Still up?':todayGreeting(date,zone)} date={nextStepEnabled?formatShortDate(day,{zone}):todayLabel} settings display>
    {!nextStepEnabled&&<p className="v7-today-briefing">{ready?briefing:' '}{ready&&asOf!==null&&<> <AsOf at={asOf} zone={zone}/></>}</p>}
   </HubHeader>
+  {isFlagOn('examMode')&&!!home.data?.exam?.sittings.length&&<TodayExams home={home.data} now={now}/>}
   {!ready?<>
    {home.data&&<>
     <p className="v7-today-briefing">{home.data.due} {home.data.due===1?'card':'cards'} due{home.dataUpdatedAt>0&&<> <AsOf at={home.dataUpdatedAt} zone={zone}/></>}</p>

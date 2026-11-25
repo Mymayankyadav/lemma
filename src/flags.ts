@@ -21,6 +21,8 @@ export const FLAG_DEFAULTS = {
   /** Owner-requested tutor page. Live writes also require the server release capability. */
   tutorThreads: true,
   todayNextStep: false,
+  /** N241: exam setup and prep ledger on a Path. */
+  examMode: false,
   /** N223 (Owner): the tutor's rich answer, with equations as rendered chips, the pencil's scratch pad and image
    *  attachments, on by default; `?flags=-tutorScratch` shows the plain text answer in dev/test/e2e builds. */
   tutorScratch: true,

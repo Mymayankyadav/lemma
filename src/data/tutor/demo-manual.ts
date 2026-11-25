@@ -102,7 +102,9 @@ export async function openDemoManualTutor(scope: DemoCheckpointScope) {
       transact<ReturnType<typeof finalizeTutorTurn> | { kind: 'unknown-turn' }>('readwrite', thread => {
         const turn = thread.turns.find(row => row.id === turnId)
         if (!turn) return { result: { kind: 'unknown-turn' } }
-        const candidate = previewManualTutorImport(turnId, messageId, body)
+        const imported = previewManualTutorImport(turnId, messageId, body)
+        const seconds=scope.checkpointId.startsWith('exam:')?Number(/^Timed: (\d{1,4}) seconds/m.exec(body)?.[1]):0
+        const candidate=seconds>=1&&seconds<=3600?{...imported,timedSeconds:seconds}:imported
         if (
           turn.status === 'completed' && turn.finalReply.messageId === messageId && turn.finalReply.body === body
         ) return { result: { kind: 'completed', head: thread.head, turn } }

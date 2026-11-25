@@ -1,0 +1,118 @@
+{
+  "table": "exam_decisions",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "project_id": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "sitting_id": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "decided_at": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "as_of": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "inputs_hash": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "inputs": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "candidates": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "chosen": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "runner_up": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "qualitative": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "predictions": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "rationale": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "policy": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    },
+    "shadow": {
+      "classification": "derived",
+      "appPath": "Owner data export",
+      "mcpPath": "get(what=exam) freezes the shadow comparison",
+      "exportPolicy": "Owner export through additional_tables",
+      "deletionPolicy": "Owner or sitting cascade, immutable history"
+    }
+  }
+}

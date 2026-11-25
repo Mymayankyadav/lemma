@@ -37,12 +37,12 @@ function noticeDatabase(): NoticeDb {
   return {
     owners: async limit => (ok(await admin.rpc('notify_enabled_owners', {p_limit: limit})) ?? []) as string[],
     facts: async (userId, nowIso) => {
-      const [facts,holds]=await Promise.all([admin.rpc('notify_candidates',{p_user:userId,p_now:nowIso}),admin.from('notify_holds').select('scope,until').eq('user_id',userId).gt('until',nowIso)]);
+      const [facts,holds]=await Promise.all([admin.rpc('exam_notice_facts',{p_user:userId,p_now:nowIso}),admin.from('notify_holds').select('scope,until').eq('user_id',userId).gt('until',nowIso)]);
       return {...(ok(facts)??{}),holds:Object.fromEntries((ok(holds)??[]).map((hold:{scope:string;until:string})=>[hold.scope,hold.until]))} as NoticeFacts;
     },
     prefs: async userId => ((ok(await admin.from('settings').select('notify').eq('user_id', userId).maybeSingle()) as {notify?: Record<string, unknown>} | null)?.notify ?? {}) as NoticePrefs,
     queue: async (userId, rows) => (ok(await admin.rpc('notify_queue', {p_user: userId, p_rows: rows})) ?? 0) as number,
-    claim: async (userId, limit) => (ok(await admin.rpc('notify_claim', {p_user: userId, p_limit: limit})) ?? []) as NoticeRow[],
+    claim: async (userId, limit) => (ok(await admin.rpc('exam_claim_notices', {p_user: userId, p_limit: limit})) ?? []) as NoticeRow[],
     record: async (userId, id, reason) => {ok(await admin.rpc('notify_record', {p_user: userId, p_id: id, p_reason: reason}));},
     tokens: async userId => ok(await admin.from('device_push_tokens').select('id,token').eq('user_id', userId)) ?? [],
     deleteToken: async id => {ok(await admin.from('device_push_tokens').delete().eq('id', id));},

@@ -15,12 +15,13 @@ Tests: tests/unit/pad/latent-ink-{model,policy}.test.ts; tests/unit/pad/latent-i
 Scope: src/features/pad/latentInk/**; src/features/pad/{PadMathKeyboard,LocalPadEditor}.tsx; src/features/pad/pad-math-keyboard.css; src/flags.ts (padLatentInk, off); scripts/latent-ink-grids.ts; tests/unit/pad/latent-ink-*; docs/current/N248.md; NEXT.md.
 Not: new dependencies; turning the flag on; the tutor's keyboard; claiming physical-device or calibrated-handwriting validation.
 
-## N238 Maths typeahead expansion
+## N240 Exam preparation and return to study (includes N241–N247)
 
-Stage: Build · Status: open · Needs: — · Assigned: chat-681#p7s4
-Done = Implement the pinned typeahead review in the existing Tutor composer, verify the eligibility and context invariants, and publish measured model, replay and device evidence.
-Scope: the model and corpus tooling, verified assets, Tutor coaching contract, Typeahead and Equation sheet runtime, local learning, tests and the N238 implementation record. Toolchain dependencies needed for corpus and model development belong to the training scripts.
-Not: default enablement, production migration deployment or account data export.
+Owner task: "Implement every thing remaining in this plan in one pr."
+Stage: Build and Harden · Status: implemented in one PR, pending independent review and observed outcomes · Needs: — · Assigned: chat-642810#r8mz
+Done = Owner-scoped sittings, exam tutor, scored attempts, card ideas, return to study, a shared legal agenda slot, and prospective shadow replay. Numeric decisions and the default-on release remain gated by observed outcomes.
+Tests: exam command and tutor SQL, shared planner, app and connector scenarios, browser round trips, deterministic replay and paired evaluation.
+Scope: N240–N247 from the supplied exam-mode plan, the R0 transition, and their feature notes.
 
 ## N231 Restore Lemma promptly on offline launch
 

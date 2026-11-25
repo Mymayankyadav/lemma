@@ -1,6 +1,8 @@
-import {downloadTutorImage,tutorFollowupFields,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
+import {downloadTutorImage,examTutorImageRows,tutorFollowupFields,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
 import {setTimeout as delay} from 'node:timers/promises'
 import {tutorGrantHash, tutorHandoffIds} from '../_shared/tutor-connector.ts'
+import {handoffExam} from './exam.ts'
+import {EXAM_HANDOFF_NOTE} from './rules.ts'
 import type {Context} from './db.ts'
 import {tutorInputSchemas} from './tutor-profile.ts'
 import {QUESTIONNAIRE_PURPOSES,questionnaireIssues} from '../_shared/tutor-questionnaire.ts'
@@ -125,25 +127,38 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     return data as {followups: {id: string; body: string; createdAt: string}[]; unseen: number}
   }
 
-  async function followupFields(id: unknown) {
-    const extra = await readFollowups(id).catch(()=>null)
+  async function followupFields(id: unknown, turn:{examSittingId?:string;examProjectId?:string;sittingStatus?:string;examQuestionnaireCursor?:string}) {
+    const [extra, exam] = await Promise.all([readFollowups(id).catch(()=>null), handoffExam(c, tutorHandoffIds(id).turnId, undefined, turn.examSittingId).catch(()=>null)])
+    const instructions = extra ? studyInstructions : studyInstructions+' The follow-ups could not be loaded. Retry get(what=tutor_followups, id=<handoff ID>) before replying.'
+    const examStatus=exam&&'status' in exam?exam.status:turn.sittingStatus
+    const dedicated=!!turn.examProjectId
+    const examInstructions=examStatus==='planned'
+      ? ' The sitting is planned. Help draft its scored blueprint from the learner’s sources and ask before activating.'
+      : examStatus==='paused'
+      ? ' The sitting is paused. Answer in ordinary-study style and ask whether the learner wants to resume exam prep. If the learner submitted a bound questionnaire, grade only answers they actually gave and use the original deliveryRef. Never score missing answers or an expired timer as incorrect.'
+      : examStatus&&examStatus!=='active'
+      ? ' The sitting is '+examStatus+'. Acknowledge any late questionnaire answers as saved. Leave them unscored unless the learner reopens the sitting. Answer in ordinary-study style.'
+      : exam ? ' '+EXAM_HANDOFF_NOTE+(dedicated?' In this exam thread you may set timedSeconds on a reply. Read answerMeta.seconds and overtime when provided. A paused or expired timer is never a failure. To bind a diagnose or check questionnaire, put examRows next to questions: [{questionId,rowKey,scoringKey,rubricSteps}]. Keep every scoring key outside learner-visible questions. Grade the private examQuestionnaireAnswers on the next handoff.':'') : ''
     return {
+      ...(exam ? {exam} : {}),
       ...tutorFollowupFields(extra?.followups),
-      instructions:extra ? studyInstructions : studyInstructions+' The follow-ups could not be loaded. Retry get(what=tutor_followups, id=<handoff ID>) before replying.',
+      instructions:instructions+examInstructions+(turn.examQuestionnaireCursor
+        ? ' More unscored questionnaire answers are available. Read the next page with get(what=tutor_turn, id=<this handoff ID>, cursor=<examQuestionnaireCursor>).'
+        : ''),
     }
   }
 
   return {
-    async content(id:unknown) {
+    async content(id:unknown, cursor?:string) {
       if(id===undefined) {
         const pending=await request(null,null)
         return [{type:'text' as const,text:JSON.stringify({pending,instructions:'Read the pending handoff with get(what=tutor_turn, id=<returned id>).'})}]
       }
-      const turn=await execute(id,'get')
+      const turn=await execute(id,'get',cursor===undefined?{}:{cursor})
       const rows=turn?.status==='pending'&&turn.hasAttachments===true
-        ?await tutorImageRows(c.db,{turnId:tutorHandoffIds(id).turnId,ownerId:c.userId}):[]
+        ?turn.examProjectId ? examTutorImageRows(turn,c.userId) : await tutorImageRows(c.db,{turnId:tutorHandoffIds(id).turnId,ownerId:c.userId}):[]
       return tutorTurnContent(c.db,turn,rows,attachmentId=>String(id)+'.'+attachmentId,
-        turn?.status==='pending'?()=>followupFields(id):undefined)
+        turn?.status==='pending'?()=>followupFields(id,turn):undefined)
     },
     async attachment(id:unknown) {
       if(typeof id!=='string')throw new Error('Tutor image is unavailable.')
@@ -152,7 +167,8 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
       const turn=await execute(handoff,'get')
       if(turn?.status!=='pending'&&turn?.status!=='completed')throw new Error('Tutor image is unavailable.')
       const {turnId}=tutorHandoffIds(handoff)
-      const [row]=await tutorImageRows(c.db,{turnId,ownerId:c.userId,attachmentId})
+      const [row]=turn.examProjectId ? examTutorImageRows(turn,c.userId,attachmentId)
+        : await tutorImageRows(c.db,{turnId,ownerId:c.userId,attachmentId})
       if(!row)throw new Error('Tutor image is unavailable.')
       return [{type:'text' as const,text:JSON.stringify({id,kind:row.kind})},await downloadTutorImage(c.db,row)]
     },
@@ -177,7 +193,7 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
           instructions: 'If one handoff is pending, read it with get(what=tutor_turn, id=<returned id>). If several are pending, ask the learner for the handoff ID shown in Lemma.'})
       }
       const turn=await execute(id,'get')
-      return JSON.stringify(turn?.status==='pending'?{...turn,...await followupFields(id)}:turn)
+      return JSON.stringify(turn?.status==='pending'?{...turn,...await followupFields(id,turn)}:turn)
     },
     /** N228: the follow-up messages on the handoff's turn (marks them seen). */
     async followups(id: unknown) {
@@ -211,10 +227,13 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     async attachQuestionnaire(input: StudyInput) {
       const cmd = input.command
       if (cmd.operation !== 'create') throw new Error('Use create for tutor questionnaires.')
-      const patch = cmd.patch ?? {}
+      const {examRows,...patch} = cmd.patch ?? {}
       const issues = questionnaireIssues(patch)
       if (issues.length) throw new Error('Invalid questionnaire: ' + issues.join('; ').slice(0, 300))
-      return questionnaires(cmd.target?.id, {operation: 'create', questionnaireId: cmd.operationId, ...patch})
+      if(examRows!==undefined&&(!Array.isArray(examRows)||examRows.length<1||examRows.length>10))
+        throw new Error('examRows must contain 1–10 private question bindings')
+      return questionnaires(cmd.target?.id, {operation: 'create', questionnaireId: cmd.operationId, ...patch,
+        ...(examRows===undefined?{}:{examRows})})
     },
     async write(input: StudyInput) {
       const cmd = input.command

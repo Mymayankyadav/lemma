@@ -1,0 +1,48 @@
+{
+  "table": "exam_tutor_threads",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "Exam-scoped tutor thread state",
+      "mcpPath": "Grant-bound tutor handoff and next turn",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "Exam-scoped tutor thread state",
+      "mcpPath": "Grant-bound tutor handoff and next turn",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "project_id": {
+      "classification": "command-managed",
+      "appPath": "Exam-scoped tutor thread state",
+      "mcpPath": "Grant-bound tutor handoff and next turn",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "sitting_id": {
+      "classification": "command-managed",
+      "appPath": "Exam-scoped tutor thread state",
+      "mcpPath": "Grant-bound tutor handoff and next turn",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "last_sequence": {
+      "classification": "command-managed",
+      "appPath": "Exam-scoped tutor thread state",
+      "mcpPath": "Grant-bound tutor handoff and next turn",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "listener_seen_at": {
+      "classification": "command-managed",
+      "appPath": "Exam-scoped tutor thread state",
+      "mcpPath": "Grant-bound tutor handoff and next turn",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    }
+  }
+}

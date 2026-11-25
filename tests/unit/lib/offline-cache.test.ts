@@ -9,6 +9,17 @@ const settings={
  connectorUrl:'https://example.test/functions/v1/mcp/SENTINEL-SECRET',access_token:'SENTINEL-SECRET-TOKEN'
 } as unknown as Settings
 describe('AND-8 strict offline snapshot',()=>{
+ it('only persists exam and evidence queries keyed to the snapshot owner',()=>{
+  const client=new QueryClient()
+  const mine=['exam','owner-a','project-a','algebra']
+  const other=['exam-attempts','owner-b','sitting-b','algebra','1']
+  client.setQueryData(mine,{title:'My exam'},{updatedAt:now})
+  client.setQueryData(other,{answers:['Other owner']},{updatedAt:now})
+  const snapshot=snapshotFromClient(client,now,'owner-a')
+  expect(snapshot.entries.map(entry=>entry.key)).toEqual([mine])
+  stageOfflineHandoff('owner-a',other,{answers:['Other owner']},now,now)
+  expect(readOfflineHandoff('owner-a',now)?.entries??[]).toEqual([])
+ })
  it('keeps exactly eight versioned Settings fields and no nested unknown UI keys',()=>{
   const projection=projectOfflineSettings(settings)
   expect(Object.keys(projection).sort()).toEqual(['v','timeZone','rolloverHour','ui','preferredChat','defaultStyle','mixDecks','newPerDay'].sort())

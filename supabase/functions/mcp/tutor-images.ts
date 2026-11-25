@@ -19,6 +19,17 @@ export async function tutorImageRows(db:Db,scope:TutorImageScope):Promise<TutorI
   return rows.data??[];
 }
 
+/** Exam attachment metadata comes from the exact grant-authorized turn RPC. */
+export function examTutorImageRows(turn:{snapshot?:{attachments?:unknown}},owner:string,attachmentId?:string):TutorImageRow[] {
+  const attachments=turn.snapshot?.attachments;
+  if(!Array.isArray(attachments))return [];
+  return attachments.slice(0,TUTOR_ATTACHMENT_COUNT).flatMap(row=>
+    row&&typeof row.id==='string'&&(!attachmentId||row.id===attachmentId)&&
+    (row.kind==='drawing'||row.kind==='photo')&&(row.mimeType==='image/png'||row.mimeType==='image/jpeg')&&
+    Number.isSafeInteger(row.byteSize)&&row.byteSize>0&&row.byteSize<=TUTOR_IMAGE_LIMIT
+    ? [{id:row.id,user_id:owner,kind:row.kind,mime_type:row.mimeType,byte_size:row.byteSize}] : []);
+}
+
 export async function tutorImageBlock(blob:Blob,mimeType:string) {
   if (!blob.size||blob.size>TUTOR_IMAGE_LIMIT) throw new Error('Tutor image is unavailable.');
   const bytes=new Uint8Array(await blob.arrayBuffer());
