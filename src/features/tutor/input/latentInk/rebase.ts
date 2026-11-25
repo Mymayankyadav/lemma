@@ -1,16 +1,42 @@
 /**
- * N249 · Where a span [start, start + length) of `before` sits in `after`, when the one edit between them (a drawing
- * and the keys queued behind it going in) did not touch it; null when it did. Used to keep a chip the learner opened
- * pointing at the same occurrence after a pending drawing settles in front of it.
+ * N249 · Mapping a chip the learner opened through the edits a settling drawing applied in front of it (the drawing's
+ * symbol and the keys queued behind it). Each step is recorded as the range it replaced in the text before it, so
+ * identity comes from the edits themselves, not from matching text: two identical `$x$` stay distinct, and an
+ * inserted `[` is not mistaken for the start of an image reference.
  */
-export function rebaseSpan(before: string, after: string, start: number, length: number): number | null {
-  if (before === after) return start;
-  const shortest = Math.min(before.length, after.length);
+export type TextEdit = Readonly<{start: number; end: number; delta: number}>;
+type Snapshot = Readonly<{text: string; start: number; end: number}>;
+
+/**
+ * The range one keyboard step replaced. A step edits at its selection and never past its end (an insertion replaces
+ * the selection; Delete removes it, or what is just before the caret), so the text after the selection is unchanged
+ * and the change starts at the selection's start or earlier. Matching text is never used to widen it.
+ */
+export function editBetween(before: Snapshot, after: Snapshot): TextEdit | null {
+  if (before.text === after.text) return null;
+  const delta = after.text.length - before.text.length;
   let prefix = 0;
-  while (prefix < shortest && before[prefix] === after[prefix]) prefix++;
+  const shortest = Math.min(before.text.length, after.text.length);
+  while (prefix < shortest && before.text[prefix] === after.text[prefix]) prefix++;
+  const start = Math.min(before.start, prefix);
+  const tail = before.text.length - before.end;
+  // Normally the text after the selection is untouched: the step replaced [start, selection end).
+  if (tail <= after.text.length - start && before.text.slice(before.end) === after.text.slice(after.text.length - tail)) {
+    return {start, end: before.end, delta};
+  }
+  // Otherwise, conservatively, everything from the first difference to the last one.
   let suffix = 0;
-  while (suffix < shortest - prefix && before[before.length - 1 - suffix] === after[after.length - 1 - suffix]) suffix++;
-  if (start + length <= prefix) return start;
-  if (start >= before.length - suffix) return start + after.length - before.length;
-  return null;
+  while (suffix < shortest - prefix && before.text[before.text.length - 1 - suffix] === after.text[after.text.length - 1 - suffix]) suffix++;
+  return {start: Math.min(start, prefix), end: Math.max(before.end, before.text.length - suffix), delta};
+}
+
+/** Where the span [start, start + length) is after the edits, or null when one of them removed or overwrote it. */
+export function mapSpan(edits: readonly TextEdit[], start: number, length: number): number | null {
+  let at = start;
+  for (const edit of edits) {
+    if (at + length <= edit.start && length > 0) continue;
+    if (at >= edit.end) {at += edit.delta; continue;}
+    return null;
+  }
+  return at;
 }

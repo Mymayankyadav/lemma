@@ -104,7 +104,25 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   }, []);
   // The answer can no longer be edited here (read-only, composing, another surface): the drawing and any edits that
   // waited for it are dropped, never replayed into an editor state they were not made for.
-  useEffect(() => {if (!enabled) drop('Drawing left out: the answer could not be edited.');}, [enabled]);
+  useEffect(() => {
+    if (!enabled) {
+      drop('Drawing left out: the answer could not be edited.');
+      rejected.current.clear(); strokeClick.current = null;
+      return;
+    }
+    // A refused pointer may lift or be cancelled anywhere, not only over the keys.
+    const lifted = (event: globalThis.PointerEvent) => {
+      const entry = rejected.current.get(event.pointerId);
+      if (entry) {entry.released = true; entry.at = Date.now();}
+    };
+    const cancelled = (event: globalThis.PointerEvent) => {rejected.current.delete(event.pointerId);};
+    document.addEventListener('pointerup', lifted, true);
+    document.addEventListener('pointercancel', cancelled, true);
+    return () => {
+      document.removeEventListener('pointerup', lifted, true);
+      document.removeEventListener('pointercancel', cancelled, true);
+    };
+  }, [enabled]);
 
   function paint() {
     const node = canvas.current, host = area.current;
@@ -307,8 +325,6 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
 
   function onPointerDownCapture(event: PointerEvent<HTMLElement>) {
     if (!enabled || event.button !== 0) return;
-    const now = Date.now();
-    for (const [id, entry] of rejected.current) if (entry.released && now - entry.at > REJECTED_CLICK_MS) rejected.current.delete(id);
     const owner = pointer.current;
     if (owner && owner.id !== event.pointerId && (owner.drawing || owner.type === 'pen')) {
       // A pen down, or a stroke under way, owns the keys: another pointer (a palm, a resting finger; pen and touch
@@ -317,6 +333,11 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
       reject(event);
       return;
     }
+    // An accepted gesture retires what earlier refused ones left: its own pointer id's record (ids are reused, a mouse
+    // always has the same one) and every refused pointer already lifted (its click, if any, has come and gone).
+    // Refused pointers still down keep theirs.
+    rejected.current.delete(event.pointerId);
+    for (const [id, entry] of rejected.current) if (entry.released) rejected.current.delete(id);
     if (!event.isPrimary) return;
     strokeClick.current = null;
     const label = keyLabel(event.target);
@@ -451,14 +472,19 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
     const button = event.target instanceof Element ? event.target.closest('button') : null;
     const id = clickPointerId(event);
     const consume = () => {event.preventDefault(); event.stopPropagation();};
-    if (id !== undefined && rejected.current.has(id)) {rejected.current.delete(id); consume(); return;}
-    if (id === undefined) {
-      for (const [refusedId, entry] of rejected.current) {
-        if (entry.released && entry.button === button) {rejected.current.delete(refusedId); consume(); return;}
+    const now = Date.now();
+    for (const [refusedId, entry] of rejected.current) if (entry.released && now - entry.at > REJECTED_CLICK_MS) rejected.current.delete(refusedId);
+    // A keyboard or assistive activation (detail 0) is never a refused pointer's click, nor a stroke's.
+    if (event.detail > 0) {
+      if (id !== undefined && rejected.current.has(id)) {rejected.current.delete(id); consume(); return;}
+      if (id === undefined) {
+        for (const [refusedId, entry] of rejected.current) {
+          if (entry.released && entry.button === button) {rejected.current.delete(refusedId); consume(); return;}
+        }
       }
     }
     const stroke = strokeClick.current;
-    if (stroke && Date.now() < stroke.until && (id === undefined || id === stroke.pointerId)) {
+    if (stroke && event.detail > 0 && Date.now() < stroke.until && (id === undefined || id === stroke.pointerId)) {
       strokeClick.current = null;
       consume();
     }
@@ -492,6 +518,7 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   const attach = useCallback((node: HTMLElement | null) => {
     if (area.current && !node) {
       clearTimeout(timer.current);
+      rejected.current.clear(); strokeClick.current = null;
       held.current = null; pointer.current = null; inserted.current = null;
       setView({kind: 'idle'});
       // The keys gave way (the host settles first where it can): anything still pending is dropped, not replayed.

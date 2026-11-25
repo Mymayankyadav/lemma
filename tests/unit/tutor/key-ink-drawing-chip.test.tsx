@@ -91,3 +91,27 @@ test('editing a drawing chip after a held drawing settles in front of it updates
   expect(current).toBe('<a ' + imageReference(updated) + ' b');
   expect(host.textContent).not.toContain('no longer at this position');
 });
+
+test('a `[` queued in front of a drawing does not stop that drawing from opening and updating', async () => {
+  const initial = imageReference(imageId);
+  current = initial;
+  await act(async () => root.render(<Harness initial={initial}/>));
+  const field = host.querySelector<HTMLElement>('.tutor-answer-editor')!;
+  await act(async () => field.focus());
+  await act(async () => {setTutorAnswerSelection(field, padEdit(initial, 0)); field.click();});
+  const key = (name: string) => [...rows().querySelectorAll('button')].find(node => node.getAttribute('aria-label') === name)!;
+  await act(async () => {
+    const start = key('g');
+    pointer('pointerdown', start, 10, 10); pointer('pointermove', start, 35, 35);
+    pointer('pointermove', rows(), 60, 60); pointer('pointerup', rows(), 60, 60);
+  });
+  // The drawing is still being read: these keys wait behind it.
+  await act(async () => key('?123').click());
+  await act(async () => key('=\\<').click());
+  await act(async () => key('[').click());
+  expect(current).toBe(initial);
+  await act(async () => button('Edit drawing').click());
+  expect(current).toBe('[' + initial);
+  await act(async () => button('Update drawing').click());
+  expect(current).toBe('[' + imageReference(updated));
+});

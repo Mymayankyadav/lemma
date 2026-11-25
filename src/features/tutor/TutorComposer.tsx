@@ -20,7 +20,7 @@ import {readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection, TutorAnswer
 import {TutorKeyboard} from './TutorKeyboard';
 import {KeyInkWords} from './input/latentInk/KeyInkWords';
 import {useKeyInk, type FlushResult, type KeyEdit} from './input/latentInk/useKeyInk';
-import {rebaseSpan} from './input/latentInk/rebase';
+import {editBetween, mapSpan, type TextEdit} from './input/latentInk/rebase';
 import type {SymbolDefinition} from './input/symbolCatalog';
 import {TutorInkPad} from './input/TutorInkPad';
 import {TutorSymbolPicker} from './input/TutorSymbolPicker';
@@ -166,6 +166,8 @@ export function TutorComposer(props: Props) {
   const inkInsert = useRef<{before: PadEdit; after: PadEdit} | null>(null);
   /** The answer and selection a drawing began on: its symbol goes in only while they are unchanged. */
   const inkTarget = useRef<EditTarget | null>(null);
+  /** The ranges the last settled drawing and its queued keys replaced, in order. */
+  const flushedEdits = useRef<TextEdit[]>([]);
   const keyInk = useKeyInk(isFlagOn('tutorKeyInk') && shown && !props.suspended && !scratch && !equationMode && !assist.drawing && !editingDisabled,
     {onBegin: beginInk, onFlush: flushInk, onKeyEdit: applyKeyEdit, onReplace: replaceInkSymbol, onRetract: retractInkSymbol});
   const inkSlots = keyInk.view.kind !== 'idle';
@@ -337,8 +339,15 @@ export function TutorComposer(props: Props) {
     const target = inkTarget.current;
     inkTarget.current = null;
     if (editingDisabled || !target || !sameInkTarget(target, editTarget())) return 'refused';
+    // The range each step replaces is kept, so a chip opened behind them can be followed through the edits.
+    const record = (step: () => void) => {
+      const before = history.current.present;
+      step();
+      const applied = editBetween(before, history.current.present);
+      if (applied) flushedEdits.current.push(applied);
+    };
     let inserted = false;
-    if (symbol) {
+    if (symbol) record(() => {
       const base = history.current.present;
       const next = insertTutorSymbol(base, symbol.id) ?? insertNotation(base, symbol.glyph);
       if (commit(changePadText(history.current, next), true)) {
@@ -346,9 +355,17 @@ export function TutorComposer(props: Props) {
         inserted = true;
         haptic('snap');
       }
-    }
-    for (const edit of edits) applyKeyEdit(edit);
+    });
+    for (const edit of edits) record(() => applyKeyEdit(edit));
     return inserted ? 'inserted' : 'skipped';
+  }
+  /** Settle a drawing over the keys, then follow a span of the answer through what went in; null if it went. */
+  function settleAround(start: number, length: number) {
+    flushedEdits.current = [];
+    keyInk.settle();
+    const edits = flushedEdits.current;
+    flushedEdits.current = [];
+    return mapSpan(edits, start, length);
   }
   function applyKeyEdit(edit: KeyEdit) {
     if (edit.kind === 'insert') insert(edit.text, edit.typed, edit.touch);
@@ -543,13 +560,11 @@ export function TutorComposer(props: Props) {
   /** N221: tapping an equation chip opens it in the equation sheet. */
   function openEquation(source: string, offset: number) {
     if (editingDisabled) return;
-    // N249: a drawing over the keys settles first; the chip's position is then read in the answer it leaves.
-    const before = history.current.present.text;
-    if (keyInk.settle()) {
-      const moved = rebaseSpan(before, history.current.present.text, offset, source.length);
-      if (moved === null) return;
-      offset = moved;
-    }
+    // N249: a drawing over the keys settles first, and the chip the learner tapped is followed through what went in
+    // (a removed or overwritten occurrence does not open, and another equal one is not taken for it).
+    const moved = settleAround(offset, source.length);
+    if (moved === null) return;
+    offset = moved;
     if (history.current.present.text.slice(offset, offset + source.length) !== source) return;
     const tex = source.replace(/^\$\$?|\$\$?$/gu, '');
     setEquationEdit({source, offset, tex});
@@ -840,15 +855,15 @@ export function TutorComposer(props: Props) {
   }
   function openDrawing(id: string | null = null, offset: number | null = null) {
     if (editingDisabled) return;
-    // N249: a drawing over the keys settles first; the image occurrence being edited is then found again where the
-    // settled answer has it (the stale-target check on update is unchanged).
-    const before = history.current.present.text;
-    const span = offset === null ? undefined : imageRanges(before).find(range => range.start === offset);
-    if (keyInk.settle() && offset !== null) {
-      const moved = rebaseSpan(before, history.current.present.text, offset, span ? span.end - span.start : 0);
+    // N249: a drawing over the keys settles first, and the image occurrence being edited is followed through what
+    // went in; an existing image with no occurrence left does not open (the stale-target check on update is unchanged).
+    const span = offset === null ? undefined : imageRanges(history.current.present.text).find(range => range.start === offset);
+    if (offset !== null) {
+      const moved = settleAround(offset, span ? span.end - span.start : 1);
       if (moved === null) return;
       offset = moved;
-    }
+    } else keyInk.settle();
+    if (id && !imageRanges(history.current.present.text).some(range => range.id === id && (offset === null || range.start === offset))) return;
     remember();
     revision.current.modeRevision++;
     assist.stop();
@@ -860,8 +875,13 @@ export function TutorComposer(props: Props) {
     setScratch(true);
   }
   function resumeDrawing() {
-    const position = unfinishedId ? imageRanges(history.current.present.text).find(image => image.id === unfinishedId)?.start : undefined;
-    openDrawing(unfinishedId, position ?? null);
+    // N249: this runs after the tap's double-tap window, when keys queued behind a drawing may have changed the
+    // answer; the image is looked up after they settle, and one no longer in the answer is not reopened.
+    keyInk.settle();
+    if (!unfinishedId) {openDrawing(null, null); return;}
+    const position = imageRanges(history.current.present.text).find(image => image.id === unfinishedId)?.start;
+    if (position === undefined) return;
+    openDrawing(unfinishedId, position);
   }
   function discardUnfinishedDrawing() {
     const ink = props.ink;

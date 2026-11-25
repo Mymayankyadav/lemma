@@ -32,7 +32,7 @@ const {setHapticsEnabled} = await import('../../../src/ui/v7/haptics');
 const {setTutorAnswerSelection} = await import('../../../src/features/tutor/TutorAnswerEditor');
 const {padEdit} = await import('../../../src/features/pad/padEdit');
 const {imageReference} = await import('../../../supabase/functions/_shared/tutor-answer');
-const {rebaseSpan} = await import('../../../src/features/tutor/input/latentInk/rebase');
+const {editBetween, mapSpan} = await import('../../../src/features/tutor/input/latentInk/rebase');
 
 let host: HTMLDivElement, root: Root;
 const dialogMethods = ['showModal', 'close'] as const;
@@ -80,9 +80,11 @@ async function mount() {
   await act(async () => {field().focus();});
   expect(rows()).toBeTruthy();
 }
-/** A real tap's click, as a browser sends it after pointerup (detail 1). */
-function tapClick(target: Element) {
-  target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}));
+/** A real tap's click, as a browser sends it after pointerup (detail 1); with its pointer id where browsers give one. */
+function tapClick(target: Element, id?: number) {
+  const event = new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1});
+  if (id !== undefined) Object.defineProperty(event, 'pointerId', {value: id});
+  target.dispatchEvent(event);
 }
 function pointer(type: string, target: Element, x: number, y: number, id = 7, kind = 'touch') {
   const event = new MouseEvent(type, {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
@@ -97,7 +99,7 @@ async function draw(from: [number, number], to: [number, number], key = 'g') {
     pointer('pointermove', start, (from[0] + to[0]) / 2, (from[1] + to[1]) / 2);
     pointer('pointermove', rows(), ...to);
     pointer('pointerup', rows(), ...to);
-    start.click();
+    tapClick(start);
   });
 }
 async function read(scores: Record<string, number>) {
@@ -565,9 +567,99 @@ test('Send counts an unfinished drawing only while the settled answer still refe
   expect(sent).toEqual(['x']);
 });
 
-test('a span keeps its place when a settled drawing goes in before or after it, and is refused when touched', () => {
-  expect(rebaseSpan('a $x$ b', '<a $x$ b', 2, 3)).toBe(3);
-  expect(rebaseSpan('a $x$ b', 'a $x$ b<', 2, 3)).toBe(2);
-  expect(rebaseSpan('a $x$ b', 'a $y$ b', 2, 3)).toBeNull();
-  expect(rebaseSpan('same', 'same', 1, 2)).toBe(1);
+test('a span is followed through the edits that went in, by their ranges, not by matching text', () => {
+  const snap = (text: string, start: number, end = start) => ({text, start, end});
+  // `[` typed before an image reference that itself starts with `[`.
+  const bracket = editBetween(snap('[[img]]', 0), snap('[[[img]]', 1))!;
+  expect(bracket).toEqual({start: 0, end: 0, delta: 1});
+  expect(mapSpan([bracket], 0, 7)).toBe(1);
+  // Deleting the first of two identical equations (and its space) removes it; the second moves to the front.
+  const removed = editBetween(snap('$x$ $x$', 0, 4), snap('$x$', 0))!;
+  expect(mapSpan([removed], 0, 3)).toBeNull();
+  expect(mapSpan([removed], 4, 3)).toBe(0);
+  // A symbol typed after a span leaves it where it was; one typed over it removes it.
+  expect(mapSpan([editBetween(snap('a $x$ b', 7), snap('a $x$ b<', 8))!], 2, 3)).toBe(2);
+  expect(mapSpan([editBetween(snap('a $x$ b', 2, 5), snap('a < b', 3))!], 2, 3)).toBeNull();
+  expect(mapSpan([], 4, 2)).toBe(4);
+});
+
+test('a refused mouse released outside the keys does not swallow its next tap', async () => {
+  vi.useFakeTimers();
+  await mount();
+  const pen = button('g', rows()), k = button('k', rows()), a = button('a', rows());
+  await act(async () => {
+    pointer('pointerdown', pen, 10, 10, 7, 'pen');
+    pointer('pointermove', pen, 30, 30, 7, 'pen');
+    pointer('pointerdown', k, 300, 60, 1, 'mouse');
+    pointer('pointerup', document.body, 600, 600, 1, 'mouse');
+    pointer('pointermove', rows(), 60, 60, 7, 'pen');
+    pointer('pointerup', rows(), 60, 60, 7, 'pen');
+  });
+  await read({forall: .95, exists: .05});
+  await wait(2000);
+  await act(async () => {pointer('pointerdown', a, 40, 60, 1, 'mouse'); pointer('pointerup', a, 40, 60, 1, 'mouse'); tapClick(a, 1);});
+  expect(field().value).toBe('∀a');
+});
+
+test('a refused contact lifted without a click leaves no trace on later taps, keyboard activations or a re-enabled keyboard', async () => {
+  vi.useFakeTimers();
+  await mount();
+  const pen = button('g', rows()), p = button('p', rows());
+  const refuse = async () => act(async () => {
+    pointer('pointerdown', pen, 10, 10, 7, 'pen');
+    pointer('pointerdown', p, 300, 20, 8, 'touch');
+    pointer('pointerup', p, 300, 20, 8, 'touch');
+    pointer('pointerup', pen, 10, 10, 7, 'pen');
+  });
+  await refuse();
+  // The same pointer id taps p for real.
+  await act(async () => {pointer('pointerdown', p, 300, 20, 8, 'touch'); pointer('pointerup', p, 300, 20, 8, 'touch'); tapClick(p, 8);});
+  expect(field().value).toBe('p');
+  await act(async () => button('Space', rows()).click());
+  await refuse();
+  // A keyboard activation of the same key, later.
+  await wait(2000);
+  await act(async () => p.click());
+  expect(field().value).toBe('p p');
+  await act(async () => button('Space', rows()).click());
+  // A refused contact still down while the keys are disabled and enabled again.
+  await act(async () => {pointer('pointerdown', pen, 10, 10, 7, 'pen'); pointer('pointerdown', p, 300, 20, 8, 'touch');});
+  await act(async () => setReadOnly(true));
+  await act(async () => setReadOnly(false));
+  await act(async () => {pointer('pointerup', document.body, 600, 600, 8, 'touch'); pointer('pointerup', pen, 10, 10, 7, 'pen');});
+  await act(async () => {pointer('pointerdown', p, 300, 20, 8, 'touch'); pointer('pointerup', p, 300, 20, 8, 'touch'); tapClick(p, 8);});
+  expect(field().value).toBe('p p p');
+});
+
+test('an equation chip removed by a queued Delete does not open, and its surviving twin opens as itself', async () => {
+  for (const [chip, opens] of [[0, false], [1, true]] as const) {
+    vi.useFakeTimers();
+    await mountRich('$x$ $x$', inkFixture(), 0);
+    await act(async () => {setTutorAnswerSelection(richField(), padEdit('$x$ $x$', 0, 4)); richField().click();});
+    await draw([10, 10], [60, 60]);
+    await act(async () => button('Delete', rows()).click());
+    expect(current).toBe('$x$ $x$');
+    const chips = [...host.querySelectorAll<HTMLButtonElement>('button')].filter(node => node.getAttribute('aria-label') === 'Edit equation x');
+    await act(async () => chips[chip].click());
+    expect(current).toBe('$x$');
+    expect(Boolean(host.querySelector('.tutor-equation-edit'))).toBe(opens);
+    await act(async () => root.unmount());
+    root = createRoot(host);
+  }
+});
+
+test('a delayed tap on Unfinished drawing does not reopen a drawing the queued keys removed', async () => {
+  vi.useFakeTimers();
+  const reference = imageReference(imageId);
+  await mountRich(reference, inkFixture({editingDrawing: {id: imageId, strokes: [], width: 3, accent: false}}), 0);
+  await act(async () => {setTutorAnswerSelection(richField(), padEdit(reference, 0, reference.length)); richField().click();});
+  await draw([10, 10], [60, 60]);
+  await act(async () => button('x', rows()).click());
+  await wait(700);
+  await act(async () => {button('Unfinished drawing').dispatchEvent(new MouseEvent('click', {bubbles: true, detail: 1}));});
+  await wait(100);
+  expect(current).toBe('x');
+  await wait(200);
+  expect(current).toBe('x');
+  expect(rows()).toBeTruthy();
 });
