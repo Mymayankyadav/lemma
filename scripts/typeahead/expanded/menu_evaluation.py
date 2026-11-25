@@ -132,17 +132,23 @@ def fit(args):
     print(json.dumps(evidence))
 
 
-def score(gold, captured, selected=None):
+def visible_exact(target, observation):
+    if target is None:
+        raise ValueError('Unusable reference edit')
+    return any(identity(item) == target for item in observation['slate'])
+
+
+def score(gold, captured, selected=None, baseline=None):
     counts, reasons, ghosts, neural = Counter(), Counter(), Counter(), Counter()
     groups = defaultdict(Counter)
+    prior = None if baseline is None else {
+        outcome['eventId']: visible_exact(identity(outcome['edit']), row) for outcome, row in joined(gold, baseline, selected)}
     for outcome, row in joined(gold, captured, selected):
         group = groups[outcome['answerId']]
         target = identity(outcome['edit'])
-        if target is None:
-            raise ValueError('Unusable reference edit')
         trace = row.get('trace') or {}
         raw = [item for item in trace.get('raw', []) if identity(item) == target]
-        visible = any(identity(item) == target for item in row['slate'])
+        visible = visible_exact(target, row)
         finalist = any(identity(r) == target for r in trace.get('displayed', []))
         stage = ('visible' if visible else 'finalist-not-visible' if finalist else 'outside-visible-three' if any(identity(r) == target for r in trace.get('eligible', []))
                  else 'eligible-pool-limit' if any(r['eligible'] for r in raw) else 'policy' if raw else 'unobserved-or-unproposed')
@@ -155,6 +161,10 @@ def score(gold, captured, selected=None):
         for lane in (kind,outcome['kind']):
             group[lane+'Opportunities'] += 1
             group[lane+'Hits'] += int(visible)
+            if prior is not None:
+                was_visible = prior[outcome['eventId']]
+                group[lane+'Gains'] += int(visible and not was_visible)
+                group[lane+'Losses'] += int(was_visible and not visible)
         if row.get('neuralEligible'):
             neural['eligible'] += 1
             neural['deliveredAtObservation'] += bool(row['assets'].get('neural'))
@@ -164,7 +174,7 @@ def score(gold, captured, selected=None):
         if ghost and ghost.get('text'):
             ghosts['shown'] += 1
             ghosts['exact'] += outcome['exactGhost'].startswith(ghost['text'])
-    intervals = {}
+    intervals, paired_top_three = {}, {}
     if len(groups) >= 2:
         ordered = [groups[key] for key in sorted(groups)]
         ids = np.random.default_rng(238).integers(0,len(ordered),(3000,len(ordered)))
@@ -174,8 +184,19 @@ def score(gold, captured, selected=None):
             valid = exposure > 0
             if valid.any():
                 intervals[lane] = np.quantile(hits[valid]/exposure[valid],[.025,.975]).tolist()
-    return dict(threads=len(groups), totals=dict(counts), topThreeCi95=intervals, firstLoss=dict(reasons),
-                visibleGhost=dict(ghosts), neural=dict(neural))
+                if prior is not None:
+                    gains = np.array([r[lane+'Gains'] for r in ordered])
+                    losses = np.array([r[lane+'Losses'] for r in ordered])
+                    delta = (gains - losses)[ids].sum(axis=1)
+                    denominator = counts[lane+'Opportunities']
+                    paired_top_three[lane] = dict(opportunities=denominator, gained=int(gains.sum()), lost=int(losses.sum()),
+                        delta=float((gains-losses).sum()/denominator),
+                        ci95=np.quantile(delta[valid]/exposure[valid],[.025,.975]).tolist())
+    report = dict(threads=len(groups), totals=dict(counts), topThreeCi95=intervals, firstLoss=dict(reasons),
+                  visibleGhost=dict(ghosts), neural=dict(neural))
+    if prior is not None:
+        report['pairedTopThree'] = paired_top_three
+    return report
 
 
 def paired(left, right):
@@ -202,10 +223,13 @@ def paired(left, right):
     diff = old - new
     gain = diff.sum() / manual.sum()
     samples = rng.integers(0, len(keys), (3000, len(keys)))
-    ci = np.quantile(diff[samples].sum(axis=1) / manual[samples].sum(axis=1), [.025,.975])
+    draw_manual = manual[samples].sum(axis=1)
+    ci = np.quantile(diff[samples].sum(axis=1) / draw_manual, [.025,.975])
     influence = (diff - gain * manual) / manual.mean()
     return dict(threads=len(keys), manual=int(manual.sum()), baselineAssisted=int(old.sum()), candidateAssisted=int(new.sum()),
                 baseKsr=1-old.sum()/manual.sum(), candidateKsr=1-new.sum()/manual.sum(), gain=gain, ci95=ci.tolist(),
+                baseKsrCi95=np.quantile(1-old[samples].sum(axis=1)/draw_manual,[.025,.975]).tolist(),
+                candidateKsrCi95=np.quantile(1-new[samples].sum(axis=1)/draw_manual,[.025,.975]).tolist(),
                 finalThreadsFor2pp=max(200, math.ceil((2.8016*influence.std(ddof=1)/.02)**2)))
 
 
@@ -219,6 +243,7 @@ if __name__ == '__main__':
     s = modes.add_parser('score')
     s.add_argument('gold',type=Path)
     s.add_argument('observed',type=Path)
+    s.add_argument('--baseline',type=Path,help='Compare exact visible offers on the same scheduled events and paired threads')
     s.add_argument('--threads',type=int,help='Predeclared first N threads from the frozen split')
     power = modes.add_parser('paired')
     power.add_argument('baseline',type=Path)
@@ -238,6 +263,6 @@ if __name__ == '__main__':
             if args.gold.name != 'gold.jsonl' or not 0 < args.threads <= len(ordered) or len(ordered) != len(set(ordered)):
                 raise ValueError('Invalid final selection')
             selected = set(ordered[:args.threads])
-        print(json.dumps(score(args.gold,args.observed,selected),indent=2))
+        print(json.dumps(score(args.gold,args.observed,selected,args.baseline),indent=2))
     else:
         print(json.dumps(paired(args.baseline,args.candidate),indent=2))

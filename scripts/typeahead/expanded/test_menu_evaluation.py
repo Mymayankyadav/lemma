@@ -39,6 +39,20 @@ class MenuEvaluationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'Paired'):
                 paired(base,candidate)
 
+    def test_visible_changes_match_event_ids_and_resample_whole_threads(self):
+        edit = dict(start=0, end=1, insert='word', caret=4)
+        gold = [dict(answerId=thread, eventId=event, prefixSha256=event, edit=edit,
+                     kind='word', boundary=False, exactGhost='') for thread, event in [('a','e1'),('a','e2'),('b','e3')]]
+        def observed(row, hit):
+            return dict(eventId=row['eventId'], prefixSha256=row['prefixSha256'], slate=[edit] if hit else [])
+        with tempfile.TemporaryDirectory() as folder:
+            target, old, new = (Path(folder)/file for file in ('gold','before','after'))
+            jsonl(target,gold)
+            jsonl(old,[observed(row,row['answerId']=='b') for row in reversed(gold)])
+            jsonl(new,[observed(row,row['answerId']=='a') for row in gold])
+            changes = score(target,new,baseline=old)['pairedTopThree']['word']
+            self.assertEqual(changes,dict(opportunities=3,gained=2,lost=1,delta=1/3,ci95=[-1.,1.]))
+
     def test_tutor_overlay_uses_only_matching_question_words(self):
         ctx = {'question':'Explain the upper bound.', 'answer':'Use the lower limit.'}
         hints = with_tutor(ctx)['aid']['ranking']['hints']

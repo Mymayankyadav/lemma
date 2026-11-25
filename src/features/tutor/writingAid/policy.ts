@@ -19,7 +19,7 @@ export const ALL_WRITING_AID_SURFACES: WritingAidSurfaces = Object.freeze({
 export const WRITING_AID_LIMIT = 2000;
 
 export interface WritingAidAnchor {
-  /** An exact snapshot with newly typed, uninterrupted learner input from start onward. */
+  /** The learner-authored span in this snapshot begins at start and ends at the active caret. */
   readonly text: string;
   readonly start: number;
   readonly caret?: number;
