@@ -77,7 +77,7 @@ try {
   const observations = await one('select public.exam_row_evidence($1,$2,$3) value',[owner,sitting,instant]);
   const homeRows=await one('select public.exam_home_rows($1,$2) value',[sitting,instant]);
   assert.deepEqual(homeRows.coverage,{accounted:32,secure:20,deferred:0});
-  assert.equal(homeRows.nextStudy.code,'CP4'); assert.equal(homeRows.topRows[0].row.key,'rank');
+  assert.deepEqual([homeRows.nextStudy.code,homeRows.nextStudy.step],['CP4',3]); assert.equal(homeRows.topRows[0].row.key,'rank');
   const home=await one('select public.exam_home_summary() value');
   assert.ok(Array.isArray(home.exam.sittings));assert.ok(home.projects);
   assert.equal(observations.length,2000);
@@ -157,6 +157,14 @@ try {
   for (const [table,id,op] of [[tables[0],sitting,'pause'],[tables[1],scored.id,'void'],[tables[2],again.id,'dismiss']]) {
     await assert.rejects(mcp(command(table,op,{reason:'Other'},id,1),other),/not found/i);
   }
+  // Two exams on the same course can both be imminent. Neither hides the other on Today.
+  const soon=new Date(Date.now()+86400000).toISOString();
+  const upcomingA=await write('exam_sittings','create',{...base,title:'Upcoming one',starts_at:soon});
+  const upcomingB=await write('exam_sittings','create',{...base,title:'Upcoming two',starts_at:soon});
+  await query("select set_config('test.uid',$1,false)",[owner]);await query('set role authenticated');
+  const upcoming=(await one('select public.exam_home_summary() value')).exam.sittings.map(x=>x.id);
+  assert(upcoming.includes(upcomingA.id)&&upcoming.includes(upcomingB.id));
+  await query('reset role');
   const paused=await edit('pause',{},3);
   await query("update public.sessions set resume_question='New course question' where user_id=$1 and number=7",[owner]);
   const active=await edit('activate',{},paused.version); assert.equal(active.bookmark.question,'New course question');

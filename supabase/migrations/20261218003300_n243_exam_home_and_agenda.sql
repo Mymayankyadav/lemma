@@ -59,8 +59,11 @@ language sql stable security invoker set search_path='' as $$
         order by exposure desc,ord limit 3) targets),'[]'::jsonb),
     'deferredCount',count(*) filter(where ledger->(row->>'key')->>'disposition'='defer'),
     'whatChanged',coalesce((select title||case when status='secure' then ' is independently covered.' else ' has new exam evidence ('||status||').' end||' Use it in '||code||'.' from changed),'Exam prep evidence is in your history.'),
-    'nextStudy',(select jsonb_build_object('code',c.code,'label',c.title) from public.checkpoints c join sitting s on c.user_id=s.user_id and c.project_id=s.project_id
-      where c.status in ('in_progress','not_started') and c.plan_state='active' order by (c.status='in_progress') desc,c.position,c.id limit 1))
+    'nextStudy',(select jsonb_build_object('code',c.code,'step',least(greatest(0,c.current_step),jsonb_array_length(c.steps))+1,'label',c.code||' · '||c.title) from public.checkpoints c join sitting s on c.user_id=s.user_id and c.project_id=s.project_id
+      where c.plan_state='active' and (c.status='in_progress' or c.status='not_started' and not exists(
+        select from public.checkpoint_prereqs pr join public.checkpoints parent on parent.user_id=c.user_id and parent.id=pr.prereq_id
+        where pr.user_id=c.user_id and pr.checkpoint_id=c.id and parent.status<>'demonstrated' and parent.plan_state='active'))
+      order by (c.status='in_progress') desc,c.position,c.id limit 1))
  from now_rows;
 $$;
 revoke all on function public.exam_home_rows(uuid,timestamptz) from public,anon,service_role;
@@ -69,20 +72,15 @@ grant execute on function public.exam_home_rows(uuid,timestamptz) to authenticat
 -- Today reads summaries alongside its ordinary data in a single request. The learner
 -- opens a Path for prompts, evidence and full blueprint details.
 create function public.exam_home_summary() returns jsonb language sql stable security invoker set search_path='' as $$
- with selected as (
-   select distinct on (s.project_id) s.*,p.slug,(s.status='finished' and (statement_timestamp() at time zone st.time_zone - make_interval(hours=>st.rollover_hour))::date >
+ with upcoming as (
+   select s.*,p.slug,(s.status='finished' and (statement_timestamp() at time zone st.time_zone - make_interval(hours=>st.rollover_hour))::date >
      coalesce(p.last_study_on,(p.deadline_at at time zone st.time_zone)::date,p.target_date)) as course_past_deadline from public.exam_sittings s
    join public.projects p on (p.id,p.user_id)=(s.project_id,s.user_id)
    join public.settings st on st.user_id=s.user_id
    where s.user_id=(select auth.uid()) and not p.system and p.status<>'archived'
-     and ((s.status in ('planned','active') and s.starts_at<=now()+interval '7 days')
+     and ((s.status in ('planned','active','paused') and s.starts_at<=now()+interval '7 days')
        or (s.status='paused' and s.paused_at>=now()-interval '3 days')
        or (s.status='finished' and s.finished_at>=now()-interval '14 days'))
-   order by s.project_id,case s.status when 'active' then 0 when 'planned' then 1 else 2 end,
-     coalesce(s.finished_at,s.paused_at) desc nulls last,s.starts_at,s.id
- ), upcoming as (
-   select * from selected order by case status when 'active' then 0 when 'planned' then 1 else 2 end,
-     starts_at,project_id limit 8
  ), compact as (
    select s.starts_at,s.id,jsonb_build_object('id',s.id,'project_id',s.project_id,'slug',s.slug,'title',s.title,'status',s.status,'coursePastDeadline',coalesce(s.course_past_deadline,false),
      'starts_at',s.starts_at,'time_zone',s.time_zone,'study_minutes',s.study_minutes,'version',s.version,'bookmark',s.bookmark,
