@@ -397,6 +397,11 @@ def pack_checkpoint(corpus, checkpoint_dir, outputs, limit, scratch=None):
     vocab = json.loads(vocab_file.read_text())
     lookup = {word: i for i, word in enumerate(vocab)}
     kind, subject = metadata['kind'], metadata['subject']
+    cache_kib, memory_limit = scratch_count_cache()
+    if memory_limit is None:
+        cache_kib = 512 * 1024  # Preserve the two 256 MiB caches when the limit is unknown.
+    rows_cache_kib = max(1, cache_kib // 2)
+    counts_cache_kib = max(1, cache_kib - rows_cache_kib)
     with TemporaryDirectory(prefix='lemma-ngram-pack-', dir=scratch) as temp:
         scratch_dir = Path(temp)
         if 'compressedSha256' in metadata:
@@ -412,9 +417,14 @@ def pack_checkpoint(corpus, checkpoint_dir, outputs, limit, scratch=None):
         db = sqlite3.connect(scratch_dir / 'rows.sqlite', uri=True)
         try:
             db.execute('PRAGMA temp_store=FILE')
-            db.execute('PRAGMA cache_size=-262144')
+            db.execute(f'PRAGMA main.cache_size=-{rows_cache_kib}')
             db.execute('ATTACH DATABASE ? AS counts', (binary.resolve().as_uri() + '?mode=ro&immutable=1',))
-            db.execute('PRAGMA counts.cache_size=-262144')
+            db.execute(f'PRAGMA counts.cache_size=-{counts_cache_kib}')
+            print('NGRAM PACK SQLITE', json.dumps({
+                'rowsCacheKiB': -db.execute('PRAGMA main.cache_size').fetchone()[0],
+                'countsCacheKiB': -db.execute('PRAGMA counts.cache_size').fetchone()[0],
+                'observedCgroupLimitBytes': memory_limit,
+            }), flush=True)
             for out, order, pruning in outputs:
                 out.mkdir(parents=True, exist_ok=False)
                 progress = metadata['trainTokens'] >= 10_000_000
