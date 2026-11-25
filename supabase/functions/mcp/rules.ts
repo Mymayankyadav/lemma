@@ -47,6 +47,7 @@ export const EXAM_RULES = [
   'Map each scored family. Ask for the missing fact most likely to change NEXT. Screen high-mark unknowns with 2–4 short questions, one at a time for prerequisites.',
   'Probe only if the answer changes the lesson. Cite recent independent work when skipping. Teach method errors with contrasting cases, drill slips, and follow help with a fresh unhinted item. End with a fresh timed mix.',
   'Log each answer once with save_progress (concept, level, outcome, hint_level, novelty, no step) and exam_attempts record (row_key, marks, independence, seconds, delivery_ref). A probe never demonstrates a checkpoint. Skipped, timeout and unanswered stay unknown.',
+  'Link exam evidence with exam:{sitting,row,delivery_ref} on each save_progress event.',
   'Cards during prep: later → card_ideas save, now → propose_cards, quiet → save silently. Defer with a reason, exposed marks and a reopen condition. Flag compulsory conflicts.',
   'At block end update plan_note and next_question. Back to study → pause. Ask whether the exam happened before finishing, then return to the course bookmark.',
 ].join('\n');

@@ -17,6 +17,10 @@ export function EvidenceEntry({event,time=false,zone}:{event:SessionEvent;time?:
  return <li className="v7-evidence-entry" data-kind={event.kind}>
   <div className="v7-evidence-head"><p className="v7-eyebrow">{eventEyebrow(event)}</p>
    {badge&&<StatusBadge tone={badge.tone}>{badge.text}</StatusBadge>}
+   {event.mode&&<StatusBadge>{event.mode==='exam'?'Exam prep':'Study'}</StatusBadge>}
+   {event.assistance&&<StatusBadge tone={event.assistance==='assisted'?'warning':event.assistance==='independent'?'success':'info'}>
+    {event.assistance==='assisted'?'Assisted':event.assistance==='independent'?'Independent':'Reading'}
+   </StatusBadge>}
    {time&&<time dateTime={event.createdAt} className="v7-evidence-time">{formatClock(event.createdAt,{zone})}</time>}</div>
   <div className="v7-evidence-body"><MathText source={event.body}/></div>
  </li>;
@@ -28,7 +32,8 @@ export function groupEvidence(events:readonly SessionEvent[],sessions:readonly {
  const groups=new Map<string,EvidenceGroup>();
  for(const event of [...events].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))){
   const at=Date.parse(event.createdAt);
-  const session=sorted.find(item=>Date.parse(item.startedAt)<=at+60_000);
+  const session=event.sessionNumber===undefined ? sorted.find(item=>Date.parse(item.startedAt)<=at+60_000)
+   : sorted.find(item=>item.number===event.sessionNumber);
   const key=session?'s'+session.number:'d'+event.createdAt.slice(0,10);
   const label=session?'Session '+session.number+' · '+formatShortDate(session.startedAt,{zone}):formatShortDate(event.createdAt,{zone});
   const group=groups.get(key)??{key,label,events:[]};

@@ -36,7 +36,7 @@ export interface NotifyPrefs {
  studyTime?: string
  quiet?: {start:string;end:string}
  maxPerDay?: number
- kinds?: Partial<Record<'due'|'deadline'|'behind'|'resume'|'tutor'|'digest'|'plan'|'rhythm',boolean>>
+ kinds?: Partial<Record<'due'|'deadline'|'behind'|'resume'|'tutor'|'digest'|'plan'|'rhythm'|'examMorning'|'examFollowup',boolean>>
  dueThreshold?: 1 | 10 | 25 | 50
  approveCards?: boolean
  digest?: {weekday:0|1|2|3|4|5|6;time:string}
@@ -110,6 +110,7 @@ export interface ProjectSummary {
  scheduleHeadline?: string | null
  pinned?: boolean; system?: boolean
  targetDate?: IsoDate | null; targetLabel?: string | null
+ deadlineAt?:IsoDate|null;lastStudyOn?:IsoDate|null;timeConfirmed?:boolean
  id: string; slug: string; title: string; subject: Subject; status: ProjectStatus; done: number; total: number
  current: {code: string; title: string; step: number; stepsTotal: number} | null
  lastActivityAt: IsoDate | null; cardsCount: number; sessionsCount: number; sourcesCount: number
@@ -119,6 +120,7 @@ export interface ProjectSummary {
 export interface Project {
  pinned?: boolean; system?: boolean
  targetDate?: IsoDate | null; targetLabel?: string | null
+ deadlineAt?:IsoDate|null;lastStudyOn?:IsoDate|null;timeConfirmed?:boolean
  id: string; slug: string; title: string; goal: string; style: string; status: ProjectStatus; subjectId: string; createdAt: IsoDate
 }
 export interface CheckpointView {
@@ -164,6 +166,7 @@ export interface SessionSummary {
 }
 export interface SessionEvent {
  id: number; kind: EventKind; body: string; outcome: Outcome; hintLevel: number | null; checkpointCode: string | null; createdAt: IsoDate
+ mode?: 'exam' | 'study'; assistance?: 'independent' | 'assisted' | 'reading'; sessionNumber?: number
 }
 export interface SessionDetail {
  summary: SessionSummary; styleName: string; summaryText: string | null; resumeQuestion: string | null; resumeStep: number | null
@@ -286,6 +289,7 @@ export interface InsightData {
  projects: {id: string; title: string; subject: Subject}[]; misconceptions: {label: string; times: number; conceptName: string | null}[]
 }
 export interface HomeSummary {
+ exam?:{sittings:import('./exam/contract').ExamHomeSitting[]}
  resume: {projectSlug: string; projectTitle: string; glyph: Glyph; checkpointCode: string | null; checkpointTitle: string | null
  step: number; stepsTotal: number; question: string | null; objective: string | null; pausedAt: IsoDate | null; sessionNumber: number | null} | null
  due: number; pendingProposals: number; projects: ProjectSummary[]

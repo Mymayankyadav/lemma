@@ -232,6 +232,13 @@
       "mcpPath": "study exam_attempts (record, correct, void, restore), get(what=exam_attempts), get(what=exam)",
       "exportPolicy": "Owner export through the undo registry",
       "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "evidence_id": {
+      "classification": "command-managed",
+      "appPath": "Exact owner evidence link from the exam delivery",
+      "mcpPath": "save_progress event exam context and exam_attempts record",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Null when the linked evidence is deleted"
     }
   }
 }

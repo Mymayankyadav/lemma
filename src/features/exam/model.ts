@@ -4,16 +4,13 @@ import {reviewHref} from '../../data/review-target'
 import type {ProjectDetail} from '../../data/types'
 
 export function examTutorHref(project:ProjectDetail,sittingId:string,action:'next'|'draft',row?:BlueprintRow){
- const checkpoint=project.checkpoints.find(cp=>cp.ui!=='proposed'&&row?.checkpoints?.includes(cp.code))
-  ??project.checkpoints.find(cp=>cp.ui==='now')
-  ??project.checkpoints.find(cp=>cp.ui!=='proposed')
  const context='Help me prepare for the exam on '+project.project.title+
   '. Read the exam ledger for sitting '+sittingId+' in Lemma first. '
  const question=action==='draft'
   ? context+'Draft a scored-task blueprint from my selected exam sources. Label any provisional weights and ask me to confirm the blueprint.'
   : context+(row?'Start the recommended action for '+row.title+'.':'Start the recommended next action.')
- const params=new URLSearchParams({question})
- return tutorHref(project.project.slug,checkpoint?.code)+'?'+params.toString()
+ const params=new URLSearchParams({question,exam:sittingId})
+ return tutorHref(project.project.slug)+'?'+params.toString()
 }
 
 export function topicReviewHref(row:BlueprintRow|undefined,projectId:string,checkpoints:{code:string;id:string}[]){

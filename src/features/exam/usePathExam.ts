@@ -15,13 +15,13 @@ export function usePathExam(projectId:string,slug:string,preferredId:string|null
   return()=>window.clearInterval(timer)
  },[sitting?.id])
  const plan=useMemo(()=>sitting&&(evidence.data||!sitting.blueprint.length)?planExam({
-  sitting,now:new Date(now).toISOString(),attempts:evidence.data?.attempts??[],evidence:evidence.data?.evidence??[],
- }):undefined,[sitting,evidence.data,now])
+  sitting,now:new Date(Math.max(now,evidence.dataUpdatedAt)).toISOString(),attempts:evidence.data?.attempts??[],evidence:evidence.data?.evidence??[],
+ }):undefined,[sitting,evidence.data,evidence.dataUpdatedAt,now])
  const refresh=useRefreshExam()
  async function change(action:SittingChange,base:SittingRecord|undefined=sitting){
   if(!base)return
   try{await getExamApi().change(base,action)}
   finally{await refresh()}
  }
- return {sitting,sittings:query.data?.sittings??[],plan,owner,now,refresh,change,pendingSetup:query.data?.pendingSetup,pendingCalendar:query.data?.pendingCalendar,loading:query.isPending,loadError:query.error??evidence.error}
+ return {sitting,evidence:evidence.data,sittings:query.data?.sittings??[],plan,owner,now,refresh,change,pendingSetup:query.data?.pendingSetup,pendingCalendar:query.data?.pendingCalendar,loading:query.isPending,loadError:query.error??evidence.error}
 }

@@ -1,6 +1,7 @@
-import type {BlueprintRow, ConceptEvidence, ExamAttempt, ExamSitting} from '../../../supabase/functions/_shared/exam/plan'
+import type {BlueprintRow, ConceptEvidence, ExamAttempt as PlannerAttempt, ExamSitting} from '../../../supabase/functions/_shared/exam/plan'
 
-export type {BlueprintRow, ConceptEvidence, ExamAttempt, ExamSitting}
+export type {BlueprintRow, ConceptEvidence, ExamSitting}
+export type ExamAttempt=PlannerAttempt&{id?:string;delivery_ref?:string|null;learner_confirmed?:boolean}
 export type CardMode = 'later' | 'now' | 'quiet'
 export const cardModes: {value: CardMode; label: string}[] = [
  {value:'later',label:'After the exam'},
@@ -21,6 +22,8 @@ export type SittingRecord = ExamSitting & {
  starts_at:string|null
  version:number
  card_mode:CardMode
+ activated_at?:string|null
+ paused_at?:string|null
 }
 export interface CardIdea {
  id:string
@@ -31,6 +34,26 @@ export interface CardIdea {
  status:'saved'|'drafted'|'linked'|'dismissed'
  sightings:number
  version:number
+ concept?:string|null
+ front?:string|null
+ back?:string|null
+ level?:string|null
+ created_at?:string
+ proposal_id?:string|null
+ note_id?:string|null
+ proposal_status?:string|null
+ note_no?:number|null
+ evidence?:{turn?:string;attempt?:string;note?:string}[]
+}
+export interface ExamHomeSitting extends SittingRecord {
+ slug:string
+ coverage?:{accounted:number;secure:number;deferred:number}
+ ideaCount?:number
+ deferredCount?:number
+ coursePastDeadline?:boolean
+ whatChanged?:string
+ nextStudy?:{code?:string;step?:number;label:string}
+ topRows?:{row:BlueprintRow;exposure:number}[]
 }
 export interface ExamSnapshot {
  sittings:SittingRecord[]
@@ -76,6 +99,7 @@ export interface ExamCommand {
 export interface CommandReceipt {
  status:'ok'|'conflict'|'duplicate'
  operationId:string
+ actionNo?:number|null
  id?:string
  version?:number
  changed?:{id:string;version:number}[]
@@ -92,6 +116,7 @@ export interface ExamApi {
  resumeCalendar(projectId:string,sittingId:string):Promise<void>
  change(sitting:SittingRecord,change:SittingChange):Promise<void>
  command(command:ExamCommand):Promise<CommandReceipt>
+ undo(actionNo:number):Promise<void>
 }
 
 export function selectSitting(snapshot:ExamSnapshot|undefined,preferredId?:string|null):SittingRecord|undefined {

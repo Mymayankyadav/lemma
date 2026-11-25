@@ -3,8 +3,8 @@ import {authGeneration} from '../authBoundary'
 import {createCommandRunner, requireOnline} from './commands'
 import type {CardIdea, CommandReceipt, ConceptEvidence, ExamApi, ExamAttempt, ExamSetup, SittingChange, SittingRecord} from './contract'
 
-const sittingFields = 'id,project_id,title,starts_at,time_zone,duration_minutes,study_minutes,study_minutes_set_at,activation_study_minutes,last_study_at,objective,pass_marks,total_marks,format,sources,blueprint,blueprint_version,ledger,status,phase,card_mode,bookmark,plan_note,next_question,happened,updated_at,finished_at,version'
-const attemptFields = 'row_key,occurred_at,outcome,independence,hint_level,novelty,marks_awarded,marks_possible,confidence,timed,seconds'
+const sittingFields = 'id,project_id,title,starts_at,time_zone,duration_minutes,study_minutes,study_minutes_set_at,activation_study_minutes,last_study_at,objective,pass_marks,total_marks,format,sources,blueprint,blueprint_version,ledger,status,phase,card_mode,bookmark,plan_note,next_question,happened,updated_at,finished_at,activated_at,paused_at,version'
+const attemptFields = 'id,delivery_ref,learner_confirmed,row_key,occurred_at,outcome,independence,hint_level,novelty,marks_awarded,marks_possible,confidence,timed,seconds'
 
 function checked<T>(result:{data:T;error:{message:string}|null}):T {
  if(result.error)throw new LemmaError('server',result.error.message)
@@ -112,9 +112,10 @@ export function createLiveExamApi():ExamApi {
   },
   async readIdeas(projectId){
    const {db,owner}=await ownerClient()
-   return allRows<CardIdea>((from,to)=>db.from('card_ideas')
-    .select('id,project_id,sitting_id,target,reason,status,sightings,version')
+   const rows=await allRows<CardIdea&{proposals?:{status:string}|{status:string}[]|null;notes?:{no:number}|{no:number}[]|null}>((from,to)=>db.from('card_ideas')
+    .select('id,project_id,sitting_id,target,reason,status,sightings,version,concept,level,front,back,created_at,evidence,proposal_id,note_id,proposals(status),notes(no)')
     .eq('user_id',owner).eq('project_id',projectId).order('id').range(from,to))
+   return rows.map(({proposals,notes,...idea})=>({...idea,proposal_status:(Array.isArray(proposals)?proposals[0]:proposals)?.status,note_no:(Array.isArray(notes)?notes[0]:notes)?.no}))
   },
   async setup(input){
    requireOnline()
@@ -197,5 +198,10 @@ export function createLiveExamApi():ExamApi {
    }
   },
   command:run,
+  async undo(actionNo){
+   requireOnline()
+   const {db,owner}=await ownerClient()
+   checked(await db.rpc('undo_action',{p_user:owner,p_no:actionNo}))
+  },
  }
 }

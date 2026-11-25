@@ -75,11 +75,31 @@ try {
   await query("insert into public.evidence(user_id,concept_id,occurred_at,level,outcome,origin,voided_at) values($1,$2,$3,'use','fail','tutor',now())",[owner,concept,instant]);
   await query("select set_config('test.uid',$1,false)",[owner]); await query('set role authenticated');
   const observations = await one('select public.exam_row_evidence($1,$2,$3) value',[owner,sitting,instant]);
+  const homeRows=await one('select public.exam_home_rows($1,$2) value',[sitting,instant]);
+  assert.deepEqual(homeRows.coverage,{accounted:32,secure:20,deferred:0});
+  assert.equal(homeRows.nextStudy.code,'CP4'); assert.equal(homeRows.topRows[0].row.key,'rank');
+  const home=await one('select public.exam_home_summary() value');
+  assert.ok(Array.isArray(home.exam.sittings));assert.ok(home.projects);
   assert.equal(observations.length,2000);
   assert(observations.every(e=>e.outcome==='pass' && e.concept==='eigenbasis' && !('user_id' in e)));
   assert.equal(Date.parse(observations.at(-1).occurred_at),Date.parse(instant)-2_000_000);
   await query("select set_config('test.uid',$1,false)",[other]);
   assert.deepEqual(await one('select public.exam_row_evidence($1,$2,$3) value',[owner,sitting,instant]),[]);
+  await query('reset role');
+  for(const role of ['anon','authenticated','service_role'])for(const privilege of ['INSERT','UPDATE','DELETE','TRUNCATE'])
+    assert.equal(await one('select has_table_privilege($1,$2,$3) value',[role,'exam_decisions',privilege]),false);
+  assert.equal(await one("select count(*)::int value from lemma_export_private.resources where table_name='exam_decisions'"),1);
+  assert.equal(await one("select count(*)::int value from public.lemma_undo_tables where table_name='exam_decisions'"),0);
+  const prediction={inputs_hash:'a'.repeat(64),inputs:{},candidates:[{action:'teach'}],chosen:{action:'teach',rationale:'Timed lesson'},
+    runner_up:null,qualitative:{kind:'probe'},predictions:[],policy:'selector-v1',shadow:true};
+  await query('set role service_role');
+  await query('select public.log_exam_decision($1,$2,$3,$4)',[owner,sitting,instant,prediction]);
+  await assert.rejects(query('select public.log_exam_decision($1,$2,$3,$4)',[other,sitting,instant,prediction]),/permission|privilege/i);
+  await query('reset role');
+  await assert.rejects(query('update public.exam_decisions set shadow=true'),/append-only/);
+  await query('set role authenticated');
+  assert.equal(await one('select count(*)::int value from public.exam_decisions'),0);
+  assert.deepEqual((await one('select public.exam_home_summary() value')).exam.sittings,[]);
   await query('reset role');
   await assert.rejects(invalid({activate:true}),/pause/i);
   const stale = await write('exam_sittings','update',{title:'Different'},sitting,2);
@@ -122,6 +142,13 @@ try {
   await write('card_ideas','dismiss',{},saved.id,restored.version);
   const again = await write('card_ideas','save',idea); assert.notEqual(again.id,saved.id);
   await assert.rejects(write('card_ideas','restore',{},saved.id,restored.version+1));
+  const secondDraft=await write('card_ideas','draft',{front:'One retrieval target?',back:'Use it.'},again.id,1);
+  await query("select set_config('test.uid',$1,false)",[owner]);
+  await query("select public.approve_proposal(id) from public.proposals where user_id=$1 and no=$2",[owner,secondDraft.proposalNo]);
+  assert.equal(await one("select count(*)::int value from public.card_ideas i join public.notes n on n.id=i.note_id where i.id=$1 and i.status='linked' and n.front='One retrieval target?' ",[again.id]),1);
+  const approval=await one("select max(no) value from public.actions where user_id=$1",[owner]);
+  await undo(approval);
+  assert.equal(await one("select status value from public.card_ideas where id=$1",[again.id]),'drafted');
   const noteNo = await one("insert into public.notes(user_id,project_id,front,back) values($1,$2,'Known theorem','A proof') returning no value",[owner,project]);
   const known = await write('card_ideas','save',{project_id:project,target:'Known theorem',front:'Known theorem'});
   assert.equal(known.existingCard,'N'+noteNo);

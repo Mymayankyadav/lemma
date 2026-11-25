@@ -9,7 +9,7 @@ export function notImplemented(name: string): LemmaError { return new LemmaError
 export type SettingsPatch = Partial<Omit<Settings, 'connectorUrl' | 'connectorLastSeenAt' | 'connectorLastClient'>>
 export type StylePatch = Partial<Pick<Style, 'name' | 'instructions'>>
 export type CreateSubjectInput = Pick<Subject, 'name' | 'glyph' | 'hue'>
-export type ProjectPatch = Partial<Pick<Project, 'title' | 'goal' | 'style' | 'status' | 'subjectId' | 'pinned'>>
+export type ProjectPatch = Partial<Pick<Project, 'title' | 'goal' | 'style' | 'status' | 'subjectId' | 'pinned' | 'deadlineAt' | 'lastStudyOn' | 'timeConfirmed'>>
 export type SubjectPatch = Partial<Pick<Subject, 'name' | 'glyph' | 'position'>>
 export type SourcePatch = Partial<Pick<Source, 'title' | 'kind'>>
 export interface ProposalEdit { front?: string; back?: string; type?: NoteType; kind?: NoteKind }

@@ -238,6 +238,10 @@ export function ReminderLists({settings}:{settings:Settings}){
    {rows.proposalsSwitch&&<SwitchRow label="New card proposals" checked={value.approveCards===true} disabled={busy} onChange={approveCards=>put({approveCards})}/>}
    <ValueRow label="When cards due reach" value={(value.dueThreshold??10)+' cards'} onOpen={()=>editor.setOpen({kind:'pick',title:'When cards due reach',value:value.dueThreshold??10,options:[1,10,25,50].map(n=>({value:n,label:n+(n===1?' card':' cards')})),onPick:((dueThreshold:1|10|25|50)=>put({dueThreshold})) as (value:never)=>void})}/>
   </Group>
+  {isFlagOn('examMode')&&(!app||server)&&<Group title="Exam reminders">
+   <SwitchRow label="Morning of the exam" checked={value.kinds?.examMorning===true} disabled={busy} onChange={examMorning=>put({kinds:{examMorning}})}/>
+   <SwitchRow label="Ask how the exam went" checked={value.kinds?.examFollowup===true} disabled={busy} onChange={examFollowup=>put({kinds:{examFollowup}})}/>
+  </Group>}
   {server&&<Group title="Test"><LinkRow label="Send a test reminder" onOpen={sendTest}/></Group>}
   {app&&<Suspense fallback={null}><PhoneReminders/></Suspense>}
   {app&&!server&&<Group title="In your Inbox on this phone" info="Lemma for Android has no push service, so these wait in your Inbox instead of arriving as notifications.">

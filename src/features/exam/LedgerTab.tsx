@@ -5,11 +5,12 @@ import type {BlueprintRow,SittingChange,SittingRecord} from '../../data/exam/con
 import type {ProjectDetail} from '../../data/types'
 import {Button,Field,Sheet} from '../../ui/v7/components'
 import {BlueprintRowSheet} from './BlueprintRowSheet'
+import {TopicReview} from './TopicReview'
 import {NextCard} from './NextCard'
-import {examTutorHref,marks,remainingTime,titleCase,topicReviewHref} from './model'
+import {examTutorHref,marks,remainingTime,titleCase} from './model'
 import {formatDuration} from '../../lib/format'
 
-type Editor = {kind:'row';base:SittingRecord;row?:BlueprintRow} | {kind:'skip'|'defer';row:BlueprintRow} | {kind:'time'}
+type Editor = {kind:'row';base:SittingRecord;row?:BlueprintRow} | {kind:'skip'|'defer';row:BlueprintRow} | {kind:'time'} | {kind:'review';row:BlueprintRow;exposure:number}
 
 export function LedgerTab({sitting,plan,project,now,disabled,onChange}:{
  sitting:SittingRecord;plan:ExamPlan;project:ProjectDetail;now:number;disabled:boolean
@@ -59,7 +60,7 @@ export function LedgerTab({sitting,plan,project,now,disabled,onChange}:{
     <Button disabled={changeDisabled} onClick={()=>open({kind:'row',base:sitting,row})}>Edit row</Button>
     {disposition&&disposition.disposition!=='pin'&&<Button disabled={changeDisabled} onClick={()=>{void apply({operation:'set_disposition',patch:{rows:[{key:row.key,disposition:'none'}]}})}}>Clear disposition</Button>}
    </>}
-   <Link className="v7-button v7-secondary" to={topicReviewHref(row,project.project.id,project.checkpoints)}><span>Review this topic</span></Link>
+   <Button disabled={disabled||closed} onClick={()=>open({kind:'review',row,exposure:plan.rows.find(item=>item.row.key===row.key)?.exposure??0})}>Review this topic</Button>
   </div>
  }
  return <div className="v7-exam-ledger">
@@ -118,7 +119,10 @@ export function LedgerTab({sitting,plan,project,now,disabled,onChange}:{
   </section>
   {editor?.kind==='row'&&<BlueprintRowSheet row={editor.row} checkpoints={project.checkpoints} disabled={readOnly} onClose={()=>setEditor(null)}
    onSave={row=>onChange({operation:'update',patch:{blueprint:editor.row?editor.base.blueprint.map(old=>old.key===row.key?row:old):[...editor.base.blueprint,row]}},editor.base)}/>}
-  {editor&&editor.kind!=='row'&&<Sheet open title={editor.kind==='time'?'Study time left':titleCase(editor.kind)+' row'} onClose={()=>{if(!busy)setEditor(null)}}
+  {editor?.kind==='review'&&<Sheet open title="Review this topic" onClose={()=>setEditor(null)}>
+   <TopicReview slug={project.project.slug} sittingId={sitting.id} row={editor.row} exposure={editor.exposure}/>
+  </Sheet>}
+  {editor&&editor.kind!=='row'&&editor.kind!=='review'&&<Sheet open title={editor.kind==='time'?'Study time left':titleCase(editor.kind)+' row'} onClose={()=>{if(!busy)setEditor(null)}}
    footer={<><Button onClick={()=>setEditor(null)} disabled={busy}>Cancel</Button><Button variant="primary" type="submit" form={formId} disabled={changeDisabled}>Save</Button></>}>
    <form id={formId} className="v7-exam-form" onSubmit={event=>{void submit(event)}}>
     {editor.kind==='time'?<Field label="Study minutes left" type="number" name="minutes" min="0" max="20000" required defaultValue={sitting.study_minutes??0}/>

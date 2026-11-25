@@ -13,10 +13,12 @@ import {getStudyApi} from '../../data/study';
 import {MathText} from '../../ui/MathText';
 import {Button, IconButton, Sheet} from '../../ui/v7/components';
 import {kitSubject} from '../atlas/v7/model';
+import type {SittingRecord} from '../../data/exam/contract';
+import {BackToStudy,ExamChatNotice,TutorExamControl,TutorExamHeader,type TutorExamPanel} from '../exam/TutorExamTools';
 import {currentStudyStep} from '../project/v7/pathModel';
 
 
-export type TutorPageContext = {project: ProjectDetail; detail: CheckpointDetail; client: 'claude' | 'chatgpt'};
+export type TutorPageContext = {project: ProjectDetail; detail: CheckpointDetail; client: 'claude' | 'chatgpt';exam?:SittingRecord;activeExam?:SittingRecord};
 type Props = {
   page: TutorPageContext; sequence: number; children: ReactNode;
   overview?: boolean; offline?: boolean; onOverview?: () => void; onQuestion?: () => void;
@@ -25,9 +27,13 @@ type Props = {
   headerHidden?: boolean;
   sessionActionsOpen?: boolean; onSessionActions?: (open: boolean) => void;
   answerActions?: Ref<HTMLDivElement>;
+  examPanel?:TutorExamPanel;
+  onExamPanel?:(panel?:TutorExamPanel)=>void;
 };
 
-export function TutorLayout({page, sequence, children, overview, offline, onOverview, onQuestion, onCloseSession, onConnection, onContext, listenerSeenAt, claimExpiresAt, resumePrompt, headerHidden = false, sessionActionsOpen, onSessionActions, answerActions}: Props) {
+export function TutorLayout({page, sequence, children, overview, offline, onOverview, onQuestion, onCloseSession, onConnection, onContext, listenerSeenAt, claimExpiresAt, resumePrompt, headerHidden = false, sessionActionsOpen, onSessionActions, answerActions, examPanel, onExamPanel}: Props) {
+  const [localExamPanel,setLocalExamPanel]=useState<TutorExamPanel>();
+  const examView=examPanel??localExamPanel,startExamPanel=onExamPanel??setLocalExamPanel;
   const [localActionsOpen, setLocalActionsOpen] = useState(false);
   const actionsOpen = sessionActionsOpen ?? localActionsOpen;
   const setActionsOpen = onSessionActions ?? setLocalActionsOpen;
@@ -36,7 +42,7 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
   const {project, detail} = page, path = '/p/' + encodeURIComponent(project.project.slug);
   const notify=useToast();
   const checkpoint = path + '/cp/' + encodeURIComponent(detail.view.code);
-  const goBack=useDetailBack(checkpoint);
+  const goBack=useDetailBack(page.exam?path+'?tab=exam&examSitting='+encodeURIComponent(page.exam.id):checkpoint);
   const studyUi = useStudyUi(), focus = useActiveFocus(), now = useNow();
   const clock = focus.entry ? focusClock(focus.entry, now).label : '0:00';
   const timerState = focus.entry ? focusWord(focus.entry) : null;
@@ -63,13 +69,13 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
     setActionsOpen(false);
     action();
   };
-  return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject} data-header-hidden={headerHidden || undefined}>
+  return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label={page.exam?'Exam tutor':'Checkpoint tutor'} data-subject={subject} data-header-hidden={headerHidden || undefined}>
     <header className="tutor-header" inert={headerHidden}>
       <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
-      <div className="tutor-header-title"><strong>{detail.view.title}</strong><TutorPresence presence={presence}/></div>
+      <div className="tutor-header-title">{page.exam?<TutorExamHeader sitting={page.exam} open={examView==='ledger'} onOpen={()=>startExamPanel('ledger')}/>:<strong>{detail.view.title}</strong>}<TutorPresence presence={presence}/></div>
       <IconButton label="Session actions" onClick={() => setActionsOpen(true)} aria-haspopup="dialog" aria-expanded={actionsOpen} data-tutor-session-actions="" data-v7-search-opener=""><Ellipsis aria-hidden="true"/></IconButton>
     </header>
-    {!overview&&<div className="tutor-session-progress" aria-label="Session parts" inert={headerHidden}>
+    {!overview&&!page.exam&&<div className="tutor-session-progress" aria-label="Session parts" inert={headerHidden}>
       {['Checks','Learn','Practice','Close'].map((part,index)=><span key={part} aria-label={part} data-reached={index<2||undefined}/>)}
     </div>}
     <h1 className="v7-sr-only">{project.project.title} · {detail.view.code} · {detail.view.title}{offline && ' · Offline'}</h1>
@@ -82,18 +88,25 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
       <button className="seg-r" aria-haspopup="dialog" onClick={() => setPanel('practice')}><b>Practice</b><small>after Learn</small></button>
       {onCloseSession && <button className="seg-r" aria-haspopup="dialog" onClick={onCloseSession}><b>Close</b><small>at the end</small></button>}
     </nav>}
+    {page.activeExam&&!page.exam&&!headerHidden&&<ExamChatNotice key={page.activeExam.id} sitting={page.activeExam} slug={project.project.slug}/>}
     {children}
-    <Sheet open={actionsOpen} onClose={() => setActionsOpen(false)} title="Study session">
+    {page.exam&&examView&&<TutorExamControl project={project} sitting={page.exam} key={examView} activePanel={examView} onClose={()=>startExamPanel()}/>}
+    <Sheet open={actionsOpen} onClose={() => setActionsOpen(false)} title={page.exam?'Exam session':'Study session'}>
       <p><strong>{project.project.title}</strong><br/>{detail.view.code} · {detail.view.title}{step.ordinal ? ' · Step ' + step.ordinal + ' of ' + step.total : ''}</p>
       {timerState&&<p>{timerState} · {clock}</p>}
       {answerActions && <div className="tutor-session-actions" ref={answerActions}/>}
       <div className="tutor-session-actions">
         {onOverview && <Button small onClick={() => sessionAction(onOverview)}>Next up</Button>}
         {onQuestion && <Button small onClick={() => sessionAction(onQuestion)}>Latest question</Button>}
-        <Button small onClick={() => sessionAction(() => setPanel('plan'))}>Learn plan</Button>
-        <Button small onClick={() => sessionAction(() => setPanel('checks'))}>Checks{detail.view.dueCards > 0 ? ' · ' + detail.view.dueCards + ' due' : ''}</Button>
+        {page.exam&&page.exam.status!=='finished'&&<>
+         <BackToStudy project={project} sitting={page.exam} callback={()=>setActionsOpen(false)}/>
+         <Button onClick={()=>sessionAction(()=>startExamPanel('finish'))}>Finish exam…</Button>
+         <Button onClick={()=>sessionAction(()=>startExamPanel('budget'))}>I have {page.exam.study_minutes??0} min</Button>
+        </>}
+        {!page.exam&&<Button small onClick={() => sessionAction(() => setPanel('plan'))}>Learn plan</Button>}
+        {!page.exam&&<><Button small onClick={() => sessionAction(() => setPanel('checks'))}>Checks{detail.view.dueCards > 0 ? ' · ' + detail.view.dueCards + ' due' : ''}</Button>
         <Button small onClick={() => sessionAction(() => setPanel('practice'))}>Practice</Button>
-        <Button small onClick={() => sessionAction(() => setPanel('timer'))}>Study timer</Button>
+        <Button small onClick={() => sessionAction(() => setPanel('timer'))}>Study timer</Button></>}
         {onContext && <Button small onClick={() => sessionAction(onContext)}>Context</Button>}
         {onConnection && <Button small onClick={() => sessionAction(onConnection)}>Connection</Button>}
         {resumePrompt&&<Button small onClick={()=>{

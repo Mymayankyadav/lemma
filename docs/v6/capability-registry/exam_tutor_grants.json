@@ -1,0 +1,83 @@
+{
+  "table": "exam_tutor_grants",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "turn_id": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "operation_id": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "token_hash": {
+      "classification": "command-managed",
+      "appPath": "Private, never exposed in the app",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Redacted from owner export",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "expires_at": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "revoked_at": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "claim_id": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "generation": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "lease_until": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "replied": {
+      "classification": "command-managed",
+      "appPath": "Authenticated tutor grant commands",
+      "mcpPath": "Grant verifier used only by authorized transport",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    }
+  }
+}

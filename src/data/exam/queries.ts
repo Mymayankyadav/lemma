@@ -2,15 +2,20 @@ import {useEffect, useState} from 'react'
 import {useQuery, useQueryClient} from '@tanstack/react-query'
 import {authOwner, authSignedOut, onAccountChange} from '../authBoundary'
 import {readDeviceSession} from '../deviceSession'
-import {getMode} from '../mode'
+import {getDemoProfile,getMode} from '../mode'
 import {createDemoExamApi} from './demo'
 import {createLiveExamApi} from './live'
 import type {ExamApi, SittingRecord} from './contract'
 
 let cached:ExamApi|undefined
+let cachedProfile:string|undefined
 export function getExamApi(){
  const mode=getMode()
- if(cached?.mode!==mode)cached=mode==='demo'?createDemoExamApi():createLiveExamApi()
+ const profile=mode==='demo'?getDemoProfile():undefined
+ if(cached?.mode!==mode||cachedProfile!==profile){
+  cached=mode==='demo'?createDemoExamApi():createLiveExamApi()
+  cachedProfile=profile
+ }
  return cached
 }
 function examOwner() {
@@ -40,5 +45,5 @@ export function useExamIdeas(projectId:string,owner:string|null,enabled:boolean)
 }
 export function useRefreshExam(){
  const client=useQueryClient()
- return async ()=>{await Promise.all(['exam','exam-attempts','card-ideas','deadlines','agenda'].map(key=>client.invalidateQueries({queryKey:[key]})))}
+ return async ()=>{await Promise.all(['exam','exam-attempts','card-ideas','deadlines','calendar','agenda','home','proposals'].map(key=>client.invalidateQueries({queryKey:[key]})))}
 }

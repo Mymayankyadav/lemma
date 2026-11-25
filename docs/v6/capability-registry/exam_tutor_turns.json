@@ -1,0 +1,111 @@
+{
+  "table": "exam_tutor_turns",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "thread_id": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "sequence": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "operation_id": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "version": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "generation": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "snapshot": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "reply": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "followups": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "attachments": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "deleted_messages": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "recovered_drafts": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "created_at": {
+      "classification": "command-managed",
+      "appPath": "Exam tutor thread state and owner commands",
+      "mcpPath": "Grant-bound get, claim, renew, and reply",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    }
+  }
+}

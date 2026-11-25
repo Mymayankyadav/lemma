@@ -1,7 +1,7 @@
 import {clamp,DAY} from './math.ts';
 import {memoryAt,memoryStep,type MeasurementState} from './measure.ts';
 /** `project_id` is what the per-project minute caps charge; `home` only says which project an item belongs to, for labelling (a card review has no cap of its own). */
-export type Action={project_id?:string;home?:string;id:string;kind:'practice'|'review'|'teach'|'check'|'close'|'probe';concept_id:string;card_id?:string;minutes:number;p:number;forced?:boolean;weight?:number;needAt?:number};
+export type Action={exam?:import('../exam/block.ts').ExamInput;project_id?:string;home?:string;id:string;kind:'practice'|'review'|'teach'|'check'|'close'|'probe';concept_id:string;card_id?:string;minutes:number;p:number;forced?:boolean;weight?:number;needAt?:number};
 /** Enumerate the model's two outcomes. Ability-only gains are a martingale; only memory/learning enters ΔU. */
 export type Expect=(p:number,success:number,failure:number)=>number;
 const exactExpect:Expect=(p,success,failure)=>p*success+(1-p)*failure;

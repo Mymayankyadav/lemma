@@ -1,3 +1,4 @@
+import {isFlagOn} from '../../../flags';
 import {useMemo} from 'react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
@@ -24,7 +25,7 @@ export function DueRow({item,zone,projects=[],now}:{item:DueItem;zone:string;pro
   return <li className={'v7-ag-row'+(subject?' '+subjectClass(subject):'')} data-kind="due">
    <span className="v7-ag-time">{formatTimeLeft(row.due,options)}</span>
    <span className="v7-ag-body"><strong><MEANING_ICON.deadline aria-hidden="true" className="v7-ag-icon"/>{row.title}</strong>
-    <small>{origin(row.origin)}{project?' · '+project.title:''}{row.remainingMinutes!==null?' · about '+formatDuration(row.remainingMinutes)+' of work':''}</small></span>
+    <small>{row.kind==='exam'&&isFlagOn('examMode')?'Exam':origin(row.origin)}{project?' · '+project.title:''}{row.remainingMinutes!==null?' · about '+formatDuration(row.remainingMinutes)+' of work':''}</small></span>
   </li>;
  }
  const row=item.value;

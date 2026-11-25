@@ -4,6 +4,14 @@ import type {SittingChange,SittingRecord} from '../../data/exam/contract'
 import {instantInZone} from '../calendar/block-sheet/BlockSheet'
 
 const SIX_HOURS=6*3600000
+function deferKey(owner:string,sitting:SittingRecord){
+ return 'lemma.exam-not-yet:'+owner+':'+sitting.id+':'+sitting.starts_at
+}
+export function deferExamQuestion(owner:string,sitting:SittingRecord,now=Date.now()){
+ const until=now+SIX_HOURS
+ try{localStorage.setItem(deferKey(owner,sitting),String(until))}catch{/* This view still respects the dismissal. */}
+ return until
+}
 function readUntil(key:string){
  try{return Number(localStorage.getItem(key))||0}catch{return 0}
 }
@@ -12,7 +20,7 @@ export function PassedExamBanner({sitting,owner,now,disabled,onChange}:{
  sitting:SittingRecord;owner:string;now:number;disabled:boolean;onChange:(change:SittingChange)=>Promise<void>
 }){
  const formId=useId()
- const key='lemma.exam-not-yet:'+owner+':'+sitting.id+':'+sitting.starts_at
+ const key=deferKey(owner,sitting)
  const [until,setUntil]=useState(()=>readUntil(key)),[postpone,setPostpone]=useState(false)
  const [error,setError]=useState(''),[busy,setBusy]=useState(false)
  if(!sitting.starts_at||Date.parse(sitting.starts_at)>now||now<until||sitting.status==='finished'||sitting.status==='cancelled')return null
@@ -33,9 +41,7 @@ export function PassedExamBanner({sitting,owner,now,disabled,onChange}:{
  }
  function dismiss(){
   if(disabled||busy)return
-  const later=Date.now()+SIX_HOURS
-  try{localStorage.setItem(key,String(later))}catch{/* This view still respects the dismissal. */}
-  setUntil(later)
+  setUntil(deferExamQuestion(owner,sitting))
  }
  return <section className="v7-exam-panel v7-exam-callout" aria-label="Exam date passed">
   <h2 className="v7-subhead">Did {sitting.title} take place?</h2>

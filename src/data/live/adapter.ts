@@ -1,3 +1,4 @@
+import {isFlagOn} from '../../flags'
 import type { LemmaApi } from '../api'
 import {isAuthSessionMissingError} from '@supabase/supabase-js'
 import { textKind } from '../../pdf/text-source'
@@ -8,7 +9,7 @@ import { projectProgress, conceptStatus } from '../../lib/derive'
 import {buildAtlasEnvelope,runAtlasMutation,runAtlasPreview} from './atlas-command'
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
-import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph, Settings } from '../types'
+import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph, Settings, SessionEvent } from '../types'
 import { LemmaError, notImplemented } from '../api'
 import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
 import {pathForecast} from '../path-review-forecast'
@@ -42,6 +43,32 @@ function settingsWithV6(row:Row):Settings {
   weekStart:row.week_start??1,
   clock24h:row.clock_24h??true,
  };
+}
+
+function liveSessionEvents(events:readonly Row[]) {
+ return events.filter(event=>event.voided_at==null&&event.superseded_by==null)
+}
+async function evidenceEvents(db:ReturnType<typeof liveClient>,uid:string,events:readonly Row[],
+ checkpointCode:(row:Row)=>string|null, sessionNumber?:(row:Row)=>number|undefined):Promise<SessionEvent[]> {
+ const facts=new Map<number,Row>()
+ for(let offset=0;offset<events.length;offset+=100){
+  const ids=events.slice(offset,offset+100).map(event=>event.id)
+  const result=await db.from('evidence').select('session_event_id,ctx,novelty,hint_level').eq('user_id',uid)
+   .in('session_event_id',ids).is('voided_at',null).is('superseded_by',null).order('id')
+  if(result.error)break // Old deployments and unavailable facts still show the session transcript.
+  for(const row of result.data??[])facts.set(Number(row.session_event_id),row)
+ }
+ return events.map(event=>{
+  const fact=facts.get(Number(event.id)), mode=fact?.ctx?.mode??event.learning_context?.mode
+  const novelty=fact?.novelty??event.learning_context?.novelty
+  const hints=fact?.hint_level??event.hint_level??0
+  const reading=event.kind==='explanation'&&(novelty==='seen_solution'||mode==='exam'&&event.outcome==null)
+  const graded=!!fact||!!mode&&event.outcome!=null
+  const assistance=reading?'reading':graded ? hints>0||novelty==='seen_solution'?'assisted':'independent' : undefined
+  return {id:Number(event.id),kind:event.kind,body:event.body,outcome:event.outcome,hintLevel:event.hint_level,
+   checkpointCode:checkpointCode(event),createdAt:event.occurred_at??event.created_at,
+   ...(mode==='exam'||mode==='study'?{mode}:{}),assistance,sessionNumber:sessionNumber?.(event)}
+ })
 }
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
@@ -307,6 +334,10 @@ export class LiveAdapter implements LemmaApi {
   await owner(db)
   // ST-5: a single owner-scoped RPC computes Today, the active resume target,
   // pending count and the daily review quota without downloading full tables.
+  if(isFlagOn('examMode')){
+   const result=await db.rpc('exam_home_summary')
+   if(!result.error||!['PGRST202','42883'].includes(result.error.code))return checked(result) as import('../types').HomeSummary
+  }
   return checked(await db.rpc('home_summary')) as import('../types').HomeSummary
  }
  async listSubjects(...args: Parameters<LemmaApi['listSubjects']>): ReturnType<LemmaApi['listSubjects']> {
@@ -393,6 +424,10 @@ export class LiveAdapter implements LemmaApi {
     rows(db,'sources',uid),rows(db,'session_events',uid),rows(db,'notes',uid),this.listSessions(slug)
   ])
   const cpRows=await rows(db,'checkpoints',uid)
+  const numberBySession=new Map(sessions.map(session=>[session.id,session.number]))
+  const evidence=await evidenceEvents(db,uid,liveSessionEvents(events).filter(x=>x.checkpoint_id===row.id)
+    .sort((a,b)=>Date.parse(b.occurred_at??b.created_at)-Date.parse(a.occurred_at??a.created_at)||b.id-a.id)
+    .slice(0,20),()=>code,event=>numberBySession.get(event.session_id))
   const linked=cpConcepts.filter(x=>x.checkpoint_id===row.id).map(x=>concepts.find(c=>c.id===x.concept_id)).filter(Boolean) as Row[]
   const cpById=new Map(cpRows.map(c=>[c.id,c]))
   if(authGeneration()!==generation || (authOwner()!==null && authOwner()!==uid))
@@ -402,10 +437,7 @@ export class LiveAdapter implements LemmaApi {
     steps:row.steps??[],pages:row.pages,sourceShort:sources.find(x=>x.id===row.source_id)?.short??null,
     prereqs:prereqs.filter(x=>x.checkpoint_id===row.id).map(x=>cpById.get(x.prereq_id)?.code).filter(Boolean) as string[],
     concepts:linked.map(x=>({slug:x.slug,name:x.name})),recheckPrompt:row.recheck_prompt,
-    events:events.filter(x=>x.checkpoint_id===row.id).sort((a,b)=>b.id-a.id).slice(0,20).map(x=>({
-      id:Number(x.id),kind:x.kind,body:x.body,outcome:x.outcome,hintLevel:x.hint_level,
-      checkpointCode:code,createdAt:x.created_at
-    })),cardsCount:notes.filter(x=>x.checkpoint_id===row.id&&x.status==='active').length,
+    events:evidence,cardsCount:notes.filter(x=>x.checkpoint_id===row.id&&x.status==='active').length,
     sessions:sessions.filter(s=>s.checkpointCode===code)}
  }
  async addSource(...args: Parameters<LemmaApi['addSource']>): ReturnType<LemmaApi['addSource']> {
@@ -560,13 +592,13 @@ export class LiveAdapter implements LemmaApi {
   const cp=cps.find(x=>x.id===session.checkpoint_id)
   const pending=proposals.filter(x=>x.session_id===session.id&&x.status==='pending'&&x.withdrawn_at==null)
   const cardProposals=pending.filter(x=>x.kind==='card')
+  const evidence=await evidenceEvents(db,uid,liveSessionEvents(events).filter(event=>event.session_id===session.id)
+   .sort((a,b)=>Date.parse(a.occurred_at??a.created_at)-Date.parse(b.occurred_at??b.created_at)||a.id-b.id),
+   event=>cps.find(c=>c.id===event.checkpoint_id)?.code??null,()=>number)
   return {summary:sessionRow(session,slug,cp?.code??null),
     styleName:styles.find(x=>x.key===session.style)?.name??session.style,
     summaryText:session.summary,resumeQuestion:session.resume_question,resumeStep:session.resume_step,
-    events:events.filter(x=>x.session_id===session.id).sort((a,b)=>a.id-b.id).map(x=>({
-      id:Number(x.id),kind:x.kind,body:x.body,outcome:x.outcome,hintLevel:x.hint_level,
-      checkpointCode:cps.find(c=>c.id===x.checkpoint_id)?.code??null,createdAt:x.created_at
-    })),misconceptions:misconceptions.filter(x=>x.project_id===project.id).map(x=>({
+    events:evidence,misconceptions:misconceptions.filter(x=>x.project_id===project.id).map(x=>({
       id:x.id,label:x.label,times:x.times,lastSeenAt:x.last_seen_at,resolvedAt:x.resolved_at
     })),cards:[
       ...notes.filter(x=>x.session_id===session.id&&x.status==='active').map(x=>({noteNo:Number(x.no),front:x.front,state:'active' as const})),

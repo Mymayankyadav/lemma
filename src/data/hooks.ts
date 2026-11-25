@@ -163,13 +163,13 @@ export function useDeleteSource() {
  return useWrite((api, value: Parameters<LemmaApi['deleteSource']>[0]) => api.deleteSource(value), ['project', 'projects', 'home'])
 }
 export function useApproveProposal() {
- return useWrite((api, value: { id: Parameters<LemmaApi['approveProposal']>[0]; edit?: Parameters<LemmaApi['approveProposal']>[1] }) => api.approveProposal(value.id, value.edit), ['proposals', 'proposal', 'home', 'decks', 'project', 'projects', 'session', 'sessions', 'atlas', 'cards', 'card'])
+ return useWrite((api, value: { id: Parameters<LemmaApi['approveProposal']>[0]; edit?: Parameters<LemmaApi['approveProposal']>[1] }) => api.approveProposal(value.id, value.edit), ['card-ideas', 'proposals', 'proposal', 'home', 'decks', 'project', 'projects', 'session', 'sessions', 'atlas', 'cards', 'card'])
 }
 export function useRejectProposal() {
- return useWrite((api, value: Parameters<LemmaApi['rejectProposal']>[0]) => api.rejectProposal(value), ['proposals', 'proposal', 'home', 'project', 'session'])
+ return useWrite((api, value: Parameters<LemmaApi['rejectProposal']>[0]) => api.rejectProposal(value), ['card-ideas', 'proposals', 'proposal', 'home', 'project', 'session'])
 }
 export function useApproveAllCards() {
- return useWrite((api, _value: void) => api.approveAllCards(), ['proposals', 'proposal', 'home', 'decks', 'project', 'projects', 'session', 'sessions', 'atlas', 'cards', 'card'])
+ return useWrite((api, _value: void) => api.approveAllCards(), ['card-ideas', 'proposals', 'proposal', 'home', 'decks', 'project', 'projects', 'session', 'sessions', 'atlas', 'cards', 'card'])
 }
 export function useRecordReview() {
  return useWrite((api, value: Parameters<LemmaApi['recordReview']>[0]) => api.recordReview(value), ['card', 'cards', 'card-history-page', 'decks', 'home', 'insights', 'review-log'])

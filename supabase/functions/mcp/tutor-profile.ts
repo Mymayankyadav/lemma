@@ -1,7 +1,7 @@
 import {McpServer,createMcpHandler,z} from './deps.ts'
 import type {Db} from './db.ts'
 import {tutorGrantHash} from '../_shared/tutor-connector.ts'
-import {tutorFollowupFields,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
+import {examTutorImageRows,tutorFollowupFields,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
 
 const uuid=z.string().uuid()
 const base={turnId:uuid,operationId:uuid}
@@ -19,6 +19,7 @@ export const tutorInputSchemas={
  reply:z.object({...leased,expectedVersion:z.number().int().positive(),messageId:uuid,
   body:replyText,
   nextQuestion:replyText.describe('Full next question copied verbatim from body, including display math and paragraph breaks.').optional(),
+  timedSeconds:z.number().int().min(1).max(36000).optional(),
   reportedHost:z.string().min(1).max(100).optional(),
   citations:z.array(z.union([z.object({kind:z.literal('checkpoint'),refId:uuid,version:z.string().max(20)}).strict(),
    z.object({kind:z.literal('source'),refId:uuid,page:z.number().int().positive(),version:z.string().max(20)}).strict()])).max(8).optional(),
@@ -56,8 +57,10 @@ export async function serveTutor(req:Request,db:Db):Promise<Response>{
     try {
      // The RPC matched the bearer to this exact turn's primary key. Its attachment
      // rows carry the corresponding owner via the (user_id, turn_id) foreign key.
-     const rows=await tutorImageRows(db,{turnId:data.turnId})
-     return {content:await tutorTurnContent(db,data,rows,undefined,async()=>{
+     const {examAttachmentOwner,...visible}=data
+     const rows=data.examProjectId ? (examAttachmentOwner ? examTutorImageRows(data,examAttachmentOwner) : [])
+       : await tutorImageRows(db,{turnId:data.turnId})
+     return {content:await tutorTurnContent(db,visible,rows,undefined,async()=>{
       const {data:extra,error:followupError}=await db.rpc('tutor_grant_followups',{p_token_hash:digest,p_turn:data.turnId})
       return followupError?{followupWarning:'Follow-ups could not be loaded. Read the turn again before replying.'}:tutorFollowupFields(extra?.followups)
      })}

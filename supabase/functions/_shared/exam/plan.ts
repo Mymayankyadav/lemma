@@ -31,7 +31,7 @@ export interface ExamPlan {
   rows: ExamRow[]; coverage: {accounted: number; secure: number; deferred: number}; next: ExamAction; runnerUp?: ExamAction;
   minutes: number | null; conflicts: string[];
 }
-export interface ExamSnapshot {sitting: ExamSitting; attempts: ExamAttempt[]; evidence: ConceptEvidence[]; now: string}
+export interface ExamSnapshot {sitting: ExamSitting; attempts: ExamAttempt[]; evidence: ConceptEvidence[]; now: string; slotMinutes?:number}
 const day = 86_400_000;
 const estimates: Record<EvidenceStatus, [number, number]> = {
   secure: [.85, .70], stale: [.65, .40], shaky: [.55, .35], conflicting: [.55, .25], unseen: [.50, .15], gap: [.25, .10],
@@ -90,12 +90,12 @@ const gain = (r: ExamRow) => r.expected * (1 - r.probability) * (teaching(r) ? .
 const rowOrder = (a: ExamRow, b: ExamRow) => Number(!!b.row.compulsory) - Number(!!a.row.compulsory) || b.expected - a.expected;
 const action = (kind: ExamAction['kind'], why: string, keys: string[] = [], minutes = 0): ExamAction => ({kind, keys, minutes, why});
 
-function selectActions(rows: ExamRow[], sitting: ExamSitting, budget: number): ExamAction[] {
+function selectActions(rows: ExamRow[], sitting: ExamSitting, budget: number, remaining=budget): ExamAction[] {
   if (!rows.length) return [action('map', 'Ask for the next scored task family or revisit a deferred row.')];
   const byKey = new Map(rows.map(r => [r.row.key, r]));
   const pins = rows.some(r => r.disposition?.disposition === 'pin');
   if (!pins && (sitting.phase === 'verify' || rows.every(r => r.status === 'secure') ||
-      (sitting.activation_study_minutes && budget <= .2 * sitting.activation_study_minutes))) {
+      (sitting.activation_study_minutes && remaining <= .2 * sitting.activation_study_minutes))) {
     // A full proof gets a slot first on a proof paper. Use the largest remaining weights that fit.
     const sample = [...rows].sort((a, b) => Number(b.row.format === 'proof') - Number(a.row.format === 'proof') || rowOrder(a, b));
     const keys: string[] = [];
@@ -175,6 +175,6 @@ export function planExam(snapshot: ExamSnapshot): ExamPlan {
   else if (sitting.starts_at && Date.parse(now) >= Date.parse(sitting.starts_at)) actions = [action('confirm', 'Ask whether the exam took place or was postponed before finishing.')];
   else if (minutes === 0) actions = [action('rest', 'Light recap only, or rest. Reading counts as exposure.')];
   else if (minutes == null) actions = [action('map', 'Ask how many study minutes are available before choosing a lesson.')];
-  else actions = selectActions(eligible, sitting, minutes);
+  else actions = selectActions(eligible, sitting, Math.min(minutes,snapshot.slotMinutes??minutes), minutes);
   return {rows, coverage, minutes, conflicts, next: actions[0], runnerUp: actions[1]};
 }

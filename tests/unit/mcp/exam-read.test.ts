@@ -25,7 +25,9 @@ describe('get(what=exam)', () => {
     expect(output).toContain('CARD IDEAS 1 open · BOOKMARK CP4 step 2/3 S7');
     expect(context.next).toContain('log each scored answer with save_progress and exam_attempts');
     expect(reads.some(read=>read.table==='lemma_command_resources')).toBe(false);
-    expect(rpcCalls).toEqual([['exam_row_evidence',{p_owner:owner,p_sitting:'sitting',p_as_of:now}]]);
+    expect(rpcCalls).toEqual([['lemma_plan_released',undefined],['exam_row_evidence',{p_owner:owner,p_sitting:'sitting',p_as_of:now}],
+      ['log_exam_decision',expect.objectContaining({p_owner:owner,p_sitting:'sitting',p_as_of:now,
+        p_decision:expect.objectContaining({shadow:true,policy:'selector-v1',inputs_hash:expect.stringMatching(/^[a-f0-9]{64}$/)})})]]);
     expect(await get(context,{what:'exam',id:'sitting'})).toBe(output);
   });
 
@@ -62,7 +64,9 @@ describe('get(what=exam)', () => {
     expect(output).toContain('more rows');
     expect(output).toContain('COVERAGE accounted 600/600');
     expect(output).toContain('\nNEXT ');
-    expect(rpcCalls).toEqual([['exam_row_evidence',{p_owner:owner,p_sitting:'sitting',p_as_of:now}]]);
+    expect(rpcCalls).toEqual([['lemma_plan_released',undefined],['exam_row_evidence',{p_owner:owner,p_sitting:'sitting',p_as_of:now}],
+      ['log_exam_decision',expect.objectContaining({p_owner:owner,p_sitting:'sitting',p_as_of:now,
+        p_decision:expect.objectContaining({shadow:true,policy:'selector-v1',inputs_hash:expect.stringMatching(/^[a-f0-9]{64}$/)})})]]);
     expect(reads.find(read=>read.table==='exam_attempts')).toMatchObject({limit:500,filters:expect.arrayContaining([
       ['eq','user_id',owner],['eq','sitting_id','sitting'],['is','voided_at',null],['lte','occurred_at',now],
     ])});

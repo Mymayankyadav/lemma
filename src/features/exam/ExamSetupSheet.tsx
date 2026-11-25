@@ -125,7 +125,7 @@ export function ExamSetupSheet({data,zone,mode,disabled,allowActivate,onSave,onC
   </Sheet>
   {editing!==null&&<BlueprintRowSheet row={rows[editing]} checkpoints={data.checkpoints} disabled={disabled}
    onClose={()=>setEditing(null)} onSave={row=>setRows(list=>editing===list.length?[...list,row]:list.map((old,index)=>index===editing?row:old))}/>}
-  {block&&<BlockSheet v7 block={null} initialTitle={'Exam prep: '+data.project.title}
+  {block&&<BlockSheet v7 block={null} initialProjectId={data.project.id} initialTitle={'Exam prep: '+data.project.title}
    date={zonedInput(new Date().toISOString(),zone).slice(0,10)} zone={zone} onClose={()=>setBlock(false)} onRefresh={()=>{}}/>}
  </>
 }

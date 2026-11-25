@@ -135,3 +135,11 @@
  }
  #exam-ledger-rows {scroll-margin-top:15rem;}
 }
+.lemma-tutor .v7-exam-tutor-chip {min-width:0;min-height:44px;white-space:normal;text-align:start;}
+.lemma-tutor .v7-exam-tutor-chip[data-phase="map"] {color:var(--v7-role-selection-fg);}
+.lemma-tutor .v7-exam-tutor-chip[data-phase="screen"] {color:var(--v7-role-status-warning);}
+.lemma-tutor .v7-exam-tutor-chip[data-phase="teach"] {color:var(--v7-role-action-bg);}
+.lemma-tutor .v7-exam-tutor-chip[data-phase="verify"] {color:var(--v7-role-status-success);}
+.lemma-tutor .v7-exam-composer-actions {flex:none;padding:var(--v7-space-1) var(--v7-space-2);gap:var(--v7-space-1);}
+.lemma-tutor .v7-exam-composer-actions>.v7-button {padding-inline:var(--v7-space-2);}
+.lemma-tutor [data-saved="true"] {color:var(--v7-role-status-success);}

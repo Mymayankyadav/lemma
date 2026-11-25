@@ -1,5 +1,7 @@
 import {LemmaError} from '../api'
-import {getDemoProfile} from '../mode'
+import {getDemoProfile,getMode} from '../mode'
+import {getApi} from '../index'
+import type {DemoAdapter} from '../demo/adapter'
 import {getDeadlineApi} from '../deadlines'
 import {requireOnline} from './commands'
 import type {BlueprintRow, CardIdea, ExamApi, ExamAttempt, ExamSetup, SittingChange, SittingRecord} from './contract'
@@ -19,7 +21,8 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
  ]
  const sittings:SittingRecord[]=getDemoProfile()==='first-use'?[]:projects.map(project=>({
   id:'demo-exam-'+project.id,project_id:project.id,title:project.title,status:project.status,phase:'screen',card_mode:'later',
-  starts_at:iso(project.days),finished_at:project.status==='finished'?iso(-2):null,time_zone:'UTC',study_minutes:project.status==='active'?1:120,total_marks:60,
+  starts_at:iso(project.days),...(project.status==='active'?{activated_at:iso(-2),bookmark:{checkpoint:'CP9',step:2,capturedAt:iso(-2)}}:{}),
+  finished_at:project.status==='finished'?iso(-2):null,time_zone:'UTC',study_minutes:project.status==='active'?1:120,total_marks:60,
   version:1,blueprint_version:1,blueprint:project.id==='project-linear'?linearRows:[],ledger:{},
  }))
  const attempts:Array<ExamAttempt&{sitting_id:string;id:string;delivery_ref?:string}>=[{
@@ -30,6 +33,22 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
  }]
  const ideas:CardIdea[]=[]
  const deadlines=new Map<string,{id:string;version:number}>()
+ const undo=new Map<number,()=>void>()
+ let actionId=0
+ const key='lemma.demo-exam:'+getDemoProfile()
+ try {
+  const saved=JSON.parse(sessionStorage.getItem(key)??'null')
+  if(saved?.sittings&&saved?.attempts&&saved?.ideas){
+   sittings.splice(0,sittings.length,...saved.sittings)
+   attempts.splice(0,attempts.length,...saved.attempts)
+   ideas.push(...saved.ideas)
+   for(const [id,deadline] of saved.deadlines??[])deadlines.set(id,deadline)
+  }
+ }catch{/* The tab can still run the demo in memory. */}
+ function persist(){
+  try{sessionStorage.setItem(key,JSON.stringify({sittings,attempts,ideas,deadlines:[...deadlines]}))}catch{/* Keep the in-memory demo. */}
+ }
+ const bookmark=(projectId:string,capturedAt:string)=>getMode()==='demo'?(getApi() as DemoAdapter).examStudyBookmark(projectId,capturedAt):{capturedAt}
  const pending=new Map<string,{input:ExamSetup;id:string}>()
  async function apply(sitting:SittingRecord,change:SittingChange){
   const closed=sitting.status==='finished'||sitting.status==='cancelled'
@@ -39,10 +58,13 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
     if(sittings.some(row=>row.status==='active'&&row.project_id===sitting.project_id))
      throw new LemmaError('conflict','This path already has active exam prep.')
     sitting.status='active'
+    sitting.activated_at=new Date().toISOString()
+    sitting.bookmark=bookmark(sitting.project_id,sitting.activated_at)
     break
    case 'pause':
     if(sitting.status!=='active')throw new LemmaError('conflict','Exam prep is already paused.')
     sitting.status='paused'
+    sitting.paused_at=new Date().toISOString()
     break
    case 'cancel':
    case 'finish':
@@ -83,12 +105,19 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
     break
   }
   sitting.version++
+  persist()
  }
  return {
   mode:'demo',
   async read(projectId){return {pendingSetup:pending.has(projectId),sittings: structuredClone(sittings.filter(row=>row.project_id===projectId&&row.status!=='cancelled'))}},
   async readEvidence(sitting){return {attempts:structuredClone(attempts.filter(attempt=>attempt.sitting_id===sitting.id)),evidence:[]}},
-  async readIdeas(projectId){return structuredClone(ideas.filter(idea=>idea.project_id===projectId))},
+  async readIdeas(projectId){
+   const demo=getApi() as DemoAdapter
+   return structuredClone(ideas.filter(idea=>idea.project_id===projectId).map(idea=>{
+    const result=idea.proposal_id?demo.examIdeaProposalState(idea.proposal_id):undefined
+    return result?{...idea,proposal_status:result.status,...(result.noteNo?{status:'linked' as const,note_no:result.noteNo}:{})}:idea
+   }))
+  },
   async setup(input){
    requireOnline()
    let work=pending.get(input.project_id)
@@ -102,8 +131,12 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
    if(!deadlines.has(work.id)){
     const receipt=await getDeadlineApi().createDeadline({title:input.title,kind:'exam',due:{kind:'instant',at:input.starts_at},projectId:input.project_id})
     deadlines.set(work.id,receipt.record)
-    sittings.unshift({...input,id:work.id,status:input.activate?'active':'planned',phase:'map',ledger:{},blueprint_version:1,version:1})
+    sittings.unshift({...input,id:work.id,status:input.activate?'active':'planned',phase:'map',ledger:{},blueprint_version:1,version:1,
+     ...(input.activate?{activated_at:new Date().toISOString(),
+      bookmark:bookmark(input.project_id,new Date().toISOString())}:{}),
+    })
    }
+   persist()
    pending.delete(input.project_id)
    return work.id
   },
@@ -121,6 +154,13 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
     throw new LemmaError('conflict','The blueprint changed. Open it again to edit the latest version.')
    await apply(current,change)
   },
+  async undo(actionNo){
+   requireOnline()
+   const apply=undo.get(actionNo)
+   if(!apply)throw new LemmaError('not_found','This action is unavailable.')
+   apply()
+   undo.delete(actionNo)
+  },
   async command(command){
    requireOnline()
    const operationId=crypto.randomUUID()
@@ -128,14 +168,45 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
     const id=await this.setup(command.patch as ExamSetup)
     return {status:'ok',id,operationId}
    }
-   if(command.resource==='card_ideas'&&command.operation==='save'){
-    const patch=command.patch as Pick<CardIdea,'project_id'|'sitting_id'|'reason'|'target'>
-    const old=ideas.find(idea=>idea.project_id===patch.project_id&&idea.target.toLowerCase()===patch.target.toLowerCase()&&idea.status==='saved')
-    const idea=old??{...patch,id:crypto.randomUUID(),status:'saved' as const,sightings:0,version:0}
-    idea.sightings++
+   if(command.resource==='card_ideas'){
+    const patch=command.patch as Partial<CardIdea>&{card?:string}
+    const op=command.operation
+    const target=(patch?.target??'').trim()
+    const normalized=(text:string)=>text.toLowerCase().replace(/[$\\]/g,'').replace(/\s+/g,' ').trim()
+    const old=op==='save'?ideas.find(idea=>idea.project_id===patch.project_id&&normalized(idea.target)===normalized(target)&&idea.status==='saved')
+     :ideas.find(idea=>idea.id===command.target?.id)
+    if(op!=='save'&&(!old||old.version!==command.expectedVersion))return {status:'conflict',operationId}
+    if(op==='save'&&(!patch.project_id||target.length<3))throw new LemmaError('invalid','Enter a retrieval target.')
+    const idea=old??{id:crypto.randomUUID(),project_id:patch.project_id!,sitting_id:patch.sitting_id??null,target,
+     reason:patch.reason??null,status:'saved' as const,sightings:0,version:0,created_at:new Date().toISOString()}
+    const before=old?structuredClone(old):null
+    if(op==='save'){
+     idea.sightings++
+     idea.evidence=[...new Map([...(idea.evidence??[]),...(patch.evidence??[])].map(item=>[JSON.stringify(item),item])).values()].slice(0,20)
+     idea.concept??=patch.concept
+    }else if(op==='dismiss')idea.status='dismissed'
+    else if(op==='restore')idea.status='saved'
+    else if(op==='update')Object.assign(idea,patch)
+    else if(op==='link'){idea.status='linked';idea.note_no=Number(patch.card?.slice(1))}
+    else if(op==='draft'){
+     if(idea.status==='drafted')return {status:'ok',operationId,id:idea.id,version:idea.version}
+     const demo=getApi() as DemoAdapter
+     idea.proposal_id=await demo.makeExamIdeaProposal(idea.project_id,patch.front??idea.target,patch.back??'',idea.reason)
+     idea.proposal_status='pending'
+     idea.status='drafted'
+    }else throw new LemmaError('invalid','Unknown card idea action.')
     idea.version++
     if(!old)ideas.push(idea)
-    return {status:'ok',operationId,id:idea.id,version:idea.version}
+    const actionNo=++actionId
+    const version=idea.version
+    undo.set(actionNo,()=>{
+     if(idea.version!==version)throw new LemmaError('conflict','This idea has changed.')
+     if(before)Object.assign(idea,before)
+     else ideas.splice(ideas.indexOf(idea),1)
+     persist()
+    })
+    persist()
+    return {status:'ok',operationId,id:idea.id,version:idea.version,actionNo}
    }
    if(command.resource==='exam_attempts'&&command.operation==='record'){
     const id=crypto.randomUUID(),patch=command.patch as ExamAttempt&{sitting_id:string;delivery_ref?:string}
@@ -145,6 +216,7 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
     const old=patch.delivery_ref&&attempts.find(attempt=>attempt.sitting_id===sitting.id&&attempt.delivery_ref===patch.delivery_ref)
     if(old)return {status:'duplicate',operationId,id:old.id,version:1}
     attempts.push({...patch,id,occurred_at:patch.occurred_at??new Date().toISOString()})
+    persist()
     return {status:'ok',operationId,id,version:1}
    }
    const sitting=sittings.find(row=>row.id===command.target?.id)
