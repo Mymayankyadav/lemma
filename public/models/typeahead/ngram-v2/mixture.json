@@ -1,0 +1,248 @@
+{
+  "assetSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+  "calibrationSha256": "0fffa0d6b0e605736f572451c1306bbe6edbd9c2dc9751893d2bef60a9a3ce62",
+  "captureVersion": "n238-mixture-v1",
+  "components": [
+    "general",
+    "subject",
+    "question",
+    "draft",
+    "personal"
+  ],
+  "counts": {
+    "global": 359,
+    "subjects": {
+      "algebra": 40,
+      "analysis": 40,
+      "geometry": 22,
+      "linear-algebra": 28,
+      "number-theory": 21,
+      "other": 137,
+      "probability": 44,
+      "topology": 27
+    }
+  },
+  "coverage": {
+    "literalSupportRate": 0.8930348258706468,
+    "pooled": {
+      "draftAvailable": 356,
+      "missingComponents": 43,
+      "questionAvailable": 359,
+      "scheduled": 402,
+      "subjectAvailable": 55,
+      "supportedLiterals": 359
+    },
+    "scope": "Positive general probability from the frozen request outcome space",
+    "subjects": {
+      "algebra": {
+        "draftAvailable": 40,
+        "missingComponents": 4,
+        "questionAvailable": 40,
+        "scheduled": 44,
+        "supportedLiterals": 40
+      },
+      "analysis": {
+        "draftAvailable": 40,
+        "missingComponents": 4,
+        "questionAvailable": 40,
+        "scheduled": 44,
+        "supportedLiterals": 40
+      },
+      "geometry": {
+        "draftAvailable": 22,
+        "missingComponents": 2,
+        "questionAvailable": 22,
+        "scheduled": 24,
+        "supportedLiterals": 22
+      },
+      "linear-algebra": {
+        "draftAvailable": 28,
+        "missingComponents": 4,
+        "questionAvailable": 28,
+        "scheduled": 32,
+        "subjectAvailable": 28,
+        "supportedLiterals": 28
+      },
+      "number-theory": {
+        "draftAvailable": 21,
+        "missingComponents": 2,
+        "questionAvailable": 21,
+        "scheduled": 23,
+        "supportedLiterals": 21
+      },
+      "other": {
+        "draftAvailable": 136,
+        "missingComponents": 22,
+        "questionAvailable": 137,
+        "scheduled": 159,
+        "supportedLiterals": 137
+      },
+      "probability": {
+        "draftAvailable": 43,
+        "missingComponents": 3,
+        "questionAvailable": 44,
+        "scheduled": 47,
+        "supportedLiterals": 44
+      },
+      "topology": {
+        "draftAvailable": 26,
+        "missingComponents": 2,
+        "questionAvailable": 27,
+        "scheduled": 29,
+        "subjectAvailable": 27,
+        "supportedLiterals": 27
+      }
+    }
+  },
+  "global": [
+    0.8399064231541697,
+    0.07479295147119815,
+    0.07451436686099094,
+    0.010786258513641225,
+    0.0
+  ],
+  "status": "validated",
+  "subjectAssetSha256": {
+    "linear-algebra": "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe",
+    "topology": "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0"
+  },
+  "subjects": {
+    "algebra": [
+      0.8424940438023313,
+      0.07502337688554017,
+      0.07319313969440339,
+      0.009289439617725109,
+      0.0
+    ],
+    "analysis": [
+      0.8431238391362758,
+      0.07507945962350947,
+      0.07204437852480751,
+      0.009752322715407269,
+      0.0
+    ],
+    "geometry": [
+      0.8406278838559812,
+      0.0748571969320869,
+      0.07293754912155044,
+      0.011577370090381532,
+      0.0
+    ],
+    "linear-algebra": [
+      0.8364054252516498,
+      0.07782431229225568,
+      0.07554713384220094,
+      0.010223128613893571,
+      0.0
+    ],
+    "number-theory": [
+      0.8471076425044448,
+      0.07543421391966941,
+      0.06769682365403852,
+      0.009761319921847263,
+      0.0
+    ],
+    "other": [
+      0.8446419802845238,
+      0.07521464879946652,
+      0.07254606651708205,
+      0.007597304398928139,
+      0.0
+    ],
+    "probability": [
+      0.8260761198986576,
+      0.07356137474823789,
+      0.08954534419891365,
+      0.010817161154190992,
+      0.0
+    ],
+    "topology": [
+      0.8313963519067654,
+      0.07874345756921472,
+      0.08007942555339652,
+      0.009780764970623444,
+      0.0
+    ]
+  },
+  "validation": {
+    "coverage": {
+      "literalSupportRate": 0.8781094527363185,
+      "pooled": {
+        "draftAvailable": 356,
+        "missingComponents": 45,
+        "questionAvailable": 357,
+        "scheduled": 402,
+        "subjectAvailable": 58,
+        "supportedLiterals": 353,
+        "unsupportedLiterals": 4
+      },
+      "scope": "Positive general probability from the frozen request outcome space",
+      "subjects": {
+        "algebra": {
+          "draftAvailable": 47,
+          "missingComponents": 5,
+          "questionAvailable": 47,
+          "scheduled": 52,
+          "supportedLiterals": 47
+        },
+        "analysis": {
+          "draftAvailable": 13,
+          "missingComponents": 2,
+          "questionAvailable": 13,
+          "scheduled": 15,
+          "supportedLiterals": 13
+        },
+        "geometry": {
+          "draftAvailable": 13,
+          "missingComponents": 1,
+          "questionAvailable": 14,
+          "scheduled": 15,
+          "supportedLiterals": 14
+        },
+        "linear-algebra": {
+          "draftAvailable": 28,
+          "missingComponents": 3,
+          "questionAvailable": 28,
+          "scheduled": 31,
+          "subjectAvailable": 28,
+          "supportedLiterals": 28
+        },
+        "number-theory": {
+          "draftAvailable": 39,
+          "missingComponents": 5,
+          "questionAvailable": 39,
+          "scheduled": 44,
+          "supportedLiterals": 39
+        },
+        "other": {
+          "draftAvailable": 157,
+          "missingComponents": 18,
+          "questionAvailable": 157,
+          "scheduled": 175,
+          "supportedLiterals": 153,
+          "unsupportedLiterals": 4
+        },
+        "probability": {
+          "draftAvailable": 29,
+          "missingComponents": 8,
+          "questionAvailable": 29,
+          "scheduled": 37,
+          "supportedLiterals": 29
+        },
+        "topology": {
+          "draftAvailable": 30,
+          "missingComponents": 3,
+          "questionAvailable": 30,
+          "scheduled": 33,
+          "subjectAvailable": 30,
+          "supportedLiterals": 30
+        }
+      }
+    },
+    "fallbackMeanNll": 4.528935175131856,
+    "fittedMeanNll": 4.516670935319247,
+    "sameGeneralAndSubjectAssets": true
+  },
+  "validationSha256": "9fd7116dac6f7276702d0e3eca539c3d6768f8988519627c7ff7723d51b7a993",
+  "version": 1
+}

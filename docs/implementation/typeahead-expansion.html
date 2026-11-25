@@ -34,8 +34,39 @@ code{font: .88em/1.4 var(--mono);overflow-wrap:anywhere}.number{font-variant-num
 <p class="lede">Build larger n-gram and neural models on much broader mathematical corpora, then rank their completions using the tutor’s scoped preferences and the learner’s typed context.</p>
 <p>This revision adds <strong>sixteen concrete improvements</strong> to the handoff branch, with proposed sizes, ranking behavior, an implementation order and measurable acceptance criteria. The earlier mathematical audit remains available below.</p>
 <p class="meta">Reviewed <code>ccr-220fd71d-iaf0fy</code> at <code>1444b245</code>. The local checkout and remote <code>main</code> were at <code>260dae12</code>. Their common ancestor is <code>787490ad</code>, the revision cited by the original plan.</p>
-<nav aria-label="Plan sections"><a href="#scale">Scale and data</a><a href="#ranking">Tutor ranking</a><a href="#improvements">16 improvements</a><a href="#plan">Delivery and budgets</a><a href="#audit">Math review</a><a href="#implementation">Implementation evidence</a><a href="#sources">Evidence and sources</a></nav>
+<nav aria-label="Plan sections"><a href="#delivery-result">Final results</a><a href="#scale">Scale and data</a><a href="#ranking">Tutor ranking</a><a href="#improvements">16 improvements</a><a href="#plan">Delivery and budgets</a><a href="#audit">Math review</a><a href="#implementation">Implementation evidence</a><a href="#sources">Evidence and sources</a></nav>
 
+
+<section id="delivery-result">
+<h2>Final implementation and measured results</h2>
+<p>The expanded four-gram, topology, linear algebra and LaTeX packs and calibrated mixture are included in
+PR <strong>#1861</strong>. The verified packs remain behind the existing default-off rollout flags.</p>
+<div class="scroll"><table class="stack">
+<caption>Frozen browser replay on 40 short answers</caption>
+<thead><tr><th scope="col">Arm</th><th scope="col">Boundary top-three</th><th scope="col">Key equivalents saved</th></tr></thead>
+<tbody>
+<tr><th scope="row">Corrected trigram</th><td data-label="Boundary top-three">121/468 · 25.85%</td><td data-label="Key equivalents saved">1,015/3,003 · 33.80%</td></tr>
+<tr><th scope="row">Expanded counts and calibrated mixture</th><td data-label="Boundary top-three">121/468 · 25.85%</td><td data-label="Key equivalents saved">1,026/3,003 · 34.17%</td></tr>
+<tr><th scope="row">With Tutor priorities</th><td data-label="Boundary top-three">122/468 · 26.07%</td><td data-label="Key equivalents saved">1,029/3,003 · 34.27%</td></tr>
+<tr><th scope="row">With prospective personalization</th><td data-label="Boundary top-three">122/468 · 26.07%</td><td data-label="Key equivalents saved">1,027/3,003 · 34.20%</td></tr>
+</tbody></table></div>
+<p>The replay took exact-match taps on answers of 65–85 codepoints and measured key equivalents.
+Expanded counts missed the targets of 55% key savings and 35% boundary top-three.
+Every arm matched 1 of 55 symbol opportunities. Paired 95% intervals included zero for the effects
+of the expanded packs, Tutor ranking and prospective personalization.
+Actual learner typing, acceptance and retention were not measured.</p>
+<p>The final scoped cold subtotal was 29,267,559 uncompressed bytes. In desktop Chromium at 4× CPU,
+100 warm taps per condition measured 35.2 ms p95 empty and 39.0 ms with eight equations. The empty case missed
+32 ms. Its worker measured 26.6 ms p95 against 8 ms. The eight-equation case met both timing targets.
+The browser used an animation-frame proxy for presentation.</p>
+<p>The three primary quantized graphs missed the parity gate. The requested FP16 trial passed numerical validation
+and completed one desktop WASM compatibility case, then failed the graph and cold byte limits. Neural and grey-text
+offers stayed off. Physical-device qualification remains open.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/pull/1861">Implementation PR</a>
+<a href="typeahead-evidence/final-frozen-replay.json">Final replay and paired evidence</a>
+<a href="typeahead-evidence/final-model-mass-and-fit.json">Model and calibration audit</a>
+<a href="typeahead-evidence/final-desktop-cold-and-timing.json">Final desktop cold and timing evidence</a></p>
+</section>
 
 <section id="scale">
 <h2>Larger models, larger training corpora</h2>
@@ -329,7 +360,7 @@ used the existing fallback for filling an otherwise-empty family slot. It is dia
 word and maths token occurrences were counted across 154 training shards. The order-five SQLite checkpoint passed
 its integrity check. The 2 MiB LaTeX four-gram used 50,000,004 formula tokens. Chromium summed all 50,908 stored
 history rows and 235,002 edges, with a maximum probability-mass error of 2.96 × 10<sup>−8</sup>.
-Combined browser verification of the final general and subject packs is pending.</td></tr>
+Combined browser verification passed across all four final packs, covering 630,953 history rows and 3,515,746 edges.</td></tr>
 <tr><th scope="row">Matched neural data controls</th><td data-label="Observation">Both primary runs processed
 100 million scored training targets. On the same 30,855 training-validation targets, native perplexity was 8.3759
 with the current-size pool and 7.6928 with the development pool. Weight-only int8 exports matched the float graph
@@ -406,7 +437,7 @@ and feature gates stay in place while device, quality and calibration evidence i
 <section id="sources">
 <h2>Evidence and sources</h2>
 <p>The attachment's plan §§3, 5, 10 and 11 supplies the pilot numbers, equations and targets. I compared the ZIP's training, preparation, export and build files with the pinned branch. I verified the binary independently, including its vocabulary order and backoff mass. During the baseline audit, the training corpus host returned HTTP 403 through this workspace's proxy. The ZIP also omits the four original question/answer pairs required by the pilot's optional fourth argument. The manifest's 101.33 perplexity, the affected corpus token count, and the four-answer UI replay therefore remain unreplicated here.</p>
-<p>The numerical mass checks in the baseline review describe the existing n-gram asset. The implementation evidence reports subsequent training diagnostics and browser benchmarks. Full-corpus comparison, physical-phone measurements and release qualification remain open.</p>
+<p>The numerical mass checks in the baseline review describe the existing n-gram asset. The implementation evidence reports subsequent training diagnostics and browser benchmarks. The final replay is reported above. Physical-phone measurements and release qualification remain open.</p>
 <details><summary>Reproduction identifiers and mass calculation</summary>
 <p>Handoff commit <code>1444b245593b7d0bc372e3351025a26dfeead3a6</code>. Trigram binary SHA-256 <code>d439be36601fe22e599c4624ecb49d2ed043f658814942b1c95ea0105aadaceb</code>. Ordered vocabulary SHA-256 <code>a80b2f41633dfc2f1d3cc451bfaff55d87ca357aa7bd8e0d9064533e58eda571</code> over UTF-8 entries joined by a newline with no trailing newline. Expected compressed corpus SHA-256 <code>9a33bde2feabb2421936bbde65ab15692ba814812bb2cf0e82a77b35e07e0b9b</code>.</p>
 <p>Decode each stored score with exp(−0.07<i>q</i>) and its backoff factor with exp(0.1<i>b</i>). For a row with explicit successors <i>E</i>, its mass equals the sum of their stored probabilities plus its backoff factor times the lower-order mass outside <i>E</i>. This accounts for the full vocabulary without scanning 30,005 entries for every row. The minimum and maximum rows were also summed directly over every ID.</p>
