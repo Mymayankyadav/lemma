@@ -71,12 +71,12 @@ function writtenWord(word: string): boolean {
   return words[low] === word;
 }
 
-function startOfWindow(request: WritingAidRequest, authored: string, start: number): number {
-  const floor = authored.length - WINDOW;
+function startOfWindow(authored: string, start: number, caret: number): number {
+  const floor = caret - WINDOW;
   if (floor <= start) return start;
   // Do not create a prefix out of the middle of a learner's earlier word.
-  const boundary = request.cursor.text.slice(floor).search(/\s/u);
-  return boundary < 0 ? authored.length : floor + boundary + 1;
+  const boundary = authored.slice(floor, caret).search(/\s/u);
+  return boundary < 0 ? caret : floor + boundary + 1;
 }
 
 function keyProposals(
@@ -363,8 +363,9 @@ export function predictWritingAidPool(request: WritingAidRequest, model?: Writin
   if (!anchor || !canSuggestWritingAid(request) || hasOpenLiteral(cursor.text) || tutorMathContext(cursor) !== 'prose') {
     return EMPTY_POOL;
   }
-  const start = startOfWindow(request, anchor.text, anchor.start);
-  const authoredText = anchor.text.slice(start, anchor.caret ?? anchor.text.length);
+  const caret = anchor.caret ?? anchor.text.length;
+  const start = startOfWindow(anchor.text, anchor.start, caret);
+  const authoredText = anchor.text.slice(start, caret);
   if (!authoredText.trim()) return EMPTY_POOL;
   const text = cursor.text.slice(start, cursor.end);
   const trace: WordTrace[] | undefined = request.replayDiagnostics && request.tracePool !== false ? [] : undefined;

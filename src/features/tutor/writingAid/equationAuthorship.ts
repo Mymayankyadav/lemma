@@ -19,6 +19,7 @@ export function planEquationSuggestion(value: string, start: number, end: number
   if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || start > end || end > value.length ||
       !insert.trim() || insert.length > 240) return null;
   const text = value.slice(0, start) + insert + value.slice(end);
+  if (text === value) return {text, spans};
   const nextEnd = start + insert.length;
   const retained = moveAcceptedSpans(value, text, spans, {start, end, nextEnd}, remainingSlots);
   const result = addAuthoredSpan(text, retained, {start, end: nextEnd, text: insert, source: 'equation'});

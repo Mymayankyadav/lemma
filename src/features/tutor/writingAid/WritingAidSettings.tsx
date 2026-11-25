@@ -26,8 +26,9 @@ const SURFACE_LABELS: ReadonlyArray<readonly [WritingAidSurface, string]> = [
 export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
   const {scopeKey, available, mode, surfaces, fasterTyping} = useWritingAidPreferences();
   const fullSettings = isFlagOn('writingAidSettings');
+  const expanded = fasterTyping || isFlagOn('typeaheadV2');
   const personalization = useWritingAidPersonalization();
-  const weekly = isFlagOn('typeaheadV2') && personalization.enabled ? readWritingAidWeek(personalization.model.adaptation) : undefined;
+  const weekly = expanded && personalization.enabled ? readWritingAidWeek(personalization.model.adaptation) : undefined;
   const group = useId();
   const notify = useToast();
   const failed = () => notify('Could not save writing aid settings.', {tone: 'danger'});
@@ -40,7 +41,7 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
       <Switch label="Try faster typing" checked={fasterTyping} disabled={!available}
         onChange={next => {if (!setFasterWritingAid(next, scopeKey)) failed();}}/>
     </fieldset>
-    <AndroidModelSettings canInstall={fasterTyping || isFlagOn('typeaheadV2')}/>
+    <AndroidModelSettings canInstall={expanded}/>
     {fullSettings && <>
     <fieldset disabled={!available}>
       <legend>Suggestion mode</legend>
@@ -62,7 +63,8 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
           onChange={next => {if (!setWritingAidSurface(surface, next, scopeKey)) failed();}}/>;
       })}
     </fieldset>
-    <fieldset disabled={!available}>
+    </>}
+    {(fullSettings || fasterTyping) && <fieldset disabled={!available}>
       <legend>Personalization</legend>
       <p>Learn from your choices and repeated typing on this device.</p>
       <Switch label="Personalize suggestions" checked={personalization.enabled} disabled={!available}
@@ -75,7 +77,6 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
         <p>{weekly.accepts} accepted of {weekly.impressions} displayed suggestions. {weekly.retained} kept for at least three seconds.
           {' '}{weekly.undos} undone of {weekly.accepts} accepted. {weekly.keysSaved} estimated keystrokes saved.</p>
       </details>}
-    </fieldset>
-    </>}
+    </fieldset>}
   </section>;
 }

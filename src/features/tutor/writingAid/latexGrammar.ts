@@ -7,6 +7,7 @@ import {historyLog, historyNext, historyWidth, latexModel, type NgramModel} from
 import {decoderSymbols} from './decoder/ngramSpatial';
 import type {DeclaredSymbol} from '../../../../supabase/functions/_shared/tutor-answer-aids';
 import {scanPad, type PadEdit} from '../../pad/padEdit';
+import {latexCommandEnd, latexControlWordPrefix} from '../input/latexCommand';
 
 const TOKEN = /\\[A-Za-z]+|\\.|[A-Za-z]|\d+|\S/gu;
 /** Tokens as the model was trained: a single letter is <latin>, digits <num>. */
@@ -287,9 +288,9 @@ export type LatexSuggestionOptions = Readonly<{
   adjustment?: (suggestion: LatexSuggestion) => number;
 }>;
 
-export function latexCommandPrefix(math: string): string {
-  const token = /\\[A-Za-z]*$/.exec(math)?.[0] ?? '';
-  return token in ARGUMENTS || token === '\\left' || token === '\\right' ? '' : token;
+export function latexCommandPrefix(math: string, after = ''): string {
+  const token = latexControlWordPrefix(math);
+  return !/^[A-Za-z]/.test(after) && (token in ARGUMENTS || token === '\\left' || token === '\\right') ? '' : token;
 }
 
 /** Structural continuations plus model proposals, completed at the caret after any typed command prefix. */
@@ -381,9 +382,9 @@ function addModelCandidates(out: LatexSuggestion[], model: NgramModel, tokens: r
 
 /**
  * The maths being typed: the text of the unfinished $…$ before a collapsed caret, and the command in progress at its end
- * (`\\fr`). `start` is where that command begins, so a suggestion replaces it. Null outside an unfinished or open maths span.
+ * (`\\fr`). The replacement range covers the full command around the caret. Null outside an unfinished or open maths span.
  */
-export function unfinishedMath(edit: PadEdit): {math: string; typed: string; start: number} | null {
+export function unfinishedMath(edit: PadEdit): {math: string; typed: string; start: number; end: number} | null {
   if (edit.start !== edit.end) return null;
   let offset = 0;
   for (const segment of scanPad(edit.text)) {
@@ -394,8 +395,9 @@ export function unfinishedMath(edit: PadEdit): {math: string; typed: string; sta
     const mathStart = start + delimiter, mathEnd = segment.kind === 'math' ? offset - delimiter : offset;
     if (edit.start < mathStart || edit.end > mathEnd) return null;
     const math = edit.text.slice(mathStart, edit.start);
-    const typed = latexCommandPrefix(math);
-    return {math, typed, start: edit.start - typed.length};
+    const typed = latexCommandPrefix(math, edit.text.slice(edit.end, mathEnd));
+    const end = typed ? latexCommandEnd(edit.text, edit.end) : edit.end;
+    return {math, typed, start: edit.start - typed.length, end};
   }
   return null;
 }

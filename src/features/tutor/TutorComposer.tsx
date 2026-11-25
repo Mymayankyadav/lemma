@@ -42,6 +42,7 @@ import {effectiveAidLevel, type AidRole, type TutorAnswerAid} from '../../../sup
 import {typedEquationAt} from './input/typedEquation';
 import {useAutoeqReadings} from './input/useAutoeqReadings';
 import {latexSymbolOptions} from './input/latexShortcuts';
+import {latexCommandInsertion} from './input/latexCommand';
 import {applyEquationOrigins, equationFences, equationOrigins, equationSurroundings} from './writingAid/equationAuthorship';
 import {EquationLatexField} from './input/EquationLatexField';
 import {TutorEquationPanel} from './input/TutorEquationPanel';
@@ -265,7 +266,7 @@ export function TutorComposer(props: Props) {
   [cursor, shown, scratch, equationEdit, writingPrefs.mode, editingDisabled, enhancedMenu]);
   const latexBefore = mathSpan ? cursor.text.slice(0, mathSpan.start) : '';
   const {items: latexOptions, assetSha256: latexAssetSha256} = useLatexSuggestions(mathSpan ? {math: mathSpan.math, typed: mathSpan.typed, before: latexBefore,
-    after: cursor.text.slice(cursor.end), knownSymbols: decoderSymbols(latexBefore, question)} : undefined, 64,
+    after: cursor.text.slice(mathSpan.end), knownSymbols: decoderSymbols(latexBefore, question)} : undefined, 64,
   {declarations: aidLevel === 'none' ? undefined : aid?.ranking?.declaredSymbols});
   type MenuEntry = {key: string; slotKey: string; score: number; base: number; features: number[]; label: string; title?: string; display?: string; math?: string; word?: WritingAidProposal;
     edit: MenuEdit; replacement?: {start: number; end: number; insert: string; equation: boolean; role?: AidRole}};
@@ -307,16 +308,17 @@ export function TutorComposer(props: Props) {
     symbolOptions.forEach((option, index) => {
       const base = padEdit(cursor.text.slice(0, option.start) + cursor.text.slice(option.end), option.start);
       const next = insertTutorSymbol(base, option.symbol.id) ?? insertNotation(base, option.symbol.glyph);
-      const length = next.text.length - cursor.text.length + option.end - option.start;
+      const {insert, caret} = latexCommandInsertion(next.text.slice(option.start, next.start), next.start - option.start, option.end > cursor.end);
+      const result = padEdit(cursor.text.slice(0, option.start) + insert + cursor.text.slice(option.end), option.start + caret);
       addNotation('symbol:' + option.symbol.id, Math.log(.4 / (index + 1)), 'Insert ' + option.symbol.name,
-        {start: option.start, end: option.end, insert: next.text.slice(option.start, option.start + length), equation: mode === 'equation'},
-        next, option.symbol.glyph);
+        {start: option.start, end: option.end, insert, equation: mode === 'equation'}, result, option.symbol.glyph);
     });
     const span = mathSpan;
     if (span) latexOptions.forEach((option, index) => {
-      const next = padEdit(cursor.text.slice(0, span.start) + option.insert + cursor.text.slice(cursor.end), span.start + option.caret);
+      const {insert, caret} = latexCommandInsertion(option.insert, option.caret, span.end > cursor.end);
+      const next = padEdit(cursor.text.slice(0, span.start) + insert + cursor.text.slice(span.end), span.start + caret);
       addNotation('latex:' + option.insert, option.score ?? Math.log(.35 / (index + 1)), 'Insert ' + option.label,
-        {start: span.start, end: cursor.end, insert: option.insert, equation: true}, next, option.label);
+        {start: span.start, end: span.end, insert, equation: true}, next, option.label);
     });
     if (enhancedMenu) rankedWritingWords.forEach(word => {
       const identity = word.source === 'symbol' ? 'symbol:' + word.insert : 'word:' + word.insert.toLowerCase();
@@ -496,7 +498,7 @@ export function TutorComposer(props: Props) {
       : undefined;
     const before = history.current;
     if (commit(changePadText(before, next), true, true, false, false,
-      edit => addAcceptedSpan(edit, replacement.start, replacement.insert, replacement.equation ? 'equation' : 'symbol'), entry.edit)) {
+      edit => edit.text === before.present.text || addAcceptedSpan(edit, replacement.start, replacement.insert, replacement.equation ? 'equation' : 'symbol'), entry.edit)) {
       if (observed) {
         acceptedSuggestion.current = {before, after: next, proposal: observed};
         setHideSuggestionUndo(false);

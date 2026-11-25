@@ -73,6 +73,19 @@ describe('LaTeX continuations', () => {
     ])).toEqual([{symbol: 'U', role: 'unknown'}]);
   });
 
+  it('bounds the replacement to the incomplete command at the caret', () => {
+    expect(unfinishedMath({text: 'Given $\\alpha + x$.', start: 10, end: 10})).toMatchObject({
+      math: '\\al', typed: '\\al', start: 7, end: 13,
+    });
+    expect(unfinishedMath({text: 'Given $\\sqrt{x}$.', start: 12, end: 12})).toMatchObject({
+      math: '\\sqrt', typed: '', start: 12, end: 12,
+    });
+    const before = String.raw`$$\\begin{matrix}x\\\\al`;
+    expect(unfinishedMath({text: before + String.raw`pha\\end{matrix}$$`, start: before.length, end: before.length})).toMatchObject({
+      typed: '', start: before.length, end: before.length,
+    });
+  });
+
   it('keeps a set and point with distinct case separate in ambient and map relations', () => {
     const declarations: DeclaredSymbol[] = [
       {symbol: 'X', role: 'set', ambient: 'U'}, {symbol: 'x', role: 'unknown'},

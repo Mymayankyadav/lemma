@@ -122,35 +122,53 @@ test('the Equation sheet completes a nested root argument, supports Undo, and pr
   await expect(answer.getByRole('button', {name: 'Edit equation ' + root + '{2}}', exact: true})).toBeVisible();
 });
 
-test('accepts the exact scoped word in the middle of a learner sentence and restores it on undo', async ({page}) => {
-  const setup = await fixture(page);
-  setup.changeAid({terms:['notation','notational'],wording:[],ranking:{version:1,hints:[
-    {id:'notation',kind:'word',entry:'notation',priority:'prefer',role:'neutral',scope:{subject:'logic',mode:'prose'}},
-    {id:'notational',kind:'word',entry:'notational',priority:'deemphasize',role:'neutral',scope:{subject:'logic',mode:'prose'}},
-  ]}});
-  const answer = await answerField(page,route);
-  await expect.poll(setup.aidReads).toBeGreaterThan(0);
-  await answer.fill('Please explain the not here.');
-  await answer.press('End');
-  for (let i=0; i<6; i++) await answer.press('ArrowLeft');
-  await page.keyboard.type('a');
-  const offer = strip(page).getByRole('button',{name:'Insert notation',exact:true});
-  await expect(offer).toHaveAttribute('data-typeahead-start','19');
-  await expect(offer).toHaveAttribute('data-typeahead-end','23');
-  await expect(offer).toHaveAttribute('data-typeahead-caret','27');
-  await offer.click();
-  await expect(answer).toHaveJSProperty('textContent','Please explain the notation here.');
-  await expect.poll(() => answer.evaluate(field => {
-    const selection = getSelection();
-    if (!selection?.rangeCount || !field.contains(selection.focusNode)) return null;
-    const before = selection.getRangeAt(0).cloneRange();
-    before.selectNodeContents(field);
-    before.setEnd(selection.focusNode!,selection.focusOffset);
-    return before.toString().length;
-  })).toBe(27);
-  await answer.press('Control+z');
-  await expect(answer).toHaveJSProperty('textContent','Please explain the nota here.');
-});
+for (const trailingPassage of ['', ' The next sentence adds more context.'.repeat(35)]) {
+  const scenario = trailingPassage ? ' with a long trailing passage' : '';
+  test('accepts the exact scoped word in the middle of a learner sentence and restores it on undo' + scenario, async ({page}) => {
+    const setup = await fixture(page);
+    setup.changeAid({terms:['notation','notational'],wording:[],ranking:{version:1,hints:[
+      {id:'notation',kind:'word',entry:'notation',priority:'prefer',role:'neutral',scope:{subject:'logic',mode:'prose'}},
+      {id:'notational',kind:'word',entry:'notational',priority:'deemphasize',role:'neutral',scope:{subject:'logic',mode:'prose'}},
+    ]}});
+    const answer = await answerField(page,route);
+    await expect.poll(setup.aidReads).toBeGreaterThan(0);
+    const prefix = 'Please explain the not';
+    const suffix = ' here.' + trailingPassage;
+    await answer.fill(prefix + suffix);
+    await expect(answer).toHaveJSProperty('textContent', prefix + suffix);
+    await answer.evaluate((field, offset) => {
+      const walker = document.createTreeWalker(field, NodeFilter.SHOW_TEXT);
+      for (let text = walker.nextNode() as Text | null; text; text = walker.nextNode() as Text | null) {
+        if (offset <= text.length) {
+          getSelection()!.collapse(text, offset);
+          return;
+        }
+        offset -= text.length;
+      }
+      throw new Error('Caret offset is outside the learner draft');
+    }, prefix.length);
+    await page.keyboard.type('a');
+    await expect(answer).toHaveJSProperty('textContent', prefix + 'a' + suffix);
+    const offer = strip(page).getByRole('button',{name:'Insert notation',exact:true});
+    await expect(offer).toHaveAttribute('data-typeahead-start','19');
+    await expect(offer).toHaveAttribute('data-typeahead-end','23');
+    await expect(offer).toHaveAttribute('data-typeahead-caret','27');
+    const caret = () => answer.evaluate(field => {
+      const selection = getSelection();
+      if (!selection?.isCollapsed || !selection.rangeCount || !field.contains(selection.focusNode)) return null;
+      const before = selection.getRangeAt(0).cloneRange();
+      before.selectNodeContents(field);
+      before.setEnd(selection.focusNode!,selection.focusOffset);
+      return before.toString().length;
+    });
+    await offer.click();
+    await expect(answer).toHaveJSProperty('textContent', 'Please explain the notation' + suffix);
+    await expect.poll(caret).toBe(27);
+    await answer.press('Control+z');
+    await expect(answer).toHaveJSProperty('textContent', prefix + 'a' + suffix);
+    await expect.poll(caret).toBe(23);
+  });
+}
 
 test('scoped tutor priority reranks the same prefix and a held tap cannot accept across aid versions', async ({page}, info) => {
   const setup = await fixture(page);
@@ -195,8 +213,10 @@ function stubEquationChoices(page: Page) {
       if (!String(args[0]).includes('latex.worker')) return Reflect.construct(Worker, args);
       const model = {
         onmessage: undefined as ((event: MessageEvent) => void) | undefined,
-        postMessage({id}: {id: number}) {
-          const results = [{insert: 'x', caret: 1, label: 'x', score: 0}, {insert: 'z', caret: 1, label: 'z', score: -1}];
+        postMessage({id, query}: {id: number; query: {typed: string}}) {
+          const results = query.typed === '\\al'
+            ? [{insert: '\\alpha ', caret: 7, label: '\\alpha', score: 0}]
+            : [{insert: 'x', caret: 1, label: 'x', score: 0}, {insert: 'z', caret: 1, label: 'z', score: -1}];
           queueMicrotask(() => model.onmessage?.(new MessageEvent('message', {data: {id, results}})));
         },
         terminate() {},
@@ -205,6 +225,54 @@ function stubEquationChoices(page: Page) {
     }});
   });
 }
+
+test('the Equation sheet replaces the entire command at a middle caret and preserves surrounding math', async ({page}) => {
+  await stubEquationChoices(page);
+  const answer = await answerField(page, demo);
+  await page.keyboard.type('Given $x=1$.');
+  await answer.getByRole('button', {name: 'Edit equation x=1', exact: true}).click();
+  const sheet = page.getByRole('dialog', {name: 'Equation', exact: true});
+  const latex = sheet.getByRole('textbox', {name: 'LaTeX', exact: true});
+  for (const {before, after} of [
+    {before: '\\alpa + x', after: '\\alpha + x'},
+    {before: '\\alpha + x', after: '\\alpha + x'},
+    {before: '\\alpa+x', after: '\\alpha+x'},
+  ]) {
+    await latex.fill(before);
+    await latex.press('Home');
+    for (let i = 0; i < 3; i++) await latex.press('ArrowRight');
+    await sheet.getByRole('button', {name: 'Insert \\alpha', exact: true}).click();
+    await expect(latex).toHaveValue(after);
+    expect(await latex.evaluate((field: HTMLTextAreaElement) => [field.selectionStart, field.selectionEnd])).toEqual([6, 6]);
+    await sheet.getByRole('button', {name: 'Undo LaTeX suggestion', exact: true}).click();
+    await expect(latex).toHaveValue(before);
+    expect(await latex.evaluate((field: HTMLTextAreaElement) => [field.selectionStart, field.selectionEnd])).toEqual([3, 3]);
+  }
+});
+
+test('the inline answer replaces the entire LaTeX command and restores the original draft on undo', async ({page}) => {
+  await stubEquationChoices(page);
+  const answer = await answerField(page, demo);
+  await answer.fill('Given $\\alpa+x');
+  await answer.press('End');
+  for (let i = 0; i < 4; i++) await answer.press('ArrowLeft');
+  const option = strip(page).getByRole('button', {name: 'Insert \\alpha', exact: true});
+  await expect(option).toHaveAttribute('data-typeahead-start', '7');
+  await expect(option).toHaveAttribute('data-typeahead-end', '12');
+  await expect(option).toHaveAttribute('data-typeahead-caret', '13');
+  await option.click();
+  await expect(answer).toHaveJSProperty('textContent', 'Given $\\alpha+x');
+  await expect.poll(() => answer.evaluate(field => {
+    const selection = getSelection();
+    if (!selection?.rangeCount || !field.contains(selection.focusNode)) return null;
+    const before = selection.getRangeAt(0).cloneRange();
+    before.selectNodeContents(field);
+    before.setEnd(selection.focusNode!, selection.focusOffset);
+    return before.toString().length;
+  })).toBe(13);
+  await answer.press('Control+z');
+  await expect(answer).toHaveJSProperty('textContent', 'Given $\\alpa+x');
+});
 
 test('Equation suggestions guard the adjacent answer and retire held taps when the aid changes', async ({page}) => {
   await stubEquationChoices(page);

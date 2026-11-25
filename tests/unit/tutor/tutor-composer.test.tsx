@@ -6,6 +6,7 @@ import type {TutorInkState} from '../../../src/features/tutor/TutorInk';
 import {imageReference} from '../../../supabase/functions/_shared/tutor-answer';
 import {clearToasts} from '../../../src/ui/Toast';
 import {setHapticsEnabled} from '../../../src/ui/v7/haptics';
+import {WritingAidSettings} from '../../../src/features/tutor/writingAid/WritingAidSettings';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -193,6 +194,60 @@ test('blocks covered offers while allowing an explicit refresh of the current sl
   await click('Refresh suggestions', host.querySelector('dialog[open]')!);
   expect(field().value).toBe('nota');
   expect(localStorage.getItem(writingModelKey)).toContain('item:word:notation');
+});
+
+test.each([
+  {flag: false, optedIn: false, learns: false},
+  {flag: false, optedIn: true, learns: true},
+  {flag: true, optedIn: false, learns: true},
+])('learns expanded transitions and choices through the composer (flag=$flag, opt-in=$optedIn)', async ({flag, optedIn, learns}) => {
+  window.history.replaceState(null, '', '/?flags=' + (flag ? 'writingAidSettings,typeaheadV2' : '-writingAidSettings,-typeaheadV2'));
+  const settings = () => host.querySelector('[aria-label="Writing aid settings"]')!;
+  const settingsSwitch = (label: string) => [...settings().querySelectorAll<HTMLInputElement>('input[role="switch"]')]
+    .find(node => node.labels?.[0].textContent === label);
+  if (optedIn) {
+    await act(async () => root.render(<WritingAidSettings/>));
+    const toggle = settingsSwitch('Try faster typing')!;
+    await act(async () => toggle.click());
+    expect(toggle.checked).toBe(true);
+  }
+  await act(async () => root.render(<Harness/>));
+  await act(async () => field().focus());
+  await input('Please clarify');
+  await input('Please clarify ');
+  await input('Please clarify nota');
+  await awaitAid('Insert notation');
+  await click('Insert notation', suggestion());
+  expect(field().value).toBe('Please clarify notation ');
+  const {model: {adaptation}} = JSON.parse(localStorage.getItem(writingModelKey)!);
+  expect(adaptation.context['*:please']?.clarify).toBe(learns ? 1 : undefined);
+  expect(adaptation.context['*:clarify']?.notation).toBeUndefined();
+  expect(adaptation.weeks[0]?.accepts).toBe(learns ? 1 : undefined);
+
+  await act(async () => root.render(<WritingAidSettings/>));
+  expect(settings().textContent?.includes('This week on this device')).toBe(learns);
+  if (learns) {
+    const {model: {adaptation}} = JSON.parse(localStorage.getItem(writingModelKey)!);
+    expect(adaptation.weeks[0].impressions).toBeGreaterThan(0);
+  }
+  const personalize = settingsSwitch('Personalize suggestions');
+  expect(Boolean(personalize)).toBe(flag || optedIn);
+  if (optedIn) {
+    await act(async () => personalize!.click());
+    expect(personalize!.checked).toBe(false);
+    const paused = localStorage.getItem(writingModelKey);
+    await act(async () => root.render(<Harness/>));
+    await input('Please repeat');
+    await input('Please repeat ');
+    expect(localStorage.getItem(writingModelKey)).toBe(paused);
+    await act(async () => root.render(<WritingAidSettings/>));
+    await click('Forget learned writing preferences', settings());
+    const reset = JSON.parse(localStorage.getItem(writingModelKey)!);
+    expect(reset.enabled).toBe(false);
+    expect(reset.model.adaptation.context).toEqual({});
+    await act(async () => settingsSwitch('Try faster typing')!.click());
+    expect(settingsSwitch('Personalize suggestions')).toBeUndefined();
+  }
 });
 
 test.each(['forget', 'pause and resume'] as const)('does not retain writing feedback after %s in settings', async action => {

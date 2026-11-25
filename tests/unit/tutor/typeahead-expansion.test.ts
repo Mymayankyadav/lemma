@@ -253,6 +253,20 @@ describe('scoped guidance and exact insertion guard', () => {
     expect(result).toMatchObject({text: 'Use notation again', start: 12, end: 12});
   });
 
+  it('offers and applies a word completion near the start of a long draft', () => {
+    const suffix = ', then continue. ' + 'The next line follows. '.repeat(55);
+    const before = padEdit('Consider the not' + suffix, 'Consider the not'.length);
+    const cursor = padEdit('Consider the nota' + suffix, 'Consider the nota'.length);
+    const anchor = advanceWritingAidAnchor(before, cursor, null, true, []);
+    const request: WritingAidRequest = {anchor, cursor, middleEdits: true, mode: 'balanced',
+      target: {scopeKey: 'account', mountId: 'editor', editorRevision: 1, selectionRevision: 1, modeRevision: 0},
+      composing: false, readOnly: false};
+    const proposal = predictWritingAidPool(request).words.find(item => item.label === 'notation');
+    expect(proposal).toMatchObject({start: 'Consider the '.length, end: cursor.end, insert: 'notation'});
+    expect(applyWritingAidProposal(request, proposal!)).toEqual(
+      padEdit('Consider the notation' + suffix, 'Consider the notation'.length));
+  });
+
   it('reuses only the learner’s own current word when resuming a middle edit', () => {
     const earlier = padEdit('Use not again', 7), cursor = padEdit('Use nota again', 8);
     expect(advanceWritingAidAnchor(earlier, cursor, null, true, [])?.start).toBe(4);

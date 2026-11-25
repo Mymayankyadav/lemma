@@ -11,6 +11,7 @@ import {latexCommandPrefix, type LatexSuggestion} from '../writingAid/latexGramm
 import {WRITING_AID_LIMIT} from '../writingAid/policy';
 import {useLatexSuggestions} from '../writingAid/useLatexSuggestions';
 import {decoderSymbols} from '../writingAid/decoder/ngramSpatial';
+import {latexCommandEnd, latexCommandInsertion} from './latexCommand';
 
 type Selection = {start: number; end: number};
 type Surroundings = ReturnType<typeof equationSurroundings>;
@@ -48,23 +49,27 @@ export function EquationLatexField({value, onChange, acceptedSpans = [], remaini
     field.current.focus();
     field.current.setSelectionRange(restore.current.start, restore.current.end);
     restore.current = undefined;
-  }, [value]);
+  }, [value, selection]);
 
   const math = value.slice(0, selection.start);
-  const typed = latexCommandPrefix(math);
+  const typed = latexCommandPrefix(math, value.slice(selection.start));
   const position = selection.start - typed.length;
+  const end = typed ? latexCommandEnd(value, selection.end) : selection.end;
   const hint = (insert: string) => tutorHint({aid, mastery, subject, step, mode: 'equation',
     before: before + math.slice(0, position), prefix: typed}, insert);
   const draft = surroundings && surroundings.before + value + surroundings.after;
   const base = surroundings?.before.length ?? 0;
-  const plan = (option: LatexSuggestion) => draft !== undefined &&
-    draft.length - (selection.end - position) + option.insert.length <= WRITING_AID_LIMIT &&
-    insertionEligible({text: draft, start: base + position, end: base + selection.end, insert: option.insert, mode: 'equation', aid,
-      authoredPrefix: typed, role: hint(option.insert).role})
-    ? planEquationSuggestion(value, position, selection.end, option.insert, acceptedSpans, remainingSlots) : null;
+  const plan = (option: LatexSuggestion) => {
+    const {insert, caret} = latexCommandInsertion(option.insert, option.caret, end > selection.end);
+    if (draft === undefined || draft.length - (end - position) + insert.length > WRITING_AID_LIMIT ||
+        !insertionEligible({text: draft, start: base + position, end: base + end, insert, mode: 'equation', aid,
+          authoredPrefix: typed, role: hint(insert).role})) return null;
+    const edit = planEquationSuggestion(value, position, end, insert, acceptedSpans, remainingSlots);
+    return edit && {...edit, caret: position + caret};
+  };
   const {items: options} = useLatexSuggestions(suggestions && draft !== undefined && draft.length <= WRITING_AID_LIMIT &&
     acceptedSpans.length < remainingSlots && !composing && selection.start === selection.end
-    ? {math, typed, before, after: value.slice(selection.start), knownSymbols: decoderSymbols(before, notationContext ?? [])}
+    ? {math, typed, before, after: value.slice(end), knownSymbols: decoderSymbols(before, notationContext ?? [])}
     : undefined, 3, {
     declarations: aid && effectiveAidLevel(aid.level, mastery) !== 'none' ? aid.ranking?.declaredSymbols : undefined,
     eligible: option => plan(option) !== null,
@@ -83,17 +88,17 @@ export function EquationLatexField({value, onChange, acceptedSpans = [], remaini
     if (!current) return;
     const edit = plan(current);
     if (!edit) return;
-    const caret = position + current.caret;
+    const {caret} = edit;
     restore.current = {start: caret, end: caret};
     setSelection(restore.current);
     setUndo({before: value, after: edit.text, selection, spans: acceptedSpans});
-    onChange(edit.text, edit.spans);
+    if (edit.text !== value) onChange(edit.text, edit.spans);
   }
   function undoSuggestion() {
     if (!undo || value !== undo.after) return;
     restore.current = undo.selection;
     setSelection(undo.selection);
-    onChange(undo.before, undo.spans);
+    if (undo.before !== value) onChange(undo.before, undo.spans);
     setUndo(undefined);
   }
 

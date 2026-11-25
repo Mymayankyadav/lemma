@@ -25,6 +25,11 @@ describe('equation provenance', () => {
     expect(applyEquationOrigins(text, prefix + '.', original, source, prefix.length, '', [])).toEqual([]);
   });
 
+  it('preserves authorship when the command suggestion advances the caret across unchanged text', () => {
+    const spans: TutorAcceptedSpan[] = [{start: 9, end: 10, text: 'x', source: 'symbol'}];
+    expect(planEquationSuggestion('\\alpha + x', 0, 6, '\\alpha', spans, 2)).toEqual({text: '\\alpha + x', spans});
+  });
+
   it('rejects an assisted edit that needs an extra retained origin while manual edits can still split a span', () => {
     const spans: TutorAcceptedSpan[] = [{start: 0, end: 2, text: 'xy', source: 'symbol'}];
     const surviving: TutorAcceptedSpan[] = [

@@ -57,4 +57,9 @@ describe('LaTeX symbol suggestions', () => {
     expect(option).toMatchObject({token: '\\alp', start: 4, end: 8});
     expect(latexSymbolOptions(padEdit('Let \\alp', 0, 8))).toEqual([]);
   });
+
+  test('replaces the complete command when the caret is inside it', () => {
+    const [option] = latexSymbolOptions(padEdit('$\\alpha + x$', '$\\al'.length));
+    expect(option).toMatchObject({symbol: {glyph: 'α'}, token: '\\al', start: 1, end: '$\\alpha'.length});
+  });
 });

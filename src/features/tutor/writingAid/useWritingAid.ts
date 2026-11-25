@@ -126,8 +126,8 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   const [result, setResult] = useState<Prediction>();
   const current = result && result.sequence === sequence && result.learningScope === learningScope &&
     sameWritingAidRequest(snapshot, result.snapshot) ? result : undefined;
-  const live = useRef({snapshot, current, personalization, learningScope});
-  live.current = {snapshot, current, personalization, learningScope};
+  const live = useRef({snapshot, current, personalization, learningScope, expanded});
+  live.current = {snapshot, current, personalization, learningScope, expanded};
   const [visibility] = useState(visibleTime);
   useEffect(() => {
     const hide = () => {visibility.hide(Date.now()); censorRetention(pending.current);};
@@ -256,12 +256,12 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   }, []);
 
   const eligible = useCallback((proposal: WritingAidProposal): boolean => {
-    const {snapshot, current: prediction} = live.current;
+    const {snapshot, current: prediction, expanded} = live.current;
     if (!sameWritingAidRequest(snapshot, proposal.snapshot)) return false;
     if (proposal.source === 'notation' || proposal.source === 'equation') return !snapshot.readOnly && !snapshot.composing;
     if (!prediction) return false;
     const surface = surfaceOf(proposal);
-    const choices = surface === 'words' && (snapshot.expanded ?? isFlagOn('typeaheadV2'))
+    const choices = surface === 'words' && expanded
       ? prediction.pool.words : proposalsFor(prediction.suggestions, surface);
     return !cycle.current.excluded[surface].has(writingAidProposalKey(proposal)) &&
       choices.some(item => sameProposal(item, proposal));
@@ -284,7 +284,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     if (covered && displayed.current[surface].length) coveredOffers.current[surface] = displayed.current[surface];
     if (!covered) coveredOffers.current[surface] = [];
     const visible = proposals.filter(proposal => surfaceOf(proposal) === surface && eligible(proposal)).slice(0, surface === 'words' ? 3 : 1);
-    const {current: prediction, personalization} = live.current;
+    const {current: prediction, personalization, learningScope, expanded} = live.current;
     // Empty while a prediction is pending is not a hide. An empty report for
     // an available current proposal means that surface really is hidden.
     if (!visible.length && prediction && proposalsFor(prediction.suggestions, surface).length) {
@@ -300,7 +300,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         item.proposal.snapshot.cursor.text + item.proposal.insert === proposal.snapshot.cursor.text + proposal.insert);
       if (!sameContinuation && !exposures.current.some(item => item.key === key)) {
         exposures.current.push({proposal, key});
-        if (isFlagOn('typeaheadV2')) recordImpression(live.current.learningScope, Date.now());
+        if (expanded) recordImpression(learningScope, Date.now());
       }
     }
     if (exposures.current.length > 24) exposures.current.splice(0, exposures.current.length - 24);
@@ -327,18 +327,18 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   }, [eligible, isCurrent, save, visibility]);
 
   const feedback = useCallback((signal: WritingAidFeedback, proposal: WritingAidProposal) => {
-    const {snapshot, personalization: state, learningScope} = live.current;
+    const {snapshot, personalization: state, learningScope, expanded} = live.current;
     if (snapshot.mode === 'off') return;
     const accepted = pending.current;
     if (signal === 'undo' || signal === 'kept') {
       if (!accepted || accepted.learningScope !== learningScope || !sameProposal(accepted.proposal, proposal)) return;
       if (signal === 'kept' && accepted.kept) return;
-      if (signal === 'undo' || !isFlagOn('typeaheadV2')) window.clearTimeout(accepted.timer);
+      if (signal === 'undo' || !expanded) window.clearTimeout(accepted.timer);
       if (signal === 'undo') pending.current = null;
       else accepted.kept = true;
     } else if (!isCurrent(proposal)) return;
     if (state.enabled) {
-      if (isFlagOn('typeaheadV2')) {
+      if (expanded) {
         const weekly = writingAidWeek(state.model.adaptation);
         const keys = Math.max(0, proposal.insert.length - proposal.before.length - 1);
         if (signal === 'accept') {
@@ -384,7 +384,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         if (held.retention !== 'pending') return;
         if (latest.snapshot.mode !== 'off' && document.visibilityState !== 'hidden' && !latest.snapshot.readOnly && !latest.snapshot.composing &&
             retainsAcceptedText(held, latest.snapshot.cursor.text) && latest.personalization.enabled) {
-          if (isFlagOn('typeaheadV2')) {
+          if (latest.expanded) {
             writingAidWeek(latest.personalization.model.adaptation).retained++;
             observeLocalCalibration(latest.personalization.model.adaptation, held.proposal, 'retain', true);
           }
@@ -428,7 +428,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       if (!retainsAcceptedText(held, snapshot.cursor.text)) {
         window.clearTimeout(held.timer);
         if (model.enabled) {
-          if (isFlagOn('typeaheadV2') && held.retention === 'pending' && Date.now() <= held.deadline) {
+          if (expanded && held.retention === 'pending' && Date.now() <= held.deadline) {
             observeLocalCalibration(model.model.adaptation, held.proposal, 'retain', false);
           }
           updateWritingAidModel(model.model, 'partial-edit', writingAidFeatures(held.proposal));
@@ -445,7 +445,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     let changed = false;
     const authored = snapshot.anchor!;
     const newlyCompleted = authored.text.slice(authored.start, snapshot.cursor.end);
-    if (isFlagOn('typeaheadV2')) {
+    if (expanded) {
       const words = [...newlyCompleted.matchAll(/[\p{L}\p{M}]{1,32}(?=[^\p{L}\p{M}])/gu)];
       for (let index = 1; index < words.length; index++) {
         const prior = words[index - 1], word = words[index];
@@ -480,7 +480,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         const diverges = actual.length >= Math.min(5, expected.length) && !expected.startsWith(actual) && !matches;
         if (!matches && !diverges) {remaining.push(item); continue;}
         if (visibility.elapsed(surfaceOf(proposal), item.key, Date.now()) >= 300) {
-          if (isFlagOn('typeaheadV2')) observeLocalCalibration(model.model.adaptation, proposal, 'exact', matches);
+          if (expanded) observeLocalCalibration(model.model.adaptation, proposal, 'exact', matches);
           updateWritingAidModel(model.model, matches ? 'continued-match' : 'divergent', writingAidFeatures(proposal));
           changed = true;
         }
@@ -490,7 +490,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       if (!completed) {remaining.push(item); continue;}
       if (visibility.elapsed(surfaceOf(proposal), item.key, Date.now()) >= 300) {
         const matches = completed[1].toLocaleLowerCase() === proposal.label.toLocaleLowerCase();
-        if (isFlagOn('typeaheadV2')) observeLocalCalibration(model.model.adaptation, proposal, 'exact', matches);
+        if (expanded) observeLocalCalibration(model.model.adaptation, proposal, 'exact', matches);
         updateWritingAidModel(model.model, matches ? 'continued-match' : 'divergent',
           writingAidFeatures(proposal));
         changed = true;
@@ -498,7 +498,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     }
     exposures.current = remaining;
     if (changed) save();
-  }, [snapshot, learningScope, retireFeedback, save, visibility]);
+  }, [snapshot, expanded, learningScope, retireFeedback, save, visibility]);
 
   useEffect(() => {
     if (mode === 'off' || !words && !replace && !correction && !ghost) return;

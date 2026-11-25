@@ -14,6 +14,7 @@
  */
 import type {PadEdit} from '../../pad/padEdit';
 import {isWordPrefix} from '../tapCorrection';
+import {latexCommandEnd, latexControlWordPrefix} from './latexCommand';
 import {SYMBOL_CATALOG, searchSymbols, symbolByGlyph, type SymbolDefinition} from './symbolCatalog';
 
 export interface SymbolOption {
@@ -80,14 +81,14 @@ function bare(name: string): SymbolDefinition[] {
 export function latexSymbolOptions(edit: PadEdit, limit = 3): SymbolOption[] {
   if (edit.start !== edit.end || edit.end > 4000) return [];
   const before = edit.text.slice(Math.max(0, edit.end - 40), edit.end);
-  const make = (kind: SymbolOption['kind'], token: string, symbols: readonly SymbolDefinition[]) => symbols.slice(0, limit)
-    .map(symbol => ({symbol, kind, token, start: edit.end - token.length, end: edit.end}));
+  const make = (kind: SymbolOption['kind'], token: string, symbols: readonly SymbolDefinition[], end = edit.end) => symbols.slice(0, limit)
+    .map(symbol => ({symbol, kind, token, start: edit.end - token.length, end}));
 
-  const command = /\\([A-Za-z]{1,24})$/.exec(before);
-  if (command) {
-    const found = searchSymbols(command[0]).filter(symbol => symbol.glyph !== symbol.tex);
-    const order = new Map(found.map(symbol => [symbol, commandOrder(command[0], symbol)]));
-    return make('command', command[0], [...found].sort((a, b) => order.get(a)! - order.get(b)!));
+  const command = latexControlWordPrefix(edit.text.slice(0, edit.end));
+  if (command.length > 1 && command.length <= 25) {
+    const found = searchSymbols(command).filter(symbol => symbol.glyph !== symbol.tex);
+    const order = new Map(found.map(symbol => [symbol, commandOrder(command, symbol)]));
+    return make('command', command, [...found].sort((a, b) => order.get(a)! - order.get(b)!), latexCommandEnd(edit.text, edit.end));
   }
 
   for (const [form, glyphs] of SHORT_FORMS) {
