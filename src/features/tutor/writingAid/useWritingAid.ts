@@ -105,14 +105,16 @@ const sameProposal = (a: WritingAidProposal, b: WritingAidProposal) =>
 
 /** The model and draft stay local. Stale and hidden proposals cannot be fed back. */
 export function useWritingAid(request: WritingAidRequest): WritingAidView {
-  const {cursor, anchor, target, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool} = request;
+  const {cursor, anchor, target, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool, fasterTyping} = request;
+  const expanded = request.expanded ?? isFlagOn('typeaheadV2');
   const {scopeKey, mountId, editorRevision, selectionRevision, modeRevision} = target;
   const {words, replace, correction, ghost} = request.surfaces ?? ALL_WRITING_AID_SURFACES;
   const snapshot = useMemo<WritingAidRequest>(() => ({
     cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool,
+    expanded, fasterTyping,
     target: {scopeKey, mountId, editorRevision, selectionRevision, modeRevision},
     surfaces: {words, replace, correction, ghost},
-  }), [cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool, scopeKey, mountId, editorRevision, selectionRevision, modeRevision,
+  }), [cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool, expanded, fasterTyping, scopeKey, mountId, editorRevision, selectionRevision, modeRevision,
     words, replace, correction, ghost]);
   const storedPersonalization = useWritingAidPersonalization();
   const personalization = usesPersonalization(arm) && !typeaheadFrozenProfile() ? storedPersonalization : {...storedPersonalization, enabled: false};
@@ -147,11 +149,11 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   const ngram = useRef<NgramClient | undefined>(undefined);
   const ghostProbe = useRef<{snapshot: WritingAidRequest; learningScope: LearningScope; reply: NeuralReply} | undefined>(undefined);
   useEffect(() => {
-    if (!isFlagOn('typeaheadV2') || mode === 'off' || readOnly) return;
+    if (!expanded || mode === 'off' || readOnly) return;
     const client = createNgramClient();
     ngram.current = client;
     return () => {client?.close(); ngram.current = undefined;};
-  }, [readOnly, mode, scopeKey, mountId, profileScope, generation]);
+  }, [expanded, readOnly, mode, scopeKey, mountId, profileScope, generation, arm]);
 
   useEffect(() => {
     if (!typeaheadReplayEnabled()) return;
@@ -203,16 +205,16 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     channel?.addEventListener('message', changed);
     return () => {window.removeEventListener(packageChanged, changed); channel?.close();};
   }, []);
-  const neuralEpoch = [scopeKey, mountId, contextKey, profileScope, generation, mode, packVersion].join('|');
+  const neuralEpoch = [scopeKey, mountId, contextKey, profileScope, generation, mode, packVersion, fasterTyping].join('|');
   useEffect(() => {
-    if (!isFlagOn('typeaheadV2') || !usesNeural(arm) || mode === 'off' || readOnly) return;
+    if (!expanded || !usesNeural(arm) || mode === 'off' || readOnly) return;
     let closed = false;
-    void createNeuralClient(typeaheadGraphTrial(), typeaheadStrictGraphTrial()).then(client => {
+    void createNeuralClient(typeaheadGraphTrial(), typeaheadStrictGraphTrial(), fasterTyping).then(client => {
       if (closed) client?.close();
       else neural.current = client;
     }).catch(() => undefined);
     return () => {closed = true; neural.current?.close(); neural.current = undefined;};
-  }, [readOnly, mode, scopeKey, mountId, profileScope, generation, arm, packVersion]);
+  }, [expanded, fasterTyping, readOnly, mode, scopeKey, mountId, profileScope, generation, arm, packVersion]);
   useEffect(() => neural.current?.reset(), [neuralEpoch]);
 
   const impressionBatch = useRef<{scope: LearningScope; count: number; at: number; timer: number} | null>(null);
@@ -259,7 +261,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     if (proposal.source === 'notation' || proposal.source === 'equation') return !snapshot.readOnly && !snapshot.composing;
     if (!prediction) return false;
     const surface = surfaceOf(proposal);
-    const choices = surface === 'words' && isFlagOn('typeaheadV2') ? prediction.pool.words : proposalsFor(prediction.suggestions, surface);
+    const choices = surface === 'words' && snapshot.expanded ? prediction.pool.words : proposalsFor(prediction.suggestions, surface);
     return !cycle.current.excluded[surface].has(writingAidProposalKey(proposal)) &&
       choices.some(item => sameProposal(item, proposal));
   }, []);
@@ -518,7 +520,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       const draft = snapshot.cursor.text.slice(0, snapshot.cursor.end);
       const prefix = /\p{L}[\p{L}\p{M}'’\p{Pd}]{0,31}$/u.exec(draft)?.[0] ?? '';
       const aids = neuralAidPrompt({aid: snapshot.aid, subject, step, prefix}, usesTutorBias(arm));
-      const ghostAllowed = isFlagOn('proofAssistGhost') && eligibleGhostContext(snapshot);
+      const ghostAllowed = !fasterTyping && isFlagOn('proofAssistGhost') && eligibleGhostContext(snapshot);
       const probe = ghostAllowed && typeaheadGhostProbe();
       void client.predict({epoch: neuralEpoch, prompt: {question: question?.filter(Boolean).join('\n') ?? '', aids, draft},
         prefix, words: pool.words.filter(entry => entry.source !== 'symbol').map(entry => entry.label),
@@ -533,13 +535,13 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       }).catch(() => undefined);
     }
     const showFallback = async () => {
-      if (isFlagOn('typeaheadV2')) await prepareMainTypeaheadFallback(arm);
+      if (expanded) await prepareMainTypeaheadFallback(arm);
       const engine = await import('./engine');
       if (!stillCurrent()) return;
       frame = window.requestAnimationFrame(() => {
         if (!stillCurrent()) return;
         try {report(engine.predictWritingAidPool(snapshot, model), {
-          ngram: typeaheadNgramFingerprint(), subject: activeSubjectNgram(subject)?.fingerprint,
+          ngram: expanded ? typeaheadNgramFingerprint() : undefined, subject: expanded ? activeSubjectNgram(subject)?.fingerprint : undefined,
         });}
         catch {setResult({snapshot, sequence, learningScope, suggestions: NO_WRITING_AID, pool: {words: [], edit: [], ghost: []}});}
       });
@@ -555,7 +557,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       }).catch(() => undefined);
     } else void showFallback().catch(() => undefined);
     return () => {cancelled = true; worker?.cancel(); if (frame !== undefined) window.cancelAnimationFrame(frame);};
-  }, [snapshot, sequence, learningScope, personalization.enabled, mode, words, replace, correction, ghost, neuralEpoch, subject, step, question, arm]);
+  }, [snapshot, sequence, learningScope, personalization.enabled, mode, words, replace, correction, ghost, neuralEpoch, subject, step, question, arm, expanded, fasterTyping]);
 
   const suggestions = current?.suggestions ?? NO_WRITING_AID;
   const rankedWords = current?.pool.words.filter(proposal => !cycle.current.excluded.words.has(writingAidProposalKey(proposal)))

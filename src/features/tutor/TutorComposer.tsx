@@ -205,7 +205,7 @@ export function TutorComposer(props: Props) {
     }});
 
 
-  const enhancedMenu = isFlagOn('typeaheadV2');
+  const enhancedMenu = isFlagOn('typeaheadV2') || writingPrefs.fasterTyping;
   const arm = currentTypeaheadArm();
   const replayDiagnostics = typeaheadReplayEnabled();
   const tracePool = replayDiagnostics && new URLSearchParams(window.location.search).get('typeahead-trace') !== '0';
@@ -216,10 +216,11 @@ export function TutorComposer(props: Props) {
   const aidLevel = aid ? effectiveAidLevel(aid.level, props.mastery) : undefined;
   const notationKey = useMemo(() => JSON.stringify(props.notationContext ?? []), [props.notationContext]);
   const aidContextKey = [props.aidTurnId, aid?.turnId, aid?.id, aid?.version, aid?.grantId, aidLevel, props.aidSubject, props.aidStep, arm,
-    notationKey].join('|');
+    enhancedMenu, writingPrefs.fasterTyping, notationKey].join('|');
   const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, aidContextKey, revision.current, cursor]);
   const question = useMemo(() => JSON.parse(notationKey) as string[], [notationKey]);
-  const writingRequest = {cursor, acceptedSpans: acceptedSpans.current.get(cursor), arm, replayDiagnostics, tracePool, contextKey: aidContextKey, aid, mastery: props.mastery, middleEdits: enhancedMenu,
+  const writingRequest = {cursor, acceptedSpans: acceptedSpans.current.get(cursor), arm, replayDiagnostics, tracePool, contextKey: aidContextKey, aid, mastery: props.mastery,
+    expanded: enhancedMenu, fasterTyping: writingPrefs.fasterTyping, middleEdits: enhancedMenu,
     subject: props.aidSubject, step: props.aidStep, question, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
     surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown || props.suspended || provenanceFull};
   const writing = useWritingAid(writingRequest);
@@ -260,8 +261,8 @@ export function TutorComposer(props: Props) {
    * name (\al, ->, eps); the word suggestions; and, with nothing to suggest, ∀ ∈ ⇒.
    */
   const mathSpan = useMemo(() => shown && !scratch && !equationEdit && writingPrefs.mode !== 'off' &&
-    !editingDisabled && isFlagOn('typeaheadV2') ? unfinishedMath(cursor) : null,
-  [cursor, shown, scratch, equationEdit, writingPrefs.mode, editingDisabled]);
+    !editingDisabled && enhancedMenu ? unfinishedMath(cursor) : null,
+  [cursor, shown, scratch, equationEdit, writingPrefs.mode, editingDisabled, enhancedMenu]);
   const latexBefore = mathSpan ? cursor.text.slice(0, mathSpan.start) : '';
   const {items: latexOptions, assetSha256: latexAssetSha256} = useLatexSuggestions(mathSpan ? {math: mathSpan.math, typed: mathSpan.typed, before: latexBefore,
     after: cursor.text.slice(cursor.end), knownSymbols: decoderSymbols(latexBefore, question)} : undefined, 64,
@@ -420,7 +421,7 @@ export function TutorComposer(props: Props) {
     if (!shown) return;
     let live = true;
     // N233: the Kneser-Ney model loads beside the lexicon (only with typeaheadV2); both must be ready before the strip is re-worked.
-    const workerProse = isFlagOn('typeaheadV2') && typeof Worker !== 'undefined';
+    const workerProse = enhancedMenu && typeof Worker !== 'undefined';
     void Promise.all([workerProse ? undefined : prepareWritingDecoder(), prepareTypeahead()]).then(() => {
       if (!live || !workerProse && !writingDecoderReady()) return;
       setDecoderReady(true);
@@ -430,7 +431,7 @@ export function TutorComposer(props: Props) {
       setCursor(current => ({...current}));
     });
     return () => {live = false;};
-  }, [shown]);
+  }, [shown, enhancedMenu]);
 
 
   useEffect(() => {
@@ -1406,7 +1407,7 @@ export function TutorComposer(props: Props) {
           readSurroundings={() => equationEdit.scope === scopeKey + '|' + authGeneration()
             ? equationSurroundings(history.current.present.text, equationEdit.source, equationEdit.offset) : undefined}
           aid={aid} mastery={props.mastery} subject={props.aidSubject} step={props.aidStep}
-          suggestions={isFlagOn('typeaheadV2') && writingPrefs.mode !== 'off' && !editingDisabled}/>
+          suggestions={enhancedMenu && writingPrefs.mode !== 'off' && !editingDisabled}/>
         {equationEdit.error && <p role="alert">{equationEdit.error}</p>}
         <div className="tutor-session-actions">
           <Button variant="primary" onClick={() => saveEquation(equationEdit.tex)}>Done</Button>

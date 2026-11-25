@@ -8,12 +8,18 @@ export interface NeuralClient {
   close(): void;
 }
 
-export async function createNeuralClient(trial = false, strictTrial = false): Promise<NeuralClient | undefined> {
+export async function createNeuralClient(trial = false, strictTrial = false, fasterTyping = false): Promise<NeuralClient | undefined> {
   if (typeof Worker === 'undefined') return undefined;
-  const [primary, large] = await Promise.all([neuralManifest('neural-v2'), neuralManifest('neural-large-v2')]);
+  const installedExperiment = fasterTyping && !trial;
   const fp16 = await installedAndroidPack() ? await neuralManifest(ANDROID_TIER) : null;
-  if (!(['wasm', 'webgpu', 'webgpuJspi'] as const).some(device => qualifiedNeuralTier(fp16, device, trial)) && !qualifiedNeuralTier(primary, 'wasm', trial) && !qualifiedNeuralTier(primary, 'webgpu', trial) && !qualifiedNeuralTier(large, 'webgpu', trial) &&
-      !qualifiedNeuralTier(primary, 'webgpuJspi', trial) && !qualifiedNeuralTier(large, 'webgpuJspi', trial)) return undefined;
+  if (installedExperiment) {
+    if (!qualifiedNeuralTier(fp16, 'wasm', true)) return undefined;
+  } else {
+    const [primary, large] = await Promise.all([neuralManifest('neural-v2'), neuralManifest('neural-large-v2')]);
+    if (!(['wasm', 'webgpu', 'webgpuJspi'] as const).some(device => qualifiedNeuralTier(fp16, device, trial)) &&
+        !qualifiedNeuralTier(primary, 'wasm', trial) && !qualifiedNeuralTier(primary, 'webgpu', trial) && !qualifiedNeuralTier(large, 'webgpu', trial) &&
+        !qualifiedNeuralTier(primary, 'webgpuJspi', trial) && !qualifiedNeuralTier(large, 'webgpuJspi', trial)) return undefined;
+  }
   const worker = new Worker(new URL('./neural.worker.ts', import.meta.url), {type: 'module'});
   let id = 0;
   let pending: {id: number; started: number; deadline: number; timer: ReturnType<typeof setTimeout>; finish: (reply?: NeuralReply) => void} | undefined;
@@ -52,7 +58,7 @@ export async function createNeuralClient(trial = false, strictTrial = false): Pr
     if (pendingReply) finish(arrivedBeforeDeadline ? reply : undefined);
   };
   worker.onerror = () => finish();
-  worker.postMessage({prepare: true, trial, strictTrial});
+  worker.postMessage({prepare: true, trial, strictTrial, installedExperiment});
   return {
     predict(request) {
       finish();
@@ -60,7 +66,7 @@ export async function createNeuralClient(trial = false, strictTrial = false): Pr
       return new Promise(resolve => {
         pending = {id: next, started: performance.now(), deadline: request.deadline, finish: resolve,
           timer: setTimeout(() => finish(), Math.max(0, request.deadline - Date.now()))};
-        worker.postMessage({...request, trial, strictTrial, id: next} satisfies NeuralRequest);
+        worker.postMessage({...request, trial, strictTrial, installedExperiment, id: next} satisfies NeuralRequest);
       });
     },
     reset() {finish(); worker.postMessage({reset: true});},

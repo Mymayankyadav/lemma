@@ -19,6 +19,7 @@ export interface NeuralRequest {
   readonly probeGhost?: boolean;
   readonly trial?: boolean;
   readonly strictTrial?: boolean;
+  readonly installedExperiment?: boolean;
 }
 export interface LabCase {labId: string; ids: number[]; stablePrefix?: number; previousIds?: number[]}
 export interface LabResult {labId: string; top?: number[]; cachedTop?: number[]; retokenizedTop?: number[]; prefillMs?: number; decodeMs?: number; provider?: string; error?: string}
@@ -54,7 +55,8 @@ interface State {
 type Admission = ReturnType<typeof neuralColdTransfer> &
   Readonly<{provider: NeuralBackend; result: 'selected' | 'cold-budget' | 'load-failed'}>;
 const scope = self as unknown as {
-  onmessage: ((event: MessageEvent<LabCase | NeuralRequest | {reset: true} | {prepare: true; trial: boolean; strictTrial?: boolean}>) => void) | null;
+  onmessage: ((event: MessageEvent<LabCase | NeuralRequest | {reset: true} |
+    {prepare: true; trial: boolean; strictTrial?: boolean; installedExperiment?: boolean}>) => void) | null;
   postMessage: (reply: NeuralReply | LabResult) => void;
 };
 let model: Promise<ActiveModel | undefined> | undefined;
@@ -111,18 +113,20 @@ async function load(tier: NeuralTier, manifest: NeuralManifest, device: NeuralBa
   } finally {delete runtime.env.wasm.wasmBinary;}
 }
 
-async function available(trial = false, strictTrial = false): Promise<ActiveModel | undefined> {
+async function available(trial = false, strictTrial = false, installedExperiment = false): Promise<ActiveModel | undefined> {
+  const installed = await installedAndroidPack();
+  if (installedExperiment && !installed) return;
   const gpu = (navigator as Navigator & {gpu?: {requestAdapter: () => Promise<{features?: {has(name: string): boolean}; info?: {isFallbackAdapter?: boolean}} | null>}}).gpu;
   const adapter = await Promise.race([gpu?.requestAdapter().catch(() => null), new Promise<null>(resolve => setTimeout(() => resolve(null), 300))]);
   const gpuAvailable = Boolean(adapter && (trial && !strictTrial || adapter.info?.isFallbackAdapter !== true));
   const jspi = typeof WebAssembly !== 'undefined' && 'Suspending' in WebAssembly && 'promising' in WebAssembly;
-  const tiers: NeuralTier[] = ['neural-large-v2', 'neural-v2'];
-  if (await installedAndroidPack()) tiers.unshift(ANDROID_TIER);
+  const tiers: NeuralTier[] = installedExperiment ? [ANDROID_TIER] : ['neural-large-v2', 'neural-v2'];
+  if (installed && !installedExperiment) tiers.unshift(ANDROID_TIER);
   for (const tier of tiers) {
     const manifest = await neuralManifest(tier);
     if (!manifest) continue;
     const eligibleGpu = gpuAvailable && (tier !== ANDROID_TIER || adapter?.info?.isFallbackAdapter !== true && adapter?.features?.has('shader-f16') === true);
-    const device = selectNeuralBackend(manifest, tier, eligibleGpu, jspi, trial, strictTrial || tier === ANDROID_TIER);
+    const device = selectNeuralBackend(manifest, tier, eligibleGpu, jspi, trial || installedExperiment, strictTrial || tier === ANDROID_TIER);
     if (!device) {
       const blocked = trial && strictTrial && selectNeuralBackend(manifest, tier, gpuAvailable, jspi, trial);
       if (blocked && !admission) admission = {provider: blocked, result: 'cold-budget', ...neuralColdTransfer(manifest, tier, blocked)};
@@ -217,7 +221,7 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   const sameGeneration = () => generation === currentGeneration;
   const sameEpoch = () => sameGeneration() && epoch === request.epoch && (!latest || latest.epoch === epoch);
   const current = () => !latest && sameGeneration() && Date.now() <= request.deadline;
-  const active = await prepare(request.trial, request.strictTrial);
+  const active = await prepare(request.trial, request.strictTrial, request.installedExperiment);
   provider = active?.provider;
   if (!active || latest || !sameGeneration()) return {id, timing: timing()};
   if (epoch !== request.epoch) {epoch = request.epoch; dispose(cached); cached = undefined; wordScores.clear();}
@@ -354,8 +358,8 @@ async function drain() {
   }
 }
 
-function prepare(trial?: boolean, strictTrial?: boolean): Promise<ActiveModel | undefined> {
-  return model ??= available(trial, strictTrial).then(active => {modelLoaded = Boolean(active); return active;});
+function prepare(trial?: boolean, strictTrial?: boolean, installedExperiment?: boolean): Promise<ActiveModel | undefined> {
+  return model ??= available(trial, strictTrial, installedExperiment).then(active => {modelLoaded = Boolean(active); return active;});
 }
 
 let labEnabled = false;
@@ -403,7 +407,11 @@ scope.onmessage = event => {
       .catch(() => scope.postMessage({labId: message.labId, error: 'FP16 parity case failed'}));
     return;
   }
-  if ('prepare' in message) {labEnabled = Boolean(message.trial && message.strictTrial); void prepare(message.trial, message.strictTrial); return;}
+  if ('prepare' in message) {
+    labEnabled = Boolean(message.trial && message.strictTrial);
+    void prepare(message.trial, message.strictTrial, message.installedExperiment);
+    return;
+  }
   if ('reset' in message) {
     generation++;
     wordScores.clear();

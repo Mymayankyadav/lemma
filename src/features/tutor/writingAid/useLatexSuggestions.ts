@@ -2,13 +2,15 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {isFlagOn} from '../../../flags';
 import {loadLatexModel, typeaheadLatexFingerprint} from './decoder/kn';
 import {currentTypeaheadArm, usesExpandedNgram} from './replayArm';
+import {useWritingAidPreferences} from './preferences';
 import {latexSuggestions, type LatexSuggestion, type LatexSuggestionOptions} from './latexGrammar';
 import type {LatexQuery, LatexWorkerReply, LatexWorkerRequest} from './decoder/latex.worker';
 
 export function useLatexSuggestions(query: LatexQuery | undefined, limit: number, options: LatexSuggestionOptions = {}) {
   const enabled = query !== undefined;
-  const expanded = isFlagOn('typeaheadV2') && usesExpandedNgram(currentTypeaheadArm());
-  const serialized = query ? JSON.stringify(query) : '';
+  const {fasterTyping} = useWritingAidPreferences();
+  const expanded = (isFlagOn('typeaheadV2') || fasterTyping) && usesExpandedNgram(currentTypeaheadArm());
+  const serialized = query ? JSON.stringify({query, expanded}) : '';
   const worker = useRef<Worker | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const sent = useRef<{id: number; serialized: string}>({id: 0, serialized: ''});
@@ -56,7 +58,7 @@ export function useLatexSuggestions(query: LatexQuery | undefined, limit: number
     if (!serialized || !client) return;
     const id = sent.current.id + 1;
     sent.current = {id, serialized};
-    const request: LatexWorkerRequest = {id, query: JSON.parse(serialized), expanded};
+    const request: LatexWorkerRequest = {id, ...JSON.parse(serialized)};
     clearTimeout(timer.current);
     timer.current = setTimeout(() => fail(client), 18_000);
     try {client.postMessage(request);}

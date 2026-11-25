@@ -87,7 +87,7 @@ function keyProposals(
   if (mode === 'off') return [];
   // N233: with typeaheadV2 on and the n-gram loaded, the next word is offered at a word boundary and the question-aware
   // learner-choice rule replaces the blanket word list.
-  const v2 = typeaheadActive();
+  const v2 = typeaheadActive(request.expanded);
   const prefix = wordAtCaret(cursor);
   const rangeStart = cursor.end - (prefix?.length ?? 0);
   const before = cursor.text.slice(0, rangeStart);
@@ -114,7 +114,8 @@ function keyProposals(
   const explicit = v2 && aidActive ? [...new Set([...request.aid?.terms ?? [], ...hintWords])]
     .filter(word => LEXICAL_WORD.test(word) && word.length <= MAX_WORD && (prefix ?
       word.toLowerCase().startsWith(prefix.toLowerCase()) : hintWords.includes(word) || tutorHint(hintContext, word).role === 'given')) : [];
-  const language = prepareLanguage(before, {personal, extraLexical: explicit, question: request.question, authored: authoredText.slice(0, rangeStart - start), subject: request.subject});
+  const language = prepareLanguage(before, {expanded: v2, personal, extraLexical: explicit, question: request.question,
+    authored: authoredText.slice(0, rangeStart - start), subject: request.subject});
   observeLanguage?.(language);
   const bank = contextualWording(hintContext);
   const inPhrase = bank.some(entry => entry.progress > 0);
@@ -260,12 +261,12 @@ function decoded(keys: readonly KeyCandidate[], before: string, prefix: string, 
   authoredText: string, language: LanguageDistribution, v2: boolean): readonly KeyCandidate[] {
   // The decoder never invents a next word, stays out of protected proof gaps, and, like the existing engine, stops
   // after two accepted words in a row.
-  if (!writingDecoderReady() || (!prefix && !typeaheadActive()) || PROTECTED_GAP.test(before) ||
+  if (!writingDecoderReady() || (!prefix && !v2) || PROTECTED_GAP.test(before) ||
       (text.slice(authoredText.length).match(OUTPUT_TOKEN)?.length ?? 0) >= 2) return keys;
   const own = new Map(keys.filter(key => key.kind !== 'transcription').map(key => [key.word.toLowerCase(), key]));
   // A correctly spelled word (in the larger spelling list too) is completed, never corrected into another word.
   const spelled = writtenWord(prefix.toLowerCase());
-  const ranked = decodeWord(before, prefix, start, [...own.keys()], v2 ? Infinity : 12, language).filter(item => !(spelled && item.correction));
+  const ranked = decodeWord(before, prefix, start, [...own.keys()], v2 ? Infinity : 12, language, v2).filter(item => !(spelled && item.correction));
   const seen = new Set<string>();
   const merged: KeyCandidate[] = [];
   for (const item of ranked) {
@@ -369,7 +370,7 @@ export function predictWritingAidPool(request: WritingAidRequest, model?: Writin
   const trace: WordTrace[] | undefined = request.replayDiagnostics && request.tracePool !== false ? [] : undefined;
   return {
     trace, words: surfaces.words ? keyProposals(request, text, authoredText, start, model, observeLanguage, trace) : [],
-    ghost: surfaces.ghost && cursor.end === cursor.text.length && !typeaheadRequested() ? ghostProposals(request, text, authoredText).filter(proposal => proposalEligible(request, proposal)) : [],
+    ghost: surfaces.ghost && cursor.end === cursor.text.length && !typeaheadRequested(request.expanded) ? ghostProposals(request, text, authoredText).filter(proposal => proposalEligible(request, proposal)) : [],
     edit: surfaces.replace || surfaces.correction ? editProposals(request, authoredText, start).filter(proposal => proposalEligible(request, proposal)) : [],
   };
 }

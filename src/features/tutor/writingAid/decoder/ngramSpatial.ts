@@ -125,9 +125,9 @@ export function writingDecoderReady(): boolean {
 }
 
 let workerTypeahead = false;
-export const typeaheadRequested = (): boolean => workerTypeahead || isFlagOn('typeaheadV2');
-export function typeaheadActive(): boolean {
-  return typeaheadRequested() && model !== null && generalNgram() !== null;
+export const typeaheadRequested = (expanded?: boolean): boolean => expanded ?? (workerTypeahead || isFlagOn('typeaheadV2'));
+export function typeaheadActive(expanded?: boolean): boolean {
+  return typeaheadRequested(expanded) && model !== null && generalNgram() !== null;
 }
 export function prepareTypeahead(): Promise<void> {
   if (!isFlagOn('typeaheadV2')) return Promise.resolve();
@@ -208,6 +208,7 @@ export function mixtureProbability(base: number, word: string, caches: readonly 
 }
 
 export interface LanguageContext {
+  readonly expanded?: boolean;
   readonly question?: readonly (string | undefined)[];
   readonly authored?: string;
   readonly extraLexical?: readonly string[];
@@ -253,8 +254,8 @@ function outOfVocabulary(ngram: NgramModel, candidates: ReadonlySet<string>) {
 export function prepareLanguage(before: string, options: LanguageContext = {}): LanguageDistribution {
   const source = options.question ? wordsIn(options.question) : context;
   const draft = wordsIn([options.authored ?? before]);
-  const kn = typeaheadActive() ? generalNgram() : null;
-  const scoped = activeSubjectNgram(options.subject);
+  const kn = typeaheadActive(options.expanded) ? generalNgram() : null;
+  const scoped = kn ? activeSubjectNgram(options.subject) : undefined;
   const history = kn ? historyIds(kn, before) : [];
   const scopedHistory = scoped ? historyIds(scoped.model, before) : [];
   const previous = /([A-Za-z]+)[^A-Za-z.!?;:\n]*$/u.exec(before)?.[1]?.toLowerCase() ?? '';
@@ -384,11 +385,12 @@ function casing(word: string, typed: string, writtenForms: ReadonlyMap<string, s
  * Decode the letters typed at `start` (`typed`, possibly empty) after `before` (the draft before them).
  * Returns words sorted by score; `extra` words (from other engines) are scored the same way.
  */
-export function decodeWord(before: string, typed: string, start: number, extra: readonly string[] = [], limit = 12, language = prepareLanguage(before)): DecodedWord[] {
+export function decodeWord(before: string, typed: string, start: number, extra: readonly string[] = [], limit = 12,
+  language = prepareLanguage(before), expanded?: boolean): DecodedWord[] {
   if (!model || typed.length > 32 || !/^[A-Za-z]*$/.test(typed)) return [];
   const {index, risky} = model;
   const previous = /([A-Za-z]+)[^A-Za-z.!?;:\n]*$/.exec(before)?.[1]?.toLowerCase() ?? '';
-  const kn = typeaheadActive() ? generalNgram() : null;
+  const kn = typeaheadActive(expanded) ? generalNgram() : null;
   const lower = typed.toLowerCase();
   const touches = touchesFor(lower, start);
   const scored = new Map<string, DecodedWord>();

@@ -35,6 +35,8 @@ export interface WritingAidRequest {
   readonly surfaces?: WritingAidSurfaces;
   readonly contextKey?: string;
   readonly arm?: TypeaheadArm;
+  readonly expanded?: boolean;
+  readonly fasterTyping?: boolean;
   readonly replayDiagnostics?: boolean;
   readonly tracePool?: boolean;
   /** Differential test oracle for the eligible pool. */
@@ -141,6 +143,7 @@ export function sameWritingAidRequest(left: WritingAidRequest, right: WritingAid
   const l = left.surfaces ?? ALL_WRITING_AID_SURFACES, r = right.surfaces ?? ALL_WRITING_AID_SURFACES;
   return a.text === b.text && a.start === b.start && a.end === b.end && a.direction === b.direction &&
     x?.caret === y?.caret && left.middleEdits === right.middleEdits && x?.text === y?.text && x?.start === y?.start && x?.continuation === y?.continuation &&
+    left.expanded === right.expanded && left.fasterTyping === right.fasterTyping &&
     left.arm === right.arm && left.contextKey === right.contextKey && left.mode === right.mode && left.readOnly === right.readOnly && left.composing === right.composing &&
     l.words === r.words && l.replace === r.replace && l.correction === r.correction && l.ghost === r.ghost &&
     sameEditTarget(left.target, right.target);

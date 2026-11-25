@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {androidBytes, downloadUrl, installedAndroidPack, installAndroidPack, removeAndroidPack, packageChanged} from './decoder/androidPack';
 
-export function AndroidModelSettings() {
+export function AndroidModelSettings({canInstall}: {canInstall: boolean}) {
   const [installed, setInstalled] = useState(false), [busy, setBusy] = useState(false);
   const [received, setReceived] = useState(0), [message, setMessage] = useState('');
   const controller = useRef<AbortController | null>(null);
@@ -13,7 +13,7 @@ export function AndroidModelSettings() {
     const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(packageChanged);
     if (channel) channel.onmessage = read;
     return () => {mounted = false; window.removeEventListener(packageChanged, read); channel?.close(); controller.current?.abort();};
-  }, []);
+  }, [canInstall]);
   async function install(file?: File) {
     if (controller.current) return;
     const pending = new AbortController();
@@ -22,8 +22,11 @@ export function AndroidModelSettings() {
     catch (error) {setMessage(pending.signal.aborted ? 'Installation canceled.' : error instanceof Error ? error.message : 'Installation failed. Try again.');}
     finally {controller.current = null; setBusy(false);}
   }
+  if (!canInstall && !installed) return null;
   return <fieldset className="writing-aid-package"><legend>Optional FP16 model</legend>
-    <p>512-token context · {androidBytes.toLocaleString()} bytes. Android qualification is pending.</p>
+    <p>512-token context · {androidBytes.toLocaleString()} bytes. {canInstall
+      ? 'The typing experiment can use this model when installed and fall back to the count model.'
+      : 'The model is installed on this device. Turn on the typing experiment to use it.'}</p>
     {installed ? <button type="button" onClick={() => {void removeAndroidPack().then(() => setInstalled(false)).catch(() => setMessage('Could not remove the model.'));}}>Remove model</button>
       : <>{downloadUrl && <button type="button" disabled={busy} onClick={() => {void install();}}>Download model</button>}
         <label>Install model file <input type="file" disabled={busy} onChange={event => {

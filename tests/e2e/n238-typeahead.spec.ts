@@ -401,6 +401,44 @@ test('writing assistance shows local weekly evidence and a reset control', async
   await expect(settings.getByText('This week on this device', {exact: true})).toHaveCount(0);
 });
 
+test('opts into the expanded predictor from Tutor settings and returns to the usual model when disabled', async ({page}) => {
+  const query = '/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch,-typeaheadV2,-writingAidSettings&typeahead-replay=1';
+  const settings = query + '#/settings?section=tutor';
+  const tutor = query + '#/p/real-analysis/cp/CP4/tutor';
+  const toggle = page.getByRole('switch', {name: 'Try faster typing'});
+  const optional = page.getByRole('group', {name: 'Optional FP16 model'});
+  const composer = page.locator('form.composer');
+  const downloads: string[] = [];
+  page.on('request', request => {
+    if (/\/ngram-v2\/model\.bin$|\.lemmapack$|weights\.bin$/u.test(request.url())) downloads.push(request.url());
+  });
+  await page.goto(settings);
+  await expect(toggle).not.toBeChecked();
+  await expect(optional).toHaveCount(0);
+  await answerField(page, tutor);
+  await page.keyboard.type('Please clarify the nota');
+  await expect(strip(page).getByRole('button', {name: 'Insert notation', exact: true})).toBeVisible();
+  await expect(composer).not.toHaveAttribute('data-typeahead-ngram-sha', /./u);
+  expect(downloads).toEqual([]);
+
+  await page.goto(settings);
+  await toggle.click();
+  await expect(toggle).toBeChecked();
+  await expect(optional.getByLabel('Install model file')).toBeVisible();
+  await answerField(page, tutor);
+  await page.keyboard.type('tion and the ');
+  await expect(composer).toHaveAttribute('data-typeahead-ngram-sha', /^[a-f0-9]{64}$/u);
+  expect(downloads).toEqual([expect.stringMatching(/\/ngram-v2\/model\.bin$/u)]);
+
+  await page.goto(settings);
+  await expect(toggle).toBeChecked();
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
+  await answerField(page, tutor);
+  await page.keyboard.type('pre');
+  await expect(composer).not.toHaveAttribute('data-typeahead-ngram-sha', /./u);
+});
+
 test('reports tap-to-paint for empty, eight-equation, boundary and interior edits at 4× CPU', async ({page}, info) => {
   const extended = process.env.LEMMA_TYPEAHEAD_PERF_EXTENDED === '1';
   const expectedAsset = process.env.LEMMA_TYPEAHEAD_EXPECTED_ASSET;

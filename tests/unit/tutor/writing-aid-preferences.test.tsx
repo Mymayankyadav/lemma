@@ -4,7 +4,7 @@ import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {authGeneration, publishAuth} from '../../../src/data/authBoundary';
 import {removeDeletedOwnerTutorData, tutorStorageOwner} from '../../../src/data/tutor/local-storage';
 import {
-  setWritingAidMode, setWritingAidSurface, useWritingAidPreferences,
+  setFasterWritingAid, setWritingAidMode, setWritingAidSurface, useWritingAidPreferences,
 } from '../../../src/features/tutor/writingAid/preferences';
 import {WritingAidSettings} from '../../../src/features/tutor/writingAid/WritingAidSettings';
 import {createWritingAidModel, recordWritingAidVocabulary} from '../../../src/features/tutor/writingAid/learning';
@@ -94,6 +94,22 @@ it('blocks stale account writes and removes only the deleted owner’s settings'
   expect(setWritingAidMode('fast', prefs.scopeKey)).toBe(false);
   expect(localStorage.getItem(key(owner))).toBeNull();
   expect(localStorage.getItem(key('other-owner'))).toBe('balanced:15');
+});
+
+it('requires a new opt-in for the experiment and scopes it to the current account', async () => {
+  const originalScope = prefs.scopeKey;
+  await act(async () => {expect(setWritingAidMode('fast', originalScope)).toBe(true);});
+  expect(prefs.fasterTyping).toBe(false);
+  await act(async () => {expect(setFasterWritingAid(true, originalScope)).toBe(true);});
+  expect(prefs.fasterTyping).toBe(true);
+  await act(async () => publishAuth({id: 'other-experiment-owner'}));
+  expect(prefs.fasterTyping).toBe(false);
+  expect(setFasterWritingAid(true, originalScope)).toBe(false);
+  await act(async () => publishAuth({id: owner}));
+  expect(prefs.fasterTyping).toBe(true);
+  await act(async () => {expect(setFasterWritingAid(false, prefs.scopeKey)).toBe(true);});
+  expect(localStorage.getItem(key(owner))).toBe('fast:15');
+  expect(prefs.fasterTyping).toBe(false);
 });
 
 it('falls back on invalid settings and leaves independently stored handwriting preferences intact', async () => {
