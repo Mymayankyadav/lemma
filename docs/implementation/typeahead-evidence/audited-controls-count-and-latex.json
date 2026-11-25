@@ -1,0 +1,236 @@
+{
+  "developmentInt8Export": {
+    "browserWeightGain": "unavailable",
+    "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+    "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+    "checkpointSha256": "2ea355644513a5dcc149ae750e6707f050832ebb8f37448e8fd7f607db160546",
+    "contextSplit": "validation",
+    "contexts": 300,
+    "dataSha256": "73c2443d29605857e45920f387d205bbfc5f84e3899f8d7e9656864f6a418f11",
+    "downloadBytes": 34586206,
+    "exportParityPassed": false,
+    "floatCachedMaxLogitError": 2.288818359375e-05,
+    "floatMaxLogitError": 2.193450927734375e-05,
+    "floatRetokenizedMaxLogitError": 1.5497207641601562e-05,
+    "floatTopThreeSetMatches": 300.0,
+    "layouts": {
+      "prose": {
+        "cachedContexts": 120,
+        "cachedMatches": 118,
+        "contexts": 150,
+        "matches": 148,
+        "maxInputLength": 512,
+        "minInputLength": 1
+      },
+      "roles": {
+        "cachedContexts": 150,
+        "cachedMatches": 146,
+        "contexts": 150,
+        "matches": 146,
+        "maxInputLength": 512,
+        "minInputLength": 82,
+        "partialMatches": 47,
+        "partialRetokenizationCases": 50,
+        "wholeWordCases": 50,
+        "wholeWordMatches": 50
+      }
+    },
+    "metricsSha256": "e5ff36d42c4f60b130360310840a3c0c360e0b391f04c05b375ca01167ea522f",
+    "nativeCachedMaxLogitError": 1.7642974853515625e-05,
+    "nativePerplexity": 24.679845828971636,
+    "partialRetokenizationRequiredAgreement": 0.95,
+    "precision": "int8-weight-only",
+    "quantCachedCases": 270.0,
+    "quantCachedTopThreeSetMatches": 264.0,
+    "quantMeanTotalVariation": 0.004867056519653453,
+    "quantPerplexity": 24.75118330794841,
+    "quantTopThreeSetMatches": 294.0,
+    "scope": "300 next-token validation cases distinct from the training validation target stream. Aggregate measurements cannot identify whether the three Q8 partial mismatches also appeared on the same-case quantized prefill.",
+    "sourceArchiveSha256": "6dd4299338457b7b715fa38a63242fed1369a558671dcd655dfaf47052d4d49f",
+    "sourceCommit": "a663f7631478ccb332d5d7f4567e08579c0d140b",
+    "status": "unavailable-native-parity",
+    "stdoutSerializationSha256": "f566271d58dfb26a081393d05410651d5c5bb55ae7153914afe97f4a776c5c8a"
+  },
+  "equalExposureControls": {
+    "architecture": "primary",
+    "context": 512,
+    "parameters": 33870848,
+    "trainingControls": {
+      "currentSized": {
+        "browserQualification": "unqualified",
+        "measuredCompute": {
+          "assignedGpus": 2,
+          "definition": "Elapsed wall time \u00d7 assigned GPU count. Last provider log is an observed duration, not total billed quota.",
+          "lastProviderLogAllocatedGpuHours": 0.7307493655461111,
+          "lastProviderLogElapsedSeconds": 1315.348857983,
+          "reservationGpuHours": 0.96,
+          "scriptAllocatedGpuHours": 0.7276957430872223,
+          "scriptWallSeconds": 1309.852337557
+        },
+        "optimizerAudit": {
+          "auditSha256": "63043668c030fcd1633e2b3428f63d00f43bcd8ef2c6f40cb41cd7af9c1e9ed7",
+          "loopSteps": 3354,
+          "observedStepDifference": 0,
+          "trackedParameterStates": 100
+        },
+        "preparedManifestSha256": "b0de7f0b340a717845104c468cb0d9b9abdce7f562c9d6d7b0588dedb0a573a7",
+        "rawVersionedLogSha256": "8d4d12e5f82b42b29500c94dd4fd8687b379b1d5666ddbd3755d266a1413bab0",
+        "scoredTargets": 100000000,
+        "sharedHoldoutManifestSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+        "source": {
+          "commit": "01d37e6d4dd5feabe6405f813cbb831791380ff0",
+          "sourceArchiveSha256": "161ae87ea9665b64dd145b6e820959d6d6f12edf39c4a442f6c30d604efd7027"
+        },
+        "targetCheckpoint": {
+          "bytes": 406600961,
+          "sha256": "1dc331b08ad2f477b3993c130aad4b11d0eaa07d4fc6598af9974e35cee8b924"
+        },
+        "trainingLedgerSha256": "dbf9996225d3ebcc1d8c644b69d4b1d72a0f7f49194d25605d6b738fd4f0f5aa",
+        "trainingPool": {
+          "documents": 10417,
+          "encodedSubwordTokens": 26353088,
+          "words": 8508784
+        },
+        "trainingValidation": {
+          "negativeLogLikelihood": 2.125364355452925,
+          "perplexity": 8.37594875482292,
+          "scoredTargets": 30855
+        },
+        "verifiedRunReceiptSha256": "6e551b92bdab0aa0a25882cd4202472f8f3ae16c8cf4d6f5c5c37d156fc59a58"
+      },
+      "development": {
+        "browserQualification": "unavailable-native-parity",
+        "measuredCompute": {
+          "assignedGpus": 2,
+          "definition": "Elapsed wall time \u00d7 assigned GPU count. Last provider log is an observed duration, not total billed quota.",
+          "lastProviderLogAllocatedGpuHours": 0.7406952400044444,
+          "lastProviderLogElapsedSeconds": 1333.251432008,
+          "reservationGpuHours": 0.96,
+          "scriptAllocatedGpuHours": 0.7372644903011111,
+          "scriptWallSeconds": 1327.076082542
+        },
+        "optimizerAudit": {
+          "auditSha256": "fbf4a0025d51b8923196cdbc640ec2d37cbed1ddde96884864d97d3543d974fa",
+          "loopSteps": 3353,
+          "observedStepDifference": 0,
+          "trackedParameterStates": 100
+        },
+        "preparedManifestSha256": "73c2443d29605857e45920f387d205bbfc5f84e3899f8d7e9656864f6a418f11",
+        "rawVersionedLogSha256": "ac26a46059c4bebe85ec4887f54a63b01b004a4bfceec44cb7938200c152e014",
+        "scoredTargets": 100000000,
+        "sharedHoldoutManifestSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+        "source": {
+          "commit": "01d37e6d4dd5feabe6405f813cbb831791380ff0",
+          "sourceArchiveSha256": "161ae87ea9665b64dd145b6e820959d6d6f12edf39c4a442f6c30d604efd7027"
+        },
+        "targetCheckpoint": {
+          "bytes": 406600961,
+          "sha256": "2ea355644513a5dcc149ae750e6707f050832ebb8f37448e8fd7f607db160546"
+        },
+        "trainingLedgerSha256": "db931742493231942f52428b36727f76ef7abb53e07da5eb3bf551afaeba5018",
+        "trainingPool": {
+          "documents": 122559,
+          "encodedSubwordTokens": 312320515,
+          "words": 100016956
+        },
+        "trainingValidation": {
+          "negativeLogLikelihood": 2.0402826096864364,
+          "perplexity": 7.692782946679823,
+          "scoredTargets": 30855
+        },
+        "verifiedRunReceiptSha256": "f0e9d8c59ded6bc16c99c0483a12003df96f8c108e132ffede1a95a37cd2e0af"
+      }
+    },
+    "validationPerplexityRelativeReduction": 0.08156279702042424
+  },
+  "latex4": {
+    "allRowsByWidth": [
+      {
+        "edges": 68755,
+        "rows": 1503,
+        "width": 1
+      },
+      {
+        "edges": 80773,
+        "rows": 17442,
+        "width": 2
+      },
+      {
+        "edges": 85474,
+        "rows": 31963,
+        "width": 3
+      }
+    ],
+    "asset": {
+      "budgetMiB": 2,
+      "bytes": 2097152,
+      "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+      "manifestSha256": "7a3662fab5511c2617d6ba716e2d86ccf3147c874958ed17627ea205b431280f",
+      "order": 4,
+      "sha256": "79eff0d5440b999e88520d6b472bfa95016786b7301d8f781c2e928a2304a3e4",
+      "subject": null,
+      "trainTokens": 50000004,
+      "vocabSha256": "6edef82683a8c6f2e23450a0ef250254c5dd3ae6d1a7b2b77637f8667d894c0f",
+      "vocabSize": 1505
+    },
+    "browser": "156.0.8078.79",
+    "maximumExhaustiveMassError": 2.9563886005945506e-08,
+    "maximumIdentifierClassAllocationError": 2.220446049250313e-16,
+    "maximumSeededMassError": 2.4577919033319517e-08,
+    "maximumSeededSparseVsDirectError": 1.9984014443252818e-14,
+    "negativeResidualRows": 0,
+    "scope": "LaTeX browser asset and probability integrity only",
+    "seed": 9093,
+    "sourceSnapshotSha256": "c18a2a81d35867c74bb9c5520f6a159a54a5b49a4e1d224740d21751e2ddb331",
+    "verificationSha256": "c17eb694e1ea35eb478bb10e4f8fe66a1962596293795946e4a670f03c3046ef",
+    "verifierSha256": "a0abc859de3fe2dbe7e758532bc2ce3b9c8cb918142e3e3bdeb55853ce1bf8a3"
+  },
+  "localFullCount": {
+    "countDatabaseBytes": 9130295296,
+    "countDatabaseSha256": "eb3fb63270d59ccfe3bc5b6adbe482ad0c08739d15c2494f562e7613802f5a5f",
+    "elapsedSeconds": 3777.717646904999,
+    "inputSha256s": {
+      "corpus": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+      "groupAudit": "3372c0eb58e8b1be6afa8bb03caba362b6b4e6c20c1e92e9625b12e8bfbe9e9c",
+      "vocabulary": "01fddfc6c4659d21fe22e2cb890289c4a93d728f6b1da8a7e1d142c3d9fef6e2"
+    },
+    "manifestSha256": "3f55c3766715994fc88b3890b0109882ef6a9708ce05e85247662dce5e7c5031",
+    "maximumOrder": 5,
+    "peakRssBytes": 5124935680,
+    "receiptSha256": "851a998beecfd1b5da9bf936d5ef0990d316ac7664be6e843a3eebf5f50b8d75",
+    "sourceCommit": "5b0b140f3153e62fb9b73bb75b5396560bc55e94",
+    "sqlite": {
+      "cacheKiB": 4194304,
+      "integrityChecked": true,
+      "journalMode": "off",
+      "observedCgroupLimitBytes": 17179869184,
+      "synchronous": 0
+    },
+    "trainShards": 154,
+    "trainTokenOccurrences": 500002914
+  },
+  "scope": "Verified audited upstream training counts, isolated LaTeX browser math and two fixed-exposure native neural controls. Combined selected prose/subject audit, hardware qualification and final held-out replay are pending.",
+  "tokenizer": {
+    "developmentSha256": "cf2e81d637fb54af5ea092b796dcd98d506c6bd16c5d8d7f57e7724e07fcc099",
+    "manifestSha256": "950604e173ec319d7c927e73b3470a13732c9da35e229037e2093edc71c250cd",
+    "sampleWords": 3000000,
+    "sharedHeldoutSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+    "split": "train",
+    "tokenizerBytes": 170720,
+    "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc",
+    "unicodeProbe": {
+      "chromiumVersion": "156.0.8078.79",
+      "mismatches": 0,
+      "newlyRecognizedUnicodeScalars": 9754,
+      "nodeUnicodeVersion": "17.0",
+      "nodeVersion": "24.22.3",
+      "pythonUnicodeVersion": "15.0.0",
+      "pythonVersion": "3.12.14",
+      "summarySha256": "2ab8b1fc53b2d4224eaa8c14a734a40375639bd0340bb1dcf1376dfe0e45595f",
+      "syntheticEncodingsCompared": 78032
+    },
+    "version": 1,
+    "vocabularySize": 16384
+  },
+  "version": 1
+}

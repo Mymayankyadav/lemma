@@ -30,6 +30,7 @@ from select_primary_precision import ORDER as PRIMARY_PRECISIONS
 
 ARMS = ('corrected-v1', 'expanded-kn', 'neural', 'tutor', 'personal')
 FALLBACK_ARMS = tuple(arm for arm in ARMS if arm != 'neural')
+CONTROL_PRECISION = 'int8-weight-only'
 CONTROL_SPECS = {
     'main-100m': ('prepared', 'primary', 'tokens-100000000.pt'),
     'main-500m': ('prepared', 'primary', 'tokens-500000000.pt'),
@@ -336,6 +337,8 @@ def verify_control(label, control, prepared, shared_heldout_sha, bundle, parent_
     metrics, ledger = json_file(metrics_path), json_file(ledger_path)
     if hash_file(metrics_path) != control['validationMetricsSha256'] or hash_file(ledger_path) != control['trainingLedgerSha256']:
         raise ValueError(f'{label} metrics or training ledger fail their expected hash')
+    if metrics['precision'] != CONTROL_PRECISION:
+        raise ValueError(f'{label} controlled comparison requires {CONTROL_PRECISION}')
     checkpoint = ledger['checkpointFiles'][checkpoint_file]['sha256']
     actual_targets, requested_targets = ledger['checkpoint']['tokens'], ledger['requestedTargets']
     expected_targets = 20_000_000 if label == 'tutor-best' else 500_000_000 if label.startswith('main-') else 100_000_000
@@ -381,8 +384,8 @@ def verify_control(label, control, prepared, shared_heldout_sha, bundle, parent_
         files[name] = {'path': filename, 'bytes': size, 'sha256': sha}
     if sum(file['bytes'] for file in files.values()) != metrics['graphBytes']:
         raise ValueError(f'{label} model bytes differ from the native parity report')
-    candidate = dict(version=2, kind='neural', precision='mixed' if metrics['precision'] == 'int4-int8-head' else metrics['precision'].split('-')[0],
-                     quantization=metrics['precision'], context=512, vocabSize=16384, layers=4 if architecture == 'capacity-reference' else 8,
+    candidate = dict(version=2, kind='neural', precision='int8',
+                     quantization=CONTROL_PRECISION, context=512, vocabSize=16384, layers=4 if architecture == 'capacity-reference' else 8,
                      heads=3 if architecture == 'capacity-reference' else 8, headDim=64, files=files,
                      qualification=dict(parity=True, replay=False, wasm=False, webgpu=False, webgpuJspi=False))
     bundle.mkdir()
