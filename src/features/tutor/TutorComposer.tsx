@@ -608,11 +608,23 @@ export function TutorComposer(props: Props) {
     if (notation[next]) setLastMath(next);
   }
   function send() {
-    if (!blocked && (props.value.trim()||hasImage)) {
+    // N249: a drawing over the keys and the keys tapped behind it go in first; what is sent is the answer they leave.
+    // `props.value` is still this render's value, so a settled answer is read from the history and checked again.
+    const value = keyInk.settle() ? history.current.present.text : props.value;
+    const withImage = value === props.value ? hasImage : referencedImageIds(value).some(id => availableIds.has(id));
+    const issue = value === props.value ? imageIssue : tutorInkIssue(value, props.ink);
+    const stillBlocked = readOnly || !(props.canQueueImage && withImage) && !props.canSend || value.includes('□') || composing
+      || scratch || unfinished && (inkDraft?.inlineImages || withImage) || Boolean(issue);
+    if (!stillBlocked && (value.trim()||withImage)) {
       revision.current.modeRevision++;
       assist.stop();
-      props.onSend(props.value);
+      props.onSend(value);
     }
+  }
+  /** Every intentional way of closing the keys settles a drawing over them first, while its answer is unchanged. */
+  function closeKeys() {
+    keyInk.settle();
+    setShown(false);
   }
 
   /**
@@ -634,7 +646,7 @@ export function TutorComposer(props: Props) {
       }
       if (scratch || equationMode || assist.drawing) return;
       assist.pause();
-      setShown(false);
+      closeKeys();
     };
     page.addEventListener('pointerdown', down, true);
     return () => page.removeEventListener('pointerdown', down, true);
@@ -731,7 +743,7 @@ export function TutorComposer(props: Props) {
       event.preventDefault();
       if (writingGhost || writingEdit || writingWords.length) {dismissWriting(); return;}
       if(assist.drawing)assist.stop();
-      else {setPinned(false); setShown(false);}
+      else {setPinned(false); closeKeys();}
     }
     if (readOnly) return;
     const key = event.key.toLowerCase();
@@ -816,6 +828,7 @@ export function TutorComposer(props: Props) {
   }
   function openDrawing(id: string | null = null, offset: number | null = null) {
     if (editingDisabled) return;
+    keyInk.settle();
     remember();
     revision.current.modeRevision++;
     assist.stop();
@@ -996,7 +1009,7 @@ export function TutorComposer(props: Props) {
   }
   // N221: in the Android app Hide keyboard sits in the band under the keys, where Gboard's ⌄ is; browsers keep it in the strip.
   const hideButton = (className: string) => <button className={className} type="button" aria-label="Hide keyboard"
-    onPointerDown={keepSelection} onClick={() => {haptic('snap'); keyInk.settle(); setPinned(false); setShown(false);}}><ChevronDown aria-hidden="true"/></button>;
+    onPointerDown={keepSelection} onClick={() => {haptic('snap'); setPinned(false); closeKeys();}}><ChevronDown aria-hidden="true"/></button>;
   const scratchButton = props.ink && <button className="sbtn" type="button" aria-label="Scratch" aria-pressed={scratch}
     disabled={editingDisabled || props.ink.draft.queuedText !== undefined} onPointerDown={keepSelection} onClick={pencil}><PenLine aria-hidden="true"/></button>;
   const nextSlotButton = <button type="button" className="sbtn" aria-label="Next □" disabled={editingDisabled} onPointerDown={keepSelection}
@@ -1081,7 +1094,7 @@ export function TutorComposer(props: Props) {
           {props.ink ? <IconButton label="Keep keyboard open" aria-pressed={pinned} disabled={editingDisabled}
             onPointerDown={keepSelection} onClick={pinKeys}><Keyboard aria-hidden="true"/></IconButton>
             : <IconButton label="Keys" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
-              onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
+              onClick={()=>{if(shown){assist.pause();closeKeys();}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
           {props.ink && <div className="tutor-composer-photos" ref={setPhotoActions}/>}
           <IconButton label="Attach context" aria-haspopup="dialog" aria-pressed={props.hasContext} disabled={inkDraft?.queuedText!==undefined}
             onPointerDown={keepSelection} onClick={props.onContext}><Paperclip aria-hidden="true"/></IconButton>
@@ -1197,7 +1210,7 @@ export function TutorComposer(props: Props) {
         ink={isFlagOn('tutorKeyInk') ? {bind: keyInk.bind, attach: keyInk.attach, canvas: keyInk.canvas,
           status: keyInk.view.kind === 'idle' ? keyInk.view.message ?? '' : keyInk.view.kind === 'inserted' ? 'Inserted ' + keyInk.view.symbol.name : ''} : undefined}
         wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
-        onBrowse={()=>{remember();assist.openPicker();}}
+        onBrowse={()=>{keyInk.settle();remember();assist.openPicker();}}
         onDelete={() => keyInk.beforeKeyEdit({kind: 'delete'})}
         onMove={(direction, count) => keyInk.beforeKeyEdit({kind: 'move', direction, count})}/>{hideButton('sbtn kb-band-hide')}</>}
     </div> : null}

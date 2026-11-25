@@ -62,6 +62,9 @@ test('a stroke continues the drawing right after a lift, or near a drawing that 
   expect(continuesDrawing(box, {x: 200, y: 120}, 2000, 'insert-on-move')).toBe(false);
   expect(continuesDrawing(box, {x: 120, y: 120}, SETTLE_MS + 10, 'choose')).toBe(true);
   expect(continuesDrawing(box, {x: 120, y: 120}, IDLE_COMMIT_MS + 10, 'choose')).toBe(false);
+  // A drawing whose reading has not come back is not finished, however long the model takes.
+  expect(continuesDrawing(box, {x: 120, y: 120}, 5000)).toBe(true);
+  expect(continuesDrawing(box, {x: 300, y: 300}, 5000)).toBe(false);
   // The next symbol written on the same spot as a finished one.
   expect(continuesDrawing(box, {x: 120, y: 120}, SETTLE_MS + 10, 'insert-after-settle')).toBe(false);
   expect(continuesDrawing(undefined, {x: 0, y: 0}, 0)).toBe(false);

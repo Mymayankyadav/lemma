@@ -6,12 +6,21 @@ import type {InkInferenceResult, InkSnapshot} from '../../../src/features/tutor/
 const recognizer = vi.hoisted(() => ({
   submitted: [] as InkSnapshot[],
   onResult: undefined as undefined | ((result: InkInferenceResult) => void),
+  /** Report the model unavailable synchronously from submit, as a Worker that cannot be constructed does. */
+  failSynchronously: false,
 }));
 vi.mock('../../../src/features/tutor/input/inkRecognizer', () => ({
   TUTOR_MODEL_ASSET_SET: 'test-assets',
-  createInkRecognizer: (callbacks: {onResult: (result: InkInferenceResult) => void}) => {
+  createInkRecognizer: (callbacks: {onResult: (result: InkInferenceResult) => void; onReadiness: (state: string) => void}) => {
     recognizer.onResult = callbacks.onResult;
-    return {prepare() {}, submit: (snapshot: InkSnapshot) => {recognizer.submitted.push(snapshot);}, cancel() {}, dispose() {}};
+    let unavailable = false;
+    return {prepare() {}, submit: (snapshot: InkSnapshot) => {
+      if (recognizer.failSynchronously) {
+        if (!unavailable) {unavailable = true; callbacks.onReadiness('unavailable');}
+        return;
+      }
+      recognizer.submitted.push(snapshot);
+    }, cancel() {}, dispose() {}};
   },
 }));
 
@@ -30,7 +39,7 @@ beforeEach(() => {
     value(this: HTMLDialogElement) {this.open = method === 'showModal';}}));
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
   setHapticsEnabled(false);
-  localStorage.clear(); recognizer.submitted = [];
+  localStorage.clear(); recognizer.submitted = []; recognizer.failSynchronously = false; sent = [];
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
 });
 afterEach(async () => {
@@ -41,6 +50,7 @@ afterEach(async () => {
 });
 
 let setReadOnly: (readOnly: boolean) => void = () => {};
+let sent: string[] = [];
 function Harness() {
   const [value, setValue] = useState('');
   const [readOnly, changeReadOnly] = useState(false);
@@ -48,7 +58,7 @@ function Harness() {
   const [answerActions, setAnswerActions] = useState<HTMLDivElement | null>(null);
   return <>
     <dialog><div ref={setAnswerActions}/></dialog>
-    <TutorComposer value={value} onChange={setValue} onSend={() => {}} onAsk={() => {}} canSend readOnly={readOnly} pending={false}
+    <TutorComposer value={value} onChange={setValue} onSend={text => {sent.push(text);}} onAsk={() => {}} canSend readOnly={readOnly} pending={false}
       hasContext={false} onContext={() => {}} sessionActionsOpen={false} onCloseActions={() => {}} answerActions={answerActions}/>
   </>;
 }
@@ -66,9 +76,9 @@ async function mount() {
 function tapClick(target: Element) {
   target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}));
 }
-function pointer(type: string, target: Element, x: number, y: number) {
+function pointer(type: string, target: Element, x: number, y: number, id = 7, kind = 'touch') {
   const event = new MouseEvent(type, {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
-  Object.defineProperties(event, {pointerId: {value: 7}, isPrimary: {value: true}, pointerType: {value: 'touch'}});
+  Object.defineProperties(event, {pointerId: {value: id}, isPrimary: {value: true}, pointerType: {value: kind}});
   target.dispatchEvent(event);
 }
 /** A stroke that starts on a key, as a finger drawing over the keys does; the browser's click may follow. */
@@ -339,4 +349,114 @@ test('the drawn symbol’s readings have the strip to themselves, above a pendin
   await act(async () => button('Space', rows()).click());
   expect(field().value).toBe('teh∀ ');
   expect(drawn()).toBeNull();
+});
+
+test('Send submits the keys tapped while a drawing was still being read', async () => {
+  vi.useFakeTimers();
+  await mount();
+  for (const letter of 'abc') await act(async () => button(letter, rows()).click());
+  await draw([10, 10], [60, 60]);
+  await act(async () => button('x', rows()).click());
+  await act(async () => button('y', rows()).click());
+  expect(field().value).toBe('abc');
+  await act(async () => button('Send').click());
+  expect(sent).toEqual(['abcxy']);
+});
+
+test('Escape and the Keys toggle settle a drawing before the keys close', async () => {
+  vi.useFakeTimers();
+  await mount();
+  await draw([10, 10], [60, 60]);
+  await act(async () => button('a', rows()).click());
+  await act(async () => {field().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true}));});
+  expect(host.querySelector('.kb .rows')).toBeNull();
+  expect(field().value).toBe('a');
+  await act(async () => button('Keys').click());
+  expect(rows()).toBeTruthy();
+  await draw([10, 10], [60, 60]);
+  await read({'less-than': .95, 'x-other': .05});
+  await act(async () => button('Keys').click());
+  expect(host.querySelector('.kb .rows')).toBeNull();
+  expect(field().value).toBe('a<');
+});
+
+test('Browse symbols settles a held drawing first, and its timer cannot fire later', async () => {
+  vi.useFakeTimers();
+  await mount();
+  await draw([10, 10], [60, 60]);
+  await read({'less-than': .95, 'x-other': .05});
+  await act(async () => button('Maths symbols', rows()).click());
+  await act(async () => button('Browse symbols', rows()).click());
+  expect(field().value).toBe('<');
+  await wait(IDLE_COMMIT_MS * 2);
+  expect(field().value).toBe('<');
+});
+
+test('a nearby stroke continues a drawing whose reading has not come back yet', async () => {
+  vi.useFakeTimers();
+  await mount();
+  await draw([10, 10], [60, 60]);
+  await wait(500);
+  await draw([12, 70], [60, 70]);
+  expect(recognizer.submitted.at(-1)!.strokes).toHaveLength(2);
+  expect(recognizer.submitted.at(-1)!.inkEpoch).toBe(recognizer.submitted[0].inkEpoch);
+});
+
+test('a cancelled first stroke leaves nothing held: the next key goes in at once', async () => {
+  await mount();
+  const start = button('g', rows());
+  await act(async () => {
+    pointer('pointerdown', start, 10, 10);
+    pointer('pointermove', start, 40, 40);
+    pointer('pointercancel', rows(), 40, 40);
+  });
+  await act(async () => button('a', rows()).click());
+  expect(field().value).toBe('a');
+  expect(drawn()).toBeNull();
+});
+
+test('a cancelled continuation leaves the held symbol to go in as before', async () => {
+  vi.useFakeTimers();
+  await mount();
+  await draw([10, 10], [60, 60]);
+  await read({'less-than': .95, 'x-other': .05});
+  await wait(500);
+  const start = button('g', rows());
+  await act(async () => {
+    pointer('pointerdown', start, 12, 70);
+    pointer('pointermove', start, 40, 70);
+    pointer('pointercancel', rows(), 40, 70);
+  });
+  await wait(IDLE_COMMIT_MS);
+  expect(field().value).toBe('<');
+});
+
+test('a touch arriving during a pen stroke neither ends the stroke nor presses a key', async () => {
+  await mount();
+  const penKey = button('g', rows()), touchKey = button('p', rows());
+  await act(async () => {
+    pointer('pointerdown', penKey, 10, 10, 7, 'pen');
+    pointer('pointermove', penKey, 30, 30, 7, 'pen');
+    pointer('pointerdown', touchKey, 300, 20, 8, 'touch');
+    pointer('pointerup', touchKey, 300, 20, 8, 'touch');
+    tapClick(touchKey);
+    pointer('pointermove', rows(), 60, 60, 7, 'pen');
+    pointer('pointerup', rows(), 60, 60, 7, 'pen');
+  });
+  expect(field().value).toBe('');
+  expect(recognizer.submitted).toHaveLength(1);
+  expect(recognizer.submitted[0].strokes[0].pointerType).toBe('pen');
+});
+
+test('a model that fails at once shows its geometry fallback, not empty Reading slots', async () => {
+  recognizer.failSynchronously = true;
+  await mount();
+  const start = button('g', rows());
+  await act(async () => {
+    pointer('pointerdown', start, 80, 10);
+    pointer('pointermove', start, 10, 45);
+    pointer('pointermove', rows(), 80, 80);
+    pointer('pointerup', rows(), 80, 80);
+  });
+  expect(drawn()?.getAttribute('data-ink')).toBe('held');
 });

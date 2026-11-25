@@ -246,8 +246,10 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
         settleReading(now, readLatentInk(result, matchPartialSymbols(latestSnapshot)));
       },
     });
-    recognizer.current.submit(snapshot);
+    // Reading is shown before submitting: an unavailable model answers synchronously (its geometry fallback must not
+    // be hidden behind empty Reading slots afterwards).
     setView({kind: 'reading'});
+    recognizer.current.submit(snapshot);
   }
 
   function point(event: PointerEvent<HTMLElement>): InkPoint {
@@ -282,7 +284,16 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   }
 
   function onPointerDownCapture(event: PointerEvent<HTMLElement>) {
-    if (!enabled || !event.isPrimary || event.button !== 0) return;
+    if (!enabled || event.button !== 0) return;
+    const owner = pointer.current;
+    if (owner && owner.id !== event.pointerId && (owner.drawing || owner.type === 'pen')) {
+      // A pen down, or a stroke under way, owns the keys: another pointer (a palm, a resting finger; pen and touch
+      // can each be primary at once) neither draws nor presses the key under it, and its click is consumed.
+      event.preventDefault(); event.stopPropagation();
+      swallowClick.current = event.target instanceof Element ? event.target.closest('button') : null;
+      return;
+    }
+    if (!event.isPrimary) return;
     suppressClickUntil.current = 0;
     swallowClick.current = null;
     const label = keyLabel(event.target);
@@ -346,11 +357,23 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   }
 
   function onPointerCancelCapture(event: PointerEvent<HTMLElement>) {
+    // The synthetic cancel sent to a key when its press becomes a stroke arrives before `drawing` is set: not ours.
     if (pointer.current?.id !== event.pointerId || !pointer.current.drawing) {
       if (pointer.current?.id === event.pointerId && event.target === area.current) pointer.current = null;
       return;
     }
     pointer.current = null;
+    const current = held.current;
+    if (current && !current.strokes.length) {
+      // A cancelled first stroke leaves nothing to read: no drawing is held, and keys waiting for it go in now.
+      held.current = null;
+      setView({kind: 'idle'});
+      if (deferred.current) commit('move');
+    } else if (current) {
+      // A cancelled continuation: the strokes already drawn resume where they were (their idle insert, or a reading).
+      if (current.decision) schedule(current);
+      else if (lastSnapshot.current?.inkEpoch !== current.epoch || lastSnapshot.current.inkRevision !== current.strokes.length) recognise(current);
+    }
     paint();
   }
 
@@ -377,10 +400,11 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   }
 
   /** Before the keys give way to another surface: settle what is pending while its answer is still the same. */
-  function settle() {
-    if (!held.current && !deferred.current) return;
+  function settle(): boolean {
+    if (!held.current && !deferred.current) return false;
     commit('move');
     endInsert();
+    return true;
   }
 
   /** The key goes in after the symbol, so the symbol can no longer be replaced in place. */
