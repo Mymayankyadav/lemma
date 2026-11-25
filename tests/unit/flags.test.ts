@@ -5,7 +5,7 @@ import {setShellRoot} from '../../src/app/shellRoot'
 describe('feature flags',()=>{
  it('the shells and reviewed feature defaults are on; unreleased flags are off',()=>{
   const {v6Shell,v7Shell,v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week,atlasV3,
-    atlasAgendaV1,padLocal,uiRepairV1,tutorThreads,tutorScratch,...rest}=FLAG_DEFAULTS
+    atlasAgendaV1,padLocal,uiRepairV1,tutorThreads,tutorScratch,tutorKeyInk,...rest}=FLAG_DEFAULTS
   expect(v6Shell).toBe(true)
   expect(v7Shell).toBe(true)
   expect([v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week].every(Boolean)).toBe(true)
@@ -14,6 +14,8 @@ describe('feature flags',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?flags=-tutorThreads'}).tutorThreads).toBe(false)
   expect(tutorScratch).toBe(true)   // the Owner's N223: the rich answer, the pencil's scratch pad and image attachments
   expect(resolveFlags({allowOverrides:true,search:'?flags=-tutorScratch'}).tutorScratch).toBe(false)
+  expect(tutorKeyInk).toBe(true)   // the Owner's N249: one symbol drawn over the tutor's keys
+  expect(resolveFlags({allowOverrides:true,search:'?flags=-tutorKeyInk'}).tutorKeyInk).toBe(false)
   expect(Object.values(rest).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })

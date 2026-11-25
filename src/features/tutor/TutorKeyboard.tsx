@@ -1,4 +1,4 @@
-import {memo, useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode} from 'react';
+import {memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type HTMLAttributes, type PointerEvent, type ReactNode, type RefObject} from 'react';
 import {ArrowBigUp, ArrowBigUpDash, ChevronLeft, ChevronRight, CornerDownLeft, Delete, Search} from 'lucide-react';
 import {haptic} from '../../ui/v7/haptics';
 import {notation} from './notation';
@@ -10,6 +10,16 @@ const keepSelection = (event: PointerEvent) => event.preventDefault();
 const PREVIEW_LINGER = 110;
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
   || typeof document !== 'undefined' && document.documentElement.hasAttribute('data-v7-reduce-effects');
+
+/** N249: drawing one symbol over the keys (useKeyInk). Absent when the flag is off or the answer cannot be edited. */
+export interface KeyboardInk {
+  bind?: Pick<HTMLAttributes<HTMLElement>, 'onPointerDownCapture' | 'onPointerMoveCapture' | 'onPointerUpCapture'
+    | 'onPointerCancelCapture' | 'onClickCapture'>;
+  attach: (node: HTMLElement | null) => void;
+  canvas: RefObject<HTMLCanvasElement | null>;
+  /** Spoken only: what happened to the drawing. */
+  status: string;
+}
 
 interface KeyHold {
   key: string;
@@ -25,7 +35,7 @@ interface KeyHold {
  * letter shows an enlarged preview above the finger, every key gives the system's keyboard tap, and a touch near the
  * edge of a letter counts for its neighbour when only the neighbour continues a word (tap correction).
  */
-export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove, onBrowse, wordBefore}: {
+export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove, onBrowse, wordBefore, ink}: {
   view: string; lastMath: string; onView: (view: string) => void; disabled: boolean;
   /** `touch`: where a letter was tapped, in key pitches and rows from the top-left of the letter rows (N221 decoder). */
   onInsert: (text: string, typed?: boolean, touch?: KeyTouch) => void; onDelete: () => void;
@@ -33,6 +43,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
   onBrowse: () => void;
   /** The letters of the word before the caret, for tap correction. */
   wordBefore?: () => string;
+  ink?: KeyboardInk;
 }) {
   const [phrasePage, setPhrasePage] = useState(0);
   const [shift, setShift] = useState<'off' | 'once' | 'locked'>('off');
@@ -42,6 +53,8 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
   const pressed = useRef<HTMLButtonElement | null>(null);
   const popup = useRef<HTMLDivElement>(null);
   const rows = useRef<HTMLDivElement>(null);
+  const attachInk = ink?.attach;
+  const setRows = useCallback((node: HTMLDivElement | null) => {rows.current = node; attachInk?.(node);}, [attachInk]);
   const touch = useRef<{x: number; y: number; at: number; q?: DOMRect} | null>(null);
   const previewTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const actions = useRef({onInsert, onDelete, onMove, disabled});
@@ -179,8 +192,10 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
   const chars = (list: string[]) => list.map(char => key(char, () => onInsert(char, true), {style: 'ch sym', printable: true}));
   const phrases = view === 'Phrases';
   const math = phrases ? notation[view].slice(phrasePage * 9, (phrasePage + 1) * 9) : notation[view];
-  return <div className="rows" data-view={view} ref={rows}>
+  return <div className="rows" data-view={view} ref={setRows} data-key-ink={ink?.bind ? '' : undefined} {...ink?.bind}>
     <div className="tutor-key-preview" aria-hidden="true" ref={popup} style={{visibility: 'hidden'}}>{'\u00a0'}</div>
+    {ink?.bind && <canvas className="tutor-key-ink" ref={ink.canvas} aria-hidden="true"/>}
+    {ink && <span className="tutor-key-ink-status" role="status" aria-live="polite">{ink.status}</span>}
     {math ? <>
       <div className="cats" role="group" aria-label="Math categories">{Object.keys(notation).map(name =>
         <button key={name} type="button" disabled={disabled} className={view === name ? 'cur' : ''} aria-pressed={view === name}
