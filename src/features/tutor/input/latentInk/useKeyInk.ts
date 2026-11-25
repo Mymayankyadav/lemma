@@ -66,13 +66,15 @@ export type KeyInkView =
 const keyLabel = (target: EventTarget | null) =>
   target instanceof Element ? target.closest('button')?.getAttribute('aria-label') ?? null : null;
 
-/** Let the key under a stroke end its press the way it ends any cancelled press (no preview, no long-press digit). */
-function cancelKeyPress(key: HTMLElement | null, pointerId: number) {
-  if (!key) return;
-  const event = typeof PointerEvent === 'function'
-    ? new PointerEvent('pointercancel', {bubbles: true, pointerId})
-    : Object.assign(new Event('pointercancel', {bubbles: true}), {pointerId});
-  key.dispatchEvent(event);
+/** A pointer the keys refused (a palm or finger while a pen is down or a stroke is under way, or the Delete press
+ *  that cleared a drawing): its click is consumed once it lifts. */
+type Rejected = {button: HTMLElement | null; released: boolean; at: number};
+const REJECTED_CLICK_MS = 1000;
+
+/** The pointer id a click carries (Pointer Events 3 makes click a PointerEvent); absent in older browsers. */
+function clickPointerId(event: MouseEvent<HTMLElement>) {
+  const id = (event.nativeEvent as globalThis.MouseEvent & {pointerId?: number}).pointerId;
+  return typeof id === 'number' && id >= 0 ? id : undefined;
 }
 
 export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
@@ -81,9 +83,13 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   latest.current = handlers;
   const [view, setView] = useState<KeyInkView>({kind: 'idle'});
   const held = useRef<Held | null>(null), inserted = useRef<Inserted | null>(null), pointer = useRef<Pointer | null>(null);
-  const epoch = useRef(0), suppressClickUntil = useRef(0);
-  /** The Delete key whose press cleared a drawing: its click (after a tap or a long press) is consumed too. */
-  const swallowClick = useRef<HTMLElement | null>(null);
+  const epoch = useRef(0);
+  /** The click that may follow a stroke (it is not a key tap): which pointer, and until when. */
+  const strokeClick = useRef<{pointerId: number; until: number} | null>(null);
+  /** Each refused pointer, until its click is consumed. */
+  const rejected = useRef(new Map<number, Rejected>());
+  /** True while the keys' own cancel is sent to the key a stroke began on (not a real cancellation). */
+  const cancellingKey = useRef(false);
   /** Keyboard edits made while the drawing is being read, in the order they were made. */
   const deferred = useRef<{edits: KeyEdit[]; timer: ReturnType<typeof setTimeout>} | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -283,26 +289,43 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
     }
   }
 
+  /** Let the key under a stroke end its press the way it ends any cancelled press (no preview, no long-press digit). */
+  function cancelKeyPress(key: HTMLElement | null, pointerId: number) {
+    if (!key) return;
+    const event = typeof PointerEvent === 'function'
+      ? new PointerEvent('pointercancel', {bubbles: true, pointerId})
+      : Object.assign(new Event('pointercancel', {bubbles: true}), {pointerId});
+    cancellingKey.current = true;
+    try {key.dispatchEvent(event);} finally {cancellingKey.current = false;}
+  }
+
+  function reject(event: PointerEvent<HTMLElement>) {
+    rejected.current.set(event.pointerId, {
+      button: event.target instanceof Element ? event.target.closest('button') : null, released: false, at: Date.now(),
+    });
+  }
+
   function onPointerDownCapture(event: PointerEvent<HTMLElement>) {
     if (!enabled || event.button !== 0) return;
+    const now = Date.now();
+    for (const [id, entry] of rejected.current) if (entry.released && now - entry.at > REJECTED_CLICK_MS) rejected.current.delete(id);
     const owner = pointer.current;
     if (owner && owner.id !== event.pointerId && (owner.drawing || owner.type === 'pen')) {
       // A pen down, or a stroke under way, owns the keys: another pointer (a palm, a resting finger; pen and touch
-      // can each be primary at once) neither draws nor presses the key under it, and its click is consumed.
+      // can each be primary at once) neither draws nor presses the key under it, and its own click is consumed.
       event.preventDefault(); event.stopPropagation();
-      swallowClick.current = event.target instanceof Element ? event.target.closest('button') : null;
+      reject(event);
       return;
     }
     if (!event.isPrimary) return;
-    suppressClickUntil.current = 0;
-    swallowClick.current = null;
+    strokeClick.current = null;
     const label = keyLabel(event.target);
     if (label === 'Delete') {
       // Delete clears a held drawing instead of the answer (its own press never runs, so its click is consumed
       // below); straight after an automatic insert it is a correction.
       if (held.current) {
         event.preventDefault(); event.stopPropagation();
-        swallowClick.current = event.target instanceof Element ? event.target.closest('button') : null;
+        reject(event);
         clear();
         return;
       }
@@ -339,13 +362,15 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   }
 
   function onPointerUpCapture(event: PointerEvent<HTMLElement>) {
+    const refused = rejected.current.get(event.pointerId);
+    if (refused) {refused.released = true; refused.at = Date.now(); return;}
     const active = pointer.current;
     if (!active || active.id !== event.pointerId) return;
     pointer.current = null;
     if (!active.drawing) return;
     event.stopPropagation();
     // The click that may follow a stroke is not a key tap. Some browsers send none after a captured pointer.
-    suppressClickUntil.current = Date.now() + 400;
+    strokeClick.current = {pointerId: event.pointerId, until: Date.now() + 400};
     const current = held.current;
     if (!current) return;
     current.strokes = [...current.strokes, {pointerType: active.type, points: resampleInkPath(active.points, Math.min(MAX_POINTS, active.points.length))}];
@@ -357,12 +382,14 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   }
 
   function onPointerCancelCapture(event: PointerEvent<HTMLElement>) {
-    // The synthetic cancel sent to a key when its press becomes a stroke arrives before `drawing` is set: not ours.
-    if (pointer.current?.id !== event.pointerId || !pointer.current.drawing) {
-      if (pointer.current?.id === event.pointerId && event.target === area.current) pointer.current = null;
-      return;
-    }
+    // The keys' own cancel to the key a stroke began on is not a cancellation of the pointer.
+    if (cancellingKey.current) return;
+    rejected.current.delete(event.pointerId);
+    const active = pointer.current;
+    if (!active || active.id !== event.pointerId) return;
+    // A real cancellation releases the pointer (and with it a pen's hold on the keys), drawing or not.
     pointer.current = null;
+    if (!active.drawing) return;
     const current = held.current;
     if (current && !current.strokes.length) {
       // A cancelled first stroke leaves nothing to read: no drawing is held, and keys waiting for it go in now.
@@ -414,14 +441,26 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
     setView(current => current.kind === 'inserted' ? {kind: 'idle'} : current);
   }
 
-  /** The click after a stroke is not a key tap, nor is the click of the Delete press that cleared a drawing. */
+  /**
+   * Clicks that are not key taps: a refused pointer's (matched by the click's pointer id, or, where clicks carry none,
+   * by a refused pointer already lifted on the same key), and the one after a stroke. Each is consumed on its own, so
+   * one cannot clear another's, and the owner's own tap on a key a refused contact rests on still counts.
+   */
   function onClickCapture(event: MouseEvent<HTMLElement>) {
     if (!enabled) return;
     const button = event.target instanceof Element ? event.target.closest('button') : null;
-    if (Date.now() < suppressClickUntil.current || button && button === swallowClick.current) {
-      suppressClickUntil.current = 0;
-      swallowClick.current = null;
-      event.preventDefault(); event.stopPropagation();
+    const id = clickPointerId(event);
+    const consume = () => {event.preventDefault(); event.stopPropagation();};
+    if (id !== undefined && rejected.current.has(id)) {rejected.current.delete(id); consume(); return;}
+    if (id === undefined) {
+      for (const [refusedId, entry] of rejected.current) {
+        if (entry.released && entry.button === button) {rejected.current.delete(refusedId); consume(); return;}
+      }
+    }
+    const stroke = strokeClick.current;
+    if (stroke && Date.now() < stroke.until && (id === undefined || id === stroke.pointerId)) {
+      strokeClick.current = null;
+      consume();
     }
   }
 

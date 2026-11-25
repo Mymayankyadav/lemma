@@ -20,6 +20,7 @@ import {readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection, TutorAnswer
 import {TutorKeyboard} from './TutorKeyboard';
 import {KeyInkWords} from './input/latentInk/KeyInkWords';
 import {useKeyInk, type FlushResult, type KeyEdit} from './input/latentInk/useKeyInk';
+import {rebaseSpan} from './input/latentInk/rebase';
 import type {SymbolDefinition} from './input/symbolCatalog';
 import {TutorInkPad} from './input/TutorInkPad';
 import {TutorSymbolPicker} from './input/TutorSymbolPicker';
@@ -541,7 +542,15 @@ export function TutorComposer(props: Props) {
   }
   /** N221: tapping an equation chip opens it in the equation sheet. */
   function openEquation(source: string, offset: number) {
-    if (editingDisabled || history.current.present.text.slice(offset, offset + source.length) !== source) return;
+    if (editingDisabled) return;
+    // N249: a drawing over the keys settles first; the chip's position is then read in the answer it leaves.
+    const before = history.current.present.text;
+    if (keyInk.settle()) {
+      const moved = rebaseSpan(before, history.current.present.text, offset, source.length);
+      if (moved === null) return;
+      offset = moved;
+    }
+    if (history.current.present.text.slice(offset, offset + source.length) !== source) return;
     const tex = source.replace(/^\$\$?|\$\$?$/gu, '');
     setEquationEdit({source, offset, tex});
   }
@@ -613,8 +622,11 @@ export function TutorComposer(props: Props) {
     const value = keyInk.settle() ? history.current.present.text : props.value;
     const withImage = value === props.value ? hasImage : referencedImageIds(value).some(id => availableIds.has(id));
     const issue = value === props.value ? imageIssue : tutorInkIssue(value, props.ink);
+    // An unfinished drawing counts only while its image is still referenced in the answer being sent.
+    const stillUnfinished = value === props.value ? unfinished : props.ink?.ready && Boolean(inkDraft?.strokes.length
+      || inkDraft?.editingDrawing && referencedImageIds(value).some(id => id === inkDraft.editingDrawing!.id && availableIds.has(id)));
     const stillBlocked = readOnly || !(props.canQueueImage && withImage) && !props.canSend || value.includes('□') || composing
-      || scratch || unfinished && (inkDraft?.inlineImages || withImage) || Boolean(issue);
+      || scratch || stillUnfinished && (inkDraft?.inlineImages || withImage) || Boolean(issue);
     if (!stillBlocked && (value.trim()||withImage)) {
       revision.current.modeRevision++;
       assist.stop();
@@ -828,7 +840,15 @@ export function TutorComposer(props: Props) {
   }
   function openDrawing(id: string | null = null, offset: number | null = null) {
     if (editingDisabled) return;
-    keyInk.settle();
+    // N249: a drawing over the keys settles first; the image occurrence being edited is then found again where the
+    // settled answer has it (the stale-target check on update is unchanged).
+    const before = history.current.present.text;
+    const span = offset === null ? undefined : imageRanges(before).find(range => range.start === offset);
+    if (keyInk.settle() && offset !== null) {
+      const moved = rebaseSpan(before, history.current.present.text, offset, span ? span.end - span.start : 0);
+      if (moved === null) return;
+      offset = moved;
+    }
     remember();
     revision.current.modeRevision++;
     assist.stop();

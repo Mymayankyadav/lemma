@@ -2,6 +2,7 @@ import {act, useState} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import {afterEach, beforeEach, expect, test, vi} from 'vitest';
 import type {InkInferenceResult, InkSnapshot} from '../../../src/features/tutor/input/types';
+import type {TutorInkState} from '../../../src/features/tutor/TutorInk';
 
 const recognizer = vi.hoisted(() => ({
   submitted: [] as InkSnapshot[],
@@ -28,6 +29,10 @@ const {TutorComposer} = await import('../../../src/features/tutor/TutorComposer'
 const {SETTLE_MS, IDLE_COMMIT_MS} = await import('../../../src/features/tutor/input/latentInk/latentInkPolicy');
 const {DEFERRED_TAP_MS} = await import('../../../src/features/tutor/input/latentInk/useKeyInk');
 const {setHapticsEnabled} = await import('../../../src/ui/v7/haptics');
+const {setTutorAnswerSelection} = await import('../../../src/features/tutor/TutorAnswerEditor');
+const {padEdit} = await import('../../../src/features/pad/padEdit');
+const {imageReference} = await import('../../../supabase/functions/_shared/tutor-answer');
+const {rebaseSpan} = await import('../../../src/features/tutor/input/latentInk/rebase');
 
 let host: HTMLDivElement, root: Root;
 const dialogMethods = ['showModal', 'close'] as const;
@@ -39,7 +44,7 @@ beforeEach(() => {
     value(this: HTMLDialogElement) {this.open = method === 'showModal';}}));
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
   setHapticsEnabled(false);
-  localStorage.clear(); recognizer.submitted = []; recognizer.failSynchronously = false; sent = [];
+  localStorage.clear(); recognizer.submitted = []; recognizer.failSynchronously = false; sent = []; setup = {}; current = '';
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
 });
 afterEach(async () => {
@@ -51,14 +56,17 @@ afterEach(async () => {
 
 let setReadOnly: (readOnly: boolean) => void = () => {};
 let sent: string[] = [];
+/** The rich editor (with ink) and a starting answer, for the chip and image cases. */
+let setup: {initial?: string; ink?: TutorInkState} = {};
+let current = '';
 function Harness() {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(setup.initial ?? '');
   const [readOnly, changeReadOnly] = useState(false);
   setReadOnly = changeReadOnly;
   const [answerActions, setAnswerActions] = useState<HTMLDivElement | null>(null);
   return <>
     <dialog><div ref={setAnswerActions}/></dialog>
-    <TutorComposer value={value} onChange={setValue} onSend={text => {sent.push(text);}} onAsk={() => {}} canSend readOnly={readOnly} pending={false}
+    <TutorComposer value={value} onChange={text => {current = text; setValue(text);}} ink={setup.ink} onSend={text => {sent.push(text);}} onAsk={() => {}} canSend readOnly={readOnly} pending={false}
       hasContext={false} onContext={() => {}} sessionActionsOpen={false} onCloseActions={() => {}} answerActions={answerActions}/>
   </>;
 }
@@ -459,4 +467,107 @@ test('a model that fails at once shows its geometry fallback, not empty Reading 
     pointer('pointerup', rows(), 80, 80);
   });
   expect(drawn()?.getAttribute('data-ink')).toBe('held');
+});
+
+const imageId = '12345678-0123-4123-8123-123456789abc';
+const inkFixture = (draft: Partial<TutorInkState['draft']> = {}): TutorInkState => ({
+  ready: true, status: 'ready', error: '', snapshot: vi.fn(), retry: vi.fn(), continueWithText: vi.fn(), update: vi.fn(async () => {}),
+  draft: {strokes: [], photos: [{id: imageId, kind: 'drawing', mimeType: 'image/png', blob: new Blob(['image'])}], width: 3, accent: false,
+    inlineImages: true, ...draft},
+});
+const richField = () => host.querySelector<HTMLElement>('.tutor-answer-editor')!;
+async function mountRich(initial: string, ink: TutorInkState, caret: number) {
+  setup = {initial, ink};
+  current = initial;
+  await act(async () => root.render(<Harness/>));
+  await act(async () => richField().focus());
+  await act(async () => {setTutorAnswerSelection(richField(), padEdit(initial, caret)); richField().click();});
+  expect(rows()).toBeTruthy();
+}
+
+test('a pen cancelled on its key before drawing releases the keys to the next touch', async () => {
+  await mount();
+  const pen = button('g', rows()), key = button('a', rows());
+  await act(async () => {
+    pointer('pointerdown', pen, 10, 10, 7, 'pen');
+    pointer('pointercancel', pen, 10, 10, 7, 'pen');
+    pointer('pointerdown', key, 40, 60, 8, 'touch');
+    pointer('pointerup', key, 40, 60, 8, 'touch');
+    tapClick(key);
+  });
+  expect(field().value).toBe('a');
+});
+
+test('each refused touch has its click consumed, whatever the order of lifts and clicks', async () => {
+  vi.useFakeTimers();
+  await mount();
+  const pen = button('g', rows()), p = button('p', rows()), o = button('o', rows());
+  await act(async () => {
+    pointer('pointerdown', pen, 10, 10, 7, 'pen');
+    pointer('pointermove', pen, 30, 30, 7, 'pen');
+    pointer('pointerdown', p, 300, 20, 8, 'touch');
+    pointer('pointerdown', o, 280, 20, 9, 'touch');
+    pointer('pointermove', rows(), 60, 60, 7, 'pen');
+    // The pen lifts first; its own click lands on the keys' area and is consumed as the stroke's.
+    pointer('pointerup', rows(), 60, 60, 7, 'pen');
+    tapClick(rows());
+    // Then the refused touches lift and click, the later one first.
+    pointer('pointerup', o, 280, 20, 9, 'touch');
+    tapClick(o);
+    pointer('pointerup', p, 300, 20, 8, 'touch');
+    tapClick(p);
+  });
+  await read({forall: .95, exists: .05});
+  await wait(SETTLE_MS);
+  expect(field().value).toBe('∀');
+});
+
+test('the pen’s own tap on a key a refused touch rests on still counts', async () => {
+  await mount();
+  const g = button('g', rows());
+  await act(async () => {
+    pointer('pointerdown', g, 10, 10, 7, 'pen');
+    pointer('pointerdown', g, 12, 12, 8, 'touch');
+    pointer('pointerup', g, 10, 10, 7, 'pen');
+    tapClick(g);
+    pointer('pointercancel', g, 12, 12, 8, 'touch');
+  });
+  expect(field().value).toBe('g');
+});
+
+test('opening an equation chip settles a held drawing and edits the same equation', async () => {
+  vi.useFakeTimers();
+  await mountRich('a $x$ b', inkFixture(), 0);
+  await draw([10, 10], [60, 60]);
+  await read({'less-than': .95, 'x-other': .05});
+  await wait(SETTLE_MS);
+  expect(current).toBe('a $x$ b');
+  await act(async () => button('Edit equation x').click());
+  expect(current).toBe('<a $x$ b');
+  await wait(IDLE_COMMIT_MS * 2);
+  const latex = host.querySelector<HTMLTextAreaElement>('.tutor-equation-edit textarea')!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(latex, 'y');
+    latex.dispatchEvent(new Event('input', {bubbles: true}));
+  });
+  await act(async () => button('Done').click());
+  expect(current).toBe('<a $y$ b');
+});
+
+test('Send counts an unfinished drawing only while the settled answer still refers to it', async () => {
+  vi.useFakeTimers();
+  const reference = imageReference(imageId);
+  await mountRich(reference, inkFixture({editingDrawing: {id: imageId, strokes: [], width: 3, accent: false}}), 0);
+  await act(async () => {setTutorAnswerSelection(richField(), padEdit(reference, 0, reference.length)); richField().click();});
+  await draw([10, 10], [60, 60]);
+  await act(async () => button('x', rows()).click());
+  await act(async () => {richField().dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true}));});
+  expect(sent).toEqual(['x']);
+});
+
+test('a span keeps its place when a settled drawing goes in before or after it, and is refused when touched', () => {
+  expect(rebaseSpan('a $x$ b', '<a $x$ b', 2, 3)).toBe(3);
+  expect(rebaseSpan('a $x$ b', 'a $x$ b<', 2, 3)).toBe(2);
+  expect(rebaseSpan('a $x$ b', 'a $y$ b', 2, 3)).toBeNull();
+  expect(rebaseSpan('same', 'same', 1, 2)).toBe(1);
 });
