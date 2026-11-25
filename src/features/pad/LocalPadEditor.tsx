@@ -9,6 +9,7 @@ import {PAD_NOTE_MAX} from './padDraftStore';
 import {
   applyPadNotation, applyPadSuggestion, changePadText, createPadTextHistory, deletePadBackward, insertPadSymbol, insertPadTemplate,
   insertPadText, movePadCaret, nextPadSlot, padEdit, padNotationSuggestion, padSuggestions, redoPadText, undoPadText, type PadEdit,
+  type PadSymbol,
 } from './padEdit';
 import './local-pad.css';
 
@@ -44,6 +45,7 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
   const history = useRef(createPadTextHistory(value));
   const [, refreshHistory] = useState(0);
   const focusAfterEdit = useRef(false);
+  const inkInsert = useRef<{before: PadEdit; after: PadEdit} | null>(null);
   const compositionActive = frozenSource !== null;
   const source = useDeferredValue(frozenSource ?? value.text);
   const id = useId();
@@ -179,6 +181,34 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
     setWarning(''); refreshHistory(tick => tick + 1); onEdit(next.present);
   }
 
+  const sameEdit = (a: PadEdit, b: PadEdit) => a.text === b.text && a.start === b.start && a.end === b.end;
+
+  /** N248: a drawn symbol goes in at the caret, or in place of the one drawn just before (a replace or a
+   *  continued drawing), but only while nothing else has changed. The field is updated at once, so a key tapped
+   *  in the same gesture lands after the symbol. */
+  function inkSymbol(symbol: PadSymbol, replace: boolean) {
+    let made: {before: PadEdit; after: PadEdit} | null = null;
+    const done = edit(current => {
+      const last = inkInsert.current;
+      const base = !replace ? current : last && sameEdit(current, last.after) ? last.before : null;
+      if (!base) return null;
+      made = {before: base, after: insertPadSymbol(base, symbol)};
+      return made.after;
+    });
+    inkInsert.current = done ? made : null;
+    if (done && made) restore((made as {after: PadEdit}).after);
+    return done;
+  }
+
+  function inkRetract() {
+    const last = inkInsert.current;
+    inkInsert.current = null;
+    if (!last) return false;
+    const done = edit(current => sameEdit(current, last.after) ? last.before : null);
+    if (done) restore(last.before);
+    return done;
+  }
+
   function keyboardAction(action: PadKeyboardAction) {
     if (action === 'undo' || action === 'redo') {historyStep(action); return;}
     edit(current => action === 'backspace' ? deletePadBackward(current)
@@ -254,7 +284,8 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
       canUndo={history.current.past.length > 0} canRedo={history.current.future.length > 0} hasSlot={!!nextPadSlot(valueSelection)}
       onShown={showKeyboard} onMode={chooseMode} keepSelection={keepSelection}
       onSymbol={symbol => edit(current => insertPadSymbol(current, symbol))}
-      onTemplate={template => edit(current => insertPadTemplate(current, template))} onAction={keyboardAction}/>
+      onTemplate={template => edit(current => insertPadTemplate(current, template))} onAction={keyboardAction}
+      latentInk={isFlagOn('padLatentInk') ? {onInsert: inkSymbol, onRetract: inkRetract} : undefined}/>
     {onSendSelection && <div className="local-pad-controls">
       <button type="button" disabled={compositionActive || selection.kind !== 'preview'}
         onPointerDown={keepSelection} onClick={() => {

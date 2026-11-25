@@ -1,0 +1,415 @@
+{
+ "version": "lemma-latent-ink-grids-v1",
+ "catalogueVersion": "lemma-tutor-symbols-v1",
+ "bitmapSize": 96,
+ "n": 11,
+ "collisionsBelow": [
+  [
+   "bottom",
+   "perpendicular"
+  ],
+  [
+   "plus",
+   "division"
+  ]
+ ],
+ "aliases": [],
+ "blank": [],
+ "grids": {
+  "forall": "000000440881f014038060040000000",
+  "exists": "0000007c0080103e0040081f0000000",
+  "not-exists": "0200407c0280503e0140681f0100000",
+  "not": "000000000000003e004008000000000",
+  "and": "000000000200e01406c088110000000",
+  "or": "0000000008813014028060040000000",
+  "implies": "00000000010030ff1ff1f8020000000",
+  "implied-by": "000000000401807f9ff0fc080000000",
+  "iff": "00000000080110ff1ff0f8130000000",
+  "therefore": "0000000000004008000000318000000",
+  "because": "0000000000031822000000040000000",
+  "qed": "000000380700e01c0380700e0000000",
+  "top": "000000fe02004008010020040000000",
+  "bottom": "00000010020040080100203f8000000",
+  "proves": "000000400801003e040080100000000",
+  "entails": "000400801002007f0fe1f8200400800",
+  "element-of": "000000000781803c07c0c00f0000000",
+  "not-element-of": "000000000300f03c0780780f0100000",
+  "contains-element": "000000000e00701e07c0181e0000000",
+  "subset": "00000000078180600c00800f0000000",
+  "subset-or-equal": "0000003c0e0300600400f80003e0000",
+  "proper-subset": "0000003c0e0300600400f80603e0200",
+  "not-subset": "000000080381f02c0500f80f0100000",
+  "not-subset-or-equal": "0000203c0d0360680500f80803e0400",
+  "superset": "000000001f0030030060083e0000000",
+  "superset-or-equal": "000000f8018010030041f00007e0000",
+  "proper-superset": "000000f8018010030041f00607e0200",
+  "not-superset-or-equal": "000020fc0180700b0141f00807e0400",
+  "union": "00000000088110220440d80e0000000",
+  "intersection": "000000000f811022044088110000000",
+  "big-union": "000000c618c318630c618c1f01c0000",
+  "big-intersection": "0000007c0d8318630c618c318000000",
+  "disjoint-union": "00000000088110220440881f0000000",
+  "set-minus": "0002006004008008010030020040080",
+  "empty-set": "000040380f01f03e07c0d00e0000000",
+  "complement": "000000180500e008000000000000000",
+  "power-set": "0000003e0bc2f83e098360380000000",
+  "equal": "000000000000007f0fe0f8000000000",
+  "not-equal": "000000000101e03e07c0f8080000000",
+  "less-than": "00000000008070380e0070030000000",
+  "less-than-or-equal": "000000040381c0700380180007e0000",
+  "greater-than": "000000001801c00e00c060300000000",
+  "greater-than-or-equal": "000000c00e0070060381c00007e0000",
+  "identical": "000000000003f83e0fe1fc000000000",
+  "congruent": "000000001e4278040fe1fc3f0000000",
+  "similar-or-equal": "000000000003c84f0001fc000000000",
+  "similar": "000000000000007909e000000000000",
+  "tilde": "000000000000001c038000000000000",
+  "approximately-equal": "000000000003c84e0f2138000000000",
+  "proportional": "000000000001d87c0981f8198000000",
+  "divides": "0000801002004008010020040080100",
+  "not-divides": "0000801003006018030020040080100",
+  "parallel": "000140280500a0140280500a0140280",
+  "perpendicular": "00000010020040080100f83f0000000",
+  "right-arrow": "000000000000107f1ff008010000000",
+  "left-arrow": "000000000001007f1ff080100000000",
+  "two-way-arrow": "000000000001107f1ff088110000000",
+  "maps-to": "00000000000410ff1ff208010000000",
+  "hook-arrow": "00000000000618ff9ff00c010000000",
+  "two-head-arrow": "000000000000387f1ff01c000000000",
+  "composition": "000000000000e034068070000000000",
+  "direct-sum": "000000000f03507f0fe1ac1f0000000",
+  "tensor-product": "000000000f03b05f0ba1dc1f0000000",
+  "left-angle": "00004018020040180200200400c0080",
+  "right-angle": "000100300200400c018020040180200",
+  "plus": "000000000200403e0fe020040000000",
+  "minus": "000000000000003e0fc000000000000",
+  "plus-minus": "000000100200407f0100203f8000000",
+  "minus-plus": "000000000f83f8080fe020040080000",
+  "times": "000000000001b01c0380d8110000000",
+  "division": "000000000200c03e0fe020040000000",
+  "middle-dot": "0000000000000008000000000000000",
+  "multiplication-dot": "0000000000000008010000000000000",
+  "asterisk-operator": "000000000000401c038070000000000",
+  "infinity": "000000000003b8fd93937e3b8000000",
+  "partial": "0000003c0580f03606c0b01c0000000",
+  "nabla": "000000fe18c19036038070040000000",
+  "integral": "0000001c030040080100600c0380200",
+  "double-integral": "0000003f05a1b03606c098320fc0100",
+  "triple-integral": "000000ef9ff26cc99b23646d9ff2480",
+  "contour-integral": "0000001c0380e03c0780700c0780400",
+  "summation": "0000007c0c8180180300c01f03e0000",
+  "product": "000000fe0981302604c0981b0770000",
+  "square-root": "00001002008030640c80e01c0180000",
+  "norm-bar": "000000380700e01c0380700e01c0000",
+  "degree": "0000003806000000000000000000000",
+  "prime": "0000000003006018030060000000000",
+  "angle": "00000004018060180600803f0000000",
+  "left-floor": "0001002004008010020040080100380",
+  "right-floor": "0000400801002004008010020040380",
+  "left-ceiling": "0001c03004008010020040080100200",
+  "right-ceiling": "0001c01801002004008010020040080",
+  "ellipsis": "0000000000000000000222444000000",
+  "superscript-two": "0001c0380300e01c000000000000000",
+  "superscript-three": "0001c0180300e018000000000000000",
+  "superscript-n": "000000380700a01c000000000000000",
+  "naturals": "000000ee0e81f02e05c098390000000",
+  "integers": "0000007c0b81601c0740d81f0000000",
+  "rationals": "000000781d8338670ce0d80e00f0000",
+  "reals": "000000f80d81b03e0780d83f8000000",
+  "complexes": "0000003c0d8390700e00dc0e0000000",
+  "quaternions": "000000fe0d81b03e06c0d83f8000000",
+  "probability": "000000780f81f03e0700e01c0000000",
+  "expectation": "000000fc0d81f03c06e0d83f0000000",
+  "script-t": "0000003f0f82e07c1b8360380000000",
+  "script-u": "000000731f65f8ff0ec0fc0b0000000",
+  "script-b": "0000003e0be2f87f1be37c3b0000000",
+  "aleph": "000000000b01f03e07c0d8190000000",
+  "script-ell": "0000001c0300e01c0300f0060000000",
+  "real-part": "000000fc1f81f87c0381dc1b0000000",
+  "imaginary-part": "000000701bc3303f0cc0f80e0000000",
+  "alpha": "000000000000e03604c0b81f0000000",
+  "beta": "0000001c0680f01e06c0d81e0200000",
+  "gamma": "000000000000d03e0080100600c0000",
+  "delta": "0000001c0200601c0680f00c0000000",
+  "epsilon": "000000000000e01c0300d00e0000000",
+  "zeta": "00000018038080300600c00e01c0000",
+  "eta": "000000000001f03e02c0580a00c0000",
+  "theta": "000000180780b03e0780f00c0000000",
+  "iota": "00000000000040180300700c0000000",
+  "kappa": "000000000000b03e0780f8120000000",
+  "lambda": "000000300200600c0380d8130000000",
+  "mu": "000000000000b0160680f81f0200400",
+  "nu": "000000000001b0160780e0180000000",
+  "xi": "000000180780c01c0600c00e01c0000",
+  "omicron": "000000000000e03606c0f00c0000000",
+  "pi": "000000000001f03e0380701a0000000",
+  "rho": "000000000000601e02c0d01e0300400",
+  "sigma": "000000000000f03e0580b01c0000000",
+  "tau": "000000000000f03e030060080000000",
+  "upsilon": "000000000001b03e02c0500e0000000",
+  "phi": "000000000001302e0540f80e0100200",
+  "chi": "000000000001903e0380601e02e0000",
+  "psi": "000000080101b07f0740f80e0180000",
+  "omega": "000000000001102a0d41f81e0000000",
+  "capital-gamma": "0000007c048090100200e01c0000000",
+  "capital-delta": "000000300700e0360cc1fc3f8000000",
+  "capital-theta": "0000007c1983f87f0c60d80e0000000",
+  "capital-lambda": "000000100700e01c06c0d83f8000000",
+  "capital-xi": "0000007c1f81f03e0441f81f0000000",
+  "capital-pi": "000000fe0d81b03606c0d83f8000000",
+  "capital-sigma": "000000fc0c81d0180260f83f0000000",
+  "capital-upsilon": "000000ee17c0c0080100700e0000000",
+  "capital-phi": "000000380703f06b07c0700e0000000",
+  "capital-psi": "000000381ac1703e07c0700e0000000",
+  "capital-omega": "0000007c1d8318360ee1dc1b0000000",
+  "final-sigma": "0000000000006010060070060080000",
+  "variant-theta": "0000001c0381f0360680f00c0000000",
+  "variant-phi": "000000080100e03e05c0f80e0100000",
+  "variant-pi": "000000000003f87f0d61f81e0000000",
+  "variant-kappa": "000000000001983e0381d8320000000",
+  "variant-rho": "000000000000601e06c0f01c03c0000",
+  "variant-epsilon": "00000000000060180380500e0000000"
+ },
+ "minimumPartShare": 0.3,
+ "extends": {
+  "alpha": [
+   "capital-delta"
+  ],
+  "and": [
+   "aleph",
+   "capital-lambda"
+  ],
+  "angle": [
+   "expectation"
+  ],
+  "asterisk-operator": [
+   "capital-psi",
+   "contour-integral",
+   "identical",
+   "norm-bar",
+   "not-element-of",
+   "not-equal",
+   "pi",
+   "qed"
+  ],
+  "bottom": [
+   "plus-minus"
+  ],
+  "capital-gamma": [
+   "capital-sigma"
+  ],
+  "capital-pi": [
+   "quaternions"
+  ],
+  "complement": [
+   "norm-bar",
+   "qed"
+  ],
+  "composition": [
+   "contour-integral",
+   "identical",
+   "not-element-of",
+   "not-equal",
+   "omicron",
+   "variant-theta"
+  ],
+  "degree": [
+   "superscript-n"
+  ],
+  "disjoint-union": [
+   "big-union",
+   "capital-pi",
+   "capital-xi",
+   "quaternions"
+  ],
+  "divides": [
+   "not-divides"
+  ],
+  "epsilon": [
+   "empty-set"
+  ],
+  "equal": [
+   "entails",
+   "iff",
+   "implied-by",
+   "implies"
+  ],
+  "exists": [
+   "capital-xi",
+   "not-exists",
+   "quaternions"
+  ],
+  "intersection": [
+   "capital-xi"
+  ],
+  "iota": [
+   "capital-psi",
+   "contour-integral",
+   "norm-bar",
+   "not-element-of",
+   "qed"
+  ],
+  "lambda": [
+   "real-part"
+  ],
+  "left-arrow": [
+   "iff",
+   "two-way-arrow"
+  ],
+  "middle-dot": [
+   "multiplication-dot"
+  ],
+  "minus": [
+   "direct-sum",
+   "division",
+   "entails",
+   "equal",
+   "hook-arrow",
+   "identical",
+   "iff",
+   "implied-by",
+   "implies",
+   "left-arrow",
+   "maps-to",
+   "plus",
+   "right-arrow",
+   "two-head-arrow",
+   "two-way-arrow"
+  ],
+  "multiplication-dot": [
+   "tilde"
+  ],
+  "not": [
+   "equal",
+   "eta",
+   "exists",
+   "maps-to",
+   "not-equal",
+   "right-arrow",
+   "two-head-arrow",
+   "two-way-arrow",
+   "variant-phi"
+  ],
+  "omega": [
+   "variant-pi"
+  ],
+  "or": [
+   "capital-psi",
+   "forall"
+  ],
+  "plus": [
+   "direct-sum",
+   "division"
+  ],
+  "power-set": [
+   "script-b"
+  ],
+  "prime": [
+   "contour-integral",
+   "norm-bar",
+   "not-element-of",
+   "probability",
+   "qed",
+   "script-ell",
+   "script-t"
+  ],
+  "proves": [
+   "capital-xi",
+   "probability",
+   "quaternions",
+   "reals"
+  ],
+  "qed": [
+   "norm-bar"
+  ],
+  "right-arrow": [
+   "hook-arrow",
+   "iff",
+   "maps-to",
+   "two-way-arrow"
+  ],
+  "similar": [
+   "direct-sum",
+   "entails",
+   "equal",
+   "hook-arrow",
+   "iff",
+   "implied-by",
+   "implies",
+   "left-arrow",
+   "maps-to",
+   "right-arrow",
+   "two-head-arrow",
+   "two-way-arrow"
+  ],
+  "subset-or-equal": [
+   "proper-subset"
+  ],
+  "superscript-n": [
+   "capital-xi",
+   "empty-set",
+   "norm-bar",
+   "probability",
+   "qed",
+   "real-part",
+   "script-t"
+  ],
+  "superscript-three": [
+   "superscript-two"
+  ],
+  "superset-or-equal": [
+   "not-superset-or-equal",
+   "proper-superset"
+  ],
+  "tau": [
+   "pi",
+   "probability",
+   "script-b"
+  ],
+  "therefore": [
+   "bottom",
+   "plus-minus"
+  ],
+  "tilde": [
+   "asterisk-operator",
+   "division",
+   "equal",
+   "kappa",
+   "left-arrow",
+   "minus",
+   "pi",
+   "plus",
+   "right-arrow",
+   "times",
+   "variant-kappa"
+  ],
+  "times": [
+   "aleph",
+   "real-part",
+   "reals",
+   "tensor-product"
+  ],
+  "two-way-arrow": [
+   "iff"
+  ],
+  "union": [
+   "capital-pi",
+   "capital-theta",
+   "capital-xi",
+   "imaginary-part",
+   "quaternions",
+   "rationals"
+  ],
+  "upsilon": [
+   "empty-set",
+   "quaternions"
+  ],
+  "variant-epsilon": [
+   "capital-psi",
+   "empty-set",
+   "norm-bar",
+   "not-element-of",
+   "qed"
+  ]
+ }
+}
