@@ -73,6 +73,7 @@ export interface AttentionPrefs {
 export interface PlanningPrefs {
  window_start:string;window_end:string;gap_minutes:number;
  max_consecutive_minutes:number;daily_minimum_minutes:number;daily_intention:boolean;
+ exam_card_mode?:'later'|'now'|'quiet';
  [key:string]:unknown;
 }
 export interface Settings {

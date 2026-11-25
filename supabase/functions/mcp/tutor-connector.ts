@@ -1,6 +1,8 @@
 import {downloadTutorImage,tutorFollowupFields,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
 import {setTimeout as delay} from 'node:timers/promises'
 import {tutorGrantHash, tutorHandoffIds} from '../_shared/tutor-connector.ts'
+import {handoffExam} from './exam.ts'
+import {EXAM_HANDOFF_NOTE} from './rules.ts'
 import type {Context} from './db.ts'
 import {tutorInputSchemas} from './tutor-profile.ts'
 import {QUESTIONNAIRE_PURPOSES,questionnaireIssues} from '../_shared/tutor-questionnaire.ts'
@@ -93,10 +95,12 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
   }
 
   async function followupFields(id: unknown) {
-    const extra = await readFollowups(id).catch(()=>null)
+    const [extra, exam] = await Promise.all([readFollowups(id).catch(()=>null), handoffExam(c, tutorHandoffIds(id).turnId).catch(()=>null)])
+    const instructions = extra ? studyInstructions : studyInstructions+' The follow-ups could not be loaded. Retry get(what=tutor_followups, id=<handoff ID>) before replying.'
     return {
+      ...(exam ? {exam} : {}),
       ...tutorFollowupFields(extra?.followups),
-      instructions:extra ? studyInstructions : studyInstructions+' The follow-ups could not be loaded. Retry get(what=tutor_followups, id=<handoff ID>) before replying.',
+      instructions:exam ? instructions+' '+EXAM_HANDOFF_NOTE : instructions,
     }
   }
 

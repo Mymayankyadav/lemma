@@ -25,6 +25,7 @@ function RouteMessage({slug, message, retry}: {slug: string; message: string; re
 
 export default function TutorPage() {
   const {slug = '', code} = useParams();
+  const [params]=useSearchParams();
   const project = useProject(slug);
   if (!project.data) return <RouteMessage slug={slug}
     message={project.isError ? 'Could not load this path.' : 'Opening your path…'}
@@ -33,15 +34,17 @@ export default function TutorPage() {
   if (code && !checkpoints.some(cp => cp.code === code))
     return <RouteMessage slug={slug} message="This checkpoint is unavailable."/>;
   if (!code) {
+    const question=params.get('question')?.trim().slice(0,2000);
+    const query=question?'?'+new URLSearchParams({question}).toString():'';
     const current = checkpoints.find(cp => cp.ui === 'now');
-    if (current) return <Navigate replace to={tutorHref(slug, current.code)}/>;
+    if (current) return <Navigate replace to={tutorHref(slug, current.code)+query}/>;
     return <main id="main-content" className="v7-page tutor-message" aria-label="Checkpoint tutor">
       <DetailHeader title="Checkpoint tutor" back={'/p/' + encodeURIComponent(slug)}/>
       <h1>{project.data.project.title}</h1>
       {checkpoints.length ? <><p>Choose a checkpoint to continue with your tutor.</p>
-        {checkpoints.map(cp => <Link key={cp.id} to={tutorHref(slug, cp.code)}>{cp.title}</Link>)}</>
+        {checkpoints.map(cp => <Link key={cp.id} to={tutorHref(slug, cp.code)+query}>{cp.title}</Link>)}</>
         : <><p>This path has no plan yet.</p><a className="v7-button v7-primary"
-          href={chatLink('claude',planPrompt(project.data.project.title))} target="_blank" rel="noopener noreferrer">Plan with your tutor</a></>}
+          href={chatLink('claude',question??planPrompt(project.data.project.title))} target="_blank" rel="noopener noreferrer">{question?'Open in Claude':'Plan with your tutor'}</a></>}
       <Link to={'/p/' + encodeURIComponent(slug)}>Back to path</Link>
     </main>;
   }

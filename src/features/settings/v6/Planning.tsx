@@ -59,7 +59,7 @@ export default function Planning({settings}:{settings:Settings}){
   try{
    const planning=validatePlanningValues(form);
    const calendar=validateCalendarValues({weekStart:form.weekStart,clock24h:form.clock24h});
-   await update.mutateAsync({planning,...calendar});
+   await update.mutateAsync({planning:{...settings.planning,...planning},...calendar});
    setNotice('Planning preferences saved');
   }catch(e){setError(e instanceof Error?e.message:'Could not save planning preferences')}
  }

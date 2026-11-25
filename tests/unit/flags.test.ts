@@ -22,6 +22,11 @@ describe('feature flags',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?flags=androidShell'}).androidShell).toBe(true)
   expect(resolveFlags({allowOverrides:false,search:'?flags=androidShell',envFlags:'androidShell'}).androidShell).toBe(false)
  })
+ it('exposes exam prep only with a permitted override',()=>{
+  expect(FLAG_DEFAULTS.examMode).toBe(false)
+  expect(resolveFlags({allowOverrides:true,search:'?flags=examMode'}).examMode).toBe(true)
+  expect(resolveFlags({allowOverrides:false,search:'?flags=examMode',envFlags:'examMode'}).examMode).toBe(false)
+ })
  it('notificationsPush is off by default and only enabled through permitted overrides',()=>{
   expect(FLAG_DEFAULTS.notificationsPush).toBe(false)
   expect(resolveFlags({allowOverrides:true,search:'?flags=notificationsPush'}).notificationsPush).toBe(true)

@@ -15,12 +15,13 @@ export function useNotebookSnapshot(owner:string):void {
    const current=readDeviceSession()
    return current?.ownerId===owner&&current.sessionId===session.sessionId
   }
+  const sameOwnerKey=(key:readonly unknown[])=>key[0]!=='exam'&&key[0]!=='exam-attempts'||key[1]===owner
   // Settings in the snapshot are a small projection, not a complete Settings response.
-  void hydrateOfflineSnapshot(owner,client,Date.now(),{canHydrate:canRead,acceptKey:key=>key[0]!=='settings'})
+  void hydrateOfflineSnapshot(owner,client,Date.now(),{canHydrate:canRead,acceptKey:key=>key[0]!=='settings'&&sameOwnerKey(key)})
   const unwatch=client.getQueryCache().subscribe(event=>{
    if(event.type!=='updated'||event.action.type!=='success'||event.action.manual)return
    const {queryKey,state}=event.query
-   if(!isOfflineKey(queryKey)||authOwner()!==owner||!canRead())return
+   if(!isOfflineKey(queryKey)||!sameOwnerKey(queryKey)||authOwner()!==owner||!canRead())return
    const generation=authGeneration(),canWrite=()=>canRead()&&authGeneration()===generation
    stageOfflineHandoff(owner,queryKey,state.data,state.dataUpdatedAt)
    void saveOfflineSnapshot(owner,client,Date.now(),canWrite).catch(()=>undefined)

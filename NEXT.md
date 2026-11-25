@@ -6,6 +6,14 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N240 Exam preparation through MCP and the Path (includes N241)
+
+Owner task: "Start implementing the plan, we can't afford to run test. I would suggest write test and run them in one go using the ci. Run test for critical stuff. Minimise local testing, rather self review code. Maximise your throughput by giving task to at most 2 sol 6.2 subagents. Try commit everything least amount of pr therefore combining multiple n** tasks. Code should be pushed asap with minimum friction."
+Stage: Build · Status: implemented, awaiting CI and review · Needs: — · Assigned: chat-642810#r8mz
+Done = Owner-scoped exam sittings, scored attempts and card ideas with receipts, undo, export and deletion. The MCP planner and Path ledger share as-of evidence, coverage and actions. Active preparation appears in resume and pending tutor handoffs. The default-off Path interface supports setup, Calendar deadlines, mode switches, dispositions, rescheduling and explicit completion.
+Tests: `tests/mcp/sql/n240-exam-mode.mjs`, `tests/unit/mcp/exam-*.test.ts`, `tests/unit/exam/**`, `tests/e2e/v7-exam-mode.spec.ts` and the existing capability and command registry checks.
+Scope: additive exam migration, shared planner, MCP, Path and planning settings, live/demo adapters, owner-scoped offline snapshots, tests and `docs/current/N240.md` and `N241.md`. The dedicated exam tutor thread and return-to-study surfaces follow in N242–N243.
+
 ## N231 Restore Lemma promptly on offline launch
 
 Owner task: "Ok few issues to fix is offline usauablity of the lemma, first it opens it delays main screen by saying signing in and other like why sign-in doesn't persist."

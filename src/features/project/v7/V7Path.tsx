@@ -34,10 +34,20 @@ import {kitSubject} from '../../atlas/v7/model';
 import {currentStudyStep,dueTotal,isDemonstrated,lineEnd,nodeSize,nodeText,shortDate,stageLabel,type NodeState} from './pathModel';
 import './path.css';
 import {isFlagOn} from '../../../flags';
+import {cardMode} from '../../../data/exam/contract';
+import {getExamApi} from '../../../data/exam/queries';
+import {usePathExam} from '../../exam/usePathExam';
+import {ModeControl} from '../../exam/ModeControl';
+import {PassedExamBanner} from '../../exam/PassedExamBanner';
+import {ExamSetupSheet} from '../../exam/ExamSetupSheet';
+import {LedgerTab} from '../../exam/LedgerTab';
+import {actionTitle} from '../../exam/NextCard';
+import {examTutorHref} from '../../exam/model';
+import '../../exam/exam.css';
 
 const SourcesPanel=lazy(()=>import('./SourcesV7'));
 const ProjectSwitcher=lazy(()=>import('../ProjectSwitcher').then(module=>({default:module.ProjectSwitcher})));
-const tabs=['Plan','Sessions','Sources','Cards'] as const;
+const tabs=['Plan','Sessions','Sources','Cards','Exam'] as const;
 type Tab=typeof tabs[number];
 const star='M10 2.2l2.2 5 5.4.5-4.1 3.6 1.2 5.3L10 13.9l-4.7 2.7 1.2-5.3-4.1-3.6 5.4-.5z';
 
@@ -112,8 +122,11 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const room=isFlagOn('v7Room');
  const {slug:raw}=useParams(),slug=selectedSlug??raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
- const [switcher,setSwitcher]=useState(false);
- const tab:Tab=params.get('tab')==='sessions'?'Sessions':params.get('tab')==='sources'?'Sources':params.get('tab')==='cards'?'Cards':'Plan';
+ const [switcher,setSwitcher]=useState(false),[setup,setSetup]=useState(false),[modeBusy,setModeBusy]=useState(false);
+ const examEnabled=isFlagOn('examMode'),exam=usePathExam(query.data?.project.id??'',slug,params.get('examSitting'),examEnabled);
+ const sitting=exam.sitting,hasExam=examEnabled&&!!sitting;
+ const requested=params.get('tab');
+ const tab:Tab=tabs.find(item=>item.toLowerCase()===requested&&(item!=='Exam'||examEnabled&&(hasExam||exam.loading||!!exam.loadError)))??'Plan';
  const online=useOnline(),data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
  const estimates=usePathEstimates(cps);
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;
@@ -157,16 +170,28 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
    if(outcome==='saved')notify('Image saved',{tone:'success'});
   }catch{notify('Could not make the image',{tone:'danger'});}
  }
- function setTab(label:string){
+ function setTab(label:string,sittingId?:string){
   const next=new URLSearchParams(params),value=label.split(' ')[0].toLowerCase();
-  if(value==='plan')next.delete('tab');else next.set('tab',value);setParams(next);
+  if(value==='plan')next.delete('tab');else next.set('tab',value);
+  if(sittingId)next.set('examSitting',sittingId);
+  setParams(next);
  }
- const counts:Record<Tab,string>={Plan:'Plan',Sessions:'Sessions',Sources:'Sources',Cards:'Cards'};
+ async function changeMode(active:boolean){
+  try{
+   setModeBusy(true);
+   await exam.change({operation:active?'activate':'pause'});
+   setTab(active?'Exam':'Plan');
+  }catch(error){notify(error instanceof Error?error.message:'Could not switch study mode.',{tone:'danger'});}
+  finally{setModeBusy(false);}
+ }
+ const visibleTabs=tabs.filter(item=>item!=='Exam'||hasExam||tab==='Exam');
+ const counts:Record<Tab,string>={Plan:'Plan',Sessions:'Sessions',Sources:'Sources',Cards:'Cards',Exam:'Exam'};
  const label=counts[tab];
  return <main id="main-content" className={'v7-page v7-path '+klass} aria-label="Path">
   <DetailHeader title={project.title} back="/projects" compact={<><Emblem subject={subject} seed={project.id} size={24} tier="glyph" animate={false}/><ProgressRing done={data.done} total={data.total}/></>}
    extraAction={<MoreActions label="More path actions" title={project.title} items={[
    {label:'Switch path',hint:'Open another path in the same place',icon:<MEANING_ICON.switchPath aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
+   ...(examEnabled&&online&&!exam.pendingSetup?[{label:'Prepare for an exam…',icon:<Clock3 aria-hidden="true"/>,onClick:()=>setSetup(true)}]:[]),
    {label:'View in Atlas',icon:<MEANING_ICON.concepts aria-hidden="true"/>,onClick:()=>{window.location.assign('#/atlas');}},
    ...(data.total>0&&data.done>=data.total?[{label:'Share this path',hint:'An image of the completed path',icon:<Share2 aria-hidden="true"/>,onClick:()=>{void sharePath();}}]:[]),
    project.status==='paused'
@@ -195,7 +220,32 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
    <p className="v7-eyebrow">Plan with your tutor</p>
    <Button variant="primary" onClick={()=>{void navigator.clipboard?.writeText(planPrompt(project.title)).then(()=>notify('Prompt copied',{tone:'success'})).catch(()=>notify('Copy was unavailable'));}}><Copy aria-hidden="true"/>Copy prompt</Button>
   </section>}
-  <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={tabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
+  {examEnabled&&(exam.pendingSetup||exam.pendingCalendar)&&<section className="v7-exam-panel" aria-label="Exam calendar update pending">
+   <p>{exam.pendingSetup?'Finish linking your exam to Calendar.':'Update Calendar with the new exam date.'}</p>
+   <div className="v7-exam-actions"><Button disabled={!online||modeBusy||setup} onClick={()=>{void (async()=>{
+    try{
+     setModeBusy(true);
+     if(exam.pendingSetup){
+      const id=await getExamApi().resumeSetup(project.id);
+      setTab('Exam',id);
+     }else if(exam.pendingCalendar)await getExamApi().resumeCalendar(project.id,exam.pendingCalendar);
+    }catch(error){notify(error instanceof Error?error.message:'Could not update Calendar.',{tone:'danger'});}
+    finally{await exam.refresh();setModeBusy(false);}
+   })();}}>{exam.pendingSetup?'Retry setup':'Retry Calendar update'}</Button></div>
+  </section>}
+  {sitting&&<>
+   {exam.sittings.length>1&&<label className="v7-exam-picker v7-field-group">Exam sitting
+    <select className="v7-field" value={sitting.id} onChange={event=>setTab(tab,event.target.value)}>
+     {exam.sittings.map(item=><option key={item.id} value={item.id}>{item.title} · {item.status}</option>)}
+    </select>
+   </label>}
+   {!online&&<p role="status" className="v7-path-note">Reconnect to change exam prep.</p>}
+   <ModeControl sitting={sitting} now={exam.now} disabled={!online||modeBusy}
+    studyNext={current?current.code+' step '+(currentStudyStep(current).index+1)+' · '+(step??current.title):'Open your study plan'}
+    examNext={exam.plan&&actionTitle(exam.plan.next,exam.plan)} onChange={value=>{void changeMode(value);}}/>
+   <PassedExamBanner key={sitting.id+':'+sitting.starts_at} sitting={sitting} owner={exam.owner??''} now={exam.now} disabled={!online||modeBusy} onChange={exam.change}/>
+  </>}
+  <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={visibleTabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
    {tab==='Plan'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
     {stages.map(stage=>{
@@ -220,9 +270,20 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
     {due===0&&<li className="v7-path-cards-empty">Nothing due on this path.</li>}
    </ul>}
    {tab==='Cards'&&<PathCards slug={slug}/>}
+   {tab==='Exam'&&(sitting&&exam.plan?<LedgerTab key={sitting.id} sitting={sitting} project={data} plan={exam.plan}
+    now={exam.now} disabled={!online||modeBusy} onChange={exam.change}/>
+    :!online?<p className="v7-path-note">Connect to load this exam ledger.</p>
+    :exam.loadError?<p role="alert">Could not load the exam ledger.</p>:<Skeleton/>)}
   </section>
   {/* R2 · F11: one floating layer above the tab bar — the Continue pill; Review lives in the header actions. */}
-  {cps.length>0&&<Dock className="v7-path-bar" role="group" aria-label="Path actions">
+  {setup&&<ExamSetupSheet key={project.id} data={data} zone={settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone}
+   mode={cardMode(settings.data?.planning?.exam_card_mode)} disabled={!online} allowActivate={!exam.sittings.some(item=>item.status==='active')} onClose={()=>setSetup(false)} onSave={async(input,draft)=>{
+    let id:string;
+    try{id=await getExamApi().setup(input);}
+    finally{await exam.refresh();}
+    if(draft)navigate(examTutorHref(data,id,'draft'));else setTab('Exam',id);
+   }}/>}
+  {cps.length>0&&tab!=='Exam'&&<Dock className="v7-path-bar" role="group" aria-label="Path actions">
    <Button variant="primary" onClick={()=>navigate(tutorHref(slug,current?.code))}>Continue with tutor</Button>
    {due>0&&<Link className="v7-button v7-secondary" to={studyRepair?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(slug)}>Review {due}</Link>}
   </Dock>}

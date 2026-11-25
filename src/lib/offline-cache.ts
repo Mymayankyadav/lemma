@@ -55,6 +55,8 @@ export function isOfflineKey(key:readonly unknown[]):key is OfflineKey {
  if(!key.every(part=>typeof part==='string'))return false
  if(key.length===1)return ['home','projects','decks','styles','settings'].includes(key[0] as string)
  if(key.length===2)return key[0]==='project'&&typeof key[1]==='string'&&!!key[1]
+ if(key.length===4&&key[0]==='exam')return key.slice(1).every(Boolean)
+ if(key.length===5&&key[0]==='exam-attempts')return key.slice(1).every(Boolean)&&/^\d+$/.test(String(key[4]))
  if(key.length===3)return key[0]==='checkpoint'&&typeof key[1]==='string'&&!!key[1]&&typeof key[2]==='string'&&!!key[2]
  return false
 }
@@ -88,6 +90,7 @@ export function scrubOfflineData(value:unknown):unknown {
 }
 function sizeOf(value:unknown):number{return encoder.encode(JSON.stringify(value)).byteLength}
 function projectSlug(entry:OfflineEntry):string|null {
+ if(entry.key[0]==='exam'||entry.key[0]==='exam-attempts')return entry.key[3]??null
  return entry.key[0]==='project'||entry.key[0]==='checkpoint'?entry.key[1]??null:null
 }
 /** Oldest project/checkpoint entries go first; keep at most five project slugs. */
