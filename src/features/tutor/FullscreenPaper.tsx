@@ -48,7 +48,7 @@ export function FullscreenPaper({active, onExit, label, children}: {active: bool
   return <>
     <span ref={anchor} hidden/>
     {active
-      ? <Sheet open onClose={onExit} title={label} hideTitle full containFocus>
+      ? <Sheet open className="tutor-paper-sheet" onClose={onExit} title={label} hideTitle full containFocus>
         <div className="tutor-paper-safe">
           <div className="tutor-paper-full" data-turn={turned || undefined}>{children}</div>
           {manualRotation && <button type="button" className="tutor-paper-rotate" aria-label={TURN_LABEL[turned]} title={TURN_LABEL[turned]}

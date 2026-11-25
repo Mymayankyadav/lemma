@@ -1,3 +1,4 @@
+import {createAdaptation, learnedRank, localCalibrationEstimate, parseAdaptation, type WritingAdaptation} from './adaptation';
 import type {WritingAidMode, WritingAidProposal} from './policy';
 
 /** Only short lexical features are retained; the draft itself is never stored. */
@@ -18,6 +19,7 @@ export interface WritingAidModel {
   version: 1;
   weights: Record<string, Weight>;
   vocabulary: Record<string, Vocabulary>;
+  adaptation: WritingAdaptation;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -51,7 +53,7 @@ const clamp = (value: number, max: number) => Math.max(-max, Math.min(max, value
 
 export function createWritingAidModel(): WritingAidModel {
   return {version: 1, weights: Object.create(null) as Record<string, Weight>,
-    vocabulary: Object.create(null) as Record<string, Vocabulary>};
+    vocabulary: Object.create(null) as Record<string, Vocabulary>, adaptation: createAdaptation()};
 }
 
 /** Features derive only from the learner-authored portion of the current draft. */
@@ -89,7 +91,9 @@ export function scoreWritingAidFeatures(
 }
 
 export function scoreWritingAidProposal(model: WritingAidModel, proposal: WritingAidProposal, now = Date.now()): number {
-  return scoreWritingAidFeatures(model, writingAidFeatures(proposal), now);
+  return proposal.score === undefined ? scoreWritingAidFeatures(model, writingAidFeatures(proposal), now) :
+    .15 * scoreWritingAidFeatures(model, writingAidFeatures(proposal), now) + learnedRank(model.adaptation, proposal) +
+    .3 * (localCalibrationEstimate(model.adaptation, proposal, 'retain', .5) - .5);
 }
 
 /** Bounded, decayed online updates let recent explicit choices outweigh old habits. */
@@ -153,5 +157,6 @@ export function parseWritingAidModel(value: unknown): WritingAidModel {
       model.vocabulary[key] = {uses: Math.min(30, uses), at: Math.min(at, Date.now()), observations: Math.min(30, Math.max(0, count))};
     }
   }
+  model.adaptation = parseAdaptation(stored.adaptation);
   return model;
 }

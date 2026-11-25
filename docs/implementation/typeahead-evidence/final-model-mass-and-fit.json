@@ -1,0 +1,252 @@
+{
+  "chromium": "156.0.8078.79",
+  "componentCoverage": {
+    "calibration": {
+      "assetsSummarySha256": "98f89d4d601a4abd6656580e69e15b549d2570e8b965aaa7ed6b6bd951c2db01",
+      "componentSha256": "0fffa0d6b0e605736f572451c1306bbe6edbd9c2dc9751893d2bef60a9a3ce62",
+      "counts": {
+        "draftAvailable": 356,
+        "missingComponents": 43,
+        "questionAvailable": 359,
+        "scheduled": 402,
+        "subjectAvailable": 55,
+        "supportedLiterals": 359
+      },
+      "uniqueDocumentGroups": 40
+    },
+    "validation": {
+      "assetsSummarySha256": "6e9454ff68c78cb1ab1ae45553594fe9348f2fc3f30ed5913771044b482e89cc",
+      "componentSha256": "9fd7116dac6f7276702d0e3eca539c3d6768f8988519627c7ff7723d51b7a993",
+      "counts": {
+        "draftAvailable": 356,
+        "missingComponents": 45,
+        "questionAvailable": 357,
+        "scheduled": 402,
+        "subjectAvailable": 58,
+        "supportedLiterals": 353,
+        "unsupportedLiterals": 4
+      },
+      "uniqueDocumentGroups": 40
+    }
+  },
+  "edges": 3515746,
+  "fallbackSnapshotSha256": "d9bddafd81c5e1c4d5727fa0409071ec0eee26ef30002f63fcb24759329a1de7",
+  "fitValidation": {
+    "meanNllImprovement": 0.012264239812608935,
+    "validationSupportedLiteralMeanNllFallback": 4.528935175131856,
+    "validationSupportedLiteralMeanNllFitted": 4.516670935319247
+  },
+  "fittedSha256": "9eba81e4690f60653df1030a949c4cd09c3a16f1f0feb637d4f85736ae63fee8",
+  "fittedSnapshotSha256": "38674e2470a71a265c737d88f35f90d91fa794ad49d4e682f5f0cd35e24a970d",
+  "limitations": "Selection used positive supported literal validation rows, not capture misses or zero-support events. The latter remain in final replay denominators. No eligibility, terminal gain, calibration of actual learner outcomes or phone timing claim. This review used no test data.",
+  "manifests": {
+    "latex-v2": {
+      "budgetMiB": 2,
+      "bytes": 2097152,
+      "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+      "manifestSha256": "7a3662fab5511c2617d6ba716e2d86ccf3147c874958ed17627ea205b431280f",
+      "order": 4,
+      "sha256": "79eff0d5440b999e88520d6b472bfa95016786b7301d8f781c2e928a2304a3e4",
+      "subject": null,
+      "trainTokens": 50000004,
+      "vocabSha256": "6edef82683a8c6f2e23450a0ef250254c5dd3ae6d1a7b2b77637f8667d894c0f",
+      "vocabSize": 1505
+    },
+    "ngram-v2": {
+      "budgetMiB": 20,
+      "bytes": 20971520,
+      "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+      "manifestSha256": "ab3bf6182dbfd28239396ebb9bac36f3b9f53d97ca532cec6a36cd2f191faad1",
+      "order": 4,
+      "sha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+      "subject": null,
+      "trainTokens": 500002914,
+      "vocabSha256": "7f3bca81800228b69c6e9f58e9cf426f325e5d107cd2ad676f86154b55f029ba",
+      "vocabSize": 60005
+    },
+    "subject-linear-algebra": {
+      "budgetMiB": 4,
+      "bytes": 4194304,
+      "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+      "manifestSha256": "26965c77645fede4ce3ddb51198cdc9bfa829294a4f79cc6d28b916def880827",
+      "order": 4,
+      "sha256": "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe",
+      "subject": "linear-algebra",
+      "trainTokens": 57617433,
+      "vocabSha256": "7f3bca81800228b69c6e9f58e9cf426f325e5d107cd2ad676f86154b55f029ba",
+      "vocabSize": 60005
+    },
+    "subject-topology": {
+      "budgetMiB": 4,
+      "bytes": 4194300,
+      "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+      "manifestSha256": "99500c8e5c7bc43cd8a4ea254a0cbdb5ffb951673266daa1a0f136cb27b46261",
+      "order": 4,
+      "sha256": "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0",
+      "subject": "topology",
+      "trainTokens": 12317545,
+      "vocabSha256": "7f3bca81800228b69c6e9f58e9cf426f325e5d107cd2ad676f86154b55f029ba",
+      "vocabSize": 60005
+    }
+  },
+  "models": {
+    "latex-v2": {
+      "edges": 235002,
+      "historySamplesByWidth": [
+        {
+          "observedSample": 12,
+          "storedRows": 1503,
+          "unobservedSample": 2,
+          "unobservedShortfall": "dense level or fewer than 12 sampled absent histories",
+          "width": 1
+        },
+        {
+          "observedSample": 12,
+          "storedRows": 17442,
+          "unobservedSample": 12,
+          "width": 2
+        },
+        {
+          "observedSample": 12,
+          "storedRows": 31963,
+          "unobservedSample": 12,
+          "width": 3
+        }
+      ],
+      "maxExhaustiveMassError": 2.9563886005945506e-08,
+      "maxIdentifierClassAllocationError": 2.220446049250313e-16,
+      "maxSparseVsDirectError": 1.9984014443252818e-14,
+      "negativeRemaining": 0,
+      "rows": 50908
+    },
+    "ngram-v2": {
+      "edges": 2489451,
+      "historySamplesByWidth": [
+        {
+          "observedSample": 12,
+          "storedRows": 32618,
+          "unobservedSample": 12,
+          "width": 1
+        },
+        {
+          "observedSample": 12,
+          "storedRows": 133960,
+          "unobservedSample": 12,
+          "width": 2
+        },
+        {
+          "observedSample": 12,
+          "storedRows": 241167,
+          "unobservedSample": 12,
+          "width": 3
+        }
+      ],
+      "maxExhaustiveMassError": 2.9799628653570664e-08,
+      "maxSparseVsDirectError": 6.361577931102147e-13,
+      "negativeRemaining": 0,
+      "rows": 407745
+    },
+    "subject-linear-algebra": {
+      "edges": 404009,
+      "historySamplesByWidth": [
+        {
+          "observedSample": 12,
+          "storedRows": 11000,
+          "unobservedSample": 12,
+          "width": 1
+        },
+        {
+          "observedSample": 12,
+          "storedRows": 28688,
+          "unobservedSample": 12,
+          "width": 2
+        },
+        {
+          "observedSample": 12,
+          "storedRows": 42230,
+          "unobservedSample": 12,
+          "width": 3
+        }
+      ],
+      "maxExhaustiveMassError": 2.9799200773616974e-08,
+      "maxSparseVsDirectError": 9.308109838457312e-13,
+      "negativeRemaining": 0,
+      "rows": 81918
+    },
+    "subject-topology": {
+      "edges": 387284,
+      "historySamplesByWidth": [
+        {
+          "observedSample": 12,
+          "storedRows": 12834,
+          "unobservedSample": 12,
+          "width": 1
+        },
+        {
+          "observedSample": 12,
+          "storedRows": 34097,
+          "unobservedSample": 12,
+          "width": 2
+        },
+        {
+          "observedSample": 12,
+          "storedRows": 43451,
+          "unobservedSample": 12,
+          "width": 3
+        }
+      ],
+      "maxExhaustiveMassError": 2.9793482791973247e-08,
+      "maxSparseVsDirectError": 1.838085239569409e-12,
+      "negativeRemaining": 0,
+      "rows": 90382
+    }
+  },
+  "overlappingCalibrationValidationGroups": 0,
+  "provenance": {
+    "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+    "groupAuditSha256": "3372c0eb58e8b1be6afa8bb03caba362b6b4e6c20c1e92e9625b12e8bfbe9e9c",
+    "pinnedInputShards": 13,
+    "publisherIdentityCounts": {
+      "publisherIdentityVerified:EleutherAI/proof-pile-2": 22012,
+      "publisherIdentityVerified:HuggingFaceTB/finemath": 423965,
+      "publisherIdentityVerified:hoskinson-center/proof-pile": 222192
+    },
+    "trainingWords": 500002914
+  },
+  "reportSha256": {
+    "final-mass-fallback.json": "56e74c6ddc9505079e6b2322560fc2a9e979b3c124a522108dc58eb78e2f9d00",
+    "final-mass-fitted.json": "6cb9a32c5cadfd61e376eb9845c4f92c9c68ef6961236805471c39cd8a7c12d3",
+    "fit-capture-independent-review.json": "4592269b8cbcbccafb8948619c19886a1d43f61bc2910531a2c91d0507db0310"
+  },
+  "rows": 630953,
+  "scope": "Actual selected four assets, independently reviewed fallback and fitted Chromium probability integrity. This does not certify product replay gains, hardware or latency.",
+  "seed": 9093,
+  "sums": {
+    "fallback": {
+      "activeFittedCount": 0,
+      "maxAbsoluteMassErrorByComponent": {
+        "activeMixture": 1.0056692700821657e-08,
+        "draft": 0,
+        "general": 1.2675207994305993e-08,
+        "personal": 0,
+        "question": 0,
+        "subject": 2.5604561804115633e-08
+      },
+      "scopeCount": 12
+    },
+    "fitted": {
+      "activeFittedCount": 12,
+      "maxAbsoluteMassErrorByComponent": {
+        "activeMixture": 9.901874542528333e-09,
+        "draft": 0,
+        "general": 1.2675207994305993e-08,
+        "personal": 0,
+        "question": 0,
+        "subject": 2.5604561804115633e-08
+      },
+      "scopeCount": 12
+    }
+  },
+  "verifierSha256": "a0abc859de3fe2dbe7e758532bc2ce3b9c8cb918142e3e3bdeb55853ce1bf8a3",
+  "version": 1
+}

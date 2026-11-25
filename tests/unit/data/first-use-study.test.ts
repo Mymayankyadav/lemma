@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {getGoalApi, setGoalApiForTests} from '../../../src/data/study-goals';
 import {getStudyApi, setStudyApiForTests} from '../../../src/data/study';
+import {getDemoProfile, getMode} from '../../../src/data/mode';
 
 const range = {start: '2026-11-01T00:00:00Z', end: '2026-11-30T00:00:00Z'};
 function selectDemo(profile: '1' | 'first-use') {
@@ -19,6 +20,32 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
   sessionStorage.clear();
   vi.useRealTimers();
+});
+
+it('persists a tab demo selection only when it changes', () => {
+  const storage = Object.getPrototypeOf(sessionStorage) as Storage;
+  const write = vi.spyOn(storage, 'setItem');
+  const remove = vi.spyOn(storage, 'removeItem');
+  try {
+    selectDemo('1');
+    expect(getMode()).toBe('demo');
+    expect(getDemoProfile()).toBe('default');
+    expect(write).toHaveBeenCalledTimes(1);
+    selectDemo('first-use');
+    expect(getDemoProfile()).toBe('first-use');
+    window.history.replaceState(null, '', '/');
+    expect(getDemoProfile()).toBe('first-use');
+    expect(write).toHaveBeenCalledTimes(2);
+    window.history.replaceState(null, '', '/?demo=0');
+    expect(getMode()).toBe('live');
+    expect(getMode()).toBe('live');
+    expect(remove).toHaveBeenCalledTimes(1);
+    window.history.replaceState(null, '', '/');
+    expect(getMode()).toBe('live');
+  } finally {
+    write.mockRestore();
+    remove.mockRestore();
+  }
 });
 
 it('keeps first-use study history, calendar blocks and goals separate from the populated demo', async () => {

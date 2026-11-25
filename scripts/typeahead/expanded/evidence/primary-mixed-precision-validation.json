@@ -1,0 +1,257 @@
+{
+  "productionQualification": false,
+  "selectedDiagnosticPrecision": "int8-weight-only",
+  "status": "failed parity on pilot validation",
+  "validationArms": [
+    {
+      "notebook": "mayankyadav9432/lemma-typeahead-export-int4-int8-head-20261124/1",
+      "positionEmbedding": "int4 GatherBlockQuantized",
+      "result": {
+        "casesSha256": "d041471492b324b70cae9f353bc5aea08d9c247cd90ac5fce8de136f93d3e47c",
+        "checkpointSha256": "972efe68a9d589e53655ad0ff49a1ac1a988fea5d8ddefee2bdf4a9846782efa",
+        "coldPrefillMs": 41.05612799997971,
+        "contextLengths": {
+          "1": 60,
+          "2": 60,
+          "256": 60,
+          "48": 60,
+          "512": 60
+        },
+        "contextSplit": "validation",
+        "contexts": 300,
+        "dataSha256": "b42bb97b183c136dfe3c23f62f39c605f4f17448640d66e3d2bf61c1e0a5ba3c",
+        "downloadBytes": 23314656,
+        "exportParityPassed": false,
+        "floatCachedMaxLogitError": 1.049041748046875e-05,
+        "floatMaxLogitError": 1.049041748046875e-05,
+        "floatNll": 1029.5611772340615,
+        "floatPerplexity": 30.934454367010016,
+        "floatTopThreeSetMatches": 300.0,
+        "graph": {
+          "incremental.onnx": {
+            "initializerBytesByType": {
+              "FLOAT": 1871872,
+              "INT4": 131072,
+              "INT64": 8,
+              "INT8": 8388608,
+              "UINT8": 12582912
+            },
+            "operators": {
+              "Add": 66,
+              "Cast": 17,
+              "Concat": 16,
+              "Constant": 146,
+              "DequantizeLinear": 1,
+              "Div": 8,
+              "Erf": 8,
+              "Gather": 19,
+              "GatherBlockQuantized": 1,
+              "GreaterOrEqual": 8,
+              "LayerNormalization": 17,
+              "MatMul": 17,
+              "MatMulNBits": 32,
+              "Mul": 25,
+              "Not": 8,
+              "Range": 8,
+              "Reshape": 16,
+              "Shape": 16,
+              "Softmax": 8,
+              "Split": 8,
+              "Squeeze": 24,
+              "Transpose": 25,
+              "Unsqueeze": 17,
+              "Where": 8
+            }
+          },
+          "prefill.onnx": {
+            "initializerBytesByType": {
+              "FLOAT": 1871872,
+              "INT4": 131072,
+              "INT64": 8,
+              "INT8": 8388608,
+              "UINT8": 12582912
+            },
+            "operators": {
+              "Add": 57,
+              "Cast": 26,
+              "Concat": 16,
+              "Constant": 220,
+              "DequantizeLinear": 1,
+              "Div": 8,
+              "Erf": 8,
+              "Gather": 36,
+              "GatherBlockQuantized": 1,
+              "GreaterOrEqual": 8,
+              "LayerNormalization": 17,
+              "MatMul": 17,
+              "MatMulNBits": 32,
+              "Mul": 25,
+              "Not": 8,
+              "Range": 17,
+              "Reshape": 16,
+              "Shape": 33,
+              "Softmax": 8,
+              "Split": 8,
+              "Squeeze": 24,
+              "Transpose": 25,
+              "Unsqueeze": 57,
+              "Where": 8
+            }
+          }
+        },
+        "graphBytes": 23313697,
+        "incrementalP95Ms": 52.67525479999904,
+        "layouts": {
+          "prose": {
+            "cachedContexts": 240,
+            "cachedMatches": 215,
+            "contexts": 300,
+            "matches": 266
+          }
+        },
+        "nativeCachedMaxLogitError": 3.814697265625e-06,
+        "nativeDevice": "CPU",
+        "nativeNll": 1029.5611847456894,
+        "nativePerplexity": 30.934455141570403,
+        "onnxProvider": "CPUExecutionProvider",
+        "precision": "int4-int8-head",
+        "quantCachedCases": 240.0,
+        "quantCachedTopThreeSetAgreement": 0.8958333333333334,
+        "quantCachedTopThreeSetMatches": 215.0,
+        "quantMeanTotalVariation": 0.020990371368814955,
+        "quantNll": 1028.6193927116128,
+        "quantPerplexity": 30.837494670763444,
+        "quantTopOneMatches": 292.0,
+        "quantTopThreeSetAgreement": 0.8866666666666667,
+        "quantTopThreeSetMatches": 266.0,
+        "version": 1,
+        "warmPrefillP95Ms": 249.0094724999949
+      },
+      "sourceArchiveSha256": "ec04a5805d938c7143d1952f458c99066904cfa277e1bcb1b8e141b3928e2769"
+    },
+    {
+      "notebook": "mayankyadav9432/lemma-typeahead-export-int4-int8-fp32pos-20261124/1",
+      "positionEmbedding": "float32 Gather",
+      "result": {
+        "casesSha256": "d041471492b324b70cae9f353bc5aea08d9c247cd90ac5fce8de136f93d3e47c",
+        "checkpointSha256": "972efe68a9d589e53655ad0ff49a1ac1a988fea5d8ddefee2bdf4a9846782efa",
+        "coldPrefillMs": 56.832052000004296,
+        "contextLengths": {
+          "1": 60,
+          "2": 60,
+          "256": 60,
+          "48": 60,
+          "512": 60
+        },
+        "contextSplit": "validation",
+        "contexts": 300,
+        "dataSha256": "b42bb97b183c136dfe3c23f62f39c605f4f17448640d66e3d2bf61c1e0a5ba3c",
+        "downloadBytes": 24215340,
+        "exportParityPassed": false,
+        "floatCachedMaxLogitError": 1.049041748046875e-05,
+        "floatMaxLogitError": 1.049041748046875e-05,
+        "floatNll": 1029.5611772340615,
+        "floatPerplexity": 30.934454367010016,
+        "floatTopThreeSetMatches": 300.0,
+        "graph": {
+          "incremental.onnx": {
+            "initializerBytesByType": {
+              "FLOAT": 2904064,
+              "INT64": 8,
+              "INT8": 8388608,
+              "UINT8": 12582912
+            },
+            "operators": {
+              "Add": 66,
+              "Cast": 17,
+              "Concat": 16,
+              "Constant": 146,
+              "DequantizeLinear": 1,
+              "Div": 8,
+              "Erf": 8,
+              "Gather": 20,
+              "GreaterOrEqual": 8,
+              "LayerNormalization": 17,
+              "MatMul": 17,
+              "MatMulNBits": 32,
+              "Mul": 25,
+              "Not": 8,
+              "Range": 8,
+              "Reshape": 16,
+              "Shape": 16,
+              "Softmax": 8,
+              "Split": 8,
+              "Squeeze": 24,
+              "Transpose": 25,
+              "Unsqueeze": 17,
+              "Where": 8
+            }
+          },
+          "prefill.onnx": {
+            "initializerBytesByType": {
+              "FLOAT": 2904064,
+              "INT64": 8,
+              "INT8": 8388608,
+              "UINT8": 12582912
+            },
+            "operators": {
+              "Add": 57,
+              "Cast": 26,
+              "Concat": 16,
+              "Constant": 220,
+              "DequantizeLinear": 1,
+              "Div": 8,
+              "Erf": 8,
+              "Gather": 37,
+              "GreaterOrEqual": 8,
+              "LayerNormalization": 17,
+              "MatMul": 17,
+              "MatMulNBits": 32,
+              "Mul": 25,
+              "Not": 8,
+              "Range": 17,
+              "Reshape": 16,
+              "Shape": 33,
+              "Softmax": 8,
+              "Split": 8,
+              "Squeeze": 24,
+              "Transpose": 25,
+              "Unsqueeze": 57,
+              "Where": 8
+            }
+          }
+        },
+        "graphBytes": 24214381,
+        "incrementalP95Ms": 68.42728230003274,
+        "layouts": {
+          "prose": {
+            "cachedContexts": 240,
+            "cachedMatches": 218,
+            "contexts": 300,
+            "matches": 273
+          }
+        },
+        "nativeCachedMaxLogitError": 3.814697265625e-06,
+        "nativeDevice": "CPU",
+        "nativeNll": 1029.5611938484058,
+        "nativePerplexity": 30.93445608019565,
+        "onnxProvider": "CPUExecutionProvider",
+        "precision": "int4-int8-head",
+        "quantCachedCases": 240.0,
+        "quantCachedTopThreeSetAgreement": 0.9083333333333333,
+        "quantCachedTopThreeSetMatches": 218.0,
+        "quantMeanTotalVariation": 0.018322251671351094,
+        "quantNll": 1028.6076178194626,
+        "quantPerplexity": 30.83628433393647,
+        "quantTopOneMatches": 295.0,
+        "quantTopThreeSetAgreement": 0.91,
+        "quantTopThreeSetMatches": 273.0,
+        "version": 1,
+        "warmPrefillP95Ms": 309.74816359999124
+      },
+      "sharedInputOutputWeight": "one signed int8 array",
+      "sourceArchiveSha256": "1e4807380283edeef91190fff408b3f07379659b1636051ec1fa42b4e66d55ff",
+      "transformerInt4MatMuls": 32
+    }
+  ]
+}

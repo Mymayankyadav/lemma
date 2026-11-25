@@ -72,15 +72,21 @@ function lowerBound(entries: readonly DecoderCandidate[], word: string): number 
   return low;
 }
 
-/** Preserve risk metadata across the worker boundary. This function never supplies a next word. */
+/** Return the best strict completions for a prefix of the indexed spelling. */
 export function searchDecoderLexicon(
   index: DecoderLexiconIndex, prefix: string, limit = 32,
 ): readonly DecoderCandidate[] {
-  if (typeof prefix !== 'string' || !/^[a-zA-Z]{1,32}$/u.test(prefix) ||
-      !Number.isFinite(limit) || limit < 1) return [];
+  if (typeof prefix !== 'string' || !prefix || !Number.isFinite(limit) || limit < 1) return [];
   const count = Math.min(MAX_DECODER_CANDIDATES, Math.floor(limit));
-  const lower = prefix.toLowerCase(), {entries, tree, base} = index;
-  let left = lowerBound(entries, lower), right = lowerBound(entries, lower + '{');
+  const lower = prefix.toLowerCase();
+  const {entries, tree, base} = index;
+  let left = lowerBound(entries, lower), right = entries.length;
+  // Matching entries are contiguous in the index's UTF-16 order, including marks and punctuation.
+  for (let start = left; start < right;) {
+    const middle = (start + right) >>> 1;
+    if (entries[middle].word.startsWith(lower)) start = middle + 1;
+    else right = middle;
+  }
   if (entries[left]?.word === lower) left++;
   if (left >= right) return [];
   const heap: number[] = [];

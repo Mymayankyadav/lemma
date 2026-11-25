@@ -1,0 +1,43 @@
+{
+  "captureAssetsFingerprint": "2ec7f605e4dee86b200520ea4e1e251be46d661888e7d84cab93a9400b348f23",
+  "captureBuildIndexSha256": "e416f2fd0bab7fb0406b7ebbed44dc0b65826e245678610398569a626464b8d1",
+  "captureInventorySha256": "87d038e70af756a36f6db3c914357b73a6a942c35f327fac661eef74c2ab8d1d",
+  "capturedComponents": {
+    "calibration": "0fffa0d6b0e605736f572451c1306bbe6edbd9c2dc9751893d2bef60a9a3ce62",
+    "validation": "9fd7116dac6f7276702d0e3eca539c3d6768f8988519627c7ff7723d51b7a993"
+  },
+  "mixtureSha256": "9eba81e4690f60653df1030a949c4cd09c3a16f1f0feb637d4f85736ae63fee8",
+  "mixtureStatus": "validated",
+  "precisionSelectionSha256": "64fa190db84da27049ba8f2f136c458389ea7d07048a75ed9ad2dbb2b2051d27",
+  "runtimeSourceFingerprint": "59930a93f202197f6c40c50db3f886c2734f3dd5359630582d0f3755a33717fd",
+  "schedules": {
+    "calibration": "59ee8fb17f38b7f60804fcc8845deb8a2e812d571bc0391f49a4ee2c34fd8f3a",
+    "test": "cff4f66c8a75d38ef957bc8228f4c97825e705b53ed1fd33fa21952f9d25b275",
+    "validation": "a91765468eb9de5b76c529d5fb8c6ea28ee07da41eff121ef2cccfdc0f793914"
+  },
+  "scope": "Review and freeze before opening the held-out comparison. Test manifest SHA only; no events or gold read.",
+  "sourceCommit": "f8a1a066a482ebaf8c3fa1cb7673155525fc78f3",
+  "supportPacks": {
+    "latex-v2": {
+      "binarySha256": "79eff0d5440b999e88520d6b472bfa95016786b7301d8f781c2e928a2304a3e4",
+      "bytes": 2097152,
+      "manifestSha256": "7a3662fab5511c2617d6ba716e2d86ccf3147c874958ed17627ea205b431280f"
+    },
+    "ngram-v2": {
+      "binarySha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+      "bytes": 20971520,
+      "manifestSha256": "ab3bf6182dbfd28239396ebb9bac36f3b9f53d97ca532cec6a36cd2f191faad1"
+    },
+    "subject-linear-algebra": {
+      "binarySha256": "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe",
+      "bytes": 4194304,
+      "manifestSha256": "26965c77645fede4ce3ddb51198cdc9bfa829294a4f79cc6d28b916def880827"
+    },
+    "subject-topology": {
+      "binarySha256": "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0",
+      "bytes": 4194300,
+      "manifestSha256": "99500c8e5c7bc43cd8a4ea254a0cbdb5ffb951673266daa1a0f136cb27b46261"
+    }
+  },
+  "version": 1
+}

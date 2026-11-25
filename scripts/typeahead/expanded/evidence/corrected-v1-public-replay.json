@@ -1,0 +1,194 @@
+{
+  "baseline": "corrected-v1",
+  "events": 283,
+  "goldSha256": "0045bc707dd43dae5b246d1920385d42573db862a2277e1ccd268abad3e2a690",
+  "note": "Baseline rendered before strict cross-source family deduplication. Symbol sample has 3 eligible positions.",
+  "replay": "Chromium, full-answer trajectories and independent source questions",
+  "runs": {
+    "corrected-v1": {
+      "blockedCases": {
+        "observedDisplays": 0,
+        "opportunities": 0
+      },
+      "calibration": {},
+      "ghost": {
+        "counts": {
+          "eligible": 238
+        },
+        "coverage": 0.0
+      },
+      "impressionsSha256": "ed2b8832ce52fbde054371db997d94067ab88e0bcea0ac0061d18ad475b8c5b4",
+      "keysSha256": "532a8cf33c50a00875d98e34d181db68ca90cc7a67cb6212d49fd30680395aa1",
+      "rates": {
+        "boundary": {
+          "answerBootstrap95": [
+            0.19047207118141374,
+            0.2807066824364281
+          ],
+          "answers": 24,
+          "denominator": 283,
+          "numerator": 66,
+          "rate": 0.2332155477031802
+        },
+        "boundary/analysis": {
+          "answerBootstrap95": [
+            0.15384615384615385,
+            0.26666666666666666
+          ],
+          "answers": 3,
+          "denominator": 34,
+          "numerator": 7,
+          "rate": 0.20588235294117646
+        },
+        "boundary/geometry": {
+          "answerBootstrap95": [
+            0.2857142857142857,
+            0.2857142857142857
+          ],
+          "answers": 1,
+          "denominator": 7,
+          "numerator": 2,
+          "rate": 0.2857142857142857
+        },
+        "boundary/linear-algebra": {
+          "answerBootstrap95": [
+            0.125,
+            0.125
+          ],
+          "answers": 1,
+          "denominator": 8,
+          "numerator": 1,
+          "rate": 0.125
+        },
+        "boundary/other": {
+          "answerBootstrap95": [
+            0.1906848337851334,
+            0.31216931216931215
+          ],
+          "answers": 15,
+          "denominator": 182,
+          "numerator": 45,
+          "rate": 0.24725274725274726
+        },
+        "boundary/probability": {
+          "answerBootstrap95": [
+            0.3076923076923077,
+            0.3333333333333333
+          ],
+          "answers": 2,
+          "denominator": 22,
+          "numerator": 7,
+          "rate": 0.3181818181818182
+        },
+        "boundary/topology": {
+          "answerBootstrap95": [
+            0.1111111111111111,
+            0.14285714285714285
+          ],
+          "answers": 2,
+          "denominator": 30,
+          "numerator": 4,
+          "rate": 0.13333333333333333
+        },
+        "ksr": {
+          "answerBootstrap95": [
+            0.2722853609517429,
+            0.3565498638173057
+          ],
+          "answers": 24,
+          "denominator": 1859,
+          "numerator": 584,
+          "rate": 0.314147391070468
+        },
+        "ksr/analysis": {
+          "answerBootstrap95": [
+            0.24528301886792453,
+            0.38461538461538464
+          ],
+          "answers": 3,
+          "denominator": 229,
+          "numerator": 73,
+          "rate": 0.31877729257641924
+        },
+        "ksr/geometry": {
+          "answerBootstrap95": [
+            0.3409090909090909,
+            0.3409090909090909
+          ],
+          "answers": 1,
+          "denominator": 44,
+          "numerator": 15,
+          "rate": 0.3409090909090909
+        },
+        "ksr/linear-algebra": {
+          "answerBootstrap95": [
+            0.2619047619047619,
+            0.2619047619047619
+          ],
+          "answers": 1,
+          "denominator": 42,
+          "numerator": 11,
+          "rate": 0.2619047619047619
+        },
+        "ksr/other": {
+          "answerBootstrap95": [
+            0.25711651935349533,
+            0.3691938875749658
+          ],
+          "answers": 15,
+          "denominator": 1240,
+          "numerator": 385,
+          "rate": 0.31048387096774194
+        },
+        "ksr/probability": {
+          "answerBootstrap95": [
+            0.25,
+            0.47368421052631576
+          ],
+          "answers": 2,
+          "denominator": 124,
+          "numerator": 48,
+          "rate": 0.3870967741935484
+        },
+        "ksr/topology": {
+          "answerBootstrap95": [
+            0.11290322580645161,
+            0.3813559322033898
+          ],
+          "answers": 2,
+          "denominator": 180,
+          "numerator": 52,
+          "rate": 0.28888888888888886
+        },
+        "symbol": {
+          "answerBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "answers": 3,
+          "denominator": 3,
+          "numerator": 0,
+          "rate": 0.0
+        },
+        "word": {
+          "answerBootstrap95": [
+            0.1920496354271189,
+            0.2857142857142857
+          ],
+          "answers": 24,
+          "denominator": 280,
+          "numerator": 66,
+          "rate": 0.2357142857142857
+        }
+      },
+      "slateViolations": {
+        "duplicateFamilies": 2,
+        "duplicateInsertions": 0
+      }
+    }
+  },
+  "seed": 52489,
+  "source": "Public Math StackExchange",
+  "status": "diagnostic",
+  "version": 1
+}

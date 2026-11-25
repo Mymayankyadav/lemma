@@ -22,19 +22,71 @@ function content(node: Node): string {
   }, '');
 }
 
+/** The text the editor shows, as stored: chips as their source, no selection work. */
+function domText(root: HTMLElement): string {
+  return root.childNodes.length === 1 && root.firstChild instanceof HTMLBRElement ? '' : content(root);
+}
+
+/**
+ * N232: a tap on the answer keyboard changes the text by a few characters. When that change sits inside one plain text
+ * node (no chip, no $, no backslash next to a $), patch that node instead of rebuilding every chip and KaTeX rendering.
+ * Returns false when the editor has to be rebuilt.
+ */
+function patchText(root: HTMLElement, from: string, to: string): boolean {
+  if (domText(root) !== from) return false;
+  const risky = /[$\\\[\]]/u;
+  // A native empty contenteditable may contain a placeholder line break.
+  // The ordinary renderer represents plain source as a single text node.
+  if (!from && to && !risky.test(to) &&
+      (!root.firstChild || root.childNodes.length === 1 && root.firstChild instanceof HTMLBRElement)) {
+    root.replaceChildren(root.ownerDocument.createTextNode(to));
+    return true;
+  }
+  let p = 0;
+  const max = Math.min(from.length, to.length);
+  while (p < max && from.charCodeAt(p) === to.charCodeAt(p)) p++;
+  let q = 0;
+  while (q < max - p && from.charCodeAt(from.length - 1 - q) === to.charCodeAt(to.length - 1 - q)) q++;
+  const removed = from.slice(p, from.length - q), inserted = to.slice(p, to.length - q);
+  if (risky.test(removed) || risky.test(inserted) || risky.test(to.slice(Math.max(0, p - 1), p)) ||
+      risky.test(to.slice(p + inserted.length, p + inserted.length + 1))) return false;
+  let offset = 0;
+  for (const child of root.childNodes) {
+    const length = content(child).length;
+    if (child.nodeType === Node.TEXT_NODE && p >= offset && p + removed.length <= offset + length) {
+      const node = child as Text, local = p - offset;
+      node.data = node.data.slice(0, local) + inserted + node.data.slice(local + removed.length);
+      return true;
+    }
+    offset += length;
+  }
+  return false;
+}
+
+/** Mathematical chips contribute their source length, without cloning their rendered DOM. */
+function textBefore(container: Node, boundary: Node, index: number, beforeNode = false): string {
+  if (atomic(container)) return content(container);
+  if (container.nodeType === Node.TEXT_NODE) return (container.textContent ?? '').slice(0, index);
+  let result = '';
+  const limit = container === boundary ? index : container.childNodes.length;
+  for (let at = 0; at < limit; at++) {
+    const child = container.childNodes[at];
+    if (beforeNode && child === boundary) return result;
+    if (child instanceof HTMLDivElement && result && !result.endsWith('\n')) result += '\n';
+    if (child.contains(boundary)) return result + textBefore(child, boundary, index, beforeNode);
+    result += content(child);
+  }
+  return result;
+}
+
 export function readTutorAnswer(editor: HTMLElement): PadEdit {
-  const text = editor.childNodes.length === 1 && editor.firstChild instanceof HTMLBRElement ? '' : content(editor);
+  const text = domText(editor);
+  if (!text) return padEdit('');
   const selection = editor.ownerDocument.getSelection();
   if (!selection?.anchorNode || !selection.focusNode || !editor.contains(selection.anchorNode) || !editor.contains(selection.focusNode))
     return padEdit(text);
-  function offset(node: Node, index: number) {
-    const range = editor.ownerDocument.createRange();
-    range.selectNodeContents(editor);
-    range.setEnd(node, index);
-    return content(range.cloneContents()).length;
-  }
-  const anchor = offset(selection.anchorNode, selection.anchorOffset);
-  const focus = offset(selection.focusNode, selection.focusOffset);
+  const anchor = textBefore(editor, selection.anchorNode, selection.anchorOffset).length;
+  const focus = selection.isCollapsed ? anchor : textBefore(editor, selection.focusNode, selection.focusOffset).length;
   return padEdit(text, anchor, focus, anchor > focus ? 'backward' : 'forward');
 }
 
@@ -64,7 +116,8 @@ export function setTutorAnswerSelection(editor: HTMLElement, {start, end, direct
   const selection = editor.ownerDocument.getSelection();
   if (!selection) return;
   const [focus, focusOffset] = point(to);
-  selection.setBaseAndExtent(...point(from), focus, focusOffset);
+  const startPoint = from === to ? [focus, focusOffset] as const : point(from);
+  selection.setBaseAndExtent(...startPoint, focus, focusOffset);
   const caret = editor.ownerDocument.createRange();
   caret.setStart(focus, focusOffset);
   const box = caret.getBoundingClientRect?.();
@@ -165,11 +218,12 @@ export function renderTutorAnswer(editor: HTMLElement, value: string, images: re
 type Events = Pick<React.ComponentProps<'div'>,
   'onCopy' | 'onCut' | 'onFocus' | 'onPointerDown' | 'onInput' | 'onKeyDown' | 'onCompositionStart' | 'onCompositionEnd' | 'onPaste' | 'onDrop'>;
 
-export function TutorAnswerEditor({editor, value, images, composing, placeholder, readOnly, ghost, marked, onSelection, onChip, onMath, ...events}: Events & {
+export function TutorAnswerEditor({editor, value, images, composing, placeholder, readOnly, ghost, marked, restoreSelection = true, onSelection, onChip, onMath, ...events}: Events & {
   editor: RefObject<HTMLDivElement | null>;
   value: string;
   images: readonly AnswerImage[];
   composing: boolean;
+  restoreSelection?: boolean;
   placeholder: string;
   ghost?: string;
   marked?: {start: number; end: number};
@@ -179,14 +233,20 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
   /** N221: an equation was tapped; `source` is its $…$ text at `offset`. */
   onMath?: (source: string, offset: number) => void;
 }) {
-  const rendered = useRef<{signature: string; readOnly: boolean; mark: string}>(null);
+  const rendered = useRef<{signature: string; readOnly: boolean; mark: string; value: string}>(null);
   const mark = marked ? marked.start + ':' + marked.end : '';
   useLayoutEffect(() => {
     const root = editor.current;
     if (!root || composing) return;
     const signature = images.map(image => image.id + image.kind).join('|');
     const previous = rendered.current;
-    rendered.current = {signature, readOnly, mark};
+    rendered.current = {signature, readOnly, mark, value};
+    // N232: a small text change in one text node is patched in place; see patchText.
+    if (previous && previous.value !== value && previous.signature === signature && previous.readOnly === readOnly &&
+        previous.mark === mark && (!mark || previous.value !== '') && patchText(root, previous.value, value)) {
+      root.toggleAttribute('data-empty', !value);
+      return;
+    }
     const references = tutorAnswerParts(value).filter(part => part.type === 'image');
     const chips = root.querySelectorAll('[data-image-id]');
     const staleChips = references.length !== chips.length || references.some((part, index) => chips[index]?.getAttribute('data-image-id') !== part.id);
@@ -196,13 +256,13 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
     const equations = answerEquations(value);
     const mathChips = [...root.querySelectorAll<HTMLElement>('[data-math]')].map(node => node.dataset.math);
     const staleMath = equations.length !== mathChips.length || equations.some((segment, index) => mathChips[index] !== segment.source);
-    if (readTutorAnswer(root).text !== value || staleChips || staleMath || nestedText || previous?.signature !== signature || previous?.readOnly !== readOnly || previous?.mark !== mark) {
-      const saved = readTutorAnswer(root);
+    if (domText(root) !== value || staleChips || staleMath || nestedText || previous?.signature !== signature || previous?.readOnly !== readOnly || previous?.mark !== mark) {
+      const saved = restoreSelection && root.ownerDocument.activeElement === root ? readTutorAnswer(root) : undefined;
       renderTutorAnswer(root, value, images, readOnly, marked);
-      if (root.ownerDocument.activeElement === root) setTutorAnswerSelection(root, padEdit(value, saved.start, saved.end, saved.direction));
+      if (saved) setTutorAnswerSelection(root, padEdit(value, saved.start, saved.end, saved.direction));
     }
     root.toggleAttribute('data-empty', !value);
-  }, [editor, value, images, readOnly, composing, mark]);
+  }, [editor, value, images, readOnly, composing, mark, restoreSelection]);
 
   return <div {...events} ref={editor} className="tutor-answer-editor" role="textbox" aria-label="Your answer"
     data-completion={ghost || undefined} aria-multiline="true" aria-readonly={readOnly} aria-placeholder={placeholder} data-placeholder={placeholder}
@@ -215,18 +275,12 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
       const action = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-chip-action]') : null;
       const equation = action?.dataset.chipAction === 'math' ? action.closest<HTMLElement>('[data-math]') : null;
       if (equation && !readOnly && onMath) {
-        const before = event.currentTarget.ownerDocument.createRange();
-        before.selectNodeContents(event.currentTarget);
-        before.setEndBefore(equation);
-        onMath(equation.dataset.math!, content(before.cloneContents()).length);
+        onMath(equation.dataset.math!, textBefore(event.currentTarget, equation, 0, true).length);
         return;
       }
       const wrapper = action?.closest<HTMLElement>('[data-image-id]');
       const id = wrapper?.dataset.imageId;
       if (!id || !action || !wrapper || readOnly) {onSelection(); return;}
-      const range = event.currentTarget.ownerDocument.createRange();
-      range.selectNodeContents(event.currentTarget);
-      range.setEndBefore(wrapper);
-      onChip(id, content(range.cloneContents()).length, action.dataset.chipAction === 'remove' ? 'remove' : 'edit');
+      onChip(id, textBefore(event.currentTarget, wrapper, 0, true).length, action.dataset.chipAction === 'remove' ? 'remove' : 'edit');
     }}/>;
 }

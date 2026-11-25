@@ -1,0 +1,24 @@
+{
+  "after": {
+    "firstEventId": "word",
+    "firstModelSha256": "d439be36601fe22e599c4624ecb49d2ed043f658814942b1c95ea0105aadaceb",
+    "rawRunSha256": "1b953ef77a7f07900768064d64320cf0756f866253ba4574025bb9a7b218ded0",
+    "slateCount": 3,
+    "sourceSha256": "d0479b3dfd687b3eebb29145baeb42591eeedbd8dfcd2bd2f69869dec717f0cf",
+    "status": "passed fixture and complete synthetic trajectories"
+  },
+  "before": {
+    "firstEventId": "word",
+    "logSha256": "7124699addd0c2a20018b96cffa8b23be1fa6868a7a3f9257a6eff352f21e474",
+    "modelAbsence": "no-current-model",
+    "slateCount": 0,
+    "sourceSha256": "f318bdaf564d72f4638747d1babb757b2ed2d17caf2ef44abe8cf2332c239c5c",
+    "status": "failed exact offer assertion"
+  },
+  "buildIndexSha256": "bcac6fcff157a17fd2ee22cd9aa56d0a4c8a13e3bfdb8a9957cb51c39d08b39e",
+  "delayedAsset": "packaged prose trigram",
+  "measurementPolicy": "External frozen schedules keep the fixed observation cadence.",
+  "modelDownloadDelayMs": 450,
+  "reproduction": "Delay requests to the packaged trigram for 450 ms with service workers blocked and run the built-in corrected-v1 demo fixture. The original 3-frame assertion fails on the first word; the updated fixture waits for the same actual insertion and verifies its application.",
+  "scope": "Controlled Chromium reproduction of the functional fixture failure path. The CI output identifies the failing assertion but does not identify its event."
+}

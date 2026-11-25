@@ -1,0 +1,146 @@
+{
+  "buildIndexSha256": "b6ac31aa95d75cb473bbe7b116804e2f131090cacf9a9ca4d65334ac78eba19e",
+  "cold": {
+    "browserObservationSha256": "906b510f6206a87c9f071cdaff9a8011e082ea7227b7a50c18f93d61c19688da",
+    "compiledDependencyCount": 14,
+    "files": [
+      {
+        "bytes": 2646,
+        "download": "/lemma/assets/completeLexicon-BDDeOrSZ.js",
+        "role": "lexicon-loader",
+        "sha256": "2db7e935127de69b21ee26827636f35e7dd2661ee54fa8b9068da2a18ae59e1d"
+      },
+      {
+        "bytes": 57329,
+        "download": "/lemma/assets/latex.worker-DOpAJYrV.js",
+        "role": "worker",
+        "sha256": "8c9dd90fd53a379408ff25f986a08a0c2db4c2bc26704f679eb4529600c6bc48"
+      },
+      {
+        "bytes": 820,
+        "download": "/lemma/assets/manifest-Bu9wfJzC.js",
+        "role": "latex-manifest",
+        "sha256": "829847e0da64682bc24a760af88a5ab8fcd29ec112bf5fa1cc3813b150c2bb1f"
+      },
+      {
+        "bytes": 915,
+        "download": "/lemma/assets/manifest-C04y2LC3.js",
+        "role": "subject-manifest",
+        "sha256": "a7a85d24bf5cff9144ddd5acfe66597cb054716f02ef9e4ea98c969257b3ce34"
+      },
+      {
+        "bytes": 907,
+        "download": "/lemma/assets/manifest-C9K1Z_Qk.js",
+        "role": "prose-manifest",
+        "sha256": "6ab853f2a0fc4ad2fe03c636eeaa23c41f17022d05507e4eb13d638fdbd91570"
+      },
+      {
+        "bytes": 1019,
+        "download": "/lemma/assets/manifest-CFSwcHf-.js",
+        "role": "prose-fallback-manifest",
+        "sha256": "7ebfcaf00782f00fa9d4b4e0bf271b8d8bfffdac1039f479be920c5b067209be"
+      },
+      {
+        "bytes": 1013,
+        "download": "/lemma/assets/manifest-DtHEQmU5.js",
+        "role": "latex-fallback-manifest",
+        "sha256": "8c426d1112a7ca6987a8446f32066e2d5007e92e288fc96d1025479689ab5088"
+      },
+      {
+        "bytes": 4006,
+        "download": "/lemma/assets/mixture-OEa8eba3.js",
+        "role": "worker",
+        "sha256": "d8409429c758ccd06fe7450dc50612c0c1e1d88aaa310a34541f2bc1aac462cf"
+      },
+      {
+        "bytes": 490170,
+        "download": "/lemma/assets/ngram.worker-CyN3Ul4q.js",
+        "role": "worker",
+        "sha256": "5a8265f1ae09a48a5d96f569664c9bc01dacca58c51b04eccf722f4f6447c391"
+      },
+      {
+        "bytes": 911,
+        "download": "/lemma/assets/rolldown-runtime-BWaJ3C7D.js",
+        "role": "worker",
+        "sha256": "d0e9044430006c5bb48f477501a5af465f0a6377d2fcd7495aa215b8b75aaee3"
+      },
+      {
+        "bytes": 2097152,
+        "download": "/lemma/models/typeahead/latex-v2/model.bin",
+        "role": "latex",
+        "sha256": "79eff0d5440b999e88520d6b472bfa95016786b7301d8f781c2e928a2304a3e4"
+      },
+      {
+        "bytes": 20971520,
+        "download": "/lemma/models/typeahead/ngram-v2/model.bin",
+        "role": "prose",
+        "sha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8"
+      },
+      {
+        "bytes": 4194304,
+        "download": "/lemma/models/typeahead/subject-linear-algebra/model.bin",
+        "role": "subject",
+        "sha256": "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe"
+      },
+      {
+        "bytes": 1444847,
+        "download": "/lemma/models/writing-decoder/unigram-v2/lexicon.tsv",
+        "role": "lexicon",
+        "sha256": "79c76f68e7e0d36a1498f530a742f2581daf5e3de45a77d9abd8871f5cfcfe14"
+      }
+    ],
+    "notMeasured": "HTTP compression/wire bytes and whole app bootstrap",
+    "receiptSha256": "00a2a418706f59bbb13ebc59899cbfe4041ce128f493024de04e68709f126a3a",
+    "serviceWorkerInstallBlocked": true,
+    "subject": "linear-algebra",
+    "uncompressedScopedBytes": 29267559
+  },
+  "generalModelSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+  "scope": "Exact final expanded-count build in desktop Chromium. Synthetic cold and 4\u00d7 tap observations used no held-out answers.",
+  "timing": {
+    "conditions": {
+      "control": {
+        "domP95": 5.300000004470348,
+        "max": 17.100000001490116,
+        "p95": 8.900000005960464,
+        "p99": 15.799999997019768,
+        "presentationSamples": 0,
+        "warmSamples": 100,
+        "workerP95": 0
+      },
+      "eightEquations": {
+        "domP95": 34.600000001490116,
+        "max": 57.600000001490116,
+        "p95": 39,
+        "p99": 42.399999998509884,
+        "presentationSamples": 0,
+        "warmSamples": 100,
+        "workerP95": 0.29999999701976776
+      },
+      "empty": {
+        "domP95": 33.100000001490116,
+        "max": 53.899999998509884,
+        "p95": 35.20000000298023,
+        "p99": 39.100000001490116,
+        "presentationSamples": 0,
+        "warmSamples": 100,
+        "workerP95": 26.600000001490116
+      }
+    },
+    "passed": {
+      "eightEquationWorker": true,
+      "eightEquations": true,
+      "empty": false,
+      "emptyWorker": false
+    },
+    "physicalPhone": "unverified",
+    "rawReceiptSha256": "b122ad44c7d19db227fb459fc0781878199f5fa243777f5bc849ab5fc3c171a1",
+    "scope": "390 \u00d7 844 desktop Chromium viewport at 4\u00d7 CPU throttling. Every sample used the rAF fallback because no Event Timing presentation duration was reported.",
+    "thresholdMs": {
+      "eightEquations": 50,
+      "empty": 32,
+      "worker": 8
+    }
+  },
+  "version": 1
+}

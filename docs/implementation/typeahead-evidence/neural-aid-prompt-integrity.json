@@ -1,0 +1,96 @@
+{
+  "scope": "Synthetic valid aid records on exact frozen tokenizer and real application aid-builder source. No model evaluation or replay data.",
+  "scriptSha256": "4a540aaa6f34c32b63eea08c8e807c6cf98099e7beaff91a5a61a05d70fd8fb7",
+  "baselineCommit": "0e64b7750406f957f8beb4960fb3d2e3082f4519",
+  "baselineHookSourceSha256": "50971afdf67c1173da605b19a3d294e8502b9d9da508f61986cc36f9a5dbe301",
+  "candidateAidSourceSha256": "3ca5e14e61b0235c5c1f035a53466a42f725f244f99d100614cba10c7c8f5bd6",
+  "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc",
+  "nodeVersion": "v24.22.3",
+  "aidTokenLimit": 127,
+  "conditions": {
+    "singleton": {
+      "before": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      },
+      "after": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      }
+    },
+    "repeatedScoped": {
+      "before": {
+        "aidTokenCount": 9,
+        "laterCuePreserved": true,
+        "completePromptSha256": "28b23f1f29b7565123f43bb0ef6c8435ad104ee02164124e69c8fe874db83e74"
+      },
+      "after": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      }
+    },
+    "legacyOnly": {
+      "before": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      },
+      "after": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      }
+    },
+    "repeatedLegacy": {
+      "before": {
+        "aidTokenCount": 9,
+        "laterCuePreserved": true,
+        "completePromptSha256": "28b23f1f29b7565123f43bb0ef6c8435ad104ee02164124e69c8fe874db83e74"
+      },
+      "after": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      }
+    },
+    "saturating": {
+      "before": {
+        "aidTokenCount": 127,
+        "laterCuePreserved": false,
+        "completePromptSha256": "055ed14c044309cdccca6903bb20df655dbf784aedf5247716d2a533baf9a2e6"
+      },
+      "after": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      }
+    },
+    "prefer": {
+      "before": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      },
+      "after": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      }
+    },
+    "deemphasize": {
+      "before": {
+        "aidTokenCount": 1,
+        "laterCuePreserved": true,
+        "completePromptSha256": "50fbed80c939c3d1257f83d0e231333a4497d5a10ec69a025d396deb7c47f68b"
+      },
+      "after": {
+        "aidTokenCount": 5,
+        "laterCuePreserved": true,
+        "completePromptSha256": "fb2f1b3a9af79a24de46d891c06a70e062936e1be970329b53bd6d520bea3cf0"
+      }
+    }
+  }
+}

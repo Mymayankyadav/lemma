@@ -1,0 +1,19 @@
+{
+  "counts": {
+    "distinctContents": 35025,
+    "distinctPublisherIds": 34964,
+    "distinctQuestions": 35025,
+    "heldOutDocuments": 1829,
+    "publisherIds": 35025,
+    "trainDocuments": 35025
+  },
+  "gpu": false,
+  "legacySourceRevision": "490b980249446f2f3bd2df3a8cf085d0f2de240a",
+  "legacySourceSha256": "9a33bde2feabb2421936bbde65ab15692ba814812bb2cf0e82a77b35e07e0b9b",
+  "notebook": "mayankyadav9432/lemma-typeahead-legacy-identity-preflight-20261124/1",
+  "passed": true,
+  "private": true,
+  "scope": "Deployed v1 raw training identities. Audited replay overlap requires the corrected held-out corpus and is pending.",
+  "sourceArchiveSha256": "4c4b506e511e1709998f9460d3e5d4e4bfac4fa6d5658c1a702ed773e483a8f8",
+  "trainingIdentitySha256": "9b7a915a95293d457e21b40a49e85afdf7782c87ab5e8b03d187c753c3d0654c"
+}

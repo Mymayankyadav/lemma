@@ -54,18 +54,18 @@ export function tutorFollowupFields(followups?: readonly {body: string; createdA
 }
 
 export async function tutorTurnContent(
-  db:Db,turn:{snapshot?:{question?:unknown}}|null,rows:readonly TutorImageRow[],referenceId:(id:string)=>string=id=>id,
+  db:Db,turn:{snapshot?:{question?:unknown;acceptedSpans?:unknown}}|null,rows:readonly TutorImageRow[],referenceId:(id:string)=>string=id=>id,
   details?:()=>Promise<Record<string,unknown>>,
 ):Promise<TutorContentBlock[]> {
   const content=rows.length?{...turn,attachments:rows.map(row=>({id:referenceId(row.id),kind:row.kind,mimeType:row.mime_type}))}:turn;
   const question=typeof turn?.snapshot?.question==='string'?turn.snapshot.question:'';
   const images=new Map(rows.map(row=>[row.id,row]));
-  const parts=tutorAnswerParts(question,images.keys());
+  const parts=tutorAnswerParts(question,images.keys(),turn?.snapshot?.acceptedSpans);
   // Details can acknowledge follow-ups. Load the images first so a failed download acknowledges nothing.
   const summary=async (value:object|null)=>({type:'text' as const,text:JSON.stringify(details?{...value,...await details()}:value)});
   if(!parts.some(part=>part.type==='image')) {
     const blocks=await Promise.all(rows.map(row=>downloadTutorImage(db,row)));
-    return [await summary(content),...blocks];
+    return [await summary(parts.some(part=>part.type==='text'&&part.accepted)?{...content,answerParts:parts}:content),...blocks];
   }
 
   const labels=new Map<string,string>(),counts={drawing:0,photo:0};

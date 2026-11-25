@@ -1,7 +1,10 @@
+import {AndroidModelSettings} from './AndroidModelSettings';
+import {isFlagOn} from '../../../flags';
+import {readWritingAidWeek} from './adaptation';
 import {useId} from 'react';
 import {useToast} from '../../../ui/Toast';
 import {Button, Switch} from '../../../ui/v7/components';
-import {setWritingAidMode, setWritingAidSurface, useWritingAidPreferences, WRITING_AID_MODES} from './preferences';
+import {setFasterWritingAid, setWritingAidMode, setWritingAidSurface, useWritingAidPreferences, WRITING_AID_MODES} from './preferences';
 import {resetWritingAidPersonalization, setWritingAidPersonalization, useWritingAidPersonalization} from './personalization';
 import type {WritingAidMode, WritingAidSurface} from './policy';
 import './writingAidSettings.css';
@@ -21,8 +24,11 @@ const SURFACE_LABELS: ReadonlyArray<readonly [WritingAidSurface, string]> = [
 ];
 
 export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
-  const {scopeKey, available, mode, surfaces} = useWritingAidPreferences();
+  const {scopeKey, available, mode, surfaces, fasterTyping} = useWritingAidPreferences();
+  const fullSettings = isFlagOn('writingAidSettings');
+  const expanded = fasterTyping || isFlagOn('typeaheadV2');
   const personalization = useWritingAidPersonalization();
+  const weekly = expanded && personalization.enabled ? readWritingAidWeek(personalization.model.adaptation) : undefined;
   const group = useId();
   const notify = useToast();
   const failed = () => notify('Could not save writing aid settings.', {tone: 'danger'});
@@ -30,6 +36,13 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
   return <section className="writing-aid-settings" aria-label="Writing aid settings">
     {showTitle && <h2 className="v7-eyebrow">Writing aid</h2>}
     <p>Suggestions are prepared on this device. Your draft changes when you choose a suggestion.</p>
+    <fieldset className="writing-aid-experiment">
+      <legend>Typing experiment</legend>
+      <Switch label="Try faster typing" checked={fasterTyping} disabled={!available}
+        onChange={next => {if (!setFasterWritingAid(next, scopeKey)) failed();}}/>
+    </fieldset>
+    <AndroidModelSettings canInstall={expanded}/>
+    {fullSettings && <>
     <fieldset disabled={!available}>
       <legend>Suggestion mode</legend>
       {WRITING_AID_MODES.map(value => {
@@ -50,7 +63,8 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
           onChange={next => {if (!setWritingAidSurface(surface, next, scopeKey)) failed();}}/>;
       })}
     </fieldset>
-    <fieldset disabled={!available}>
+    </>}
+    {(fullSettings || fasterTyping) && <fieldset disabled={!available}>
       <legend>Personalization</legend>
       <p>Learn from your choices and repeated typing on this device.</p>
       <Switch label="Personalize suggestions" checked={personalization.enabled} disabled={!available}
@@ -59,6 +73,10 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
         if (!resetWritingAidPersonalization(scopeKey)) failed();
         else notify('Learned writing preferences cleared.');
       }}>Forget learned writing preferences</Button>
-    </fieldset>
+      {weekly && <details><summary>This week on this device</summary>
+        <p>{weekly.accepts} accepted of {weekly.impressions} displayed suggestions. {weekly.retained} kept for at least three seconds.
+          {' '}{weekly.undos} undone of {weekly.accepts} accepted. {weekly.keysSaved} estimated keystrokes saved.</p>
+      </details>}
+    </fieldset>}
   </section>;
 }

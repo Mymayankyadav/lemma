@@ -1,0 +1,90 @@
+{
+  "allFamilyPreflight": {
+    "notebook": "mayankyadav9432/lemma-typeahead-provenance-preflight-20261124/1",
+    "samples": [
+      {
+        "distinctGroups": 32,
+        "sampled": 32,
+        "source": "HuggingFaceTB/finemath"
+      },
+      {
+        "distinctGroups": 32,
+        "sampled": 32,
+        "source": "EleutherAI/proof-pile-2"
+      },
+      {
+        "distinctGroups": 32,
+        "sampled": 32,
+        "source": "hoskinson-center/proof-pile"
+      }
+    ]
+  },
+  "earlier500mBuildDiagnosticOnly": true,
+  "fullEmittedGroupAuditRequired": true,
+  "groupKeys": {
+    "EleutherAI/proof-pile-2": "meta.arxiv_id normalized against arXiv URLs",
+    "hoskinson-center/proof-pile": "meta.question_id normalized against Math StackExchange question URLs"
+  },
+  "notebook": "mayankyadav9432/lemma-typeahead-schema-probe-20261124/1",
+  "observations": [
+    {
+      "metadataFields": [
+        "arxiv_id",
+        "language",
+        "timestamp",
+        "url",
+        "yymm"
+      ],
+      "recordFields": [
+        "meta",
+        "text"
+      ],
+      "source": "EleutherAI/proof-pile-2"
+    },
+    {
+      "keysPresent": [
+        "arxiv_id",
+        "url"
+      ],
+      "source": "EleutherAI/proof-pile-2"
+    },
+    {
+      "keysPresent": [
+        "arxiv_id",
+        "url"
+      ],
+      "source": "EleutherAI/proof-pile-2"
+    },
+    {
+      "keysPresent": [
+        "arxiv_id",
+        "url"
+      ],
+      "source": "EleutherAI/proof-pile-2"
+    },
+    {
+      "metadataFields": [
+        "question_id",
+        "score",
+        "set_name"
+      ],
+      "recordFields": [
+        "meta",
+        "text"
+      ],
+      "source": "hoskinson-center/proof-pile"
+    },
+    {
+      "keysPresent": [],
+      "source": "hoskinson-center/proof-pile"
+    },
+    {
+      "keysPresent": [],
+      "source": "hoskinson-center/proof-pile"
+    },
+    {
+      "keysPresent": [],
+      "source": "hoskinson-center/proof-pile"
+    }
+  ]
+}

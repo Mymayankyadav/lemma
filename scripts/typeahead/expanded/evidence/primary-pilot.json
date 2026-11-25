@@ -1,0 +1,509 @@
+{
+  "allottedGpuHoursAreAnUpperBound": true,
+  "bestCheckpointSha256": "972efe68a9d589e53655ad0ff49a1ac1a988fea5d8ddefee2bdf4a9846782efa",
+  "corpus": {
+    "counts": {
+      "calibration": {
+        "documents": 785,
+        "latex": 147100,
+        "registers": {
+          "learner": 189092
+        },
+        "sources": {
+          "hoskinson-center/proof-pile": 189092
+        },
+        "subjects": {
+          "algebra": 12805,
+          "analysis": 27333,
+          "geometry": 11410,
+          "linear-algebra": 20636,
+          "number-theory": 5298,
+          "other": 79652,
+          "probability": 20597,
+          "topology": 11361
+        },
+        "words": 189092
+      },
+      "test": {
+        "documents": 721,
+        "latex": 137251,
+        "registers": {
+          "learner": 177103
+        },
+        "sources": {
+          "hoskinson-center/proof-pile": 177103
+        },
+        "subjects": {
+          "algebra": 15866,
+          "analysis": 31553,
+          "geometry": 8813,
+          "linear-algebra": 17932,
+          "number-theory": 5890,
+          "other": 69854,
+          "probability": 14710,
+          "topology": 12485
+        },
+        "words": 177103
+      },
+      "train": {
+        "documents": 34648,
+        "latex": 6885031,
+        "registers": {
+          "learner": 8394439
+        },
+        "sources": {
+          "hoskinson-center/proof-pile": 8394439
+        },
+        "subjects": {
+          "algebra": 666833,
+          "analysis": 1395626,
+          "geometry": 538962,
+          "linear-algebra": 920560,
+          "number-theory": 317129,
+          "other": 3250648,
+          "probability": 813471,
+          "topology": 491210
+        },
+        "words": 8394439
+      },
+      "validation": {
+        "documents": 700,
+        "latex": 145342,
+        "registers": {
+          "learner": 169431
+        },
+        "sources": {
+          "hoskinson-center/proof-pile": 169431
+        },
+        "subjects": {
+          "algebra": 14474,
+          "analysis": 22087,
+          "geometry": 11157,
+          "linear-algebra": 22771,
+          "number-theory": 4855,
+          "other": 70879,
+          "probability": 14423,
+          "topology": 8785
+        },
+        "words": 169431
+      }
+    },
+    "ingest": {
+      "filtered": 9397,
+      "read": 46251,
+      "retained": 36854
+    },
+    "sources": [
+      {
+        "id": "hoskinson-center/proof-pile",
+        "license": "CC BY-SA (Math StackExchange)",
+        "originalPath": "dev/proofpile_dev.jsonl.gz",
+        "path": "proofpile_dev.jsonl.gz",
+        "revision": "490b980249446f2f3bd2df3a8cf085d0f2de240a",
+        "sha256": "9a33bde2feabb2421936bbde65ab15692ba814812bb2cf0e82a77b35e07e0b9b",
+        "url": "https://huggingface.co/datasets/hoskinson-center/proof-pile"
+      }
+    ]
+  },
+  "deviceQualified": false,
+  "dynamicInt8": {
+    "casesSha256": "5cda9371c89a51e2b45bf8243aa2c7c8f0c524ed5213e0581b2c2e0f9f468375",
+    "checkpointSha256": "972efe68a9d589e53655ad0ff49a1ac1a988fea5d8ddefee2bdf4a9846782efa",
+    "coldPrefillMs": 5.890040999986468,
+    "contextLengths": {
+      "1": 60,
+      "2": 60,
+      "256": 60,
+      "48": 60,
+      "512": 60
+    },
+    "contexts": 300,
+    "dataSha256": "b42bb97b183c136dfe3c23f62f39c605f4f17448640d66e3d2bf61c1e0a5ba3c",
+    "exportParityPassed": false,
+    "floatCachedMaxLogitError": 9.5367431640625e-06,
+    "floatMaxLogitError": 9.5367431640625e-06,
+    "floatNll": 1011.5058756464751,
+    "floatPerplexity": 29.12760215157289,
+    "floatTopThreeSetMatches": 300.0,
+    "graph": {
+      "incremental.onnx": {
+        "initializerBytesByType": {
+          "FLOAT": 430084,
+          "INT64": 8,
+          "INT8": 33607680,
+          "UINT8": 262145
+        },
+        "operators": {
+          "Add": 66,
+          "Cast": 50,
+          "Concat": 16,
+          "Constant": 146,
+          "DequantizeLinear": 1,
+          "Div": 8,
+          "DynamicQuantizeLinear": 33,
+          "Erf": 8,
+          "Gather": 20,
+          "GreaterOrEqual": 8,
+          "LayerNormalization": 17,
+          "MatMul": 16,
+          "MatMulInteger": 33,
+          "Mul": 91,
+          "Not": 8,
+          "Range": 8,
+          "Reshape": 16,
+          "Shape": 16,
+          "Softmax": 8,
+          "Split": 8,
+          "Squeeze": 24,
+          "Transpose": 25,
+          "Unsqueeze": 17,
+          "Where": 8
+        }
+      },
+      "prefill.onnx": {
+        "initializerBytesByType": {
+          "FLOAT": 430084,
+          "INT64": 8,
+          "INT8": 33607680,
+          "UINT8": 262145
+        },
+        "operators": {
+          "Add": 57,
+          "Cast": 59,
+          "Concat": 16,
+          "Constant": 220,
+          "DequantizeLinear": 1,
+          "Div": 8,
+          "DynamicQuantizeLinear": 33,
+          "Erf": 8,
+          "Gather": 37,
+          "GreaterOrEqual": 8,
+          "LayerNormalization": 17,
+          "MatMul": 16,
+          "MatMulInteger": 33,
+          "Mul": 91,
+          "Not": 8,
+          "Range": 17,
+          "Reshape": 16,
+          "Shape": 33,
+          "Softmax": 8,
+          "Split": 8,
+          "Squeeze": 24,
+          "Transpose": 25,
+          "Unsqueeze": 57,
+          "Where": 8
+        }
+      }
+    },
+    "graphBytes": 34743064,
+    "incrementalP95Ms": 29.930287700048535,
+    "nativeCachedMaxLogitError": 2.86102294921875e-06,
+    "nativeDevice": "CPU",
+    "nativeNll": 1011.5058674810896,
+    "nativePerplexity": 29.127601358779227,
+    "onnxProvider": "CPUExecutionProvider",
+    "precision": "int8",
+    "quantCachedCases": 240.0,
+    "quantCachedTopThreeSetAgreement": 0.9375,
+    "quantCachedTopThreeSetMatches": 225.0,
+    "quantMeanTotalVariation": 0.007611101628945648,
+    "quantNll": 1011.58372153108,
+    "quantPerplexity": 29.13516134547038,
+    "quantTopOneMatches": 299.0,
+    "quantTopThreeSetAgreement": 0.9533333333333334,
+    "quantTopThreeSetMatches": 286.0,
+    "version": 1,
+    "warmPrefillP95Ms": 243.44773490006446
+  },
+  "gpu": {
+    "allocatedGpuHoursFromScriptStart": 0.08552948873833333,
+    "assignedGpus": 2,
+    "candidate": "primary",
+    "checkpoint": {
+      "allocatedGpuHours": 0.0026220243977777753,
+      "checkpointSha256": "38193be8a1d38cf9d3a2065c6ad51f24936ea9a244d2f592eecce11093653c21",
+      "elapsedSeconds": 4.719643915999995,
+      "nll": 3.348679181639971,
+      "peakMemoryBytes": 1306421248,
+      "perplexity": 28.465111561297704,
+      "runTokens": 103324,
+      "step": 202,
+      "targets": 23888,
+      "tokens": 5114230
+    },
+    "commit": "1444b245593b7d0bc372e3351025a26dfeead3a6",
+    "conservativeChargedHoursForPlanning": 1,
+    "lastKaggleLogSeconds": 160.122387162,
+    "leasedHours": 1.0,
+    "logTimeAllocatedGpuHours": 0.08895688175666666,
+    "mode": "pilot",
+    "providerWeeklyGpuHoursUsedAtCheck": 0.05,
+    "resumeVerified": true,
+    "selectedTrainingRanks": 2,
+    "sessionSecondsFromScriptStart": 153.953079729,
+    "sourceArchiveSha256": "ab92f725de6b3cf62d7c3aa352b56a56a3ea73c7e76f4066ffd0cd0825d98462",
+    "throughputTokensPerSecond": {
+      "1": 14034.52256283832,
+      "2": 31426.79753553213
+    }
+  },
+  "nodeWasmDiagnostic": {
+    "cases": 20,
+    "coldPrefill48Ms": 264.610435,
+    "deviceQualified": false,
+    "incrementalP95Ms": 97.028085,
+    "onnxruntimeWeb": "1.27.0",
+    "threads": 1
+  },
+  "notebooks": {
+    "cpuData": "mayankyadav9432/lemma-typeahead-pilot-data-20261124/1",
+    "cpuExportDynamicInt8": "mayankyadav9432/lemma-typeahead-export-pilot-20261124/1",
+    "dualT4Check": "mayankyadav9432/t4-gpu-test-20261124-ada5e21e/2",
+    "gpu": "mayankyadav9432/lemma-typeahead-gpu-pilot-20261124/1",
+    "weightOnlyDisjointCpuExport": "mayankyadav9432/lemma-typeahead-export-weight-only-20261124/1"
+  },
+  "ownedKaggleListingVerified": true,
+  "prepared": {
+    "counts": {
+      "calibration": {
+        "documents": 785,
+        "tokens": 644739
+      },
+      "test": {
+        "documents": 721,
+        "tokens": 597516
+      },
+      "train": {
+        "documents": 34648,
+        "tokens": 29040769
+      },
+      "validation": {
+        "documents": 700,
+        "tokens": 592990
+      }
+    },
+    "tokenizer": {
+      "bytes": 171879,
+      "sha256": "cddf913dc9b5853e0dbadd4ac7b2d849ac712df101c740946175bf26b073340b"
+    }
+  },
+  "productReplayQualified": false,
+  "purpose": "Pilot train, resume and quantization parity on the small pinned data",
+  "status": "diagnostic",
+  "weightOnlyInt8Disjoint": {
+    "casesSha256": "57117b891583f5976755c0683e4696895c429cc6e1b26a1a1de9dd5c31256de4",
+    "checkpointSha256": "972efe68a9d589e53655ad0ff49a1ac1a988fea5d8ddefee2bdf4a9846782efa",
+    "coldPrefillMs": 240.34558900001457,
+    "contextLengths": {
+      "1": 60,
+      "2": 60,
+      "256": 60,
+      "48": 60,
+      "512": 60
+    },
+    "contextSplit": "calibration",
+    "contexts": 300,
+    "dataSha256": "b42bb97b183c136dfe3c23f62f39c605f4f17448640d66e3d2bf61c1e0a5ba3c",
+    "exportParityPassed": true,
+    "floatCachedMaxLogitError": 8.58306884765625e-06,
+    "floatMaxLogitError": 9.059906005859375e-06,
+    "floatNll": 1006.315248853882,
+    "floatPerplexity": 28.627968594240162,
+    "floatTopThreeSetMatches": 300.0,
+    "graph": {
+      "incremental.onnx": {
+        "initializerBytesByType": {
+          "FLOAT": 430084,
+          "INT64": 8,
+          "INT8": 33816576
+        },
+        "operators": {
+          "Add": 66,
+          "Cast": 17,
+          "Concat": 16,
+          "Constant": 146,
+          "DequantizeLinear": 34,
+          "Div": 8,
+          "Erf": 8,
+          "Gather": 20,
+          "GreaterOrEqual": 8,
+          "LayerNormalization": 17,
+          "MatMul": 49,
+          "Mul": 25,
+          "Not": 8,
+          "Range": 8,
+          "Reshape": 16,
+          "Shape": 16,
+          "Softmax": 8,
+          "Split": 8,
+          "Squeeze": 24,
+          "Transpose": 25,
+          "Unsqueeze": 17,
+          "Where": 8
+        }
+      },
+      "prefill.onnx": {
+        "initializerBytesByType": {
+          "FLOAT": 430084,
+          "INT64": 8,
+          "INT8": 33816576
+        },
+        "operators": {
+          "Add": 57,
+          "Cast": 26,
+          "Concat": 16,
+          "Constant": 220,
+          "DequantizeLinear": 34,
+          "Div": 8,
+          "Erf": 8,
+          "Gather": 37,
+          "GreaterOrEqual": 8,
+          "LayerNormalization": 17,
+          "MatMul": 49,
+          "Mul": 25,
+          "Not": 8,
+          "Range": 17,
+          "Reshape": 16,
+          "Shape": 33,
+          "Softmax": 8,
+          "Split": 8,
+          "Squeeze": 24,
+          "Transpose": 25,
+          "Unsqueeze": 57,
+          "Where": 8
+        }
+      }
+    },
+    "graphBytes": 34586405,
+    "incrementalP95Ms": 230.69675195003185,
+    "layouts": {
+      "prose": {
+        "cachedContexts": 240,
+        "cachedMatches": 237,
+        "contexts": 300,
+        "matches": 297
+      }
+    },
+    "nativeCachedMaxLogitError": 3.814697265625e-06,
+    "nativeDevice": "CPU",
+    "nativeNll": 1006.3152747863038,
+    "nativePerplexity": 28.627971068882125,
+    "onnxProvider": "CPUExecutionProvider",
+    "precision": "int8-weight-only",
+    "quantCachedCases": 240.0,
+    "quantCachedTopThreeSetAgreement": 0.9875,
+    "quantCachedTopThreeSetMatches": 237.0,
+    "quantMeanTotalVariation": 0.00232074150459719,
+    "quantNll": 1006.0641306778988,
+    "quantPerplexity": 28.604015276642855,
+    "quantTopOneMatches": 299.0,
+    "quantTopThreeSetAgreement": 0.99,
+    "quantTopThreeSetMatches": 297.0,
+    "version": 1,
+    "warmPrefillP95Ms": 449.882195750007
+  },
+  "weightOnlyInt8Validation": {
+    "casesSha256": "aea5fd0220303c0f632fa56509829391aa44d11959f1ec40937ecd0feb5ba8fe",
+    "checkpointSha256": "972efe68a9d589e53655ad0ff49a1ac1a988fea5d8ddefee2bdf4a9846782efa",
+    "coldPrefillMs": 24.56092100146634,
+    "contextLengths": {
+      "1": 60,
+      "2": 60,
+      "256": 60,
+      "48": 60,
+      "512": 60
+    },
+    "contextSplit": "validation",
+    "contexts": 300,
+    "dataSha256": "b42bb97b183c136dfe3c23f62f39c605f4f17448640d66e3d2bf61c1e0a5ba3c",
+    "exportParityPassed": true,
+    "floatCachedMaxLogitError": 9.5367431640625e-06,
+    "floatMaxLogitError": 7.62939453125e-06,
+    "floatNll": 1029.5611730385317,
+    "floatPerplexity": 30.934453934388618,
+    "floatTopThreeSetMatches": 300.0,
+    "graph": {
+      "incremental.onnx": {
+        "initializerBytesByType": {
+          "FLOAT": 430084,
+          "INT64": 8,
+          "INT8": 33816576
+        },
+        "operators": {
+          "Add": 66,
+          "Cast": 17,
+          "Concat": 16,
+          "Constant": 146,
+          "DequantizeLinear": 34,
+          "Div": 8,
+          "Erf": 8,
+          "Gather": 20,
+          "GreaterOrEqual": 8,
+          "LayerNormalization": 17,
+          "MatMul": 49,
+          "Mul": 25,
+          "Not": 8,
+          "Range": 8,
+          "Reshape": 16,
+          "Shape": 16,
+          "Softmax": 8,
+          "Split": 8,
+          "Squeeze": 24,
+          "Transpose": 25,
+          "Unsqueeze": 17,
+          "Where": 8
+        }
+      },
+      "prefill.onnx": {
+        "initializerBytesByType": {
+          "FLOAT": 430084,
+          "INT64": 8,
+          "INT8": 33816576
+        },
+        "operators": {
+          "Add": 57,
+          "Cast": 26,
+          "Concat": 16,
+          "Constant": 220,
+          "DequantizeLinear": 34,
+          "Div": 8,
+          "Erf": 8,
+          "Gather": 37,
+          "GreaterOrEqual": 8,
+          "LayerNormalization": 17,
+          "MatMul": 49,
+          "Mul": 25,
+          "Not": 8,
+          "Range": 17,
+          "Reshape": 16,
+          "Shape": 33,
+          "Softmax": 8,
+          "Split": 8,
+          "Squeeze": 24,
+          "Transpose": 25,
+          "Unsqueeze": 57,
+          "Where": 8
+        }
+      }
+    },
+    "graphBytes": 34586405,
+    "incrementalP95Ms": 141.5695612002309,
+    "nativeCachedMaxLogitError": 3.337860107421875e-06,
+    "nativeDevice": "CPU",
+    "nativeNll": 1029.5611758504313,
+    "nativePerplexity": 30.934454224337205,
+    "onnxProvider": "CPUExecutionProvider",
+    "precision": "int8-weight-only",
+    "quantCachedCases": 240.0,
+    "quantCachedTopThreeSetAgreement": 0.9875,
+    "quantCachedTopThreeSetMatches": 237.0,
+    "quantMeanTotalVariation": 0.002875072216013546,
+    "quantNll": 1029.4144223645983,
+    "quantPerplexity": 30.919325461670784,
+    "quantTopOneMatches": 299.0,
+    "quantTopThreeSetAgreement": 0.99,
+    "quantTopThreeSetMatches": 297.0,
+    "version": 1,
+    "warmPrefillP95Ms": 213.29591390103818
+  }
+}

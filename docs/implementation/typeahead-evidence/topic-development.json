@@ -1,0 +1,46 @@
+{
+  "evaluation": "development-only eligible-menu reranking proxy",
+  "trainingPairs": 5000,
+  "trainingShards": 5,
+  "associationPairs": 34266,
+  "input": "Distinct question and answer terms of at least 5 letters. One association per term pair per document. Identical literal excluded.",
+  "estimator": "Question-to-answer document co-occurrence log lift, empirical Bayes prior of 8, minimum support 3, clipped to [0,3]; strongest supported question association per candidate.",
+  "testedWeights": [
+    0,
+    0.15,
+    0.3,
+    0.6,
+    1.0
+  ],
+  "weight": 0.15,
+  "weightSelectionFitThreads": 90,
+  "fitWordOpportunities": 2544,
+  "fitTopThreeByWeight": [
+    797,
+    800,
+    800,
+    793,
+    770
+  ],
+  "developmentThreads": 100,
+  "developmentOpportunities": 2944,
+  "wordOpportunities": 2865,
+  "eventWithFeature": 1913,
+  "baselineExactTopThree": 898,
+  "candidateExactTopThree": 902,
+  "recoveries": 7,
+  "losses": 3,
+  "deltaPercentagePoints": 0.139616,
+  "threadBootstrap95PercentagePoints": [
+    -0.066423,
+    0.363504
+  ],
+  "bootstrapResamples": 10000,
+  "eligibleExact": 1434,
+  "eligibleExactOutsideVisible": 536,
+  "baselineNgramSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+  "associationModelSha256": "db70bbece32fcc1f9101b928eaa17cf86d28e389fefa45effac7e52ff545bcb6",
+  "appliedFullAnswerCostsMeasured": false,
+  "finalSplitAccessed": false,
+  "decision": "Retain the existing production topic routing and mixture."
+}

@@ -1,0 +1,46 @@
+{
+  "countsUncompressed": true,
+  "modelBytes": {
+    "activeSubject": {
+      "manifest.json": 1185,
+      "model.bin": 4194300
+    },
+    "generalNgram": {
+      "manifest.json": 1184,
+      "model.bin": 20971516
+    },
+    "latexNgram": {
+      "manifest.json": 1075,
+      "model.bin": 2097148
+    },
+    "primaryWeightOnlyInt8": {
+      "incremental.onnx": 76050,
+      "manifest.json": 960,
+      "prefill.onnx": 91820,
+      "tokenizer.json": 171879,
+      "weights.bin": 34246656
+    }
+  },
+  "modelsOnlyBytes": 61853773,
+  "note": "The build sizes provide a lower bound for the relevant paths. Other application bootstrap code is outside this typeahead subtotal.",
+  "primaryTargetBytes": 71303168,
+  "primaryWasmColdCacheMinimumBytes": 77853244,
+  "primaryWasmWarmCacheMinimumBytes": 64373266,
+  "primaryWebGpuMinimumBytes": 88668298,
+  "requiredSupportingBytes": {
+    "latex.worker-CQSkJ-PF.js": 56716,
+    "legacyEquationFallback": 444412,
+    "neural.worker-C3NIS-sh.js": 15085,
+    "ngram.worker-5vH6fWUz.js": 487570,
+    "requiredLexicon": 1444847
+  },
+  "sharedInkWasmBytes": 13479978,
+  "status": "diagnostic production build file sizes",
+  "wasmRuntimeBytes": {
+    "ort.wasm.bundle.min-B25fsnu3.js": 70863
+  },
+  "webgpuRuntimeBytes": {
+    "ort-wasm-simd-threaded.asyncify-CvvOzbbq.wasm": 24254953,
+    "ort.webgpu.bundle.min-hSzCfSPY.js": 110942
+  }
+}

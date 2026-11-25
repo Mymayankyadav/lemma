@@ -62,6 +62,11 @@ export const FLAG_DEFAULTS = {
   writingAidSettings: false,
   /** N223 (Owner): the writing aid's grey-text continuation is off; it returns later as a proof-assist option. */
   proofAssistGhost: false,
+  /** N233/N235: the keyboard's Kneser-Ney next-word model, the maths slot, the question-aware learner-choice rule and the
+   *  LaTeX grammar inside equations. Default off until Harden; a default-on change needs an independent review. */
+  typeaheadV2: false,
+  /** N234: the tutor's answer aids (phrase bank, terms, symbols, withheld words) shape the strip. */
+  tutorAnswerAids: false,
   /** N157 · U4 S14 paper and sky: Plain, Graph, Dot or Ruled paper by day; Clear or Stars by night. */
   v7Paper: true,
   /** N157 · U4 S16 desk clock: Focus as large digits, the intention and a ring; the screen stays awake while it runs. */

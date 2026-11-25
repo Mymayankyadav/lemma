@@ -1,0 +1,76 @@
+{
+  "accounting": "Doubles observed notebook log elapsed time for assigned devices. Timeout reservations are the more conservative stage-planning bound. Provider quota measures a separate billed value and includes account jobs; it is not substituted for allocated GPU time.",
+  "authenticatedOwnedKernelList": {
+    "command": "kaggle kernels list --mine",
+    "exitCode": 0,
+    "matchingPrivateTestListed": true
+  },
+  "hardwareSmoke": {
+    "allocatedGpuHoursFromLastLog": 0.012689075951666667,
+    "assignedGpuNames": [
+      "Tesla T4",
+      "Tesla T4"
+    ],
+    "cuda": "13.0",
+    "lastKaggleLogSeconds": 22.840336713,
+    "localLogPath": "/workspace/t4-gpu-test-20261124-ada5e21e-v2.log",
+    "logSha256": "fef46afe6cdb9afaf7130ca459bd8dfbc03cfb4675b87979d53f6e6a137c9897",
+    "notebook": "mayankyadav9432/t4-gpu-test-20261124-ada5e21e/2",
+    "pass": true,
+    "pytorch": "2.11.0+cu130",
+    "validation": "both devices checked matrix multiplication"
+  },
+  "largerRuns": [],
+  "plannedLimits": {
+    "combinedAllocatedGpuHours": 24,
+    "largerAllocatedGpuHours": 14,
+    "primaryAllocatedGpuHours": 10
+  },
+  "primaryLogElapsedAllocatedGpuHours": 0.2669969303561111,
+  "primaryReservedTimeoutAllocatedGpuHours": 1.7,
+  "primaryRuns": [
+    {
+      "allocatedGpuHoursFromLastLog": 0.08895688175666666,
+      "assignedGpuNames": [
+        "Tesla T4",
+        "Tesla T4"
+      ],
+      "conservativeCapAllocatedGpuHours": 1.0,
+      "lastKaggleLogSeconds": 160.122387162,
+      "localLogPath": "/workspace/scratch/lemma-typeahead-gpu-pilot/session.log",
+      "logSha256": "e54516179759d0392145c0cf68140b7efb1cd0b9260906942b662aa867ff5088",
+      "notebook": "mayankyadav9432/lemma-typeahead-gpu-pilot-20261124/1",
+      "providerWallTimeoutSeconds": 1800,
+      "sourceArchiveSha256": "ab92f725de6b3cf62d7c3aa352b56a56a3ea73c7e76f4066ffd0cd0825d98462"
+    },
+    {
+      "allocatedGpuHoursFromLastLog": 0.11575905466388889,
+      "assignedGpuNames": [
+        "Tesla T4",
+        "Tesla T4"
+      ],
+      "conservativeCapAllocatedGpuHours": 0.5,
+      "lastKaggleLogSeconds": 208.366298395,
+      "localLogPath": "/workspace/scratch/lemma-typeahead-gpu-batch-probe-20261124.log",
+      "logSha256": "b8fa89b3643642b5681397f658ad1204631d0dd1334d5da3c3af7330fd8c48a1",
+      "notebook": "mayankyadav9432/lemma-typeahead-gpu-batch-probe-20261124/1",
+      "providerWallTimeoutSeconds": 900,
+      "sourceArchiveSha256": "aba45f27dd357fb947e6385cf47723f10b4b953677d2e040e9fc15e320c590c9"
+    },
+    {
+      "allocatedGpuHoursFromLastLog": 0.06228099393555555,
+      "assignedGpuNames": [
+        "Tesla T4",
+        "Tesla T4"
+      ],
+      "conservativeCapAllocatedGpuHours": 0.2,
+      "lastKaggleLogSeconds": 112.105789084,
+      "localLogPath": "/workspace/scratch/lemma-typeahead-gpu-chunk-probe-20261124.log",
+      "logSha256": "7424bd58cb047a5acbd2d6ac481f2eb4bb671b21fb9b7a60921246a09eca97ef",
+      "notebook": "mayankyadav9432/lemma-typeahead-gpu-chunk-probe-20261124/1",
+      "providerWallTimeoutSeconds": 360,
+      "sourceArchiveSha256": "71ada8e461dbd103df017b3b93ac6f80e3801a8d5b216648472790b84c067cb3"
+    }
+  ],
+  "weeklyKaggleQuotaAsOfProbeGpuHoursUsed": 0.14
+}

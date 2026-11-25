@@ -1,0 +1,144 @@
+{
+  "budgetBytes": 71303168,
+  "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+  "finalReplayStatus": "unqualified",
+  "preparedManifestSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+  "procedureSha256": "d39516604fcc9f3a0d0b5bc21b72847958ca0e014a4d1ce13f2022b6225ab77a",
+  "runtimeSourceFingerprint": "59930a93f202197f6c40c50db3f886c2734f3dd5359630582d0f3755a33717fd",
+  "selected": null,
+  "sharedHeldoutManifestSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+  "sourceCommit": "f8a1a066a482ebaf8c3fa1cb7673155525fc78f3",
+  "status": "fallback-no-native-and-byte-qualified-candidate",
+  "supportReserveBytes": 30408704,
+  "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc",
+  "trainingLedgerSha256": "8c12c05c5a2cf253e9ff8b271656ebf312255aee47ee6b1f0575e24340f291e5",
+  "validationBrowser": "unavailable",
+  "validationCases": 300,
+  "validationCasesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+  "variants": [
+    {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+      "contextSplit": "validation",
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "eligible": false,
+      "metricsSha256": "a3704d583dd4479618408a326778cb88609ed1ed3a11de0f6e363a78df482d1c",
+      "nativeNll": 972.6283299487619,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 117,
+          "contexts": 150,
+          "matches": 145,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 146,
+          "contexts": 150,
+          "matches": 146,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 46,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 50
+        }
+      },
+      "parityPassed": false,
+      "precision": "int8-weight-only",
+      "probabilityDrift": 0.007754653958891378,
+      "quantMeanNll": 3.2392955928673026,
+      "quantNll": 971.7886778601908,
+      "rejectionReasons": [
+        "native-or-layout-parity"
+      ],
+      "trainingDataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8"
+    },
+    {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+      "contextSplit": "validation",
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "eligible": false,
+      "metricsSha256": "8264dc5cabc2bdc8f41198bb9886e630c9c1cf50af43138fdd2addfed45fa633",
+      "nativeNll": 972.6283299487619,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 81,
+          "contexts": 150,
+          "matches": 106,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 108,
+          "contexts": 150,
+          "matches": 108,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 31,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 44
+        }
+      },
+      "parityPassed": false,
+      "precision": "int4",
+      "probabilityDrift": 0.08369118854764158,
+      "quantMeanNll": 3.2367211595475793,
+      "quantNll": 971.0163478642738,
+      "rejectionReasons": [
+        "native-or-layout-parity"
+      ],
+      "trainingDataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8"
+    },
+    {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+      "contextSplit": "validation",
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "eligible": false,
+      "metricsSha256": "fcd85124379603e2fd33549ee5655d197edd6b6b1f46242ca1059352d25f4f05",
+      "nativeNll": 972.6283299487619,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 91,
+          "contexts": 150,
+          "matches": 115,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 117,
+          "contexts": 150,
+          "matches": 117,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 32,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 44
+        }
+      },
+      "parityPassed": false,
+      "precision": "int4-int8-head",
+      "probabilityDrift": 0.05468935709079325,
+      "quantMeanNll": 3.248234823535175,
+      "quantNll": 974.4704470605524,
+      "rejectionReasons": [
+        "native-or-layout-parity"
+      ],
+      "trainingDataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8"
+    }
+  ],
+  "version": 1
+}

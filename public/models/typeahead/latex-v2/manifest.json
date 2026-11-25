@@ -1,0 +1,43 @@
+{
+  "bytes": 2097152,
+  "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+  "file": "model.bin",
+  "kind": "latex",
+  "metrics": {
+    "discounts": {
+      "2": [
+        0.5528642513467945,
+        1.009695193669625,
+        1.4977625702776567
+      ],
+      "3": [
+        0.6383824097632813,
+        1.0616156957247618,
+        1.5044872908870068
+      ],
+      "4": [
+        0.5583509750865732,
+        1.1901903552134696,
+        1.4873984467885164
+      ]
+    },
+    "maxRowMassError": 2.9563886005945506e-08,
+    "targetTrainTokens": 50000000,
+    "trainTokens": 50000004,
+    "validation": {
+      "outOfVocabulary": 41593,
+      "perplexity": 8.643055083627216,
+      "referencePerplexity": 8.503189718608352,
+      "targets": 8982898,
+      "wordOovRate": 0.004882997885752196,
+      "wordTargets": 8517923
+    }
+  },
+  "order": 4,
+  "pruning": "count",
+  "sha256": "79eff0d5440b999e88520d6b472bfa95016786b7301d8f781c2e928a2304a3e4",
+  "subject": null,
+  "version": 2,
+  "vocabSha256": "6edef82683a8c6f2e23450a0ef250254c5dd3ae6d1a7b2b77637f8667d894c0f",
+  "vocabSize": 1505
+}

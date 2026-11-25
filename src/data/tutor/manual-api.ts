@@ -1,5 +1,6 @@
 import type {TutorComposerDraft,TutorContextSelection,TutorTurn} from './turn-model'
 import type {QuestionnaireAnswers,TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
+import type {TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids'
 
 type PendingTurn=Extract<TutorTurn,{status:'awaiting-tutor'}>
 type CompletedTurn=Extract<TutorTurn,{status:'completed'}>
@@ -64,7 +65,10 @@ export type ManualTutor={
  questionnaires?:TutorQuestionnaireApi
  /** N228: more messages on the turn that is waiting for the tutor. */
  followups?:TutorFollowUpApi
+ /** N234: the answer aids the tutor set on its replies (wording, terms, symbols, withheld terms). */
+ answerAids?:TutorAnswerAidApi
 }
+export type TutorAnswerAidApi={list:()=>Promise<readonly TutorAnswerAid[]>}
 export type TutorFollowUp={id:string;turnId:string;body:string;createdAt:string;seen:boolean}
 export type TutorFollowUpApi={
  list:()=>Promise<readonly TutorFollowUp[]>

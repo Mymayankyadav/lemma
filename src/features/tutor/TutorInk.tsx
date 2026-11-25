@@ -1,4 +1,4 @@
-import {useEffect,useId,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
+import {memo,useCallback,useEffect,useId,useLayoutEffect,useMemo,useRef,useState,type CSSProperties,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {ArrowUp,Camera,ChevronDown,ChevronUp,Ellipsis,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,ScanText,Trash2,Undo2,Maximize2,Minimize2} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
@@ -21,11 +21,11 @@ export function useTutorInk(scope:TutorInkScope,enabled:boolean) {
   const [error,setError] = useState('');
   const latest=useRef(openingInk), pending=useRef<Promise<unknown>>(Promise.resolve());
   const mounted=useRef<{scope:TutorInkScope}|null>(null),readAttempt=useRef(0);
-  function publish(value:InkRecovery) {
+  const publish=useCallback((value:InkRecovery)=>{
     latest.current=value;
     setRecovery(value);
-  }
-  function retry() {
+  },[]);
+  const retry=useCallback(()=>{
     const binding=mounted.current;
     if(!enabled||binding?.scope!==scope)return;
     const attempt=++readAttempt.current;
@@ -34,15 +34,15 @@ export function useTutorInk(scope:TutorInkScope,enabled:boolean) {
     void pending.current.catch(()=>{}).then(()=>current()?readInkDraft(scope):undefined).then(draft=>{
       if(current()&&draft)publish({draft,status:'ready'});
     }).catch(()=>{if(current())publish({...latest.current,status:'failed'});});
-  }
+  },[enabled,publish,scope]);
   useLayoutEffect(()=>{
     if(!enabled)return;
     mounted.current={scope};
     latest.current=openingInk;
     retry();
     return ()=>{mounted.current=null;};
-  },[scope,enabled]);
-  async function update(change:InkDraft|((draft:InkDraft)=>InkDraft)) {
+  },[scope,enabled,retry]);
+  const update=useCallback(async (change:InkDraft|((draft:InkDraft)=>InkDraft))=>{
     const binding=mounted.current, current=latest.current;
     assertTutorInkScope(scope);
     if(!enabled||binding?.scope!==scope||current.status!=='ready')throw new Error('Reopen the saved images first.');
@@ -57,17 +57,22 @@ export function useTutorInk(scope:TutorInkScope,enabled:boolean) {
       if(mounted.current===binding)setError('The drawing is open here. This device could not save it.');
       throw error;
     }
-  }
-  const snapshot=()=>enabled&&mounted.current?.scope===scope?latest.current:openingInk;
-  function continueWithText() {
+  },[enabled,publish,scope]);
+  const snapshot=useCallback(()=>enabled&&mounted.current?.scope===scope?latest.current:openingInk,[enabled,scope]);
+  const continueWithText=useCallback(()=>{
     const current=snapshot();
     if(current.status==='failed')publish({...current,textOnly:true});
-  }
-  return {...recovery,snapshot,retry,continueWithText,update,error,ready:recovery.status==='ready'};
+  },[publish,snapshot]);
+  return useMemo(()=>({...recovery,snapshot,retry,continueWithText,update,error,ready:recovery.status==='ready'}),
+    [recovery,snapshot,retry,continueWithText,update,error]);
 }
 export type TutorInkState=ReturnType<typeof useTutorInk>;
 
-export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,onInsertImage,onCloseDrawing,onInsertEquation,leading,
+export function needsTutorInkMigration(draft?:InkDraft):boolean {
+  return Boolean(draft&&!draft.inlineImages&&(draft.photos.length||draft.strokes.length));
+}
+
+export const TutorInkTray=memo(function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,onInsertImage,onCloseDrawing,onInsertEquation,leading,
   onMigrateImages,editingImageId,referencedImageIds,canInsertImage,canMigrate,answerLength}: {
   ink:TutorInkState;shown:boolean;photoActions:HTMLElement|null;photoDisabled:boolean;onPickPhoto:()=>void;
   onInsertImage:(id:string,replacesId?:string)=>boolean;onCloseDrawing:()=>void;
@@ -114,7 +119,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
   insertable.current=canInsertImage;
   const migrateImages=useRef(onMigrateImages);
   migrateImages.current=onMigrateImages;
-  const legacy=!draft.inlineImages&&Boolean(draft.photos.length||draft.strokes.length);
+  const legacy=needsTutorInkMigration(draft);
   // N221 (Owner): handwritten equation recognition (Pix2Text MFR, on this device after a one-time download).
   type Reading={phase:'ask'|'download'|'reading'|'result'|'error';loaded?:number;latex?:string;message?:string};
   const [reading,setReading]=useState<Reading|null>(null);
@@ -178,6 +183,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     if(lastMigration.current?.draft===draft&&lastMigration.current.answerLength===answerLength)return;
     lastMigration.current={draft,answerLength};
     migration.current=true;
+    const insertMigrated=migrateImages.current;
     const migrate=async()=>{
       const drawingId=draft.drawingId??crypto.randomUUID();
       const savedDrawing=draft.photos.find(image=>image.id===drawingId);
@@ -202,7 +208,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
       }
       if(!accepted)return;
       lastMigration.current={draft:staged,answerLength};
-      if(!migrateImages.current(staged.photos.map(image=>image.id))){
+      if(!insertMigrated(staged.photos.map(image=>image.id))){
         setError('Shorten the answer to restore your images.');
         return;
       }
@@ -316,7 +322,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     setToolsOpen(false);
     onCloseDrawing();
   }
-  const pad=<section className="tutor-scratchpad" aria-label="Scratch pad" data-fullscreen={fullscreen||undefined}
+  const pad=shown&&(!editingAsset||editingAsset.ink)&&<section className="tutor-scratchpad" aria-label="Scratch pad" data-fullscreen={fullscreen||undefined}
     style={{'--scratch-height':height===undefined?undefined:height+'px'} as CSSProperties}>
     <div className="tutor-ink-tools" role="group" aria-label="Drawing tools">
       {leading}
@@ -382,7 +388,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     {!editingImageId&&!canInsertImage&&<p role="status" className="composer-status">Shorten the answer to insert another image.</p>}
   </section>;
   return <>
-    {shown&&(!editingAsset||editingAsset.ink)&&<FullscreenPaper active={fullscreen} onExit={()=>{flushDot();setFullscreen(false);}} label="Scratch pad, full screen">{pad}</FullscreenPaper>}
+    {pad&&<FullscreenPaper active={fullscreen} onExit={()=>{flushDot();setFullscreen(false);}} label="Scratch pad, full screen">{pad}</FullscreenPaper>}
     <Sheet open={Boolean(reading)&&shown} onClose={closeReading} title="Recognize equation">
       <div className="tutor-equation-reading" aria-live="polite">
         {reading?.phase==='ask'&&<>
@@ -421,6 +427,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
       </div>
     </Sheet>
     <Sheet open={toolsOpen&&shown} onClose={()=>setToolsOpen(false)} title="Scratch pad actions">
+      {toolsOpen&&shown&&<>
       <div className="tutor-session-actions">
         <Button small disabled={!canDraw||preparing||pendingDot||!redo.length} onClick={()=>{redoStroke();setToolsOpen(false);}}><Redo2 aria-hidden="true"/>Redo stroke</Button>
         <Button small disabled={!canDraw||preparing||(!history.strokes.length&&!pendingDot)} onClick={()=>{const current=flushDot();saveInk(clearPadInk(current));setToolsOpen(false);}}><Trash2 aria-hidden="true"/>Clear scratch pad</Button>
@@ -436,6 +443,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
         <button className="v7-filter-chip" type="button" aria-pressed={working.accent} disabled={!canDraw||preparing} onClick={()=>editWorking({accent:!working.accent})}>Accent</button>
       </div>
       {count>=TUTOR_ATTACHMENT_COUNT&&<p>Up to three images per answer.</p>}
+      </>}
     </Sheet>
     {shown&&preview&&editingAsset&&!editingAsset.ink&&<Sheet open title={editingAsset.kind==='photo'?'Photo':'Drawing'} onClose={onCloseDrawing}>
       <div className="tutor-image-view"><img src={preview} alt={editingAsset.kind==='photo'?'Photo':'Drawing'}/></div>
@@ -454,7 +462,7 @@ export function TutorInkTray({ink,shown,photoActions,photoDisabled,onPickPhoto,o
     </>,photoActions)}
     {(error||ink.error)&&<p role="alert" className="composer-status">{error||ink.error}</p>}
   </>;
-}
+});
 
 export function TutorImage({owner,attachment,label:customLabel}: {owner:string;attachment:TutorAttachment;label?:string}) {
   const [src,setSrc]=useState(''),[open,setOpen]=useState(false),[error,setError]=useState(false);

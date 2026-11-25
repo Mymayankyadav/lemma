@@ -1,0 +1,44 @@
+{
+  "assetSetVersion": "latex-v1",
+  "file": {
+    "path": "ngram.bin",
+    "bytes": 444412,
+    "sha256": "feeb995115c6f8aa7a0f6ae701b7d9ebc8e1e82b972ed3aa6d87d550c10f0c8d"
+  },
+  "format": "LMN1 (see scripts/typeahead/kn_build.py)",
+  "sources": [
+    {
+      "id": "proof-pile-dev",
+      "file": "dev/proofpile_dev.jsonl.gz",
+      "sha256": "9a33bde2feabb2421936bbde65ab15692ba814812bb2cf0e82a77b35e07e0b9b",
+      "url": "https://huggingface.co/datasets/hoskinson-center/proof-pile",
+      "license": "dataset card: Apache-2.0; its Math StackExchange text is CC BY-SA (see ATTRIBUTION.md)"
+    }
+  ],
+  "build": {
+    "command": "python3 scripts/typeahead/build-latex.py --input proofpile_dev.jsonl.gz",
+    "vocabulary": 1115,
+    "minTrigramCount": 2,
+    "minBigramContinuation": 2,
+    "bigrams": 13841,
+    "trigramContexts": 16360,
+    "trigrams": 80581,
+    "tokens": 6954726,
+    "trigramTypes": 133437,
+    "D3": [
+      0.5534311980399138,
+      1.1477808355810228,
+      1.5234419233000511
+    ],
+    "D2": [
+      0.5887781856318826,
+      0.9598402214047308,
+      1.5159423818200275
+    ],
+    "heldOutPerplexity": 9.21,
+    "quantisation": {
+      "probability": 0.07,
+      "backoff": 0.1
+    }
+  }
+}

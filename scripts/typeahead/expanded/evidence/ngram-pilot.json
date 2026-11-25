@@ -1,0 +1,463 @@
+{
+  "comparisons": [
+    [
+      "ngram3-count",
+      {
+        "bytes": 20971520,
+        "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+        "file": "model.bin",
+        "kind": "ngram",
+        "metrics": {
+          "discounts": {
+            "2": [
+              0.7207912816868041,
+              1.0806966319946127,
+              1.378593649681536
+            ],
+            "3": [
+              0.7812182507892718,
+              1.1377191922586856,
+              1.371850669402051
+            ]
+          },
+          "maxRowMassError": 3.804682902064371e-08,
+          "trainTokens": 8394439,
+          "validation": {
+            "outOfVocabulary": 774,
+            "perplexity": 107.314940890332,
+            "referencePerplexity": 106.50204035155934,
+            "targets": 155670,
+            "wordOovRate": 0.00526534194110164,
+            "wordTargets": 146999
+          }
+        },
+        "order": 3,
+        "pruning": "count",
+        "sha256": "42ea9ebc55dc80e46e6881d52e0bccde4d29c1ad97a0c3d9e54c0517713ccc1a",
+        "subject": null,
+        "version": 2,
+        "vocabSha256": "ed461a7e7014ef3c70a63090ac6e32ebddad5ad9e73b523fbaff6a199f9065c9",
+        "vocabSize": 51815
+      }
+    ],
+    [
+      "ngram3-entropy",
+      {
+        "bytes": 20971520,
+        "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+        "file": "model.bin",
+        "kind": "ngram",
+        "metrics": {
+          "discounts": {
+            "2": [
+              0.7207912816868041,
+              1.0806966319946127,
+              1.378593649681536
+            ],
+            "3": [
+              0.7812182507892718,
+              1.1377191922586856,
+              1.371850669402051
+            ]
+          },
+          "maxRowMassError": 2.9789392286261318e-08,
+          "trainTokens": 8394439,
+          "validation": {
+            "outOfVocabulary": 774,
+            "perplexity": 137.33998957227166,
+            "referencePerplexity": 106.50204035155934,
+            "targets": 155670,
+            "wordOovRate": 0.00526534194110164,
+            "wordTargets": 146999
+          }
+        },
+        "order": 3,
+        "pruning": "entropy",
+        "sha256": "ca54e8d0a04e01ef599c284352516b411c80c429039c133462a347bd8e698b71",
+        "subject": null,
+        "version": 2,
+        "vocabSha256": "ed461a7e7014ef3c70a63090ac6e32ebddad5ad9e73b523fbaff6a199f9065c9",
+        "vocabSize": 51815
+      }
+    ],
+    [
+      "ngram4-count",
+      {
+        "bytes": 20971516,
+        "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+        "file": "model.bin",
+        "kind": "ngram",
+        "metrics": {
+          "discounts": {
+            "2": [
+              0.7207912816868041,
+              1.0806966319946127,
+              1.378593649681536
+            ],
+            "3": [
+              0.816963792320845,
+              1.1358186222408209,
+              1.3835281753014843
+            ],
+            "4": [
+              0.8500242681131482,
+              1.2082375367824405,
+              1.359356113886172
+            ]
+          },
+          "maxRowMassError": 4.9823930647896475e-08,
+          "trainTokens": 8394439,
+          "validation": {
+            "outOfVocabulary": 774,
+            "perplexity": 102.4262688092959,
+            "referencePerplexity": 100.8241117098652,
+            "targets": 155670,
+            "wordOovRate": 0.00526534194110164,
+            "wordTargets": 146999
+          }
+        },
+        "order": 4,
+        "pruning": "count",
+        "sha256": "2764e514f1cfed0ebe213f3ba0ae18a980236fbfa1e3db10e3b82e25fd132e6a",
+        "subject": null,
+        "version": 2,
+        "vocabSha256": "ed461a7e7014ef3c70a63090ac6e32ebddad5ad9e73b523fbaff6a199f9065c9",
+        "vocabSize": 51815
+      }
+    ],
+    [
+      "ngram4-entropy",
+      {
+        "bytes": 20971516,
+        "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+        "file": "model.bin",
+        "kind": "ngram",
+        "metrics": {
+          "discounts": {
+            "2": [
+              0.7207912816868041,
+              1.0806966319946127,
+              1.378593649681536
+            ],
+            "3": [
+              0.816963792320845,
+              1.1358186222408209,
+              1.3835281753014843
+            ],
+            "4": [
+              0.8500242681131482,
+              1.2082375367824405,
+              1.359356113886172
+            ]
+          },
+          "maxRowMassError": 2.9799735568047936e-08,
+          "trainTokens": 8394439,
+          "validation": {
+            "outOfVocabulary": 774,
+            "perplexity": 156.81656774247259,
+            "referencePerplexity": 100.8241117098652,
+            "targets": 155670,
+            "wordOovRate": 0.00526534194110164,
+            "wordTargets": 146999
+          }
+        },
+        "order": 4,
+        "pruning": "entropy",
+        "sha256": "1073fb1f32ca931599de85ab1b39eef1f8c4a86316aeccd4b65c20c068686a01",
+        "subject": null,
+        "version": 2,
+        "vocabSha256": "ed461a7e7014ef3c70a63090ac6e32ebddad5ad9e73b523fbaff6a199f9065c9",
+        "vocabSize": 51815
+      }
+    ],
+    [
+      "ngram5-count",
+      {
+        "bytes": 20971516,
+        "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+        "file": "model.bin",
+        "kind": "ngram",
+        "metrics": {
+          "discounts": {
+            "2": [
+              0.7207912816868041,
+              1.0806966319946127,
+              1.378593649681536
+            ],
+            "3": [
+              0.816963792320845,
+              1.1358186222408209,
+              1.3835281753014843
+            ],
+            "4": [
+              0.8908440276752152,
+              1.220236906717788,
+              1.4027741671888958
+            ],
+            "5": [
+              0.8963645441875264,
+              1.2770162460005365,
+              1.3602144333450303
+            ]
+          },
+          "maxRowMassError": 5.23555035991663e-08,
+          "trainTokens": 8394439,
+          "validation": {
+            "outOfVocabulary": 774,
+            "perplexity": 102.19544323853734,
+            "referencePerplexity": 99.82789372669603,
+            "targets": 155670,
+            "wordOovRate": 0.00526534194110164,
+            "wordTargets": 146999
+          }
+        },
+        "order": 5,
+        "pruning": "count",
+        "sha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56",
+        "subject": null,
+        "version": 2,
+        "vocabSha256": "ed461a7e7014ef3c70a63090ac6e32ebddad5ad9e73b523fbaff6a199f9065c9",
+        "vocabSize": 51815
+      }
+    ],
+    [
+      "ngram5-entropy",
+      {
+        "bytes": 20971520,
+        "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+        "file": "model.bin",
+        "kind": "ngram",
+        "metrics": {
+          "discounts": {
+            "2": [
+              0.7207912816868041,
+              1.0806966319946127,
+              1.378593649681536
+            ],
+            "3": [
+              0.816963792320845,
+              1.1358186222408209,
+              1.3835281753014843
+            ],
+            "4": [
+              0.8908440276752152,
+              1.220236906717788,
+              1.4027741671888958
+            ],
+            "5": [
+              0.8963645441875264,
+              1.2770162460005365,
+              1.3602144333450303
+            ]
+          },
+          "maxRowMassError": 2.9801727530198718e-08,
+          "trainTokens": 8394439,
+          "validation": {
+            "outOfVocabulary": 774,
+            "perplexity": 158.4771575077801,
+            "referencePerplexity": 99.82789372669603,
+            "targets": 155670,
+            "wordOovRate": 0.00526534194110164,
+            "wordTargets": 146999
+          }
+        },
+        "order": 5,
+        "pruning": "entropy",
+        "sha256": "647946ccc65cae7a82a53abf0b8ce4ab75b11e893f7c3a138e04a7cbbee65248",
+        "subject": null,
+        "version": 2,
+        "vocabSha256": "ed461a7e7014ef3c70a63090ac6e32ebddad5ad9e73b523fbaff6a199f9065c9",
+        "vocabSize": 51815
+      }
+    ]
+  ],
+  "note": "Pilot entropy scores used the pre-frequency-weighting implementation; final code and large-pool comparisons use empirical history weighting.",
+  "notebook": "mayankyadav9432/lemma-typeahead-ngram-pilot-20261124/1",
+  "retrieved": {
+    "latex-v2": {
+      "bytes": 2097148,
+      "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+      "file": "model.bin",
+      "kind": "latex",
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.5887058823529412,
+            0.9941257235159511,
+            1.443083193277311
+          ],
+          "3": [
+            0.660394569895594,
+            1.038338303839767,
+            1.4478501707655622
+          ],
+          "4": [
+            0.588675718189131,
+            1.165506725379398,
+            1.530678033152598
+          ]
+        },
+        "maxRowMassError": 3.355624311751626e-08,
+        "trainTokens": 6885031,
+        "validation": {
+          "outOfVocabulary": 66,
+          "perplexity": 8.015244603496647,
+          "referencePerplexity": 7.986508555245016,
+          "targets": 139683,
+          "wordOovRate": 0.0005099163273662822,
+          "wordTargets": 129433
+        }
+      },
+      "order": 4,
+      "pruning": "count",
+      "sha256": "60c18c3da95b0dc3e1763d24684795bb07c02a0ff5d87beb4cf07e4f932a1915",
+      "subject": null,
+      "version": 2,
+      "vocabSha256": "4c65042d97bd9d7dced36ff6f6bbed2b555fa4441d44eac3df50ea439bf09b36",
+      "vocabSize": 1117
+    },
+    "ngram5-count": {
+      "bytes": 20971516,
+      "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+      "file": "model.bin",
+      "kind": "ngram",
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.7207912816868041,
+            1.0806966319946127,
+            1.378593649681536
+          ],
+          "3": [
+            0.816963792320845,
+            1.1358186222408209,
+            1.3835281753014843
+          ],
+          "4": [
+            0.8908440276752152,
+            1.220236906717788,
+            1.4027741671888958
+          ],
+          "5": [
+            0.8963645441875264,
+            1.2770162460005365,
+            1.3602144333450303
+          ]
+        },
+        "maxRowMassError": 5.23555035991663e-08,
+        "trainTokens": 8394439,
+        "validation": {
+          "outOfVocabulary": 774,
+          "perplexity": 102.19544323853734,
+          "referencePerplexity": 99.82789372669603,
+          "targets": 155670,
+          "wordOovRate": 0.00526534194110164,
+          "wordTargets": 146999
+        }
+      },
+      "order": 5,
+      "pruning": "count",
+      "sha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56",
+      "subject": null,
+      "version": 2,
+      "vocabSha256": "ed461a7e7014ef3c70a63090ac6e32ebddad5ad9e73b523fbaff6a199f9065c9",
+      "vocabSize": 51815
+    },
+    "subject-linear-algebra": {
+      "bytes": 4194300,
+      "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+      "file": "model.bin",
+      "kind": "ngram",
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.7342284612344141,
+            1.0931754031218568,
+            1.4452199940756971
+          ],
+          "3": [
+            0.8375548506653612,
+            1.163044473020267,
+            1.4141612031853743
+          ],
+          "4": [
+            0.9096837464655769,
+            1.2649784869739271,
+            1.47174958644517
+          ],
+          "5": [
+            0.9124506902703372,
+            1.301655545623822,
+            1.4007353168173515
+          ]
+        },
+        "maxRowMassError": 3.606114962195761e-08,
+        "trainTokens": 920560,
+        "validation": {
+          "outOfVocabulary": 75,
+          "perplexity": 122.20908904987706,
+          "referencePerplexity": 118.02665921330039,
+          "targets": 20868,
+          "wordOovRate": 0.00380517503805175,
+          "wordTargets": 19710
+        }
+      },
+      "order": 5,
+      "pruning": "count",
+      "sha256": "b698fc582f1a7c3e3c5b9d23143607298c50bb80acc591659f83034e0e9eaaa0",
+      "subject": "linear-algebra",
+      "version": 2,
+      "vocabSha256": "ed461a7e7014ef3c70a63090ac6e32ebddad5ad9e73b523fbaff6a199f9065c9",
+      "vocabSize": 51815
+    },
+    "subject-topology": {
+      "bytes": 4194300,
+      "corpusSha256": "5597efe751aa1a695848e4402d9e6774457500eb6bb5282ec3de78f6c57dd09c",
+      "file": "model.bin",
+      "kind": "ngram",
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.7420073049782414,
+            1.0994938804999816,
+            1.3720841143954094
+          ],
+          "3": [
+            0.8455880133989196,
+            1.176267464154607,
+            1.45641381604639
+          ],
+          "4": [
+            0.9164676246075834,
+            1.2878020433014346,
+            1.507657948966882
+          ],
+          "5": [
+            0.9155255286821409,
+            1.3225214653988435,
+            1.4641172281957022
+          ]
+        },
+        "maxRowMassError": 2.9789795963353072e-08,
+        "trainTokens": 491210,
+        "validation": {
+          "outOfVocabulary": 46,
+          "perplexity": 131.2411164934823,
+          "referencePerplexity": 129.91428970483963,
+          "targets": 8191,
+          "wordOovRate": 0.005936249838688863,
+          "wordTargets": 7749
+        }
+      },
+      "order": 5,
+      "pruning": "count",
+      "sha256": "88dfe0b7999dad5d8d254ded55510c253b56661399bf33e5b7818a0997bbe8a8",
+      "subject": "topology",
+      "version": 2,
+      "vocabSha256": "ed461a7e7014ef3c70a63090ac6e32ebddad5ad9e73b523fbaff6a199f9065c9",
+      "vocabSize": 51815
+    }
+  },
+  "selected": "ngram5-count",
+  "status": "diagnostic"
+}

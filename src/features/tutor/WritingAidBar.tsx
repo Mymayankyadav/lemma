@@ -2,6 +2,8 @@ import {useRef, type PointerEvent} from 'react';
 import {ArrowRight, RefreshCw, Undo2, X} from 'lucide-react';
 import type {WritingAidProposal} from './writingAid';
 import type {SymbolOption} from './input/latexShortcuts';
+import {SYMBOL_CATALOG} from './input/symbolCatalog';
+import type {LatexSuggestion} from './writingAid/latexGrammar';
 import './writing-aid.css';
 
 const holdCaret = (event: PointerEvent) => event.preventDefault();
@@ -26,7 +28,8 @@ export function WritingAidWords({words, disabled, onAccept, hidden}: Pick<Writin
   if (hidden) return null;
   return <div className="sugg writing-aid-words" role="group" aria-label="Word suggestions">
     {slots.map((proposal, index) => <button type="button" key={index} data-writing-aid-word={index}
-      disabled={disabled || !proposal} aria-label={proposal ? 'Insert ' + proposal.label : 'No suggestion'}
+      disabled={disabled || !proposal} data-typeahead-insert={proposal?.insert}
+      data-typeahead-kind={proposal ? 'word' : undefined} data-typeahead-start={proposal?.start} data-typeahead-end={proposal?.end} aria-label={proposal ? 'Insert ' + proposal.label : 'No suggestion'}
       onPointerDown={event => {holdCaret(event); pressed.current = proposal ?? null;}}
       onPointerCancel={() => {pressed.current = null;}}
       onClick={event => {const chosen = event.detail ? pressed.current : proposal; pressed.current = null; if (chosen) onAccept(chosen);}}
@@ -51,6 +54,30 @@ export function SymbolWords({options, disabled, onAccept}: {
   </div>;
 }
 
+const GLYPH_OF = new Map(SYMBOL_CATALOG.map(symbol => [symbol.tex, symbol.glyph]));
+
+/** N235: the next LaTeX tokens inside $…$ (best in the middle). A token with a symbol shows its glyph, else its LaTeX. */
+export function LatexWords({options, disabled, onAccept, onPress}: {
+  options: readonly LatexSuggestion[]; disabled: boolean; onAccept: (option: LatexSuggestion) => void;
+  onPress?: (option: LatexSuggestion) => void;
+}) {
+  const slots = [options[1], options[0], options[2]];
+  return <div className="sugg latex-words" role="group" aria-label="LaTeX suggestions">
+    {slots.map((option, index) => {
+      const glyph = option && GLYPH_OF.get(option.label);
+      return <button type="button" key={index} disabled={disabled || !option}
+        aria-label={option ? 'Insert ' + option.label : 'No suggestion'} title={option?.label}
+        className={index === 1 && option ? 'preferred' : ''} onPointerDown={event => {
+          holdCaret(event);
+          if (option) onPress?.(option);
+        }} onClick={() => {if (option) onAccept(option);}}>
+        {option ? glyph ? <span className="symbol-glyph">{glyph}</span> : <code className="latex-token">{option.label}</code>
+          : <span aria-hidden="true" className="writing-aid-empty">·</span>}
+      </button>;
+    })}
+  </div>;
+}
+
 function Choice({proposal, disabled, onAccept, onRefresh}: {
   proposal: WritingAidProposal; disabled: boolean; onAccept: WritingAidBarProps['onAccept']; onRefresh: WritingAidBarProps['onRefresh'];
 }) {
@@ -58,7 +85,7 @@ function Choice({proposal, disabled, onAccept, onRefresh}: {
   const replacement = proposal.kind === 'replace' || proposal.kind === 'correction';
   return <div className="writing-aid-floating-choice">
     <button type="button" className="writing-aid-preview" disabled={disabled}
-      data-writing-aid-edit={replacement ? '' : undefined} data-writing-aid-ghost={!replacement ? '' : undefined}
+      data-typeahead-insert={replacement ? undefined : proposal.insert} data-writing-aid-edit={replacement ? '' : undefined} data-writing-aid-ghost={!replacement ? '' : undefined}
       aria-label={replacement ? 'Replace ' + proposal.before + ' with ' + proposal.label : 'Accept continuation ' + proposal.label}
       onPointerDown={event => {holdCaret(event); pressed.current = proposal;}}
       onPointerCancel={() => {pressed.current = null;}}

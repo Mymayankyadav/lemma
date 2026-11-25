@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "ngramSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+  "coefficients": [
+    -1.372540197915896,
+    2.0,
+    2.0,
+    0.6434084570996421,
+    0.0,
+    0.0,
+    -0.41234476595262526,
+    -0.07646539464538764,
+    -0.15441117168328755,
+    0.0
+  ],
+  "outsideIntercept": -0.5793874381160268,
+  "evidence": {
+    "training": {
+      "zeroScoreCandidates": 0,
+      "opportunities": 5684,
+      "empty": 1320,
+      "supported": 2767
+    },
+    "validation": {
+      "zeroScoreCandidates": 2,
+      "opportunities": 2944,
+      "empty": 648,
+      "supported": 1462
+    },
+    "oldNll": 2.2394391128131885,
+    "newNll": 1.7823222319899785,
+    "oldPoolTop3": 955,
+    "newPoolTop3": 961,
+    "selected": true,
+    "fitCapture": "a6fe6893eabab5003b0ab0a88bc81c7a5eb839420626581f6b2d0ad4bab4664a",
+    "validationCapture": "935ce4397b6049e4da8c9a5c2cf1cac3417852343c1459b68f509c9b7ceba370"
+  }
+}

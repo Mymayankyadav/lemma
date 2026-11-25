@@ -1,0 +1,276 @@
+{
+  "data": {
+    "adaptation": {
+      "1024": {
+        "calibration": {
+          "documents": 2639,
+          "partialRetokenizationCases": 256,
+          "targets": 1159147,
+          "tokens": 3174797,
+          "windows": 4530
+        },
+        "test": {
+          "documents": 2764,
+          "partialRetokenizationCases": 256,
+          "targets": 1227045,
+          "tokens": 3343533,
+          "windows": 4743
+        },
+        "train": {
+          "documents": 41233,
+          "targets": 18084400,
+          "tokens": 49121355,
+          "windows": 70144
+        },
+        "validation": {
+          "documents": 2768,
+          "partialRetokenizationCases": 256,
+          "targets": 1197153,
+          "tokens": 3235302,
+          "windows": 4647
+        }
+      },
+      "512": {
+        "calibration": {
+          "documents": 2639,
+          "partialRetokenizationCases": 256,
+          "targets": 1159147,
+          "tokens": 3728368,
+          "windows": 8353
+        },
+        "test": {
+          "documents": 2764,
+          "partialRetokenizationCases": 256,
+          "targets": 1227045,
+          "tokens": 3940577,
+          "windows": 8818
+        },
+        "train": {
+          "documents": 41233,
+          "targets": 18084400,
+          "tokens": 58151366,
+          "windows": 130367
+        },
+        "validation": {
+          "documents": 2768,
+          "partialRetokenizationCases": 256,
+          "targets": 1197153,
+          "tokens": 3836089,
+          "windows": 8618
+        }
+      }
+    },
+    "corpus": "b009fb88ac310a4aaf82d7aa3bb3d6bd1d56af753add612abdca707467e84d40",
+    "counts": {
+      "calibration": {
+        "documents": 7162,
+        "registers": {
+          "explanation": 9715094,
+          "learner": 2221128,
+          "proof": 6669649
+        },
+        "subjects": {
+          "algebra": 1484206,
+          "analysis": 3648211,
+          "geometry": 2456896,
+          "linear-algebra": 2067532,
+          "number-theory": 1077409,
+          "other": 4341442,
+          "probability": 2925009,
+          "topology": 605166
+        },
+        "tokens": 18605871
+      },
+      "test": {
+        "documents": 7310,
+        "registers": {
+          "explanation": 10533806,
+          "learner": 2340063,
+          "proof": 6746070
+        },
+        "subjects": {
+          "algebra": 1875551,
+          "analysis": 2856293,
+          "geometry": 2279237,
+          "linear-algebra": 2534948,
+          "number-theory": 1510119,
+          "other": 4479027,
+          "probability": 3430976,
+          "topology": 653788
+        },
+        "tokens": 19619939
+      },
+      "train": {
+        "documents": 122872,
+        "registers": {
+          "explanation": 179135581,
+          "learner": 34781275,
+          "proof": 98770150
+        },
+        "subjects": {
+          "algebra": 22367730,
+          "analysis": 56054072,
+          "geometry": 41564860,
+          "linear-algebra": 35924683,
+          "number-theory": 18517152,
+          "other": 76183946,
+          "probability": 53034587,
+          "topology": 9039976
+        },
+        "tokens": 312687006
+      },
+      "validation": {
+        "documents": 7274,
+        "registers": {
+          "explanation": 9881753,
+          "learner": 2308563,
+          "proof": 5595930
+        },
+        "subjects": {
+          "algebra": 1326341,
+          "analysis": 2890835,
+          "geometry": 1828049,
+          "linear-algebra": 2258671,
+          "number-theory": 1348083,
+          "other": 4452898,
+          "probability": 3211412,
+          "topology": 469957
+        },
+        "tokens": 17786246
+      }
+    },
+    "files": {
+      "adapt-1024-calibration.index": {
+        "bytes": 108720,
+        "sha256": "23ded606314435b06aeb9332a6f00416489fa096534f54a4a373ad9ecb5ef030"
+      },
+      "adapt-1024-calibration.partial.jsonl": {
+        "bytes": 1351004,
+        "sha256": "7c7a4022dc321705ae821e31fe6dfdb3e7f6468a4732a4e6327e04660bd319b0"
+      },
+      "adapt-1024-calibration.tokens": {
+        "bytes": 6349594,
+        "sha256": "979216811d2c39a5a0c068c99a4bebdbab41e54a03fb9e2501a259869c9e7701"
+      },
+      "adapt-1024-test.index": {
+        "bytes": 113832,
+        "sha256": "f624784978cac46c0906e8422d5dc95807f577627a11e760a39cdb0d23342fa0"
+      },
+      "adapt-1024-test.partial.jsonl": {
+        "bytes": 1375785,
+        "sha256": "f963b3561994370fb5704dd55ccd76c5a21dc4a115d67239c9749cc24182f3bc"
+      },
+      "adapt-1024-test.tokens": {
+        "bytes": 6687066,
+        "sha256": "ca3f3d80eb1ba83fe4de4fed3bb57dabbd86c9a7cfe88b86ae9c501d17e8d8ea"
+      },
+      "adapt-1024-train.index": {
+        "bytes": 1683456,
+        "sha256": "7ecd5344308106f51ec2339e5e50a44baf09f86a2c87e7924fc7d6bd352a6779"
+      },
+      "adapt-1024-train.tokens": {
+        "bytes": 98242710,
+        "sha256": "23a8eb9901cdd95c0d6bf1062bf76126dc46ecf05d41833d210af45cf062462f"
+      },
+      "adapt-1024-validation.index": {
+        "bytes": 111528,
+        "sha256": "6b773d7eb27fa6fc98bdaa8c97920f6a8b1a871bd2a96e6978ac5aa14f486e63"
+      },
+      "adapt-1024-validation.partial.jsonl": {
+        "bytes": 1320801,
+        "sha256": "58af5037aaebcdded720b19ba2ecdf843d8a2c0975d47fbf4ba81d065049d6fd"
+      },
+      "adapt-1024-validation.tokens": {
+        "bytes": 6470604,
+        "sha256": "17459adf047069610b70ce5007b0ba1d4029226a19a0e1c7489773a1661fb774"
+      },
+      "adapt-512-calibration.index": {
+        "bytes": 200472,
+        "sha256": "3418f0517cfa8cef2708493eadd8e30021798f1f021d5f70ce249417918c002b"
+      },
+      "adapt-512-calibration.partial.jsonl": {
+        "bytes": 965288,
+        "sha256": "55914a98944ad78ec42960aa52c0c27d83bcac854058255535dfc607a369a001"
+      },
+      "adapt-512-calibration.tokens": {
+        "bytes": 7456736,
+        "sha256": "e41b192a93df2da957e6a24d95dfbe2406f0c4a1d01b33e5b0bdc3bda3a22b19"
+      },
+      "adapt-512-test.index": {
+        "bytes": 211632,
+        "sha256": "ccd527b87afcc7efe47b7a850f1a5e1fb6586f2bdb9e5e9a5bb8a6a6d5a01bbe"
+      },
+      "adapt-512-test.partial.jsonl": {
+        "bytes": 999606,
+        "sha256": "118e9f8b3f6d14f34bb3dd211dccb478c7d2f26eb13950beac64cdc4c8c5cad9"
+      },
+      "adapt-512-test.tokens": {
+        "bytes": 7881154,
+        "sha256": "8b7db51fddf372a12ccbaf1d92d8b9ff391e7a46473b4a002001add8ca35719e"
+      },
+      "adapt-512-train.index": {
+        "bytes": 3128808,
+        "sha256": "3718dbeb15a2050d87c538237f2fcd8835ea16cf62fe2fd222d5a7d3897471e0"
+      },
+      "adapt-512-train.tokens": {
+        "bytes": 116302732,
+        "sha256": "a1e17ac5515d092ba2f43fc04715d2fe574abad7cd5c9b356a1e03645db53fb2"
+      },
+      "adapt-512-validation.index": {
+        "bytes": 206832,
+        "sha256": "88cf87e82de994d812ab037519f867b0f4b0ed8ac6e2d174f04e5512971f8d0b"
+      },
+      "adapt-512-validation.partial.jsonl": {
+        "bytes": 948087,
+        "sha256": "b8a1cf8d823b1f5f37fbfdfb9c0da2aadf072dee281a2a505dafccb08d8b90e7"
+      },
+      "adapt-512-validation.tokens": {
+        "bytes": 7672178,
+        "sha256": "a2f42fbaf3e4ef2048231569cfda64f2c0e3b1e71d6cc4f875bb398be6b169aa"
+      },
+      "calibration.index": {
+        "bytes": 114592,
+        "sha256": "9a9638fb1d1a146eab6b69972a033b3cc11ecf663ea50cc28cb36d1a270be7cd"
+      },
+      "calibration.tokens": {
+        "bytes": 37211742,
+        "sha256": "5e4244e67a981eec6ce02e80baea53763fd7c5c6b39a2c99f7c54003b300206f"
+      },
+      "test.index": {
+        "bytes": 116960,
+        "sha256": "e402170a3058bd384ee2451dd079e1f9cb16caf65c9c5736463906d274567796"
+      },
+      "test.tokens": {
+        "bytes": 39239878,
+        "sha256": "46e3d187f5154bc920e6f572c12701a0d779b01a18607496932abdf23c9e703c"
+      },
+      "tokenizer.json": {
+        "bytes": 170482,
+        "sha256": "341ceb493805e51b7160fe867123f88e041caedeb9460ea36b938ff2b6c3c27d"
+      },
+      "train.index": {
+        "bytes": 1965952,
+        "sha256": "c7c3af5d5805b8f34b7c0a6f2bb2d02fc3abee8b4aafe4fee515363633392516"
+      },
+      "train.tokens": {
+        "bytes": 625374012,
+        "sha256": "8087c21404bab20efa040283677e36db1e28d2a65b9e8d64c13ce3b63326ce5b"
+      },
+      "validation.index": {
+        "bytes": 116384,
+        "sha256": "dddf449641ca923378dd6ff73b49b29e1ba5432f3c18b0f2d2c50adb591a6642"
+      },
+      "validation.tokens": {
+        "bytes": 35572492,
+        "sha256": "fa1e8ac4ab0a3f728f08e37283dc6dfcca50a0ac97701c87442fa0f64bd9e6f5"
+      }
+    },
+    "shortfallTrainSubwords": null,
+    "targetTrainSubwords": null,
+    "tokenizerSampleWords": 3000000,
+    "version": 1
+  },
+  "notebook": "mayankyadav9432/lemma-typeahead-prepare-100m-20261124/1",
+  "status": "diagnostic before verified publisher grouping",
+  "vocabularySize": 16384
+}

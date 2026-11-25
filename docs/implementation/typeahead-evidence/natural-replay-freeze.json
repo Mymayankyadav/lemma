@@ -1,0 +1,91 @@
+{
+  "publisherSample": {
+    "kernel": "mayankyadav9432/lemma-n238-stackmath-thread-sample-20261125/1",
+    "dataset": "atamazian/stack-math-qa/1",
+    "records": {
+      "math.stackexchange.com": {
+        "rows": 5000,
+        "filename": "math.stackexchange.com.jsonl",
+        "sha256": "c8d4e4b7badc49d4cfe801a5b54b3161689d65ca9c2f0569c54b2db203f992d5"
+      },
+      "mathoverflow.net": {
+        "rows": 5000,
+        "filename": "mathoverflow.net.jsonl",
+        "sha256": "b4f608c73b5908373263c1598e07713c20f3f8370c82a47f0614ae6826e41073"
+      }
+    }
+  },
+  "frozen": {
+    "source": "3efbf3ef68caad16264449a60710184b8fbbad4ac592303a043b419d12b2d454",
+    "exclusions": {
+      "corpus": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+      "documents": 613502,
+      "earlier": [
+        "010494cce74d6141e516cb8f0773c572d4a34b9b86e256b2180289d303c80f5f",
+        "1e355ad6763f37e1e9bda2b0d0844ab03f74677948ffd387f3e8e2f7fe4b3d69",
+        "2b7a5589870b474baf18789538983ec02340843554675f62ad9eec27f759e77c",
+        "6067f62ac571c94c53cb30da0711a5de1d3812fe17b9d754295144dd290ec5ce",
+        "793283a5f4e1afd3b42e96d4d9f638500dcd5ea3eb4b9a07a2f4de8ba66c5c8f",
+        "84fc345ed64386c895e56e12e474782f6a294824b123c4ab2d95ec4002545fb9",
+        "9e62177163d7586bacf94efd9276a556376031168206a5472827a1181dfc2530",
+        "dabc49c483996b9200c0849f7637119c47e8a08fd322e14b6de9ba006c2c0252",
+        "ebcb0b70f4da6051cb2c51805d2e9b40827c31c1b06cb32d2d56cae54703195b"
+      ],
+      "legacy": "9b7a915a95293d457e21b40a49e85afdf7782c87ab5e8b03d187c753c3d0654c"
+    },
+    "dropped": {
+      "lengthOrMarkup": 2255,
+      "duplicateOrTraining": 930
+    },
+    "splits": {
+      "fit": {
+        "threads": 200,
+        "events": 5684,
+        "sources": {
+          "math.stackexchange.com": 100,
+          "mathoverflow.net": 100
+        },
+        "files": {
+          "answers.jsonl": "a07fab3987d50e2f26cc4f056e762af0f2e77999db21d9302e0e605657e36f98",
+          "contexts.jsonl": "a936f5c239245a8d23d5a7cab704bf1e8e9e0c03842ebff2312c2e4a6a47b533",
+          "events.jsonl": "9c765f24650637c8ad71e0f1b8e2e3f2dae89f17e672f7a3400f9286dbae1146",
+          "gold.jsonl": "7b91e64572991fa4db070d6cf5b33628caae18a1b35937a87e05070baebf7c73"
+        }
+      },
+      "validation": {
+        "threads": 100,
+        "events": 2944,
+        "sources": {
+          "math.stackexchange.com": 52,
+          "mathoverflow.net": 48
+        },
+        "files": {
+          "answers.jsonl": "cea3e2b59f38a4395e6f5ba6f62c9457d832004a806d81ae4ca7285e68848857",
+          "contexts.jsonl": "03cc45ca75eea81889ba86e2e645345b6fbf871c1a92147b9fbb3858ccaa8a10",
+          "events.jsonl": "2c103255055b47a0430362cbaedf6a79ebebc691ac3f3d6c03dd017cc104a725",
+          "gold.jsonl": "ec1c90fef6ac49e0a18df29bf365cd6561eb3298a1d317fab291c5abf0e23ac6"
+        }
+      },
+      "final": {
+        "threads": 1000,
+        "events": 29139,
+        "sources": {
+          "mathoverflow.net": 500,
+          "math.stackexchange.com": 500
+        },
+        "files": {
+          "answers.jsonl": "0a5731d464a81265c70035b0a6901966434071eaa66539d5ba2038e7a37544b2",
+          "contexts.jsonl": "72fec30a3f60a1f0cea52355ef8aea2dc98c2eea90e08931415bb764f1b6af1a",
+          "events.jsonl": "6d8b30680c50dd5d2f1a3779dab1639cf73753535d8adeb91b1ab76ff55e2682",
+          "gold.jsonl": "718cca4fc57f4313d970c798fceeb8bb6cb354a8bc66d7522b240735744a90c6"
+        }
+      }
+    }
+  },
+  "enrollment": "First threads in frozen order; development paired thread variance sets N for a two percentage-point gain, with a minimum of 200.",
+  "observation": "A blind browser sees only the public question and scheduled draft. Outcome joins require exact range, text, caret and selection. Cost uses one key equivalent per typed Unicode code point or verified exact tap.",
+  "device": {
+    "status": "pending",
+    "reason": "No authorized physical Android phone was attached to ADB."
+  }
+}

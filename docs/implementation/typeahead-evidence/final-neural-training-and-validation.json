@@ -1,0 +1,651 @@
+{
+  "capacityScope": "Only the capacity control passed prespecified native and size export gates. The matched primary control was unavailable, so no browser weight contrast is estimable.",
+  "fp16Diagnostic": {
+    "browser": "156.0.8078.79",
+    "browserReceiptSha256": "a6600f464389e8658df680990aaf13a1bd932863df8cb63d09123a7cd5ff756f",
+    "browserResult": {
+      "cacheAbi": true,
+      "cacheTensors": 16,
+      "cacheTypes": [
+        "float32"
+      ],
+      "caseIdentity": {
+        "caseIndex": 60,
+        "caseSha256": "fe7d4ecb627346984569b752dc658bf91b1ab1195c59f79da4a552dadfe51594",
+        "layout": "prose",
+        "length": 48,
+        "tokenIdsSha256": "dde51f21defce8e4927dedfd5646b69f948616d635176b049dc819708a0c8573"
+      },
+      "completed": true,
+      "features": {
+        "wasm": true,
+        "webVersion": "1.27.0"
+      },
+      "finite": true,
+      "graphSha256": "a1f99f59c41b9f5b211d0d6607c67e79bee86e556f24146aedec62f497f21a4d",
+      "incrementalMs": 18.30000000447035,
+      "logits": 16384,
+      "logitsAbi": true,
+      "logitsType": "float32",
+      "maxLogitDifference": 0.0025162696838378906,
+      "prefillMs": 235.39999999850988,
+      "scope": "scratch desktop Chromium CPU/WASM file compatibility only; separate from product byte cap, rollout and timing qualification",
+      "sessionsMs": 1862.3999999985099,
+      "topThreeAgreement": true,
+      "weightsSha256": "dacc57563c9350a34ce53ec38ba60975c12bfd8fe2621536febfd2e85c09fd2f"
+    },
+    "browserScope": "One desktop CPU WASM case while packing ran. No device performance, memory or native FP16-operation qualification.",
+    "budgetAccountingScope": "WASM accounting uses the frozen 29 MiB support reserve and pinned ORT runtime. These are policy totals, separate from measured HTTP transfer.",
+    "coldBudgetAccountingBytes": {
+      "wasm": 112082616,
+      "webgpu": 122857591,
+      "webgpuJspi": 113649516
+    },
+    "primaryColdLimitBytes": 71303168,
+    "primaryGraphLimitBytes": 41943040,
+    "scope": "User-requested FP16 diagnostic after the prespecified precision trials. It cannot qualify under the current size limits.",
+    "sourceProvenance": {
+      "actualModifiedArchiveMembers": [
+        "expanded/export.py"
+      ],
+      "archiveSha256": "5c7d879a2b80faa17535447abb3e58ccc4a12195f1bce494f553b8231481e96f",
+      "baseCommit": "a663f7631478ccb332d5d7f4567e08579c0d140b",
+      "builderCliOnlyChange": "expanded/kaggle_run.py adds the diagnostic precision choice",
+      "diagnosticPatchSha256": "8a8f4cbc083125c2bb1cd25c417ea8f3d1c124dca0da69ba556f632832597cae",
+      "metadataSha256": "828e6fc5669471c5e0486b6e368505af2c5f10374cf5688f81cf4ce813afc93f",
+      "patchGzipSha256": "1af769ca9163ddf3201e6065d7b194339a73fc298d622055973e5bcfa7a9515f",
+      "referenceMethod": "Unchanged common300 validation qualify(), mixed FP16 internal with FP32 I/O, normalization and softmax",
+      "runnerSha256": "f2d13fdedc1c2e90ed971acc705bfa055203a0b155b1308b43d33b4d0f18bd07"
+    }
+  },
+  "primarySelection": "All three prespecified main-best int8/int4/mixed candidates missed role partial-retokenization parity. No deployment candidate.",
+  "scope": "Completed training and validation export evidence. The common 300 next-token cases are separate from training-validation perplexity and final held-out product replay.",
+  "training": {
+    "adapt": {
+      "assignedGpus": 2,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "initialCheckpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+      "optimizerAudit": {
+        "allModelAndOptimizerTensorsFinite": true,
+        "commonOptimizerStep": 2008,
+        "modelParameterCount": 33870848,
+        "observedSharedLoopMinusOptimizerStep": 0,
+        "sha256": "f28069a85cf4515d0b619c1f4fc9133811afe63fb07fcbc92a647ff7b102a81c",
+        "trainLoopSteps": 2008
+      },
+      "providerAllocatedGpuHours": 0.45278598217444443,
+      "providerLedgerSha256": "ed7084b7c71e028c01849d3447177bbf343e8c055fd22185116eb87289a5c6ef",
+      "receiptSha256": "f8acfff89febce1126c8c0560689b9af9b4f1dd57a1c94ef0154e1289c743345",
+      "requestedTargets": 20000000,
+      "reservedGpuHours": 0.5,
+      "scoredTargets": 17841071,
+      "stopReason": "time-cap",
+      "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc",
+      "validation": {
+        "allocatedGpuHours": 0.43675092746444444,
+        "checkpointSha256": "36d185b7619978dc752e9bcf89421f6be543df853809e9536a9b9847e8e74c2b",
+        "discardedAtBoundaries": 0,
+        "elapsedSeconds": 786.151669436,
+        "elapsedWithCheckpointSeconds": 789.311002421,
+        "nll": 1.4908632688884493,
+        "peakMemoryBytes": 3974392320,
+        "perplexity": 4.440927579331547,
+        "runTokens": 17841071,
+        "step": 2008,
+        "targets": 8532,
+        "tokens": 17841071
+      }
+    },
+    "capacity": {
+      "assignedGpus": 2,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "milestones": {
+        "tokens-100000000": {
+          "allocatedGpuHours": 0.2895128998238889,
+          "checkpointSha256": "f9d91151f3ded090a2a741e553444e77068ee865c9a60c1f3b2252918f65ee34",
+          "discardedAtBoundaries": 5928,
+          "elapsedSeconds": 521.123219683,
+          "elapsedWithCheckpointSeconds": 521.885826327,
+          "nll": 2.4471261748501054,
+          "peakMemoryBytes": 1411605504,
+          "perplexity": 11.555091644498484,
+          "runTokens": 100000000,
+          "step": 3355,
+          "targets": 30855,
+          "tokens": 100000000
+        }
+      },
+      "optimizerAudit": {
+        "allModelAndOptimizerTensorsFinite": true,
+        "commonOptimizerStep": 3355,
+        "modelParameterCount": 5023872,
+        "observedSharedLoopMinusOptimizerStep": 0,
+        "sha256": "d0162d8d9b21cf1eb8e9ddbb729bce3e58d4985c51b90e63b9572eb11e9b3e61",
+        "trainLoopSteps": 3355
+      },
+      "providerAllocatedGpuHours": 0.3038820648283333,
+      "providerLedgerSha256": "4b70a138c4b7358b529bd64c66256726b9abeba5726bf310e8999d1c97d96bfc",
+      "receiptSha256": "9c7c4154926f6cb1d4876bb0edb581d584cfe78b5188eef5cea066f96bc931af",
+      "reservedGpuHours": 0.65,
+      "scoredTargets": 100000000,
+      "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc"
+    },
+    "current": {
+      "assignedGpus": 2,
+      "dataSha256": "b0de7f0b340a717845104c468cb0d9b9abdce7f562c9d6d7b0588dedb0a573a7",
+      "optimizerAudit": {
+        "commonOptimizerStep": 3354,
+        "observedSharedLoopMinusOptimizerStep": 0,
+        "sha256": "63043668c030fcd1633e2b3428f63d00f43bcd8ef2c6f40cb41cd7af9c1e9ed7",
+        "trainLoopSteps": 3354
+      },
+      "providerAllocatedGpuHours": 0.7307493655461111,
+      "providerLedgerSha256": "dbf9996225d3ebcc1d8c644b69d4b1d72a0f7f49194d25605d6b738fd4f0f5aa",
+      "receiptSha256": "6e551b92bdab0aa0a25882cd4202472f8f3ae16c8cf4d6f5c5c37d156fc59a58",
+      "reservedGpuHours": 0.96,
+      "scoredTargets": 100000000,
+      "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc",
+      "validation": {
+        "allocatedGpuHours": 0.7150384278583334,
+        "checkpointSha256": "1dc331b08ad2f477b3993c130aad4b11d0eaa07d4fc6598af9974e35cee8b924",
+        "discardedAtBoundaries": 20118,
+        "elapsedSeconds": 1287.069170145,
+        "elapsedWithCheckpointSeconds": 1290.513890038,
+        "nll": 2.125364355452925,
+        "peakMemoryBytes": 3974392320,
+        "perplexity": 8.37594875482292,
+        "runTokens": 100000000,
+        "step": 3354,
+        "targets": 30855,
+        "tokens": 100000000
+      }
+    },
+    "dev": {
+      "assignedGpus": 2,
+      "dataSha256": "73c2443d29605857e45920f387d205bbfc5f84e3899f8d7e9656864f6a418f11",
+      "providerAllocatedGpuHours": 0.7406952400044444,
+      "providerLedgerSha256": "db931742493231942f52428b36727f76ef7abb53e07da5eb3bf551afaeba5018",
+      "receiptSha256": "f0e9d8c59ded6bc16c99c0483a12003df96f8c108e132ffede1a95a37cd2e0af",
+      "reservedGpuHours": 0.96,
+      "scoredTargets": 100000000,
+      "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc",
+      "validation": {
+        "allocatedGpuHours": 0.724181145926111,
+        "checkpointSha256": "2ea355644513a5dcc149ae750e6707f050832ebb8f37448e8fd7f607db160546",
+        "discardedAtBoundaries": 15841,
+        "elapsedSeconds": 1303.526062667,
+        "elapsedWithCheckpointSeconds": 1306.788356623,
+        "nll": 2.0402826096864364,
+        "peakMemoryBytes": 3974392320,
+        "perplexity": 7.692782946679823,
+        "runTokens": 100000000,
+        "step": 3353,
+        "targets": 30855,
+        "tokens": 100000000
+      }
+    },
+    "main": {
+      "assignedGpus": 2,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "milestones": {
+        "tokens-100000000": {
+          "allocatedGpuHours": 0.7405325741477776,
+          "checkpointSha256": "54536e99d02f788aed25e289fa0a34a09053dad918320b82136805863cb98860",
+          "discardedAtBoundaries": 5928,
+          "elapsedSeconds": 1332.9586334659998,
+          "elapsedWithCheckpointSeconds": 1336.4560158959998,
+          "nll": 2.02042384489953,
+          "peakMemoryBytes": 3974392320,
+          "perplexity": 7.54152069144103,
+          "runTokens": 100000000,
+          "step": 3355,
+          "targets": 30855,
+          "tokens": 100000000
+        },
+        "tokens-500000000": {
+          "allocatedGpuHours": 3.662574950711667,
+          "checkpointSha256": "4807856784181438f0e1203ca3715a6de2919027dd696473b887eb09eb16a928",
+          "discardedAtBoundaries": 25928,
+          "elapsedSeconds": 6592.634911281,
+          "elapsedWithCheckpointSeconds": 6595.925215823,
+          "nll": 1.7184479951588074,
+          "peakMemoryBytes": 3974392320,
+          "perplexity": 5.5758679713655726,
+          "runTokens": 500000000,
+          "step": 16769,
+          "targets": 30855,
+          "tokens": 500000000
+        }
+      },
+      "optimizerAudit": {
+        "allModelAndOptimizerTensorsFinite": true,
+        "commonOptimizerStep": 16765,
+        "modelParameterCount": 33870848,
+        "observedSharedLoopMinusOptimizerStep": 4,
+        "sha256": "4e05641e11482f2c5c69a087b6c0f6a0166b6272f7a261d513da9682a28807f6",
+        "trainLoopSteps": 16769
+      },
+      "providerAllocatedGpuHours": 3.6796205554894446,
+      "providerLedgerSha256": "8c12c05c5a2cf253e9ff8b271656ebf312255aee47ee6b1f0575e24340f291e5",
+      "receiptSha256": "8c0c848580341d6348a134a926fdb90941286a3583768443548a6205bc1d1a0e",
+      "reservedGpuHours": 5.0,
+      "scoredTargets": 500000000,
+      "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc"
+    }
+  },
+  "validationExports": {
+    "audit-export-capacity-100m": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "f9d91151f3ded090a2a741e553444e77068ee865c9a60c1f3b2252918f65ee34",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "downloadBytes": 5428019,
+      "exportParityPassed": true,
+      "graphBytes": 5427060,
+      "metricsSha256": "a36616095e9251e4e3b4132a71f9e5aa6d6f8645158e002ac2fca13053390ef7",
+      "nativePerplexity": 32.18873857065386,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 114,
+          "contexts": 150,
+          "matches": 144,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 146,
+          "contexts": 150,
+          "matches": 146,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 48,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 49
+        }
+      },
+      "precision": "int8-weight-only",
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 260.0,
+      "quantPerplexity": 32.12051501197987,
+      "quantTopThreeSetMatches": 290.0,
+      "receiptSha256": "a20d8ac3fd0b88e8dfeb839c73a54aed48f17371fed62c147f37be1412c452bd"
+    },
+    "audit-export-fp16-diagnostic": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "downloadBytes": 68194895,
+      "exportParityPassed": false,
+      "graphBytes": 68193934,
+      "metricsSha256": "2df1866bd1ec6bb82fc4beb342e336a7978ab2f7b6fcb56f1252cd66aac41457",
+      "modelSizeGateBytes": 41943040,
+      "modelSizeGatePassed": false,
+      "nativePerplexity": 25.58725646381516,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 120,
+          "contexts": 150,
+          "matches": 150,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 148,
+          "contexts": 150,
+          "matches": 148,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 48,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 50
+        }
+      },
+      "precision": "fp16-diagnostic",
+      "precisionNumericsPassed": true,
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 268.0,
+      "quantPerplexity": 25.587506232931855,
+      "quantTopThreeSetMatches": 298.0,
+      "receiptSha256": "04b50dfda68dca1e9e29057ef3b088018e01d6735218bde09d7dcdfb0b6d5046"
+    },
+    "audit-export-main-100m": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "54536e99d02f788aed25e289fa0a34a09053dad918320b82136805863cb98860",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "downloadBytes": 34586206,
+      "exportParityPassed": false,
+      "graphBytes": 34585246,
+      "metricsSha256": "ff71cec1e3b2a4b51631f44d1cb597df815e844a79d084bcf3249ef7452030f6",
+      "nativePerplexity": 26.113304100992792,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 113,
+          "contexts": 150,
+          "matches": 141,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 147,
+          "contexts": 150,
+          "matches": 147,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 48,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 50
+        }
+      },
+      "precision": "int8-weight-only",
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 260.0,
+      "quantPerplexity": 26.117218816182636,
+      "quantTopThreeSetMatches": 288.0,
+      "receiptSha256": "8033182aa1ad3263009bc422437b2d4c0c765ae0f39dc0851b724a86759ccdce"
+    },
+    "audit-export-main-500m": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "4807856784181438f0e1203ca3715a6de2919027dd696473b887eb09eb16a928",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "downloadBytes": 34586206,
+      "exportParityPassed": false,
+      "graphBytes": 34585246,
+      "metricsSha256": "64348044710fa203deae421636d931ae00fe09d6bfc11f62b0ed825cbb084f26",
+      "nativePerplexity": 25.58725646381516,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 117,
+          "contexts": 150,
+          "matches": 145,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 146,
+          "contexts": 150,
+          "matches": 146,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 46,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 50
+        }
+      },
+      "precision": "int8-weight-only",
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 263.0,
+      "quantPerplexity": 25.515741944922365,
+      "quantTopThreeSetMatches": 291.0,
+      "receiptSha256": "31ded8cc4189bafab9fecbd1cebfab681ef9314d78ed9455906209e02bc27e8c"
+    },
+    "audit-export-main-best": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "downloadBytes": 34586206,
+      "exportParityPassed": false,
+      "graphBytes": 34585246,
+      "metricsSha256": "a3704d583dd4479618408a326778cb88609ed1ed3a11de0f6e363a78df482d1c",
+      "nativePerplexity": 25.58725646381516,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 117,
+          "contexts": 150,
+          "matches": 145,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 146,
+          "contexts": 150,
+          "matches": 146,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 46,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 50
+        }
+      },
+      "precision": "int8-weight-only",
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 263.0,
+      "quantPerplexity": 25.515741944922365,
+      "quantTopThreeSetMatches": 291.0,
+      "receiptSha256": "662350d9bfe7bda4137f36ad33cdc7d38e78789d4acc724675e18b69e5d263a5"
+    },
+    "audit-export-main-best-mixed": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "downloadBytes": 24214181,
+      "exportParityPassed": false,
+      "graphBytes": 24213222,
+      "metricsSha256": "fcd85124379603e2fd33549ee5655d197edd6b6b1f46242ca1059352d25f4f05",
+      "nativePerplexity": 25.58725646381516,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 91,
+          "contexts": 150,
+          "matches": 115,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 117,
+          "contexts": 150,
+          "matches": 117,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 32,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 44
+        }
+      },
+      "precision": "int4-int8-head",
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 208.0,
+      "quantPerplexity": 25.74485557190949,
+      "quantTopThreeSetMatches": 232.0,
+      "receiptSha256": "f6ff16dacc4c63b0b014f623bc680c169ea8b5c838a741caaf911d66a7f14ecf"
+    },
+    "audit-export-main-best-q4": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "downloadBytes": 19643548,
+      "exportParityPassed": false,
+      "graphBytes": 19642600,
+      "metricsSha256": "8264dc5cabc2bdc8f41198bb9886e630c9c1cf50af43138fdd2addfed45fa633",
+      "nativePerplexity": 25.58725646381516,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 81,
+          "contexts": 150,
+          "matches": 106,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 108,
+          "contexts": 150,
+          "matches": 108,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 31,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 44
+        }
+      },
+      "precision": "int4",
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 189.0,
+      "quantPerplexity": 25.4501378515975,
+      "quantTopThreeSetMatches": 214.0,
+      "receiptSha256": "c9c2f4d10ba9ca7fd806e3483198b6ea29073e0f3e65d27e8e157445538d87e5"
+    },
+    "audit-export-tutor-best": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "b23ed94a1896e757637184476ead97713fe77e0adc91adf6b125336f5dd25e69",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "downloadBytes": 34586206,
+      "exportParityPassed": false,
+      "graphBytes": 34585246,
+      "metricsSha256": "2f805a44ff1b1be2196c3100f76edcd25c40336660da8a4718d19fa854ff2db2",
+      "nativePerplexity": 24.668512171024467,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 114,
+          "contexts": 150,
+          "matches": 139,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 148,
+          "contexts": 150,
+          "matches": 148,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 49,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 50
+        }
+      },
+      "precision": "int8-weight-only",
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 262.0,
+      "quantPerplexity": 24.650687270489943,
+      "quantTopThreeSetMatches": 287.0,
+      "receiptSha256": "6ba70280f84ebd437672649369884f717040c6cf56919e910aa209379e167d5f"
+    },
+    "current-export-terminal": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "1dc331b08ad2f477b3993c130aad4b11d0eaa07d4fc6598af9974e35cee8b924",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "b0de7f0b340a717845104c468cb0d9b9abdce7f562c9d6d7b0588dedb0a573a7",
+      "downloadBytes": 34586206,
+      "exportParityPassed": false,
+      "graphBytes": 34585246,
+      "metricsSha256": "951d9eb62604f17c1866302224fba82db5d2ebf5d4fec4a5a810668181170575",
+      "nativePerplexity": 27.46431720332641,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 116,
+          "contexts": 150,
+          "matches": 146,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 145,
+          "contexts": 150,
+          "matches": 145,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 47,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 49
+        }
+      },
+      "precision": "int8-weight-only",
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 261.0,
+      "quantPerplexity": 27.45738643653318,
+      "quantTopThreeSetMatches": 291.0,
+      "receiptSha256": "0c61e3af2888e78f58c25daea1722bcf80b38266d60b8eacf2c710093a079b99"
+    },
+    "dev-export-terminal": {
+      "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+      "checkpointSha256": "2ea355644513a5dcc149ae750e6707f050832ebb8f37448e8fd7f607db160546",
+      "contextSplit": "validation",
+      "contexts": 300,
+      "dataSha256": "73c2443d29605857e45920f387d205bbfc5f84e3899f8d7e9656864f6a418f11",
+      "downloadBytes": 34586206,
+      "exportParityPassed": false,
+      "graphBytes": 34585246,
+      "metricsSha256": "e5ff36d42c4f60b130360310840a3c0c360e0b391f04c05b375ca01167ea522f",
+      "nativePerplexity": 24.679845828971636,
+      "parityByLayout": {
+        "prose": {
+          "cachedContexts": 120,
+          "cachedMatches": 118,
+          "contexts": 150,
+          "matches": 148,
+          "maxInputLength": 512,
+          "minInputLength": 1
+        },
+        "roles": {
+          "cachedContexts": 150,
+          "cachedMatches": 146,
+          "contexts": 150,
+          "matches": 146,
+          "maxInputLength": 512,
+          "minInputLength": 82,
+          "partialMatches": 47,
+          "partialRetokenizationCases": 50,
+          "wholeWordCases": 50,
+          "wholeWordMatches": 50
+        }
+      },
+      "precision": "int8-weight-only",
+      "quantCachedCases": 270.0,
+      "quantCachedTopThreeSetMatches": 264.0,
+      "quantPerplexity": 24.75118330794841,
+      "quantTopThreeSetMatches": 294.0
+    }
+  },
+  "version": 1
+}

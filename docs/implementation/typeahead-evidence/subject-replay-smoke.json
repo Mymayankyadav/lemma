@@ -1,0 +1,200 @@
+{
+  "baseSourceCommit": "01d37e6d4dd5feabe6405f813cbb831791380ff0",
+  "buildIndexSha256": "bcac6fcff157a17fd2ee22cd9aa56d0a4c8a13e3bfdb8a9957cb51c39d08b39e",
+  "compiledExpandedAssets": {
+    "latex-v2": "11a19752fe9356a9fa3e59fae398f079d1dec48844be2c36b5671529bf0f2876",
+    "ngram-v2": "9c88f9e9986097f7dc076bf7628da81e15192417ba3101baeaf53a4aadfe42a7",
+    "subject-linear-algebra": "76eca1117883de8022e5a58664053d7e4d8bcc22fdb7cb46679bc4315da20bb8",
+    "subject-topology": "068ed349c4933cbb2bfdd4f6c39039ad82a3412f9e3a6677fdff2676b45a8c7c"
+  },
+  "frozenScheduleSha256": {
+    "answers": "2a17f247256f06aae00458bb40fceefc9d9543a70dd9fe8a93542724f0a5e116",
+    "events": "8ffceb63e07cc46f0513baad281bc8a07f88ddae1479931a5b1a638b0e8e4f32",
+    "gold": "d484847293f84a5d5d347799cd826fa80cac7e4c6c6e90d712647f7e8ec32100"
+  },
+  "modifiedSourceSha256": {
+    "src/features/tutor/TutorComposer.tsx": "3bc9a53897a13799296f44f15062bd589a57387aac2cb76598e6128cd9113acc",
+    "src/features/tutor/writingAid/decoder/ngram.worker.ts": "93920b9f7bf9b3160646ad9d476c711ca74b57fb0995db708732bb077696337f",
+    "src/features/tutor/writingAid/decoder/ngramClient.ts": "bc0b72c0bc2ca70e00c3e34b0ea65b76130a328f5566c2064a95033a93a1c886",
+    "src/features/tutor/writingAid/useWritingAid.ts": "4ce1fa3b911c9c527871065596ca8e28bb7e6142c1c4835820d197d2bd9554b1",
+    "tests/e2e/n238-typeahead-replay.spec.ts": "87c1280e9fd10315dffbb25f5dd57161ca779331719a7a903a529ed2b57793a4"
+  },
+  "purpose": "Synthetic browser verification of route-to-subject selection, model hash attribution, and full answer replay.",
+  "runs": {
+    "corrected": {
+      "answers": 2,
+      "arm": "corrected-v1",
+      "assetCounts": {
+        "empty": 4,
+        "ineligible": 0,
+        "latex": 1,
+        "neural": 0,
+        "ngram": 32,
+        "no-current-model": 0,
+        "subject": 0
+      },
+      "assetSha256": [
+        "d439be36601fe22e599c4624ecb49d2ed043f658814942b1c95ea0105aadaceb",
+        "feeb995115c6f8aa7a0f6ae701b7d9ebc8e1e82b972ed3aa6d87d550c10f0c8d"
+      ],
+      "captureOnly": false,
+      "events": 5,
+      "fixedAssetProvenance": [
+        {
+          "assets": {
+            "ghostEligible": false,
+            "ngramAbsence": "empty",
+            "subject": "topology"
+          },
+          "eventId": "topology-empty",
+          "prefixSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "assets": {
+            "ghostEligible": true,
+            "ngram": "d439be36601fe22e599c4624ecb49d2ed043f658814942b1c95ea0105aadaceb",
+            "subject": "topology"
+          },
+          "eventId": "topology-word",
+          "prefixSha256": "6df6006556f3fb9f80e1e35a28eb86738190958bdf2c1079e2fdf055be1e2693"
+        },
+        {
+          "assets": {
+            "ghostEligible": false,
+            "ngramAbsence": "empty",
+            "subject": "linear-algebra"
+          },
+          "eventId": "linear-algebra-empty",
+          "prefixSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "assets": {
+            "ghostEligible": true,
+            "ngram": "d439be36601fe22e599c4624ecb49d2ed043f658814942b1c95ea0105aadaceb",
+            "subject": "linear-algebra"
+          },
+          "eventId": "linear-algebra-word",
+          "prefixSha256": "c391c504f0032b01c881e31902dabcb30d2233cd978b0b204e44dde060482b95"
+        },
+        {
+          "assets": {
+            "ghostEligible": false,
+            "latex": "feeb995115c6f8aa7a0f6ae701b7d9ebc8e1e82b972ed3aa6d87d550c10f0c8d",
+            "ngram": "d439be36601fe22e599c4624ecb49d2ed043f658814942b1c95ea0105aadaceb",
+            "subject": "topology"
+          },
+          "eventId": "latex",
+          "prefixSha256": "c38bbddd138c297fa74bb3009c74e9d466fd05f2bbf3cd2e8e5fae4f31359a9d"
+        }
+      ],
+      "ghostCalibration": false,
+      "graphTrial": false,
+      "rawEvidenceSha256": {
+        "assets.json": "84dad61f04756909bebd07a28167fed83b4049d905f6755cdeb5ccf7358e693e",
+        "components.jsonl": "f5269cafb88c7fc02e15b1ba1e5dab664bf8465e46958bdc2f1d9b6651d216a8",
+        "impressions.jsonl": "bf78bc26584bcc601ea4a22630b3b5195858a90a96f0a933f9452d9a54c7ba2a",
+        "keys.jsonl": "84530063018562feffe9663044977682de9b04d66a05e2e8f6f88f2a05f0224f"
+      },
+      "subjectAssetSha256": {},
+      "withoutCurrentFingerprint": {
+        "latex": 35,
+        "neural": 36,
+        "subject": 36
+      }
+    },
+    "expanded": {
+      "answers": 2,
+      "arm": "expanded-kn",
+      "assetCounts": {
+        "empty": 4,
+        "ineligible": 0,
+        "latex": 1,
+        "neural": 0,
+        "ngram": 32,
+        "no-current-model": 0,
+        "subject": 32
+      },
+      "assetSha256": [
+        "068ed349c4933cbb2bfdd4f6c39039ad82a3412f9e3a6677fdff2676b45a8c7c",
+        "11a19752fe9356a9fa3e59fae398f079d1dec48844be2c36b5671529bf0f2876",
+        "76eca1117883de8022e5a58664053d7e4d8bcc22fdb7cb46679bc4315da20bb8",
+        "9c88f9e9986097f7dc076bf7628da81e15192417ba3101baeaf53a4aadfe42a7"
+      ],
+      "captureOnly": false,
+      "events": 5,
+      "fixedAssetProvenance": [
+        {
+          "assets": {
+            "ghostEligible": false,
+            "ngramAbsence": "empty",
+            "subject": "topology"
+          },
+          "eventId": "topology-empty",
+          "prefixSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "assets": {
+            "ghostEligible": true,
+            "ngram": "9c88f9e9986097f7dc076bf7628da81e15192417ba3101baeaf53a4aadfe42a7",
+            "subject": "topology",
+            "subjectPack": "068ed349c4933cbb2bfdd4f6c39039ad82a3412f9e3a6677fdff2676b45a8c7c"
+          },
+          "eventId": "topology-word",
+          "prefixSha256": "6df6006556f3fb9f80e1e35a28eb86738190958bdf2c1079e2fdf055be1e2693"
+        },
+        {
+          "assets": {
+            "ghostEligible": false,
+            "ngramAbsence": "empty",
+            "subject": "linear-algebra"
+          },
+          "eventId": "linear-algebra-empty",
+          "prefixSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "assets": {
+            "ghostEligible": true,
+            "ngram": "9c88f9e9986097f7dc076bf7628da81e15192417ba3101baeaf53a4aadfe42a7",
+            "subject": "linear-algebra",
+            "subjectPack": "76eca1117883de8022e5a58664053d7e4d8bcc22fdb7cb46679bc4315da20bb8"
+          },
+          "eventId": "linear-algebra-word",
+          "prefixSha256": "c391c504f0032b01c881e31902dabcb30d2233cd978b0b204e44dde060482b95"
+        },
+        {
+          "assets": {
+            "ghostEligible": false,
+            "latex": "11a19752fe9356a9fa3e59fae398f079d1dec48844be2c36b5671529bf0f2876",
+            "ngram": "9c88f9e9986097f7dc076bf7628da81e15192417ba3101baeaf53a4aadfe42a7",
+            "subject": "topology",
+            "subjectPack": "068ed349c4933cbb2bfdd4f6c39039ad82a3412f9e3a6677fdff2676b45a8c7c"
+          },
+          "eventId": "latex",
+          "prefixSha256": "c38bbddd138c297fa74bb3009c74e9d466fd05f2bbf3cd2e8e5fae4f31359a9d"
+        }
+      ],
+      "ghostCalibration": false,
+      "graphTrial": false,
+      "rawEvidenceSha256": {
+        "assets.json": "785a92560e8c25cfb2365c8756517b7ba6227f422eeb7f29d31823dba78f6a5b",
+        "components.jsonl": "0bfb7f3882a5c1145b19a108e69332afcf62637e3c4a7dcf29f81400af52435c",
+        "impressions.jsonl": "cda52d73b367d7d8f440c5a6a30556a1624cb81058f157748c3ca08ffd365254",
+        "keys.jsonl": "51e4f6cfba5c2164d36dffaf9b7020251654b9d15f4727cbe4d71a1999f0bed6"
+      },
+      "subjectAssetSha256": {
+        "linear-algebra": [
+          "76eca1117883de8022e5a58664053d7e4d8bcc22fdb7cb46679bc4315da20bb8"
+        ],
+        "topology": [
+          "068ed349c4933cbb2bfdd4f6c39039ad82a3412f9e3a6677fdff2676b45a8c7c"
+        ]
+      },
+      "withoutCurrentFingerprint": {
+        "latex": 35,
+        "neural": 36,
+        "subject": 4
+      }
+    }
+  },
+  "scope": "Two synthetic answers and five fixed events. The 100M prototype assets are diagnostic. No measured product improvement is attributed to these smoke results."
+}

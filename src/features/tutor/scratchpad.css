@@ -143,3 +143,30 @@
 .tutor-paper-eraser-choices {display:grid;gap:8px;}
 .tutor-paper-eraser-choices button {padding:10px;border:1px solid currentColor;border-radius:var(--v7-radius-2);text-align:start;}
 .tutor-paper-eraser-choices button[aria-pressed=true] {background:var(--v7-role-surface-muted);}
+
+.lemma-tutor .tutor-equation-sheet-suggestions .latex-words {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--v7-space-1);
+}
+.lemma-tutor .tutor-equation-sheet-suggestions button {
+  min-height: 36px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--v7-role-border-default);
+  border-radius: var(--v7-radius-1);
+  background: transparent;
+  color: var(--v7-role-text-primary);
+}
+.lemma-tutor .tutor-equation-sheet-suggestions button.preferred {
+  color: var(--v7-role-selection-fg);
+  font-weight: 600;
+}
+.lemma-tutor .tutor-equation-sheet-undo {
+  justify-self: start;
+  min-height: 36px;
+  background: transparent;
+  color: var(--v7-role-text-primary);
+  text-decoration: underline;
+}
