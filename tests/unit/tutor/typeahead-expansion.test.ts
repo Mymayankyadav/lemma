@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {describe, expect, it, vi} from 'vitest';
 import {predictWritingAidPool} from '../../../src/features/tutor/writingAid/engine';
-import {neuralFitsColdBudget, selectNeuralBackend, type NeuralManifest} from '../../../src/features/tutor/writingAid/decoder/neuralManifest';
+import {neuralFileBytes, neuralFitsColdBudget, selectNeuralBackend, type NeuralManifest} from '../../../src/features/tutor/writingAid/decoder/neuralManifest';
 import {exposureIdentity, visibleTime} from '../../../src/features/tutor/writingAid/visibleTime';
 import {resolveTypeaheadArm, usesExpandedNgram, usesNeural, usesPersonalization, usesTutorBias} from '../../../src/features/tutor/writingAid/replayArm';
 import {tutorHint, contextualWording, type AidRankingContext} from '../../../src/features/tutor/writingAid/answerAids';
@@ -436,4 +436,17 @@ it('selects only a qualified cold backend and accounts for both WebGPU runtimes'
   expect(selectNeuralBackend(oversized, 'neural-v2', true, true, true, true)).toBeUndefined();
   expect(selectNeuralBackend({...manifest, qualification: {parity:false}}, 'neural-v2', true, true, true, true)).toBeUndefined();
   expect(selectNeuralBackend({...manifest,qualification:{parity:true}}, 'neural-v2', true, true, false)).toBeUndefined();
+});
+
+it('charges equal bytes at distinct URLs and rejects incompatible claims for one path', () => {
+  const tokenizer = {path: 'tokens.json', bytes: 1_000, sha256: 'a'.repeat(64)};
+  const prefill = {path: 'prefill.onnx', bytes: 15_000_000, sha256: 'b'.repeat(64)};
+  const files = {tokenizer, prefill, incremental: {...prefill, path: 'incremental.onnx'}};
+  expect(neuralFileBytes(files)).toBe(30_001_000);
+  expect(neuralFileBytes({...files, incremental: prefill})).toBe(15_001_000);
+  expect(neuralFileBytes({...files, incremental: {...prefill, bytes: 2}})).toBeUndefined();
+  expect(neuralFileBytes({...files, incremental: {...prefill, sha256: 'c'.repeat(64)}})).toBeUndefined();
+  const manifest: NeuralManifest = {version: 2, kind: 'neural', context: 512, layers: 8, heads: 8, headDim: 64, vocabSize: 16384, files};
+  expect(neuralFitsColdBudget(manifest, 'neural-v2', 'wasm')).toBe(false);
+  expect(neuralFitsColdBudget({...manifest, files: {...files, incremental: prefill}}, 'neural-v2', 'wasm')).toBe(true);
 });

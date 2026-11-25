@@ -19,6 +19,19 @@ export interface NeuralManifest {
 type PersistedManifest = Omit<NeuralManifest, 'calibration'> & {calibration?: unknown};
 const manifests = import.meta.glob<PersistedManifest>('../../../../../public/models/typeahead/*/manifest.json', {import: 'default'});
 
+export function neuralFileBytes(files: NeuralManifest['files']): number | undefined {
+  const roles = [files.tokenizer, files.prefill, files.incremental, ...files.weights ? [files.weights] : []];
+  const byPath = new Map<string, DecoderAssetFile>();
+  for (const file of roles) {
+    if (!file || typeof file.path !== 'string' || !/^[a-z0-9][a-z0-9_.-]*$/u.test(file.path) ||
+        !Number.isSafeInteger(file.bytes) || file.bytes < 1 || !/^[a-f0-9]{64}$/u.test(file.sha256)) return undefined;
+    const previous = byPath.get(file.path);
+    if (previous && (previous.bytes !== file.bytes || previous.sha256 !== file.sha256)) return undefined;
+    byPath.set(file.path, file);
+  }
+  return [...byPath.values()].reduce((sum, file) => sum + file.bytes, 0);
+}
+
 export async function neuralManifest(tier: NeuralTier): Promise<NeuralManifest | null> {
   const load = manifests['../../../../../public/models/typeahead/' + tier + '/manifest.json'];
   const model = await load?.();
@@ -28,11 +41,9 @@ export async function neuralManifest(tier: NeuralTier): Promise<NeuralManifest |
       model.vocabSize < 262 || model.vocabSize > 16384 ||
       !model.files || ![model.layers, model.heads, model.headDim, model.vocabSize].every(Number.isInteger)) return null;
   if (model.blendWeight !== undefined && (!Number.isFinite(model.blendWeight) || model.blendWeight < 0 || model.blendWeight > 1)) return null;
-  const files = [model.files.tokenizer, model.files.prefill, model.files.incremental, ...model.files.weights ? [model.files.weights] : []];
-  if (files.some(file => !file || !Number.isSafeInteger(file.bytes) || file.bytes < 1 || !/^[a-f\d]{64}$/u.test(file.sha256))) return null;
-  const uniqueAssets = new Map(files.map(file => [file.sha256, file.bytes]));
-  const sum = [...uniqueAssets.values()].reduce((total, bytes) => total + bytes, 0);
-  if (sum > (tier === 'neural-v2' ? 40 : 48) * 1024 * 1024 || model.files.tokenizer.bytes > 4 * 1024 * 1024) return null;
+  const bytes = neuralFileBytes(model.files);
+  if (bytes === undefined || bytes > (tier === 'neural-v2' ? 40 : 48) * 1024 * 1024 ||
+      model.files.tokenizer.bytes > 4 * 1024 * 1024) return null;
   return {...model, calibration: parseNeuralCalibration(model.calibration, neuralCalibrationFingerprint(model.files))};
 }
 
@@ -51,8 +62,7 @@ const COLD_RUNTIME_BYTES: Record<NeuralBackend, number> = {
 
 /** Charge the selected backend as a cold download and reserve the n-gram/subject/equation budget. */
 export function neuralColdTransfer(model: NeuralManifest, tier: NeuralTier, device: NeuralBackend) {
-  const files = Object.values(model.files).filter((file): file is DecoderAssetFile => Boolean(file));
-  const modelBytes = [...new Map(files.map(file => [file.sha256, file.bytes])).values()].reduce((sum, bytes) => sum + bytes, 0);
+  const modelBytes = neuralFileBytes(model.files) ?? Infinity;
   const runtimeBytes = COLD_RUNTIME_BYTES[device], supportReserveBytes = 29 * MiB;
   return {modelBytes, runtimeBytes, supportReserveBytes, totalBytes: modelBytes + runtimeBytes + supportReserveBytes,
     limitBytes: (tier === 'neural-v2' ? 68 : 76) * MiB};

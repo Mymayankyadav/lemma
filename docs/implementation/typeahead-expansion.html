@@ -324,6 +324,7 @@ examined in a local replay even while its production qualification is pending.</
 boundaries from 24 held-out public mathematics answers. The scripted full-answer trajectories saved 584 of 1,859 key
 equivalents (31.4%, answer-bootstrap 95% interval 27.2–35.7%). The Tutor fixture used each source question. This first run
 used the existing fallback for filling an otherwise-empty family slot. It is diagnostic evidence before strict deduplication.</td></tr>
+<tr><th scope="row">Audited corpus and frozen replay</th><td data-label="Observation">The cleaned training corpus contains 500,002,914 words and 613,502 documents. The nested development corpus contains 100,016,956 words. Both met their register quotas and passed the provider publisher-group audit. The audit pinned the original archive and manifests, and reconciled one training-only publisher alias (571,642 physical groups, 571,641 canonical groups). The original shards were unchanged. The question-only sampler froze 40 groups per split, with 460 calibration, 460 validation and 468 test events. The held-out model comparison is pending.</td></tr>
 <tr><th scope="row">Matched-size n-gram pilot</th><td data-label="Observation">On an 8.39-million-token training
 slice, the count-pruned orders 3, 4 and 5 measured perplexities of 107.31, 102.43 and 102.20 on the same
 155,670 validation targets and 51,815-token vocabulary. Each artifact stayed within 20 MiB. The fifth-order pilot, two
@@ -365,6 +366,7 @@ and feature gates stay in place while device, quality and calibration evidence i
 <a href="../current/N238.md">Implementation and test record</a>
 <a href="typeahead-evidence/corrected-v1-diagnostic.json">Corrected trigram diagnostic</a>
 <a href="typeahead-evidence/concurrent-diagnostic.json">Recovered concurrent diagnostics</a>
+<a href="typeahead-evidence/audited-corpus-and-schedules.json">Audited corpus and schedules</a>
 <a href="typeahead-evidence/subject-replay-smoke.json">Subject pack replay smoke</a>
 <a href="typeahead-evidence/phone-tap-timings.json">Phone-sized Chromium timings</a>
 <a href="../../scripts/typeahead/expanded/evidence/primary-mixed-precision-validation.json">Mixed precision validation</a>

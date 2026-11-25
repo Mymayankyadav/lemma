@@ -1,0 +1,155 @@
+{
+  "development": {
+    "manifestSha256": "cf2e81d637fb54af5ea092b796dcd98d506c6bd16c5d8d7f57e7724e07fcc099",
+    "shortfallByRegister": {
+      "explanation": 0,
+      "learner": 0,
+      "proof": 0
+    },
+    "trainingDocuments": 122559,
+    "trainingWords": 100016956
+  },
+  "frozenSchedules": {
+    "calibration": {
+      "answers": 40,
+      "documentGroupsSha256": "fb21d0225adfac8ca4edeb1d28982c30d6ef08101305b7223a8a7a82239b128f",
+      "events": 460,
+      "excludedGroupsSha256": "79bc193d2dd003579a85c6e8750592073fabd12d28d674f12b5eea726d7d1dfd",
+      "excludedSchedulesSha256": [
+        "ebcb0b70f4da6051cb2c51805d2e9b40827c31c1b06cb32d2d56cae54703195b",
+        "6067f62ac571c94c53cb30da0711a5de1d3812fe17b9d754295144dd290ec5ce",
+        "dabc49c483996b9200c0849f7637119c47e8a08fd322e14b6de9ba006c2c0252",
+        "793283a5f4e1afd3b42e96d4d9f638500dcd5ea3eb4b9a07a2f4de8ba66c5c8f",
+        "2b7a5589870b474baf18789538983ec02340843554675f62ad9eec27f759e77c",
+        "84fc345ed64386c895e56e12e474782f6a294824b123c4ab2d95ec4002545fb9",
+        "84fc345ed64386c895e56e12e474782f6a294824b123c4ab2d95ec4002545fb9"
+      ],
+      "manifestSha256": "59ee8fb17f38b7f60804fcc8845deb8a2e812d571bc0391f49a4ee2c34fd8f3a",
+      "replaySubjectMethod": "question-only",
+      "strata": {
+        "math-rich": 24,
+        "prose": 16
+      },
+      "targetCounts": {
+        "equation-command": 21,
+        "inline-variable": 37,
+        "plainOrInline": 402,
+        "symbol": 58,
+        "word": 402
+      }
+    },
+    "test": {
+      "answers": 40,
+      "documentGroupsSha256": "10566b2f70d00a1024ab4f349963502141adc6ac9fb2df9a6cd154247c32e9fc",
+      "events": 468,
+      "excludedGroupsSha256": "79bc193d2dd003579a85c6e8750592073fabd12d28d674f12b5eea726d7d1dfd",
+      "excludedSchedulesSha256": [
+        "ebcb0b70f4da6051cb2c51805d2e9b40827c31c1b06cb32d2d56cae54703195b",
+        "6067f62ac571c94c53cb30da0711a5de1d3812fe17b9d754295144dd290ec5ce",
+        "dabc49c483996b9200c0849f7637119c47e8a08fd322e14b6de9ba006c2c0252",
+        "793283a5f4e1afd3b42e96d4d9f638500dcd5ea3eb4b9a07a2f4de8ba66c5c8f",
+        "2b7a5589870b474baf18789538983ec02340843554675f62ad9eec27f759e77c",
+        "84fc345ed64386c895e56e12e474782f6a294824b123c4ab2d95ec4002545fb9",
+        "84fc345ed64386c895e56e12e474782f6a294824b123c4ab2d95ec4002545fb9"
+      ],
+      "manifestSha256": "cff4f66c8a75d38ef957bc8228f4c97825e705b53ed1fd33fa21952f9d25b275",
+      "replaySubjectMethod": "question-only",
+      "strata": {
+        "math-rich": 24,
+        "prose": 16
+      },
+      "targetCounts": {
+        "equation-command": 12,
+        "inline-variable": 43,
+        "plainOrInline": 413,
+        "symbol": 55,
+        "word": 413
+      }
+    },
+    "validation": {
+      "answers": 40,
+      "documentGroupsSha256": "15cee6d7806b2f8147a2f0918afdcac8b4be77380f69eb37dfa1d4aff3bde7df",
+      "events": 460,
+      "excludedGroupsSha256": "79bc193d2dd003579a85c6e8750592073fabd12d28d674f12b5eea726d7d1dfd",
+      "excludedSchedulesSha256": [
+        "ebcb0b70f4da6051cb2c51805d2e9b40827c31c1b06cb32d2d56cae54703195b",
+        "6067f62ac571c94c53cb30da0711a5de1d3812fe17b9d754295144dd290ec5ce",
+        "dabc49c483996b9200c0849f7637119c47e8a08fd322e14b6de9ba006c2c0252",
+        "793283a5f4e1afd3b42e96d4d9f638500dcd5ea3eb4b9a07a2f4de8ba66c5c8f",
+        "2b7a5589870b474baf18789538983ec02340843554675f62ad9eec27f759e77c",
+        "84fc345ed64386c895e56e12e474782f6a294824b123c4ab2d95ec4002545fb9",
+        "84fc345ed64386c895e56e12e474782f6a294824b123c4ab2d95ec4002545fb9"
+      ],
+      "manifestSha256": "a91765468eb9de5b76c529d5fb8c6ea28ee07da41eff121ef2cccfdc0f793914",
+      "replaySubjectMethod": "question-only",
+      "strata": {
+        "math-rich": 24,
+        "prose": 16
+      },
+      "targetCounts": {
+        "equation-command": 19,
+        "inline-variable": 39,
+        "plainOrInline": 402,
+        "symbol": 58,
+        "word": 402
+      }
+    }
+  },
+  "full": {
+    "manifestSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+    "shortfallByRegister": {
+      "explanation": 0,
+      "learner": 0,
+      "proof": 0
+    },
+    "trainingDocuments": 613502,
+    "trainingWords": 500002914
+  },
+  "groupAuditCounts": {
+    "archiveRecovery": {
+      "canonicalGroupCounts": {
+        "calibration": 17526,
+        "test": 17345,
+        "train": 571641,
+        "validation": 17326
+      },
+      "canonicalTrainGroupMapping": {
+        "8abb91fa786231e8fe62044833ec69a44c7d7de3f34333814ba2bb44e07cc23f": "7ff2895ef7512345f1e1abcb53b4c4e56e7c3a9dc7385c7bb780e9eb1b329d82"
+      },
+      "canonicalTrainGroupMappingSha256": "672cc837f8d2fac0121a4070e05ac58a30311c123c9c0f9151dc3f87026d250c",
+      "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+      "developmentSha256": "cf2e81d637fb54af5ea092b796dcd98d506c6bd16c5d8d7f57e7724e07fcc099",
+      "physicalGroupCounts": {
+        "calibration": 17526,
+        "test": 17345,
+        "train": 571642,
+        "validation": 17326
+      },
+      "policy": "FineMath qualified-or-DNS-host, canonical DNS root dot, archived query omission, train-only union",
+      "sourceArchiveSha256": "98eb804bf6c3c2870f401d367caf823c357938c6bd4ba104533979b35c1ec223"
+    },
+    "archivedTrainPublisherAliases": 1,
+    "documents:calibration": 18297,
+    "documents:test": 18158,
+    "documents:train": 613502,
+    "documents:validation": 18212,
+    "fineMathBarePublisherRefs": 5307,
+    "fineMathQualifiedPublisherRefs": 418658,
+    "groups:calibration": 17526,
+    "groups:test": 17345,
+    "groups:train": 571642,
+    "groups:validation": 17326,
+    "nestedDevelopment:calibration": 18297,
+    "nestedDevelopment:test": 18158,
+    "nestedDevelopment:train": 122559,
+    "nestedDevelopment:validation": 18212,
+    "publisherIdentityVerified:EleutherAI/proof-pile-2": 22012,
+    "publisherIdentityVerified:HuggingFaceTB/finemath": 423965,
+    "publisherIdentityVerified:hoskinson-center/proof-pile": 222192
+  },
+  "providerGroupAuditPassed": true,
+  "providerGroupAuditSha256": "3372c0eb58e8b1be6afa8bb03caba362b6b4e6c20c1e92e9625b12e8bfbe9e9c",
+  "samplerCommit": "e08f40fc34e077ef13334b2449976486bbe3c09c",
+  "scope": "Verified corpus and frozen schedule metadata only. This record contains no replay questions, answers, target values or raw source documents.",
+  "version": 1
+}

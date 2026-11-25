@@ -144,3 +144,22 @@ graph-file hashes. Supply the provider completion status and allocated GPU-hours
 The three main checkpoints must share one ledger from the completed 500M-target run. It keeps fitted behavioral calibration out of the controlled comparison and preserves
 fallback and unavailable outcomes. Keep configs, model binaries, source schedules and raw outputs in the
 experiment workspace. The output inventory identifies the fixture input, assets and source for review.
+
+### Reproduce the archived publisher-group audit
+
+Run the private `group-audit` stage with the pinned full and development manifests.
+For the corrected 500M archive only, pass `--archived-group-source SHA256` to
+`kaggle_run.py` using the source archive hash in the
+[local audit record](evidence/archived-corpus-local-audit.json). This reproduces the
+one training-only publisher union. The audit verifies the original shards and rejects
+cross-split aliases. Normal group audits omit this archived recovery option.
+
+### Select primary deployment precision
+
+Run `python scripts/typeahead/expanded/select_primary_precision.py CONFIG REPORT` for the
+[frozen validation procedure](primary-precision-selection.md). Pin its hash, the three validation metrics files,
+the byte-for-byte exporter manifests, and exact compiled asset ledgers. For each runtime-admissible target backend,
+the file ledger must match its independently recorded dependency inventory from the same production build.
+The selector checks the actual distinct download paths, including the ORT wrapper and pinned WASM payload,
+and the runtime's cold ceiling. A selected report is an input to device validation. Production and replay
+qualification remain separate.

@@ -66,7 +66,14 @@ let generation = 0;
 
 async function load(tier: NeuralTier, manifest: NeuralManifest, device: NeuralBackend): Promise<ActiveModel> {
   const gpu = device !== 'wasm';
-  const loadFile = (file: typeof manifest.files.prefill) => fetchVerifiedTypeaheadFile(tier, file, 48 * 1024 * 1024);
+  const downloads = new Map<string, Promise<Uint8Array>>();
+  const loadFile = (file: typeof manifest.files.prefill) => {
+    const current = downloads.get(file.path);
+    if (current) return current;
+    const verified = fetchVerifiedTypeaheadFile(tier, file, 48 * 1024 * 1024);
+    downloads.set(file.path, verified);
+    return verified;
+  };
   const runtime = await (device === 'webgpuJspi' ? import('onnxruntime-web/jspi') :
     gpu ? import('onnxruntime-web/webgpu') : import('onnxruntime-web/wasm'));
   if (runtime.env.versions.web !== TYPEAHEAD_RUNTIME_VERSION) throw new Error('Typeahead runtime version needs a new byte report');

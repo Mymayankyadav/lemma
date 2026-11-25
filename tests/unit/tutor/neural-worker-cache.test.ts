@@ -3,6 +3,7 @@ import type {NeuralReply, NeuralRequest} from '../../../src/features/tutor/writi
 import {createNeuralClient} from '../../../src/features/tutor/writingAid/decoder/neuralClient';
 
 const ort = vi.hoisted(() => ({prefill: vi.fn(), incremental: vi.fn()}));
+const modelFiles = vi.hoisted(() => ({sharedGraphs: false, fetched: vi.fn()}));
 vi.mock('onnxruntime-web/wasm', () => ({
   env: {versions: {web: '1.27.0'}, wasm: {}},
   Tensor: class Tensor {
@@ -20,11 +21,12 @@ vi.mock('../../../src/features/tutor/writingAid/decoder/neuralManifest', () => (
   neuralManifest: async () => ({
     context: 512, layers: 1, vocabSize: 262,
     files: {tokenizer: {path: 'tokenizer', sha256: 'tokens'}, prefill: {path: 'prefill', sha256: 'checked'},
-      incremental: {path: 'incremental', sha256: 'step'}},
+      incremental: modelFiles.sharedGraphs ? {path: 'prefill', sha256: 'checked'} : {path: 'incremental', sha256: 'step'}},
   }),
 }));
 vi.mock('../../../src/features/tutor/writingAid/decoder/assets', () => ({
   fetchVerifiedTypeaheadFile: async (_tier: string, file: {path: string}) => {
+    modelFiles.fetched(file.path);
     if (file.path !== 'tokenizer') return Uint8Array.of(file.path === 'prefill' ? 1 : 2);
     return new TextEncoder().encode(JSON.stringify({version: 1, algorithm: 'utf8-bpe', byteOffset: 6, merges: [],
       reserved: {pad: 0, bos: 1, eos: 2, question: 3, aids: 4, draft: 5}}));
@@ -38,8 +40,10 @@ function tensors(bestToken?: number) {
     present_key_0: {dispose: vi.fn()}, present_value_0: {dispose: vi.fn()}};
 }
 
-async function worker() {
+async function worker(sharedGraphs = false) {
   vi.resetModules();
+  modelFiles.sharedGraphs = sharedGraphs;
+  modelFiles.fetched.mockClear();
   ort.prefill.mockReset().mockImplementation(async () => tensors());
   ort.incremental.mockReset().mockImplementation(async () => tensors());
   const replies: NeuralReply[] = [];
@@ -61,6 +65,14 @@ async function worker() {
     },
   };
 }
+
+test('coalesces concurrent graph roles that reference the same verified download', async () => {
+  const decoder = await worker(true);
+  decoder.suggest(1, 'Use ');
+  expect((await decoder.reply(1)).modelFingerprint).toBe('checked:checked:tokens:-');
+  expect(modelFiles.fetched.mock.calls.map(([path]) => path).sort()).toEqual(['prefill', 'tokenizer']);
+  decoder.reset();
+});
 
 function delayedPrefill() {
   const cached = tensors();
