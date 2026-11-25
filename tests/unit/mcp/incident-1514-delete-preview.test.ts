@@ -25,20 +25,26 @@ const ctx=(t:Record<string,any[]>)=>{
 };
 
 describe('incident #1514: delete preview counts the cascade without loading whole rows',()=>{
- it('reads each related table by its id and link columns only, never the texts',async()=>{
-  const {c,reads}=ctx(tables());await remove(c,{target:'topology-1',confirm:false});
-  const related=reads.filter(([t])=>t!=='projects'&&t!=='settings');
-  expect(related.length).toBeGreaterThan(0);
-  for(const [t,cols] of related){expect(cols,t).not.toBe('*');expect(cols,t).not.toMatch(/text|body|front|back/);}
-  expect(Object.fromEntries(related)).toMatchObject({source_pages:'source_id',checkpoint_prereqs:'checkpoint_id,prereq_id',session_events:'session_id',cards:'id,note_id',concept_links:'from_id,to_id'});
+ it('keeps every related row and source/transcript body beside the database',async()=>{
+  const {c,reads}=ctx(tables());
+  c.db.rpc=vi.fn(async()=>({data:{token:'a'.repeat(64),counts:{projects:1,source_pages:2}},error:null}));
+  await remove(c,{target:'topology-1',confirm:false});
+  expect(reads.map(([table])=>table)).toEqual(['projects']);
+  expect(c.db.rpc).toHaveBeenCalledWith('n239_mcp_delete_scope',{
+   p_user:c.userId,p_table:'projects',p_key:{id:'p1'},p_lock:false
+  });
  });
- it('counts exactly what cascades, through every link (unchanged behaviour)',async()=>{
-  const {c}=ctx(tables());
+ it('preserves the server-calculated counts and binds confirmation to their scope',async()=>{
+  const {c}=ctx(tables()),token='a'.repeat(64);
+  const counts={projects:1,sources:1,checkpoints:2,sessions:1,misconceptions:1,notes:1,source_pages:2,checkpoint_prereqs:2,checkpoint_concepts:1,session_events:2,cards:1,card_comments:1,reviews:1};
+  c.db.rpc=vi.fn(async()=>({data:{token,counts},error:null}));
   const text=await remove(c,{target:'topology-1',confirm:false});
-  // p1: 1 source (2 pages), 2 checkpoints (c2→c1 and c3→c1 prerequisites, c1's concept link), 1 session (2 events), 1 misconception, 1 note (1 card, 1 comment, 1 review)
-  expect(text).toBe('topology-1: 1 sources, 2 checkpoints, 1 sessions, 1 misconceptions, 1 notes, 2 source_pages, 2 checkpoint_prereqs, 1 checkpoint_concepts, 2 session_events, 1 cards, 1 card_comments, 1 reviews. Confirm before deleting.');
+  expect(text).toBe('topology-1: 1 projects, 1 sources, 2 checkpoints, 1 sessions, 1 misconceptions, 1 notes, 2 source_pages, 2 checkpoint_prereqs, 1 checkpoint_concepts, 2 session_events, 1 cards, 1 card_comments, 1 reviews. Confirm before deleting. previewToken: '+token);
   expect(c.batch).toEqual([]);
-  const done=await remove(c,{target:'topology-1',confirm:true});
-  expect(done).toMatch(/^deleted topology-1 and 1 sources, 2 checkpoints/);expect(c.batch).toHaveLength(1);expect(c.batch[0]).toMatchObject({op:'delete',table:'projects'});
+  await expect(remove(c,{target:'topology-1',confirm:true})).rejects.toThrow(/previewToken/);
+  expect(c.batch).toEqual([]);
+  const done=await remove(c,{target:'topology-1',confirm:true,previewToken:token});
+  expect(done).toBe('deleted topology-1');expect(c.batch).toHaveLength(1);
+  expect(c.batch[0]).toEqual({op:'delete',table:'projects',where:{id:'p1'},expectedScope:token});
  });
 });

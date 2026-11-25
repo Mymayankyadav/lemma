@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
 import {getApi} from '../../data';
 import {useAtlas,useHome} from '../../data/hooks';
 import {getTaskApi} from '../../data/tasks';
@@ -10,16 +10,26 @@ import {canonicalSearchItem,search,settingResults,type Matched,type SearchGroupN
 import {searchActionIcon,searchGroupIcon} from './searchIcons';
 import {isFlagOn} from '../../flags';
 import {readRoomRecent,rememberRoomItem} from '../../ui/v7/room';
+import {recentSession,recentStorageKey,subscribeRecentSession} from '../../ui/v7/recentScope';
 import {useStudyUi} from '../../data/StudyUiRelease';
 
 const recentKey='lemma.v7.recent';
 const readRecent=():SearchItem[]=>{try{
- const items=(JSON.parse(localStorage.getItem(recentKey)??'[]') as SearchItem[]).map(canonicalSearchItem);
+ const key=recentStorageKey(recentKey);if(!key)return [];
+ const items=(JSON.parse(localStorage.getItem(key)??'[]') as SearchItem[]).map(canonicalSearchItem);
  return [...new Map(items.map(item=>[item.id,item])).values()].slice(0,5);
 }catch{return [];}};
-const writeRecent=(item:SearchItem)=>{try{localStorage.setItem(recentKey,JSON.stringify([item,...readRecent().filter(entry=>entry.id!==item.id)].slice(0,5)));}catch{/* recents are a convenience */}};
+const writeRecent=(item:SearchItem,scope:string)=>{try{const key=recentStorageKey(recentKey,scope);if(key)localStorage.setItem(key,JSON.stringify([item,...readRecent().filter(entry=>entry.id!==item.id)].slice(0,5)));}catch{/* recents are a convenience */}};
+type SearchProps={open:boolean;onClose:()=>void;onPick:(item:SearchItem,snapshot:SearchSnapshot)=>void;initial?:SearchSnapshot};
 /** PLAN §6.1 G: search or jump to a path, checkpoint, card, concept, task, setting or action from the data the screens already load. */
-export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;onClose:()=>void;onPick:(item:SearchItem,snapshot:SearchSnapshot)=>void;initial?:SearchSnapshot}){
+export default function SearchSheet(props:SearchProps){
+ const scope=useSyncExternalStore(subscribeRecentSession,recentSession,recentSession);
+ const openedScope=useRef(scope);
+ // Remount cancels private asynchronous results and clears the cached query,
+ // recents and selection, even when this sheet stays open across sign-out.
+ return <ScopedSearchSheet key={scope} {...props} initial={openedScope.current===scope?props.initial:undefined} scope={scope}/>;
+}
+function ScopedSearchSheet({open,onClose,onPick,initial,scope}:SearchProps&{scope:string}){
  const room=isFlagOn('v7Room'),studyRepair=useStudyUi();
  const home=useHome(),atlas=useAtlas();
  const [query,setQuery]=useState(initial?.query??''),[activeId,setActiveId]=useState(initial?.activeId??null);
@@ -98,10 +108,9 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
  },[open,keepActiveVisible,active,activeItem,results.flat]);
  function openItem(raw:SearchItem){
   const item=canonicalSearchItem(raw);
-  // Source names stay within the current search visit. Existing recents are not
-  // owner-keyed, so do not persist a newly exposed private source title there.
+  // Source names stay within the current search visit.
   if(item.group!=='Sources'){
-   if(room)rememberRoomItem(item);else writeRecent({id:item.id,group:item.group,title:item.title,parent:item.parent,to:item.to});
+   if(room)rememberRoomItem(item,scope);else writeRecent({id:item.id,group:item.group,title:item.title,parent:item.parent,to:item.to},scope);
   }
   onPick(item,{query,activeId:item.id,expanded:[...expanded]});
  }

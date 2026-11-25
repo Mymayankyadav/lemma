@@ -118,6 +118,7 @@ try{
  await as(owner);
  const gradeRequest=command('review_corrections','correct',reviewId,{reason:'Misgraded answer',
   rating:4,replacementState:replacement,schedulerParams:{method:'manual audit'}});
+ gradeRequest.expectedVersion=(await q('select version from public.cards where id=$1',[card]))[0].version;
  const graded=await invoke('correct_review',gradeRequest);
  assert.equal(graded.status,'ok');assert.equal(graded.method,'disclosed_replacement');
  assert.equal((await q('select rating from public.reviews where id=$1',[reviewId]))[0].rating,4);
@@ -128,8 +129,10 @@ try{
  assert.equal(snapshot.reason,'Misgraded answer');
  assert.deepEqual(snapshot.replacementState,replacement);
  assert.equal((await invoke('correct_review',gradeRequest)).parameterSnapshotId,graded.parameterSnapshotId);
- const voidReview=await invoke('void_review',command('review_corrections','void',reviewId,{
-  reason:'Review never occurred',replacementState:{...replacement,reps:1,stability:2}}));
+ const voidReviewRequest=command('review_corrections','void',reviewId,{
+  reason:'Review never occurred',replacementState:{...replacement,reps:1,stability:2}});
+ voidReviewRequest.expectedVersion=(await q('select version from public.cards where id=$1',[card]))[0].version;
+ const voidReview=await invoke('void_review',voidReviewRequest);
  assert.equal(voidReview.status,'ok');
  assert.ok((await q('select undone_at from public.reviews where id=$1',[reviewId]))[0].undone_at);
  await q('select public.undo_action($1,$2,false)',[owner,voidReview.actionNo]);

@@ -81,7 +81,9 @@ test('legacy Notifications recents and alias open the same split Settings pane o
  await page.setViewportSize({width:1060,height:844});
  await page.emulateMedia({colorScheme:'light',reducedMotion:'reduce'});
  await page.addInitScript(()=>localStorage.setItem('lemma.ui',JSON.stringify({mode:'night'})));
- await page.addInitScript(()=>localStorage.setItem('lemma.v7.recent',JSON.stringify([
+ // Legacy setting aliases still normalize inside the current profile's history.
+ // Unowned pre-upgrade keys are intentionally discarded for account privacy.
+ await page.addInitScript(()=>localStorage.setItem('lemma.v7.recent:v2:["demo","default"]',JSON.stringify([
   {id:'setting:Notifications',group:'Settings',title:'Notifications',to:'/settings'},
   {id:'setting:Reminders',group:'Settings',title:'Reminders',to:'/settings'},
  ])));

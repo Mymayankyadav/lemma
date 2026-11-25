@@ -26,6 +26,8 @@ export function CardEditorSheet({open,onClose,initial,draft,busy,onSubmit,submit
  /** The Inbox edits a proposal before approving it: "Save and approve", with the path fixed. */
  submitLabel?:string;lockPath?:boolean}){
  const projects=useProjects(),settings=useSettings(),wide=useMinWidth(700);
+ const [snapshot]=useState(()=>({noteNo:initial?.noteNo,noteId:initial?.noteId,expectedVersion:initial?.version})),[operationId]=useState(()=>crypto.randomUUID());
+ const [tags]=useState(initial?.tags??[]);
  const [front,setFront]=useState(initial?.front??draft?.front??''),[back,setBack]=useState(initial?.back??draft?.back??'');
  const [type,setType]=useState<NoteType>(initial?.type??'basic'),[kind,setKind]=useState<NoteKind>(initial?.kind??'other');
  const [slug,setSlug]=useState(initial?.projectSlug??draft?.projectSlug??''),[checkpoint,setCheckpoint]=useState(initial?.checkpointCode??'');
@@ -45,7 +47,7 @@ export function CardEditorSheet({open,onClose,initial,draft,busy,onSubmit,submit
   if(!front.trim()||!back.trim()){setError('Write both a front and a back.');return;}
   if(creating&&!slug){setError('Choose a path for this card.');return;}
   setError('');
-  onSubmit({front:front.trim(),back:back.trim(),type,kind,projectSlug:slug,checkpointCode:checkpoint||undefined,tags:initial?.tags??[]});
+  onSubmit({front:front.trim(),back:back.trim(),type,kind,projectSlug:slug,checkpointCode:checkpoint||undefined,tags,...snapshot,operationId});
  }
  const write=<div className="v7-editor-write">
   <label className="v7-field-group"><span>Front</span><textarea ref={frontRef} className="v7-field v7-editor-text" rows={3} value={front} onFocus={()=>{target.current='front';}} onChange={event=>setFront(event.target.value)} placeholder="The question, definition or statement"/></label>

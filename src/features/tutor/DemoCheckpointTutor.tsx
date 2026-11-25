@@ -266,7 +266,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   useEffect(()=>{
     if(!scratchEnabled||!ink.ready||!session)return;
     const submitted=new Set(session.thread.turns.flatMap(turn=>turn.snapshot.attachments?.map(image=>image.id)??[]));
-    if(submitted.size)void ink.update(current=>removeSubmittedInk(current,submitted)).catch(()=>{});
+    if(submitted.size)void ink.update(current=>removeSubmittedInk(current,submitted),{latestStored:true}).catch(()=>{});
   },[scratchEnabled,session,ink.ready,ink.draft]);
   useEffect(()=>{
     if(!live||!activeApi)return
@@ -360,7 +360,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         : await session.api.submit(id,draft,sequence)
       if(result.kind==='submitted' && !options.keepDraft) {
         question.clearIfUnchanged(text);attachedLocal.clearIfUnchanged(attachedLocal.text);sourceDraft.clearIfUnchanged(sourceDraft.text)
-        if(hasImages)await ink.update(current=>removeSubmittedInk(current,new Set(attachments.map(image=>image.id)))).catch(()=>{})
+        if(hasImages)await ink.update(current=>removeSubmittedInk(current,new Set(attachments.map(image=>image.id))),{latestStored:true}).catch(()=>{})
       }
       await refresh(session.api).catch(()=>setError('Question confirmed. Reconnect to refresh the conversation.'))
       if(result.kind!=='submitted')setError('The question was not saved. Your draft was kept.')

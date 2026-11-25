@@ -14,8 +14,8 @@ import {validateTemplate} from '../../_shared/adaptive/template.ts';
 async function origin(c:Context,sess?:any):Promise<string>{
   return sess?.client||(await settings(c)).connector_last_client||'other';
 }
-async function addProposal(c:Context,p:any,kind:string,payload:any,reason?:string,sess?:any){
-  return insert(c,'proposals',{project_id:p.id,session_id:sess?.id||null,kind,payload,reason:reason||null,origin:await origin(c,sess)});
+async function addProposal(c:Context,p:any,kind:string,payload:any,reason?:string,sess?:any,versions?:Record<string,unknown>){
+  return insert(c,'proposals',{project_id:p.id,session_id:sess?.id||null,kind,payload,reason:reason||null,origin:await origin(c,sess),...(versions?{base_target_versions:versions}:{})});
 }
 export async function startSession(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project),cp=await checkpoint(c,p,a.checkpoint);
@@ -53,7 +53,8 @@ export async function saveProgress(c:Context,a:any):Promise<string>{
   // N170: the posed item is fingerprinted here so the same question, asked again in any subject, is one item.
   if(Array.isArray(payload.events))payload.events=(payload.events as any[]).map(e=>typeof e?.item==='string'&&e.item?{...e,fp:fingerprint(e.item)}:e);
   const result=await rpc(c,'save_progress',{
-    p_user_id:c.userId,p_project_id:p.id,p_session_id:s.id,p_payload:payload
+    p_user_id:c.userId,p_project_id:p.id,p_session_id:s.id,p_payload:payload,
+    ...(a.operationId?{operation_id:a.operationId}:{})
   });
   return 'saved S'+s.number+': step '+(result?.step??s.resume_step??0)+', '+(result?.events??0)+' events';
 }
@@ -91,16 +92,16 @@ export async function proposeCards(c:Context,a:any):Promise<string>{
   return (a.direct?added+' cards added':added+' cards wait for approval in Lemma')+(skipped?'; skipped '+skipped+' duplicate':'')+longCardAdvice(a.cards);
 }
 export async function proposeCardEdits(c:Context,a:any):Promise<string>{
-  const notes=await all(c,'notes','id,no,project_id');
   const comments=await all(c,'card_comments','no,note_id,status');
   let n=0;
   for(const x of a.edits){
     const no=number(x.card.toUpperCase(),'N');
-    const note=notes.find((v:any)=>v.no===no);
+    const {data:note,error}=await scoped(c,'notes','id,no,project_id,version').eq('no',no).maybeSingle();
+    if(error)throw Error(error.message);
     if(!note)throw new Error('Card N'+no+' not found');
     if((x.resolves||[]).some((id:number)=>!comments.some((cm:any)=>cm.no===id&&cm.note_id===note.id&&cm.status==='open')))throw new Error('Unrecognized comment on N'+no);
     const p={id:note.project_id};
-    await addProposal(c,p,'card_edit',{note_no:no,front:x.front,back:x.back,type:x.type,resolves:x.resolves||[]},x.reason);
+    await addProposal(c,p,'card_edit',{note_no:no,front:x.front,back:x.back,type:x.type,resolves:x.resolves||[]},x.reason,undefined,{notes:{[note.id]:note.version}});
     n++;
   }
   return n+' card fixes wait for approval';

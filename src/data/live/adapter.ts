@@ -2,8 +2,8 @@ import type { LemmaApi } from '../api'
 import {isAuthSessionMissingError} from '@supabase/supabase-js'
 import { textKind } from '../../pdf/text-source'
 import { liveClient } from './client'
-import {authGeneration, authOwner} from '../authBoundary'
-import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
+import {authGeneration, authOwner, authSignedOut} from '../authBoundary'
+import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, type Row } from './helpers'
 import { projectProgress, conceptStatus } from '../../lib/derive'
 import {buildAtlasEnvelope,runAtlasMutation,runAtlasPreview} from './atlas-command'
 import { studyDay } from '../../lib/calendar'
@@ -47,6 +47,7 @@ function settingsWithV6(row:Row):Settings {
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  private readonly noteEdits=new Map<string,{operationId:string;expected:number;id:string}>();
+ private readonly noteCreates=new Map<string,string>();
  async getAdaptiveData(now?:Date){return (await import('../adaptive/live')).readAdaptiveData(now)}
  readonly mode = 'live' as const
  /** Uncertain Atlas results must retain the exact command receipt identity. */
@@ -785,7 +786,7 @@ export class LiveAdapter implements LemmaApi {
   const [historyPage,commentsPage]=await Promise.all([
    this.getCardHistoryPage(no),this.getCardCommentsPage(no)
   ])
-  return {note:{noteId:note.id,noteNo:Number(note.no),front:note.front,back:note.back,type:note.type,
+  return {note:{noteId:note.id,noteNo:Number(note.no),version:Number(note.version),front:note.front,back:note.back,type:note.type,
     kind:note.kind,tags:note.tags??[],status:note.status,origin:note.origin,
     projectSlug:project?.slug??'',checkpointCode:cps[0]?.code??null,
     sessionNumber:sessions[0]?.number??null,
@@ -797,27 +798,46 @@ export class LiveAdapter implements LemmaApi {
     commentsNextCursor:commentsPage.nextCursor}
  }
  async createNote(...args: Parameters<LemmaApi['createNote']>): ReturnType<LemmaApi['createNote']> {
-  const [input]=args,db=liveClient(),uid=await owner(db)
-  const project=checked(await db.from('projects').select('*').eq('user_id',uid).eq('slug',input.projectSlug).single()) as Row
-  let checkpointId:string|null=null
-  if(input.checkpointCode){
-    const cp=checked(await db.from('checkpoints').select('id').eq('user_id',uid).eq('project_id',project.id).eq('code',input.checkpointCode).single()) as Row
-    checkpointId=cp.id
-  }
-  const note=checked(await db.from('notes').insert({user_id:uid,project_id:project.id,checkpoint_id:checkpointId,
-    front:input.front,back:input.back,type:input.type,kind:input.kind,origin:'user'}).select('*').single()) as Row
-  const cardRows=noteOrds(input.front,input.type).map(ord=>({user_id:uid,note_id:note.id,ord}))
-  const {error}=await db.from('cards').insert(cardRows)
-  if(error){await db.from('notes').delete().eq('user_id',uid).eq('id',note.id);fail(error)}
-  return {noteNo:Number(note.no)}
+  const [input]=args,db=liveClient(),generation=authGeneration(),uid=await owner(db)
+  const checkAccount=()=>{
+   if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))
+    throw new LemmaError('auth','The card account changed.');
+  };
+  checkAccount();
+  const payload={projectSlug:input.projectSlug,front:input.front,back:input.back,type:input.type,kind:input.kind,
+   ...(input.checkpointCode?{checkpointCode:input.checkpointCode}:{})};
+  const key=uid+':'+generation+':'+JSON.stringify(payload);
+  const operationId=input.operationId??this.noteCreates.get(key)??crypto.randomUUID();
+  this.noteCreates.set(key,operationId);
+  // Note, every card ordinal and the receipt commit together. An uncertain
+  // response can be replayed; it must never trigger compensating deletion.
+  const result=await db.rpc('create_note_atomic',{p_operation:operationId,p_input:payload});
+  checkAccount();
+  const receipt=checked(result) as {status:string;operationId:string;noteNo:number};
+  if(receipt.status==='conflict')throw new LemmaError('conflict','This card creation changed. Reopen the editor.');
+  if(receipt.status!=='ok'||receipt.operationId!==operationId||!Number.isSafeInteger(Number(receipt.noteNo)))
+   throw new LemmaError('server','Invalid card creation receipt');
+  this.noteCreates.delete(key);
+  return {noteNo:Number(receipt.noteNo)}
  }
  async updateNote(...args: Parameters<LemmaApi['updateNote']>): ReturnType<LemmaApi['updateNote']> {
-  const [no,patch]=args,db=liveClient(),uid=await owner(db)
+  const [no,patch,expectedVersion,expectedNoteId]=args,db=liveClient(),generation=authGeneration(),uid=await owner(db)
+  const checkAccount=()=>{
+   if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))
+    throw new LemmaError('auth','The card account changed.');
+  };
+  checkAccount();
+  if(!Number.isSafeInteger(expectedVersion)||Number(expectedVersion)<1)
+   throw new LemmaError('conflict','Reopen the card before editing it.');
   const note=checked(await db.from('notes').select('*').eq('user_id',uid).eq('no',no).single()) as Row
-  const key=uid+':'+no+':'+JSON.stringify(patch);
-  const saved=this.noteEdits.get(key)??{operationId:crypto.randomUUID(),expected:Number(note.version),id:String(note.id)};
+  checkAccount();
+  if(expectedNoteId!==undefined&&expectedNoteId!==note.id)
+   throw new LemmaError('conflict','The selected card changed.');
+  const key=uid+':'+generation+':'+note.id+':'+no+':'+expectedVersion+':'+JSON.stringify(patch);
+  const saved=this.noteEdits.get(key)??{operationId:crypto.randomUUID(),expected:Number(expectedVersion),id:String(note.id)};
   this.noteEdits.set(key,saved);
   const result=await db.rpc('edit_note_atomic',{p_id:saved.id,p_expected:saved.expected,p_patch:patch,p_operation:saved.operationId});
+  checkAccount();
   const response=checked(result) as {status:string};
   if(response.status==='conflict'){this.noteEdits.delete(key);throw new LemmaError('conflict','Note changed on another device');}
   if(response.status!=='ok')throw new LemmaError('server','Invalid audited note response');
@@ -984,8 +1004,12 @@ export class LiveAdapter implements LemmaApi {
   return {aggregate,reviews:[],sessions:[],checkpointEvents:[],projects:[],misconceptions:[]}
  }
  async exportAll(...args: Parameters<LemmaApi['exportAll']>): ReturnType<LemmaApi['exportAll']> {
-  const db=liveClient(),uid=await owner(db)
-  const generation=authGeneration()
+  const db=liveClient(),generation=authGeneration(),uid=await owner(db)
+  const checkAccount=()=>{
+   if(authGeneration()!==generation||authSignedOut()||(authOwner()!==null&&authOwner()!==uid))
+    throw new LemmaError('auth','The export account changed')
+  }
+  checkAccount()
   // Only the owner-scoped SECURITY DEFINER function reads the private registry.
   // The browser never selects undo metadata or other users' domain tables.
   const snapshot=checked(await db.rpc('begin_owner_export')) as string
@@ -996,9 +1020,11 @@ export class LiveAdapter implements LemmaApi {
    const seen=new Set<string>()
    let cursor:string|null=null
    for(let pageNo=0;pageNo<10000;pageNo++){
+    checkAccount()
     const payload=checked(await db.rpc('owner_export_page',{
      p_snapshot:snapshot,p_table:table,p_offset:cursor===null?0:Number(cursor),p_limit:100
     })) as unknown
+    checkAccount()
     if(!payload||typeof payload!=='object'||Array.isArray(payload))
      throw new LemmaError('server','Malformed owner export response')
     const page=payload as Record<string,unknown>
@@ -1035,9 +1061,10 @@ export class LiveAdapter implements LemmaApi {
    })
    manifest.push({table,count:tables[table].length})
   }
-  const checkAccount=()=>{if(authGeneration()!==generation||authOwner()!==uid)throw new LemmaError('auth','The export account changed')}
-  if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))throw new LemmaError('auth','The export account changed')
+  checkAccount()
   const savedPads=authOwner()===uid?await (await import('../../features/pad/padDraftStore')).exportSavedPadDrafts(uid,checkAccount):[]
+  const {backupSourceFiles}=await import('./source-backup');
+  const sourceFiles=await backupSourceFiles(db,uid,tables.sources??[],checkAccount);
   const tutorImages=[];
   for(const attachment of tables.tutor_turn_attachments??[]){
    checkAccount();
@@ -1047,15 +1074,16 @@ export class LiveAdapter implements LemmaApi {
    const {imageData}=await import('../tutor/ink-storage');
    tutorImages.push({id:attachment.id,data:await imageData(file)});
   }
-  if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))throw new LemmaError('auth','The export account changed')
+  checkAccount()
   result=new Blob([JSON.stringify({
    format:'lemma-backup-v2',schemaVersion:2,exportedAt:new Date().toISOString(),
-   manifest:{registry:'lemma_undo_tables',tables:manifest},tables,
+   manifest:{registry:'lemma_undo_tables',tables:manifest,
+    originals:{complete:true,count:sourceFiles.length,bytes:sourceFiles.reduce((total,file)=>total+file.bytes,0)}},tables,sourceFiles,
    ...(tutorImages.length?{tutorImages}:{}),
    ...(savedPads.length?{devicePad:{version:1,checkpoints:savedPads}}:{})
   },null,2)],{type:'application/json'})
   }finally{try{await db.rpc('end_owner_export',{p_snapshot:snapshot})}catch{/* snapshot expires; cleanup retries later */}}
-  if(authGeneration()!==generation)throw new LemmaError('auth','The export account changed')
+  checkAccount()
   return result
  }
 }

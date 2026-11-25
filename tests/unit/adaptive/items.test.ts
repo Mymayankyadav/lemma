@@ -11,8 +11,10 @@ let n=0;
 const ev=(p:Partial<EvidenceFact>={}):EvidenceFact=>({id:'e'+(++n),at:1e12+n*1000,day:'2026-11-16',concept_id:'c',level:'use',role:'primary',outcome:'pass',hint_level:0,novelty:'novel',...p});
 
 describe('items (§10)',()=>{
-  it('fingerprint ignores case, spacing and LaTeX delimiters but not content',()=>{
-    expect(fingerprint('Prove that  $f$ is continuous.')).toBe(fingerprint('prove that f is continuous'));
+  it('fingerprint ignores whitespace while preserving mathematical case and notation',()=>{
+    expect(fingerprint('Prove that  $f$ is continuous.')).toBe(fingerprint('Prove that $f$ is continuous.'));
+    expect(fingerprint('Prove that $F$ is continuous.')).not.toBe(fingerprint('Prove that $f$ is continuous.'));
+    expect(fingerprint('Is zero in [0,1]?')).not.toBe(fingerprint('Is zero in (0,1)?'));
     expect(fingerprint('Prove f is continuous')).not.toBe(fingerprint('Prove f is open'));
   });
   it('prior difficulty: 1–5 maps to −2…+2; defaults by origin',()=>{

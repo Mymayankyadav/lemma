@@ -83,6 +83,7 @@ describe('N37 registered MCP metadata and generic command',()=>{
   expect(result.resources.map((x:{resource:string})=>x.resource).sort()).toEqual(rows.map(row=>row.resource).sort());
   const review=result.resources.find((x:{resource:string})=>x.resource==='review_corrections');
   expect(review.fields).toEqual(expect.arrayContaining(['reviewedAt','durationMs','replacementState','schedulerParams']));
+  expect(review.expectedVersion).toEqual({required:true,resource:'cards',field:'version'});
   const session=result.resources.find((x:{resource:string})=>x.resource==='session_event_corrections');
   expect(session.fields).toEqual(expect.arrayContaining(['hintLevel','occurredAt']));
  });

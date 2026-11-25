@@ -93,5 +93,12 @@ export async function runAtlasPreview(db:SupabaseClient,p:AtlasEnvelope):Promise
   (typeof raw.keepVersion!=='number'||!Number.isSafeInteger(raw.keepVersion))||
   !raw.impact||typeof raw.impact!=='object')
   throw new LemmaError('server','Atlas merge preview was unavailable');
+ if(raw.mergeAllowed!==undefined||raw.protectedDependencies!==undefined){
+  const dependencies=raw.protectedDependencies;
+  if(typeof raw.mergeAllowed!=='boolean'||!dependencies||typeof dependencies!=='object'||Array.isArray(dependencies)||
+   Object.values(dependencies).some(value=>typeof value!=='number'||!Number.isSafeInteger(value)||value<0)||
+   raw.mergeAllowed===Object.values(dependencies).some(value=>(value as number)>0))
+   throw new LemmaError('server','Atlas merge protection details were unavailable');
+ }
  return raw as unknown as AtlasMergePreview;
 }

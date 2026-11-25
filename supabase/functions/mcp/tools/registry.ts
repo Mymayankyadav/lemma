@@ -16,7 +16,8 @@ const TEXT_FIELDS=['title','label','name','text','intent','description','body',
  'summary','note','front','back','response','status'];
 const MAX_OFFSET=1_000_000;
 type RecordMap=Record<string,unknown>;
-type Meta={resource:string;fields:string[];operations:string[]};
+type Meta={resource:string;fields:string[];operations:string[];
+ expectedVersion?:{required:true;resource:'cards';field:'version'}};
 type Cursor={v:1;mode:'get'|'search';resource:string;query:string|null;
  status:string|null;id:string|null;offset:number};
 export type GenericMode='get'|'search';
@@ -53,7 +54,8 @@ function readSchema(row:RecordMap):Meta{
   schema.operations.some(x=>typeof x!=='string'||!RESOURCE.test(x)))
   throw Error('Malformed registered resource field or operation');
  return {resource,fields:safeStrings(schema.fields,FIELD),
-  operations:safeStrings(schema.operations)};
+  operations:safeStrings(schema.operations),
+  ...(resource==='review_corrections'?{expectedVersion:{required:true as const,resource:'cards' as const,field:'version' as const}}:{})};
 }
 async function metadata(c:Context,resource:string):Promise<Meta>{
  if(!c.userId)throw Error('Authenticated owner required');
@@ -136,6 +138,29 @@ function projection(row:RecordMap,fields:readonly string[]):RecordMap{
  }
  return visible;
 }
+const record=(value:unknown):value is RecordMap=>!!value&&typeof value==='object'&&!Array.isArray(value);
+async function reviewCorrectionSnapshot(c:Context,args:GenericReadArgs,mode:GenericMode):Promise<string>{
+ if(mode!=='get')throw Error('Use get with an exact review ID for review corrections');
+ if(['limit','cursor','query','status','project','start','end','source','depth','trail']
+  .some(key=>(args as RecordMap)[key]!==undefined))
+  throw Error('Review correction snapshots do not accept filters; use only what and id');
+ const id=args.id;
+ if(typeof id!=='string'||!/^[1-9][0-9]{0,18}$/.test(id)||BigInt(id)>9223372036854775807n)
+  throw Error('Positive decimal review ID required');
+ const {data,error}=await c.db.rpc('n239_mcp_review_correction_snapshot',{p_user:c.userId,p_review:id});
+ if(error)throw Error(error.message);
+ if(!record(data)||!record(data.review)||data.review.id!==id||!record(data.card)||
+  typeof data.card.id!=='string'||data.card.id!==data.review.cardId||
+  typeof data.card.version!=='number'||!Number.isSafeInteger(data.card.version)||data.card.version<1||
+  data.expectedVersion!==data.card.version||
+  typeof data.readAt!=='string')throw Error('Invalid review correction snapshot');
+ const schedule=data.card.schedule;
+ if(!record(schedule)||
+  !['state','due','stability','difficulty','last_review','step','reps','lapses'].every(key=>key in schedule))
+  throw Error('Invalid review correction snapshot schedule');
+ return JSON.stringify({resource:'review_corrections',items:[data],total:1,nextCursor:null,
+  guidance:'Use this card.version as expectedVersion while preparing the complete replacementState. After a conflict, reread and recompute the replacement before submitting a new operationId.'});
+}
 /** One exact filtered count plus an ordered owner-filtered page, at most 50
  * rows per call (8 for search). Never expose user_id or unknown columns. */
 export async function readRegisteredResource(c:Context,args:GenericReadArgs,mode:GenericMode):Promise<string>{
@@ -145,6 +170,9 @@ export async function readRegisteredResource(c:Context,args:GenericReadArgs,mode
   throw Error('Registered reads use authenticated owner; omit owner arguments');
  const resource=(mode==='get'?args.what:args.resource)??'';
  const info=await metadata(c,resource);
+ // review_corrections names a command, not a table. Its exact read has a
+ // dedicated owner-bound snapshot so schedule and version cannot drift apart.
+ if(info.resource==='review_corrections')return reviewCorrectionSnapshot(c,args,mode);
  if(args.project!==undefined||args.start!==undefined||args.end!==undefined||
     args.source!==undefined)
   throw Error('This registered resource does not expose project/time/source filters');

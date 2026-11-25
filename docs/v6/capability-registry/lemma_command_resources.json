@@ -377,6 +377,11 @@
       "resource": "review_corrections",
       "command_fn": "correct_review",
       "mcp_ok": true,
+      "expectedVersion": {
+        "required": true,
+        "resource": "cards",
+        "field": "version"
+      },
       "schema": {
         "operations": [
           "correct",

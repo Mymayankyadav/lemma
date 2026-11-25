@@ -7,6 +7,10 @@ import { MathText } from "../../ui/MathText";
 import { isFlagOn } from "../../flags";
 import { cardTypeText, noteKindText } from "../../lib/labels";
 export interface EditorValue {
+  noteNo?:number;
+  noteId?:string;
+  expectedVersion?:number;
+  operationId?:string;
   front: string;
   back: string;
   type: NoteType;
@@ -72,6 +76,8 @@ export function Editor({
   formId?: string;
 }) {
   const v6 = isFlagOn("v6Shell");
+  const [snapshot]=useState(()=>({noteNo:initial?.noteNo,noteId:initial?.noteId,expectedVersion:initial?.version}));
+  const [operationId]=useState(()=>crypto.randomUUID());
   const projects = useProjects(),
     [front, setFront] = useState(initial?.front ?? ""),
     [back, setBack] = useState(initial?.back ?? ""),
@@ -87,6 +93,7 @@ export function Editor({
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit({
+          ...snapshot,operationId,
           front,
           back,
           type,

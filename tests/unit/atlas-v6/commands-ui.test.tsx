@@ -26,6 +26,32 @@ const render=async(node:React.ReactNode)=>{
 beforeEach(()=>vi.clearAllMocks());
 
 describe('N105.2 Atlas explicit command controls',()=>{
+ it('shows protected learning history and refuses a destructive merge even on form submission',async()=>{
+  const previewConceptMerge=vi.fn(async()=>({
+   status:'ok',actionNo:null,changed:[],sourceVersion:3,keepVersion:4,impact,
+   mergeAllowed:false,protectedDependencies:{attemptTags:2,instructionEvents:1,typedLinks:1}
+  }));
+  const mergeConcept=vi.fn(),onSaved=vi.fn(),onClose=vi.fn();
+  vi.mocked(getApi).mockReturnValue({previewConceptMerge,mergeConcept} as never);
+  const {host,close}=await render(<AtlasCommands graph={graph}
+   sourceId="source" onClose={onClose} onSaved={onSaved}/>);
+  try{
+   const selector=host.querySelector('[aria-label="Atlas edit operation"]') as HTMLSelectElement;
+   await act(async()=>{
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')!.set!.call(selector,'merge');
+    selector.dispatchEvent(new Event('change',{bubbles:true}));
+   });
+   await act(async()=>[...host.querySelectorAll('button')].find(b=>
+    b.textContent==='Preview merge impact')!.click());
+   expect((host.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(true);
+   expect(host.querySelector('[aria-label="Protected learning history"]')?.textContent).toContain('Attempt tags2');
+   expect(host.textContent).toContain('approved alias');
+   await act(async()=>host.querySelector('form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+   expect(mergeConcept).not.toHaveBeenCalled();
+   expect(onSaved).not.toHaveBeenCalled();
+   expect(onClose).not.toHaveBeenCalled();
+  }finally{await close()}
+ });
  it('previews the exact merge under both owner versions before enabling confirmation',async()=>{
   const previewConceptMerge=vi.fn(async()=>({
    status:'ok',actionNo:null,changed:[],sourceVersion:3,keepVersion:4,impact

@@ -1615,7 +1615,7 @@ try{
  mark('session_event_corrections','correct','void');
 
  // Review corrections replace one actual card schedule using a disclosed
- // complete snapshot; no version column is invented for reviews or cards.
+ // complete snapshot, bound to the version of the card that was inspected.
  const correctionReview=(await q(
   "insert into public.reviews(user_id,card_id,rating,state_before,duration_ms,prev) "+
   "values($1,$2,3,0,6000,'{}'::jsonb) returning id",
@@ -1625,9 +1625,10 @@ try{
   'from public.cards where id=$1',[card.id]))[0];
  const replacement={state:2,due:'2026-12-01T00:00:00Z',stability:8,
   difficulty:4,last_review:'2026-11-06T09:00:00Z',step:0,reps:2,lapses:0};
+ const correctionCardVersion=(await q('select version from public.cards where id=$1',[card.id]))[0].version;
  await role('service_role');
  const reviewCorrection=command('review_corrections','correct',{
-  target:{id:String(correctionReview)},patch:{reason:'Misgraded answer',
+  target:{id:String(correctionReview)},expectedVersion:correctionCardVersion,patch:{reason:'Misgraded answer',
    rating:4,replacementState:replacement,schedulerParams:{method:'manual audit'}}});
  const correctedReview=status(await mcp(reviewCorrection),
   'review_corrections','correct');
@@ -1671,9 +1672,10 @@ try{
   'select state,due,stability,difficulty,last_review,step,reps,lapses '+
   'from public.cards where id=$1',[card.id]))[0],beforeReviewCard,
   'review_corrections.correct: undo did not restore card schedule');
+ const voidCardVersion=(await q('select version from public.cards where id=$1',[card.id]))[0].version;
  await role('service_role');
  const reviewVoid=command('review_corrections','void',{
-  target:{id:String(correctionReview)},patch:{reason:'Review never occurred',
+  target:{id:String(correctionReview)},expectedVersion:voidCardVersion,patch:{reason:'Review never occurred',
    replacementState:{...replacement,reps:1,stability:2}}});
  const voidedReview=status(await mcp(reviewVoid),'review_corrections','void');
  assert.deepEqual(await mcp(reviewVoid),voidedReview,

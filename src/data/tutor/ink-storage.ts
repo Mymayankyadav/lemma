@@ -96,7 +96,8 @@ function openInkDb():Promise<IDBDatabase> {
   });
 }
 
-async function persist<T>(scope:TutorInkScope,mode:IDBTransactionMode,operation:(store:IDBObjectStore,key:string)=>IDBRequest<T>):Promise<T> {
+async function persist<T>(scope:TutorInkScope,mode:IDBTransactionMode,operation:(store:IDBObjectStore,key:string)=>IDBRequest<T>,
+  change?:(value:T,store:IDBObjectStore,key:string)=>T):Promise<T> {
   assertTutorInkScope(scope);
   const live='ownerId' in scope;
   const key=(live?'lemma.tutor.draft:':'lemma.demo-tutor:')+JSON.stringify([live?scope.ownerId:scope.profile,scope.pathId,scope.checkpointId])+':ink';
@@ -121,8 +122,8 @@ async function persist<T>(scope:TutorInkScope,mode:IDBTransactionMode,operation:
         try {assertTutorInkScope(scope);if(failure)throw failure;resolve(result);} catch(error) {reject(error);}
       };
       function access() {
-        const request=operation(tx.objectStore(DRAFTS),key);
-        request.onsuccess=()=>guard(()=>{result=request.result;});
+        const store=tx.objectStore(DRAFTS),request=operation(store,key);
+        request.onsuccess=()=>guard(()=>{result=change?change(request.result,store,key):request.result;});
       }
       // The owner marker and draft share one transaction with deletion, including across tabs.
       guard(()=>{
@@ -158,14 +159,24 @@ export async function removeDeletedOwnerInk(ownerId:string):Promise<void> {
   } finally {db.close();}
 }
 
-export async function readInkDraft(scope:TutorInkScope):Promise<InkDraft> {
-  const draft:InkDraft|undefined=await persist({...scope},'readonly',(store,key)=>store.get(key));
+function checkedInkDraft(draft:InkDraft|undefined):InkDraft {
   if(draft&&(!Array.isArray(draft.strokes)||!Array.isArray(draft.photos)||draft.photos.some(image=>typeof image?.id!=='string')))
     throw storageUnavailable();
   return draft??emptyInk;
 }
+export async function readInkDraft(scope:TutorInkScope):Promise<InkDraft> {
+  return checkedInkDraft(await persist({...scope},'readonly',(store,key)=>store.get(key)));
+}
 export function writeInkDraft(scope:TutorInkScope,draft:InkDraft) {
   return persist({...scope},'readwrite',(store,key)=>store.put(draft,key));
+}
+/** Apply selective cleanup to the latest row in the same transaction as the write. */
+export function updateInkDraft(scope:TutorInkScope,change:(draft:InkDraft)=>InkDraft):Promise<InkDraft> {
+  return persist({...scope},'readwrite',(store,key)=>store.get(key),(raw,store,key)=>{
+    const before=checkedInkDraft(raw),next=checkedInkDraft(change(before));
+    if(next!==before)store.put(next,key);
+    return next;
+  });
 }
 export function imageData(blob:Blob) {
   return new Promise<string>((resolve,reject)=>{

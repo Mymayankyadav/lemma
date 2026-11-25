@@ -87,7 +87,7 @@ export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boo
  },[cards]);
  async function save(value:EditorValue){
   try{
-   const result=await create.mutateAsync({front:value.front,back:value.back,type:value.type,kind:value.kind,projectSlug:value.projectSlug,checkpointCode:value.checkpointCode});
+   const result=await create.mutateAsync({front:value.front,back:value.back,type:value.type,kind:value.kind,projectSlug:value.projectSlug,checkpointCode:value.checkpointCode,operationId:value.operationId});
    setCreating(false);notify('Card created',{tone:'success'});navigate('/cards/'+result.noteNo);
   }catch{notify('Could not create the card.',{tone:'danger'});}
  }

@@ -154,7 +154,9 @@ async function takeShares(): Promise<void> {
       } else if (target.kind === 'new-path') {
         const {Capacitor} = await import('@capacitor/core');
         const files = await Promise.all(target.files.map(async file => {
-          const blob = await (await fetch(Capacitor.convertFileSrc(file.path))).blob();
+          const response=await fetch(Capacitor.convertFileSrc(file.path));
+          if(!response.ok)throw new Error('Could not read the shared file.');
+          const blob = await response.blob();
           return new File([blob], file.name, {type: file.mime || blob.type});
         }));
         holdSharedSources(files);

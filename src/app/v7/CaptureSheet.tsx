@@ -2,7 +2,7 @@ import {FirstUseHint} from '../../ui/v7/FirstUseHint';
 import FirstCardPanel from '../../features/cards/v7/FirstCardPanel';
 import {CardEditorSheet} from '../../features/cards/v7/CardEditorSheet';
 import type {EditorValue} from '../../features/cards/Editor';
-import {useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {Clock3,MessageSquareText,Mic,X} from 'lucide-react';
 import {MEANING_ICON} from '../../ui/v7/meanings';
@@ -20,7 +20,7 @@ import {Button,Segmented,Sheet} from '../../ui/v7/components';
 import {useToast} from '../../ui/Toast';
 import {useActiveFocus} from './focus';
 import {addLabel,captureKinds,captureTaskDraft,defaultStart,kindLabel,parseCapture,type CaptureKind} from './captureModel';
-import {takeCaptureText} from '../../platform/share';
+import {acknowledgeCaptureText,peekCaptureText} from '../../platform/share';
 import {useNativeVoice} from '../../platform/voice';
 
 const icons={task:MEANING_ICON.task,block:Clock3,card:MEANING_ICON.card,thought:MessageSquareText} as const;
@@ -34,7 +34,9 @@ export function instantAt(date:string,time:string,zone:string):string{
 export default function CaptureSheet({open,onClose,initialKind=null,picker=false}:{open:boolean;onClose:()=>void;initialKind?:CaptureKind|null;picker?:boolean}){
  const home=useHome(),settings=useSettings(),{entry}=useActiveFocus(),navigate=useNavigate(),notify=useToast();
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
- const [text,setText]=useState(()=>takeCaptureText()??''),voice=useNativeVoice(),[chosen,setChosen]=useState<CaptureKind|null>(initialKind),[ignored,setIgnored]=useState<ReadonlySet<string>>(new Set());
+ const [shared]=useState(peekCaptureText);
+ const [text,setText]=useState(shared?.text??''),voice=useNativeVoice(),[chosen,setChosen]=useState<CaptureKind|null>(initialKind),[ignored,setIgnored]=useState<ReadonlySet<string>>(new Set());
+ useEffect(()=>{if(shared)acknowledgeCaptureText(shared.id);},[shared]);
  const chooseType=picker&&!text&&!chosen;
  const repair=useStudyUi(),[expandedTask,setExpandedTask]=useState<CapturedTaskDraft|null>(null);
  const [blockKind,setBlockKind]=useState<'study'|'busy'>('study');

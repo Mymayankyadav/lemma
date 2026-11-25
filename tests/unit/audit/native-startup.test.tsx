@@ -48,7 +48,7 @@ it('retains every file from consecutive share intents until the New path importe
  {kind:'files',files:[{path:'file-a',name:'first.md',mime:'text/markdown'}]},
  {kind:'files',files:[{path:'file-b',name:'second.md',mime:'text/markdown'}]},
  ]});
- vi.stubGlobal('fetch',async(path:string)=>({blob:async()=>new Blob([path],{type:'text/markdown'})}));
+ vi.stubGlobal('fetch',async(path:string)=>({ok:true,blob:async()=>new Blob([path],{type:'text/markdown'})}));
  await startNative();const files=takeSharedSources();
  console.info('shared files preserved for importer',files.map(x=>x.name));
  expect(files.map(x=>x.name)).toEqual(['first.md','second.md']);

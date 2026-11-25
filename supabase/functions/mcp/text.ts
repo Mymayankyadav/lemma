@@ -27,7 +27,9 @@ export function pageRange(a: string, b?: string): string[] {
   return Array.from({length:last-first+1},(_,i)=>String(first+i));
 }
 export function normalizedFront(s: string): string {
-  return s.toLowerCase().replace(/[$\\]/g,'').replace(/\s+/g,' ').trim();
+  // Mathematical case and notation can change the answer. Only normalize
+  // canonical Unicode and whitespace before deciding to discard a duplicate.
+  return s.normalize('NFC').replace(/\s+/g,' ').trim();
 }
 /** PDF indexes are one-based integers; source labels may also be roman. */
 export function validPdfPageIndex(value:string):boolean{

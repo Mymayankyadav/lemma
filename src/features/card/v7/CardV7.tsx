@@ -96,8 +96,13 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
  }
  async function save(value:EditorValue){
   if(!note)return;
-  try{await update.mutateAsync({noteNo:note.noteNo,patch:{front:value.front,back:value.back,type:value.type,kind:value.kind,tags:value.tags}});setEditing(false);notify('Card updated',{tone:'success'});}
-  catch{notify('Could not save the card.',{tone:'danger'});}
+  if(value.noteNo!==number||value.noteNo!==note.noteNo||value.noteId!==note.noteId){
+   notify('The selected card changed. Your draft is kept; reopen the card you want to edit.',{tone:'danger'});return;
+  }
+  try{await update.mutateAsync({noteNo:value.noteNo,expectedNoteId:value.noteId,expectedVersion:value.expectedVersion,patch:{front:value.front,back:value.back,type:value.type,kind:value.kind,tags:value.tags}});setEditing(false);notify('Card updated',{tone:'success'});}
+  catch(error){notify(error instanceof LemmaError&&error.code==='conflict'
+   ?'This card changed on another device. Your draft is kept; reopen the card to compare before saving.'
+   :'Could not save the card.',{tone:'danger'});}
  }
  async function comment(){
   if(!note||!message.trim()||add.isPending)return;

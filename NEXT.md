@@ -9,10 +9,10 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 ## N239 Resolve critical known data and privacy issues
 
 Owner task: "Start working on resolving known issues of the lemma repo and fix all the critical in one run."
-Stage: Harden · Status: open · Needs: — · Assigned: chat-582901#q8n7
+Stage: Harden · Status: done · Needs: — · Assigned: chat-582901#q8n7
 Done = All open P1 reports are reproduced or verified already protected, remaining defects receive tested fixes, and directly related silent data-loss and mathematical-identity regressions are covered in one reviewable PR. Record precise results and remaining release gates.
 Tests: focused unit regressions, full migrated SQL owner/isolation/undo/retry cases, typecheck, repository lint, build and affected browser checks where supported.
-Scope: src app/data/features/platform; supabase/functions; additive supabase/migrations; tests/unit; tests/mcp; relevant capability documentation; docs/current/N239.md; NEXT.md.
+Scope: src app/data/features/platform; supabase/functions; additive supabase/migrations; tests/unit; tests/mcp; tests/e2e; relevant capability documentation; docs/current/N239.md; NEXT.md.
 Not: modifying protected CI or existing migrations, production data curation, merging held PRs, or unreviewed production deployment.
 
 ## N231 Restore Lemma promptly on offline launch

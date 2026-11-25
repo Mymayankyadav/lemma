@@ -181,7 +181,7 @@ export function useCreateNote() {
  return useWrite((api, value: Parameters<LemmaApi['createNote']>[0]) => api.createNote(value), ['card', 'cards', 'decks', 'home', 'projects', 'project'])
 }
 export function useUpdateNote() {
- return useWrite((api, value: { noteNo: Parameters<LemmaApi['updateNote']>[0]; patch: Parameters<LemmaApi['updateNote']>[1] }) => api.updateNote(value.noteNo, value.patch), ['card', 'cards', 'decks', 'home'])
+ return useWrite((api, value: { noteNo: Parameters<LemmaApi['updateNote']>[0]; patch: Parameters<LemmaApi['updateNote']>[1]; expectedVersion?:number;expectedNoteId?:string }) => api.updateNote(value.noteNo, value.patch,value.expectedVersion,value.expectedNoteId), ['card', 'cards', 'decks', 'home'])
 }
 export function useSetNoteStatus() {
  return useWrite((api, value: {

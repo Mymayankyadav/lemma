@@ -47,7 +47,8 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
         let result=await fn(a,ctx);
         let action:number|null=null;
         if(ctx.batch?.length){
-          const data=await commitBatch(ctx,n,a,result);action=data?.action;if(n==='undo')result+=' (as A'+action+')';if(n==='add')result+=' '+(data.created||[]).filter((x:any)=>x.table==='notes'||x.table==='checkpoints').map((x:any)=>x.code||'N'+x.no).join(', ');if(n==='grade')result+='; '+(await review(c,{count:1})).split('\n')[0]+' still';
+          const data=await commitBatch(ctx,n,a,result);action=data?.action;
+          if(n==='save_progress'&&data?.result)result='saved '+String(a.session).toUpperCase()+': step '+(data.result.step??0)+', '+(data.result.events??0)+' events';if(n==='undo')result+=' (as A'+action+')';if(n==='add')result+=' '+(data.created||[]).filter((x:any)=>x.table==='notes'||x.table==='checkpoints').map((x:any)=>x.code||'N'+x.no).join(', ');if(n==='grade'){try{result+='; '+(await review(c,{count:1})).split('\n')[0]+' still'}catch{ctx.notices=[...(ctx.notices??[]),'Grade saved; next-card lookup unavailable.']}}
         }
         if(!action)await c.db.rpc('mcp_seen',{p_user:c.userId});
         const next=ctx.next?ctx.next:n==='resume'?'start_session, then WARM questions':n==='start_session'?'pretest or continue; save_progress at each step':n==='save_progress'?(a.next_question||'continue; save again within ~6 messages'):n.startsWith('propose_')?'tell the user it waits for approval':n==='end_session'?'stop':n==='review'?'show only the first front':n==='grade'?'next card or review again':n==='delete'&&!a.confirm?'ask the user to confirm the listed deletion':'continue with the user';
@@ -134,7 +135,7 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
     item:S().max(200).optional(),recall:z.boolean().optional()
   }).passthrough();
   register('save_progress',"Log progress.",z.object({
-    project:name,session:S().min(2),step:z.number().int().min(1).max(8).optional(),
+    project:name,session:S().min(2),operationId:S().uuid().optional(),step:z.number().int().min(1).max(8).optional(),
     diagnostics:z.array(z.object({kind:z.enum(['gap','strength','material','pace']),topic:S().min(1).max(120),evidence:S().max(600),severity:z.number().int().min(1).max(3).optional(),confirmed:z.boolean().optional()})).max(8).optional(),events:z.array(event).max(10).optional(),misconception:S().max(120).optional(),
     resolved:S().max(120).optional(),next_question:S().max(300).optional()
   }),false,(a,ctx)=>saveProgress(ctx,a));
@@ -193,7 +194,7 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
   register('undo',"Undo.",z.object({action:z.number().int().positive(),force:z.boolean().optional(),redo:z.boolean().optional()}),false,(a,ctx)=>undo(ctx,a));
   register('edit',"Edit.",z.object({target:S(),project:optProject,set:z.record(S(),z.unknown()),expectedVersion:z.number().int().positive().optional()}),false,(a,ctx)=>edit(ctx,a));
   register('add',"Add.",z.object({kind:z.enum(['checkpoint','card','subject','idea','style','comment','book']),project:optProject,fields:z.record(S(),z.unknown())}),false,(a,ctx)=>add(ctx,a));
-  register('delete',"Delete.",z.object({target:S(),project:optProject,confirm:z.boolean()}),false,(a,ctx)=>remove(ctx,a));
+  register('delete',"Delete.",z.object({target:S(),project:optProject,confirm:z.boolean(),previewToken:S().length(64).optional()}),false,(a,ctx)=>remove(ctx,a));
   register('review',"Review.",z.object({project:optProject,count:z.number().int().min(1).max(10).optional(),new:z.boolean().optional()}),true,(a,ctx)=>review(ctx,a));
   register('grade',"Grade.",z.object({answers:z.array(z.object({card:S(),rating:z.enum(['again','hard','good','easy']),confidence:z.enum(['sure','unsure','guess']).optional()})).min(1).max(10)}),false,(a,ctx)=>grade(ctx,a));
   return m;

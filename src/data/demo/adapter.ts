@@ -2444,7 +2444,7 @@ export class DemoAdapter implements LemmaApi {
     const [history,comments]=await Promise.all([
       this.getCardHistoryPage(noteNo),this.getCardCommentsPage(noteNo)
     ]);
-    return {note:clone(n.note),cards:n.cards.map(c=>({cardId:c.id,ord:c.ord,state:clone(c.state)})).sort((a,b)=>a.ord-b.ord),
+    return {note:{...clone(n.note),version:n.note.version??1},cards:n.cards.map(c=>({cardId:c.id,ord:c.ord,state:clone(c.state)})).sort((a,b)=>a.ord-b.ord),
       history:history.rows,comments:comments.rows,
       historyNextCursor:history.nextCursor,commentsNextCursor:comments.nextCursor};
   }
@@ -2455,13 +2455,18 @@ export class DemoAdapter implements LemmaApi {
       return {noteNo};
     });
   }
-  async updateNote(noteNo: number, patch: NotePatch) {
+  async updateNote(noteNo: number, patch: NotePatch,expectedVersion?:number,expectedNoteId?:string) {
     this.transaction(() => {
       keys(patch, ["front", "back", "type", "kind", "tags"]);
       const n = this.note(noteNo);
+      if(expectedNoteId!==undefined&&expectedNoteId!==n.note.noteId)
+        throw new LemmaError('conflict','The selected card changed.');
+      if(expectedVersion!==undefined&&expectedVersion!==(n.note.version??1))
+        throw new LemmaError('conflict','Note changed on another device');
       Object.assign(n.note, clone(patch));
       this.validateNote(n.note);
       this.reconcile(n);
+      n.note.version=(n.note.version??1)+1;
     });
   }
   async setNoteStatus(noteNo: number, status: NoteStatus, guard?: NoteStatusGuard) {

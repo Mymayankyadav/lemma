@@ -118,6 +118,7 @@ export default function V6Cards() {
   async function createCard(value: EditorValue) {
     try {
       const created = await create.mutateAsync({
+        operationId:value.operationId,
         front: value.front, back: value.back, type: value.type, kind: value.kind,
         projectSlug: value.projectSlug, checkpointCode: value.checkpointCode,
       });
