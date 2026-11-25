@@ -1,4 +1,5 @@
 import {AndroidModelSettings} from './AndroidModelSettings';
+import {webModelInstall} from './decoder/androidPack';
 import {isFlagOn} from '../../../flags';
 import {readWritingAidWeek} from './adaptation';
 import {useId} from 'react';
@@ -41,7 +42,7 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
       <Switch label="Try faster typing" checked={fasterTyping} disabled={!available}
         onChange={next => {if (!setFasterWritingAid(next, scopeKey)) failed();}}/>
     </fieldset>
-    <AndroidModelSettings canInstall={expanded}/>
+    <AndroidModelSettings canInstall={webModelInstall ? fasterTyping : expanded}/>
     {fullSettings && <>
     <fieldset disabled={!available}>
       <legend>Suggestion mode</legend>

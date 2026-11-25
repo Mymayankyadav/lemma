@@ -1,4 +1,4 @@
-import {useRef, type PointerEvent} from 'react';
+import {useRef, type PointerEvent, type Ref} from 'react';
 import {ArrowRight, RefreshCw, Undo2, X} from 'lucide-react';
 import type {WritingAidProposal} from './writingAid';
 import type {SymbolOption} from './input/latexShortcuts';
@@ -14,7 +14,7 @@ export interface WritingAidBarProps {
   disabled: boolean;
   undoable: boolean;
   exhausted?: boolean;
-  swipeProgress?: number;
+  reviewRef?: Ref<HTMLDivElement>;
   onAccept: (proposal: WritingAidProposal) => void;
   onDismiss: () => void;
   onUndo: () => void;
@@ -104,10 +104,9 @@ function Choice({proposal, disabled, onAccept, onRefresh}: {
 
 /** A small card floats beside the draft instead of allocating another keyboard row. */
 export function WritingAidBar(props: WritingAidBarProps) {
-  const {edit, ghost, disabled, undoable, exhausted, swipeProgress = 0} = props;
+  const {edit, ghost, disabled, undoable, exhausted, reviewRef} = props;
   if (!edit && !ghost && !undoable && !exhausted) return null;
-  return <div className="writing-aid-floating" data-writing-aid-review="" role="group" aria-label="Writing suggestions" data-undo={undoable || undefined}
-    data-swiping={swipeProgress > 0 || undefined} style={{'--writing-swipe': Math.min(1, swipeProgress)} as React.CSSProperties}>
+  return <div ref={reviewRef} className="writing-aid-floating" data-writing-aid-review="" role="group" aria-label="Writing suggestions" data-undo={undoable || undefined}>
     <div className="writing-aid-floating-body">
       {undoable ? <button type="button" className="writing-aid-undo" onPointerDown={holdCaret} disabled={disabled}
         onClick={props.onUndo}><Undo2 aria-hidden="true"/>Undo suggestion</button>

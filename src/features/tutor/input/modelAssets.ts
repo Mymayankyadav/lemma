@@ -54,7 +54,7 @@ async function readVerifiedAsset(response: Response, file: AssetFile) {
   return bytes;
 }
 
-export async function loadVerifiedModelAsset(url: string, file: AssetFile, cache?: Cache) {
+export async function loadVerifiedModelAsset(url: string, file: AssetFile, cache?: Cache, offlineInstall?: AbortSignal) {
   const cached = await cache?.match(url).catch(() => undefined);
   if (cached) {
     try {
@@ -64,9 +64,17 @@ export async function loadVerifiedModelAsset(url: string, file: AssetFile, cache
     }
   }
 
-  const response = await fetch(url, { mode: "same-origin", credentials: "omit", redirect: "error", cache: "no-store" });
+  const response = await fetch(url, {
+    mode: "same-origin", credentials: "omit", redirect: "error", cache: "no-store", signal: offlineInstall,
+  });
   const bytes = await readVerifiedAsset(response, file);
-  await cache?.put(url, new Response(bytes)).catch(() => undefined);
+  if (offlineInstall) {
+    offlineInstall.throwIfAborted();
+    if (!cache) throw new Error("Could not open offline model storage");
+    await cache.put(url, new Response(bytes));
+  } else {
+    await cache?.put(url, new Response(bytes)).catch(() => undefined);
+  }
   return bytes;
 }
 
@@ -109,4 +117,11 @@ function loadWasm(cache?: Cache) {
 /** Equation Assist uses the same verified WASM binary as Draw symbol. */
 export async function loadTutorModelWasm() {
   return loadWasm(await openAssetCache());
+}
+
+/** The web installer must persist the verified runtime before marking the model available offline. */
+export async function saveTutorModelWasmForOffline(signal: AbortSignal): Promise<void> {
+  const cache = await openAssetCache();
+  if (!cache) throw new Error("Could not open offline model storage");
+  await loadVerifiedModelAsset(assetUrl(manifest.files.wasm).href, manifest.files.wasm, cache, signal);
 }

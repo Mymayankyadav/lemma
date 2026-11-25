@@ -48,7 +48,9 @@ async function openPad(page: Page, context: BrowserContext, released = true) {
     else if (url.pathname === '/rest/v1/projects') data = single ? project : [project];
     else if (url.pathname === '/rest/v1/checkpoints') {
       if (single && url.searchParams.get('user_id') === 'eq.' + owner
-        && url.searchParams.get('project_id') === 'eq.' + projectId && url.searchParams.get('code') === 'eq.CP4') state.verified++;
+        && url.searchParams.get('path.user_id') === 'eq.' + owner && url.searchParams.get('path.slug') === 'eq.analysis'
+        && url.searchParams.get('path.status') === 'neq.archived' && url.searchParams.get('path.system') === 'eq.false'
+        && url.searchParams.get('code') === 'eq.CP4') state.verified++;
       data = single ? checkpoint : [checkpoint];
     } else if (url.pathname.startsWith('/rest/v1/')) data = [];
     else return route.abort();

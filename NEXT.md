@@ -8,7 +8,7 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 ## N250 Faster return navigation, tutor typing and a custom PWA model download
 
-Stage: Harden · Status: in progress · Needs: — · Assigned: chat-631904#ouou
+Stage: Harden · Status: done · Needs: — · Assigned: chat-631904#ouou
 
 Done = Returning to a study screen preserves usable data, actions give immediate feedback, navigation respects reduced motion, the text keyboard opens with prose suggestions and Settings can install the optional suggestion model from a custom download.
 Scope: Study navigation, focus reads, motion, Tutor, keyboard, PWA model installation and their regression tests.

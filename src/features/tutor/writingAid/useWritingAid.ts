@@ -126,8 +126,8 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   const [result, setResult] = useState<Prediction>();
   const current = result && result.sequence === sequence && result.learningScope === learningScope &&
     sameWritingAidRequest(snapshot, result.snapshot) ? result : undefined;
-  const live = useRef({snapshot, current, personalization, learningScope, expanded});
-  live.current = {snapshot, current, personalization, learningScope, expanded};
+  const live = useRef({snapshot, sequence, current, personalization, learningScope, expanded});
+  live.current = {snapshot, sequence, current, personalization, learningScope, expanded};
   const [visibility] = useState(visibleTime);
   useEffect(() => {
     const hide = () => {visibility.hide(Date.now()); censorRetention(pending.current);};
@@ -505,11 +505,12 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     const startedAt = Date.now();
     let cancelled = false;
     let frame: number | undefined;
+    let fallbackTimer: number | undefined;
     const {enabled, model: learned} = live.current.personalization;
     const model = enabled ? learned : undefined;
     if (!canSuggestWritingAid(snapshot)) return;
     const worker = ngram.current;
-    const stillCurrent = () => !cancelled && learningScope === live.current.learningScope &&
+    const stillCurrent = () => !cancelled && sequence === live.current.sequence && learningScope === live.current.learningScope &&
       sameWritingAidRequest(snapshot, live.current.snapshot);
     const workerReply = worker?.predict(snapshot, model);
     function report(pool: WritingAidPool, assets: PredictionAssets = {}) {
@@ -526,8 +527,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       void client.predict({epoch: neuralEpoch, prompt: {question: question?.filter(Boolean).join('\n') ?? '', aids, draft},
         prefix, words: pool.words.filter(entry => entry.source !== 'symbol').map(entry => entry.label),
         startedAt, deadline: startedAt + 60, ghost: ghostAllowed, probeGhost: probe}).then(reply => {
-        if (!reply || cancelled || Date.now() > startedAt + 60 || learningScope !== live.current.learningScope ||
-            !sameWritingAidRequest(snapshot, live.current.snapshot)) return;
+        if (!reply || Date.now() > startedAt + 60 || !stillCurrent()) return;
         if (probe) ghostProbe.current = {snapshot, learningScope, reply};
         const updated = applyNeuralReply(pool, snapshot, reply);
         if (!reply.scores?.length && updated.ghost === pool.ghost) return;
@@ -540,11 +540,14 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       const engine = await import('./engine');
       if (!stillCurrent()) return;
       frame = window.requestAnimationFrame(() => {
-        if (!stillCurrent()) return;
-        try {report(engine.predictWritingAidPool(snapshot, model), {
-          ngram: expanded ? typeaheadNgramFingerprint() : undefined, subject: expanded ? activeSubjectNgram(subject)?.fingerprint : undefined,
-        });}
-        catch {setResult({snapshot, sequence, learningScope, suggestions: NO_WRITING_AID, pool: {words: [], edit: [], ghost: []}});}
+        // Let the key and caret paint before running prediction on the main thread.
+        fallbackTimer = window.setTimeout(() => {
+          if (!stillCurrent()) return;
+          try {report(engine.predictWritingAidPool(snapshot, model), {
+            ngram: expanded ? typeaheadNgramFingerprint() : undefined, subject: expanded ? activeSubjectNgram(subject)?.fingerprint : undefined,
+          });}
+          catch {setResult({snapshot, sequence, learningScope, suggestions: NO_WRITING_AID, pool: {words: [], edit: [], ghost: []}});}
+        }, 0);
       });
     };
     if (workerReply) {
@@ -557,7 +560,11 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         report(reply.pool, {ngram: reply.assetSha256, subject: reply.subjectAssetSha256});
       }).catch(() => undefined);
     } else void showFallback().catch(() => undefined);
-    return () => {cancelled = true; worker?.cancel(); if (frame !== undefined) window.cancelAnimationFrame(frame);};
+    return () => {
+      cancelled = true; worker?.cancel();
+      if (frame !== undefined) window.cancelAnimationFrame(frame);
+      window.clearTimeout(fallbackTimer);
+    };
   }, [snapshot, sequence, learningScope, personalization.enabled, mode, words, replace, correction, ghost, neuralEpoch, subject, step, question, arm, expanded, fasterTyping]);
 
   const suggestions = current?.suggestions ?? NO_WRITING_AID;

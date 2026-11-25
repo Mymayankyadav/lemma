@@ -11,10 +11,10 @@ import {PracticeQuestion} from '../PracticeQuestion';
 import {TodayScheduler} from '../Views';
 
 /** Details remain reachable without turning the home screen into a diagnostics report. */
-export function StudyModelDetails(){
+export function StudyModelDetailsContent(){
  const atlas=useAtlasModel(),agenda=useAgenda(),home=useHome();
  const model=atlas.data;
- return <Disclosure label="Study details">
+ return <>
   <TodayScheduler/>
   {isFlagOn('atlasV3')&&model&&<div className="v7-learning-details">
    {Object.entries(model.fits).map(([id,fit])=><section key={id}>
@@ -29,7 +29,7 @@ export function StudyModelDetails(){
     {model.model.facts.concepts.find(concept=>concept.id===item.concept_id)?.name} · {item.kind} · {item.reason}
    </li>)}</ol>}
   </div>}
- </Disclosure>;
+ </>;
 }
 
 export function AdaptivePractice(){

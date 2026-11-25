@@ -9,8 +9,17 @@ const ledger = 'lemma-typeahead-android-installs-v1';
 const prefix = 'lemma-typeahead-fp16-' + descriptor.packageSha256 + '-';
 const key = (name: string) => new URL('typeahead-local/' + name, self.location.origin).href;
 const marker = () => key(descriptor.packageSha256);
+const offlineMarker = () => key(descriptor.packageSha256 + '-web-runtime-v1');
 export const packageChanged = 'lemma-typeahead-pack-changed';
 export const downloadUrl = import.meta.env.VITE_TYPEAHEAD_FP16_URL as string | undefined;
+export const webModelInstall = import.meta.env.MODE !== 'android';
+
+export function modelDownloadUrl(raw: string): URL | undefined {
+  try {
+    const url = new URL(raw.trim());
+    if (url.protocol === 'https:' && !url.username && !url.password && !url.hash) return url;
+  } catch {/* A custom URL must be a complete HTTPS address. */}
+}
 
 async function activeCache() {
   if (!self.caches || !await self.caches.has(ledger)) return;
@@ -25,6 +34,14 @@ async function activeCache() {
 
 export async function installedAndroidPack() {
   return Boolean(await activeCache().catch(() => undefined));
+}
+
+export async function installedModelHasOfflineSupport() {
+  try {
+    if (!webModelInstall) return await installedAndroidPack();
+    const name = await activeCache();
+    return Boolean(name && await (await self.caches.open(name)).match(offlineMarker()));
+  } catch {return false;}
 }
 
 export async function readInstalledFile(file: DecoderAssetFile) {
@@ -63,22 +80,46 @@ export async function removeAndroidPack() {
   });
 }
 
-export async function installAndroidPack(source: File | undefined, signal: AbortSignal, progress: (bytes: number) => void) {
+export async function installAndroidPack(source: File | URL | undefined, signal: AbortSignal, progress: (bytes: number) => void, preparing?: () => void) {
   if (!navigator.locks || !self.caches) throw new Error('This browser cannot install an offline model');
+  const hasTimeout = typeof AbortSignal.timeout === 'function' && typeof AbortSignal.any === 'function';
+  const deadline = webModelInstall && hasTimeout ? AbortSignal.timeout(5 * 60 * 1000) : undefined;
+  if (deadline) signal = AbortSignal.any([signal, deadline]);
+  try {
+    await installLocked(source, signal, progress, preparing);
+  } catch (error) {
+    if (deadline?.aborted) throw new Error('The installation timed out. Check your connection and try again.');
+    throw error;
+  }
+}
+
+async function installLocked(source: File | URL | undefined, signal: AbortSignal, progress: (bytes: number) => void, preparing?: () => void) {
   await navigator.locks.request(ledger, {signal}, async () => {
     if (androidBytes > 72 * 2 ** 20 || androidFiles.some(file => file.bytes > fileLimit(file))) throw new Error('Invalid optional model budget');
     const previous = await activeCache();
-    if (previous) {progress(androidBytes); return;}
+    if (previous) {
+      progress(androidBytes);
+      if (webModelInstall && !await installedModelHasOfflineSupport()) {
+        preparing?.();
+        await prepareOfflineRuntime(signal);
+        signal.throwIfAborted();
+        await (await caches.open(previous)).put(offlineMarker(), new Response());
+        announce();
+      }
+      return;
+    }
     await clean();
     const name = prefix + crypto.randomUUID();
     const stage = await caches.open(name);
     try {
       let pack: Blob;
-      if (source) {
+      if (source instanceof Blob) {
         pack = source;
       } else {
-        if (!downloadUrl || new URL(downloadUrl).protocol !== 'https:') throw new Error('Choose the verified model file');
-        const response = await fetch(downloadUrl, {signal, mode: 'cors', credentials: 'omit', redirect: 'error', cache: 'no-store'});
+        const url = source ?? (downloadUrl && modelDownloadUrl(downloadUrl));
+        if (!url) throw new Error('Enter a direct HTTPS link or choose the verified model file');
+        if (url.protocol !== 'https:' || url.username || url.password || url.hash) throw new Error('Enter a direct HTTPS link');
+        const response = await fetchPackage(url, signal);
         if (!response.ok || !response.body || Number(response.headers.get('content-length')) > androidBytes) throw new Error('Model download failed');
         const reader = response.body.getReader();
         const chunks: ArrayBuffer[] = [];
@@ -103,14 +144,44 @@ export async function installAndroidPack(source: File | undefined, signal: Abort
         await readVerifiedDecoderAsset(new Response(part), file, fileLimit(file));
         await stage.put(key(file.sha256), new Response(part));
         at += file.bytes;
-        if (source) progress(at);
+        if (source instanceof Blob) progress(at);
+      }
+      signal.throwIfAborted();
+      if (webModelInstall) {
+        preparing?.();
+        await prepareOfflineRuntime(signal);
+        signal.throwIfAborted();
+        await stage.put(offlineMarker(), new Response());
       }
       signal.throwIfAborted();
       await (await caches.open(ledger)).put(marker(), new Response(name));
     } catch (error) {
-      await caches.delete(name);
+      await caches.delete(name).catch(() => undefined);
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        throw new Error('There is not enough browser storage. Free some space and try again.');
+      }
       throw error;
     }
     announce();
   });
+}
+
+async function fetchPackage(url: URL, signal: AbortSignal): Promise<Response> {
+  try {
+    // No credentials, referrer or URL persistence, including for signed download links.
+    return await fetch(url, {signal, mode: 'cors', credentials: 'omit', redirect: 'error', cache: 'no-store',
+      referrerPolicy: 'no-referrer'});
+  } catch {
+    throw new Error('Could not reach the download. Check your connection and use a direct HTTPS link that allows downloads from Lemma.');
+  }
+}
+
+async function prepareOfflineRuntime(signal: AbortSignal): Promise<void> {
+  try {
+    const {saveWritingModelSupport} = await import('./offlineModelAssets');
+    await saveWritingModelSupport(signal);
+  } catch (error) {
+    if (signal.aborted || error instanceof DOMException && error.name === 'QuotaExceededError') throw error;
+    throw new Error('Could not save the model runtime for offline use. Check your connection and browser storage, then try again.');
+  }
 }

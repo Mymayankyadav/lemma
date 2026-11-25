@@ -69,23 +69,30 @@ export async function loadWritingDecoderLexicon() {
 
 
 /** Public assets are addressed by pinned hash. Each tier can enforce its own file budget. */
-export async function fetchVerifiedTypeaheadFile(set: string, file: DecoderAssetFile, maxBytes: number, persist = true): Promise<Uint8Array> {
+export async function fetchVerifiedTypeaheadFile(set: string, file: DecoderAssetFile, maxBytes: number, persist = true, offlineInstall?: AbortSignal): Promise<Uint8Array> {
   if (!/^[a-z0-9][a-z0-9_-]*$/u.test(set) || !/^[a-z0-9][a-z0-9_.-]*$/u.test(file.path)) throw new Error('Invalid typeahead path');
   const url = new URL(import.meta.env.BASE_URL + 'models/typeahead/' + set + '/' + file.path, self.location.origin).href;
   let cache: Cache | undefined;
   try {if (persist && import.meta.env.MODE !== 'android') cache = await self.caches?.open('lemma-typeahead-' + file.sha256);}
   catch {/* Verified network fallback. */}
+  if (offlineInstall && !cache) throw new Error('Could not open offline model storage');
   const cached = await cache?.match(url).catch(() => undefined);
   if (cached) {
     try {return await readVerifiedDecoderAsset(cached, file, maxBytes);}
     catch {await cache?.delete(url).catch(() => undefined);}
   }
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const timer = offlineInstall ? undefined : setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(url, {mode: 'same-origin', credentials: 'omit', redirect: 'error', cache: 'no-store', signal: controller.signal});
+    const signal = offlineInstall ?? controller.signal;
+    const response = await fetch(url, {mode: 'same-origin', credentials: 'omit', redirect: 'error', cache: 'no-store', signal});
     const bytes = await readVerifiedDecoderAsset(response, file, maxBytes);
-    await cache?.put(url, new Response(bytes.slice().buffer)).catch(() => undefined);
+    if (offlineInstall) {
+      offlineInstall.throwIfAborted();
+      await cache!.put(url, new Response(bytes.slice().buffer));
+    } else {
+      await cache?.put(url, new Response(bytes.slice().buffer)).catch(() => undefined);
+    }
     return bytes;
   } finally {clearTimeout(timer);}
 }

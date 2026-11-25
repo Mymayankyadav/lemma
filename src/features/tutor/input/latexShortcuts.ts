@@ -8,9 +8,7 @@
  * - ASCII short forms, as in LaTeX/Unicode input methods: `->` → `<=` `>=` `!=` `~~` `==` `+-` `...` `|->` `<=>`,
  *   doubled capitals for number sets (`RR` → ℝ) and `^2` `^3` `^n`.
  * - A bare command name typed in full (`lambda`, `forall`, `infty`, `Gamma`), except names that are ordinary English
- *   words (in, to, sum, cup, partial…), and, once the word list has loaded, a near-miss of one (`lamda` → λ) that is not
- *   the start of any English word. Bare names are often the start of a word (mu → much), so they are `kind: 'name'`:
- *   the strip shows only the best symbol beside the word suggestions instead of replacing them.
+ *   words (in, to, sum, cup, partial…). Math input can also suggest near-misses (`lamda` → λ) after the word list loads.
  */
 import type {PadEdit} from '../../pad/padEdit';
 import {isWordPrefix} from '../tapCorrection';
@@ -78,7 +76,7 @@ function bare(name: string): SymbolDefinition[] {
 }
 
 /** Up to three symbols for the short form just before a collapsed caret, best first. */
-export function latexSymbolOptions(edit: PadEdit, limit = 3): SymbolOption[] {
+export function latexSymbolOptions(edit: PadEdit, limit = 3, fuzzyBareNames = true): SymbolOption[] {
   if (edit.start !== edit.end || edit.end > 4000) return [];
   const before = edit.text.slice(Math.max(0, edit.end - 40), edit.end);
   const make = (kind: SymbolOption['kind'], token: string, symbols: readonly SymbolDefinition[], end = edit.end) => symbols.slice(0, limit)
@@ -104,7 +102,7 @@ export function latexSymbolOptions(edit: PadEdit, limit = 3): SymbolOption[] {
   const exact = bare(word);
   if (exact.length) return make('name', word, exact);
   // A near-miss of a command name that cannot be the start of an English word (lamda → λ, but not thera → θ).
-  if (word.length >= 5 && !isWordPrefix(word.toLowerCase())) {
+  if (fuzzyBareNames && word.length >= 5 && !isWordPrefix(word.toLowerCase())) {
     const near = searchSymbols('\\' + word).filter(symbol => BARE.has(symbol.tex.slice(1)));
     if (near.length) return make('name', word, near);
   }

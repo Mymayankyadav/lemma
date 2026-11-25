@@ -30,7 +30,7 @@ export default function RouteError(){
 }
 
 export function RouteFallback(){
-  return <main role="status" aria-live="polite" className="mx-auto min-h-dvh max-w-[560px] bg-obsidian p-6 text-ink">
+  return <main role="status" aria-live="polite" className="lemma-route-loading mx-auto min-h-dvh max-w-[560px] bg-obsidian p-6 text-ink">
     <h1 className="font-serif text-title">Loading screen…</h1>
     <div aria-hidden="true" className="mt-6 h-20 animate-pulse rounded-slab bg-fill-1"/>
     <div aria-hidden="true" className="mt-3 h-48 animate-pulse rounded-slab bg-fill-1"/>

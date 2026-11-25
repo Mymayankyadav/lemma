@@ -15,11 +15,17 @@ export function useProjects(...args: Parameters<LemmaApi['listProjects']>) {
 export function usePlanRevisions(...args: Parameters<LemmaApi['listPlanRevisions']>) {
  return useQuery({ ...queryDefaults, queryKey: ['plan-revisions', args[0]], queryFn: () => getApi().listPlanRevisions(args[0]) })
 }
-export function useProject(...args: Parameters<LemmaApi['getProject']>) {
- return useQuery({ ...queryDefaults, queryKey: ['project', args[0]], queryFn: () => getApi().getProject(args[0]) })
+export function projectQuery(slug:string) {
+ return {...queryDefaults,queryKey:['project',slug],queryFn:()=>getApi().getProject(slug)}
 }
-export function useCheckpoint(...args: Parameters<LemmaApi['getCheckpoint']>) {
- return useQuery({ ...queryDefaults, queryKey: ['checkpoint', args[0], args[1]], queryFn: () => getApi().getCheckpoint(args[0], args[1]) })
+export function useProject(slug:string) {
+ return useQuery(projectQuery(slug))
+}
+export function checkpointQuery(slug:string,code:string) {
+ return {...queryDefaults,queryKey:['checkpoint',slug,code],queryFn:()=>getApi().getCheckpoint(slug,code)}
+}
+export function useCheckpoint(slug:string,code:string) {
+ return useQuery({...checkpointQuery(slug,code),enabled:!!slug&&!!code&&!authSignedOut()})
 }
 export function useSessions(...args: Parameters<LemmaApi['listSessions']>) {
  return useQuery({ ...queryDefaults, queryKey: ['sessions', args[0] ?? 'all'], queryFn: () => getApi().listSessions(args[0]) })

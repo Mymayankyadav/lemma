@@ -65,7 +65,7 @@ function FocusOrbit({entry,now,paused,drifted,reduced}:{entry:StudyEntryRecord;n
 }
 /** PLAN §6.3: one session, nothing else on screen. */
 export default function FocusV7(){
- const {entry,loading,refresh}=useActiveFocus(),now=useNow(1000),navigate=useNavigate(),home=useHome(),notify=useToast();
+ const {entry,loading}=useActiveFocus(),now=useNow(entry&&entry.status!=='paused'?1000:null),navigate=useNavigate(),home=useHome(),notify=useToast();
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[menu,setMenu]=useState(false);
  const [editing,setEditing]=useState(false),[draft,setDraft]=useState(''),[thought,setThought]=useState(''),[noted,setNoted]=useState<string|null>(null);
  const [finishing,setFinishing]=useState(false),[minutes,setMinutes]=useState(25),[rating,setRating]=useState<number|null>(null),[learned,setLearned]=useState('');
@@ -91,7 +91,7 @@ export default function FocusV7(){
    if(!fresh||fresh.id!==entry.id)throw Error('This session changed on another device. Refresh to continue.');
    await action(fresh);
   }catch(reason){setError(focusError(reason));}
-  finally{setBusy(false);refresh();announceFocusChange();}
+  finally{setBusy(false);announceFocusChange();}
  }
  const phaseChange=async(fresh:StudyEntryRecord)=>{if(getStudyApi().mode==='live'&&fresh.leaseDevice&&fresh.leaseExpiresAt&&Date.parse(fresh.leaseExpiresAt)>Date.now()&&fresh.leaseDevice!==deviceToken())throw Error('Timer lease belongs to another device');const api=getStudyApi();const leased=await api.takeLease(fresh.id,fresh.version);return api.nextPhase(fresh.id,leased.record.version);};
  const pause=()=>act(fresh=>fresh.status==='paused'?(fresh.phase==='break'||fresh.phase==='long_break'?phaseChange(fresh):getStudyApi().resumeStudyEntry(fresh.id,fresh.version)):getStudyApi().pauseStudyEntry(fresh.id,fresh.version));

@@ -24,7 +24,13 @@ function request(text: string, overrides: Partial<WritingAidRequest> = {}): Writ
     ...overrides};
 }
 function Harness({input}: {input: WritingAidRequest}) {view = useWritingAid(input); return null;}
-const settle = async () => {await act(async () => {await new Promise(resolve => setTimeout(resolve, 35));});};
+async function settle() {
+  await act(async () => {
+    await vi.dynamicImportSettled();
+    // The fallback queues its task from a frame callback. Wait for both queues in order.
+    await new Promise<void>(resolve => requestAnimationFrame(() => window.setTimeout(resolve, 0)));
+  });
+}
 async function render(input: WritingAidRequest) {
   await act(async () => {root.render(<Harness input={input}/>);});
   await settle();
@@ -263,9 +269,11 @@ describe('local writing personalization', () => {
     updateWritingAidModel(model, 'accept', writingAidFeatures(pool.ghost[1]));
     expect(selectWritingAidPool(pool, model).ghost?.insert).toBe(pool.ghost[1].insert);
     await render(input);
+    expect(view.ghost).not.toBeNull();
     const first = view.ghost!;
     await act(async () => {view.shown('ghost', [first]); view.refresh('ghost', [first]);});
     await settle();
+    expect(view.ghost).not.toBeNull();
     expect(view.ghost?.insert).not.toBe(first.insert);
     expect(view.isCurrent(first)).toBe(false);
     for (let n = 0; n < 6 && view.ghost; n++) {

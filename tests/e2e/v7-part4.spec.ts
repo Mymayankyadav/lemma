@@ -58,6 +58,28 @@ async function openFirstPath(page:Page){
  await page.locator(".v7-today-tile").first().click();
  await expect(page.locator(".v7-path")).toBeVisible();
 }
+test("Back restores the opened stage and reading position with reduced motion",async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.setViewportSize({width:390,height:700});
+ await page.goto('/lemma/?demo=stress&flags=v7Shell,v7Room#/p/stress-project-3');
+ const stage=page.locator('.v7-path-stage').filter({has:page.locator('.v7-disclosure-trigger')}).last();
+ const toggle=stage.getByRole('button').first();
+ await expect(toggle).toHaveAttribute('aria-expanded','false');
+ await expect(stage.locator('.v7-path-row')).toHaveCount(0);
+ await toggle.click();
+ const link=stage.locator('.v7-path-row:not([data-state="proposed"]) .v7-path-body').first();
+ await link.evaluate(element=>element.scrollIntoView({block:'center',behavior:'instant'}));
+ await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(100);
+ const position=await page.evaluate(()=>window.scrollY);
+ await link.click();
+ await expect(page).toHaveURL(/\/cp\//);
+ await expect(page.locator('main.v7-learn')).toBeVisible();
+ await page.goBack();
+ await expect(toggle).toHaveAttribute('aria-expanded','true');
+ await expect(link).toBeVisible();
+ await expect.poll(async()=>Math.abs(await page.evaluate(()=>scrollY)-position)).toBeLessThan(5);
+ await expect(page.locator('main.v7-path')).toHaveCSS('animation-name','none');
+});
 test("Path Plan gives each checkpoint a readable label and ends the solid line at the current one",async({page})=>{
  await openFirstPath(page);
  const map=page.getByRole("list",{name:"Checkpoints"});

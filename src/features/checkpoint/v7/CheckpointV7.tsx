@@ -1,3 +1,4 @@
+import {warmV7Screen} from '../../../app/v7/routeScreens';
 import {CheckpointReadiness} from '../../adaptive/panels/LearningDetails';
 import {LemmaError} from '../../../data/api';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
@@ -121,7 +122,7 @@ export default function CheckpointV7(){
   <Dock className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>
     :view.ui==='locked'?<p>{lockedAfter?'Unlocks after '+lockedAfter.title:'Complete the preceding checkpoint'}</p>
-    :<Button variant="primary" onClick={()=>navigate(tutorHref(slug,code))}>Continue with tutor</Button>}
+    :<Button variant="primary" onPointerDown={()=>warmV7Screen('tutor')} onFocus={()=>warmV7Screen('tutor')} onMouseEnter={()=>warmV7Screen('tutor')} onClick={()=>navigate(tutorHref(slug,code))}>Continue with tutor</Button>}
    <IconButton label="More checkpoint actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>
   </Dock>
   <ActionSheet open={more} onClose={()=>setMore(false)} title={view.title} label="Checkpoint actions" items={[

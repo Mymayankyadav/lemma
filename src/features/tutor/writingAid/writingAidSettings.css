@@ -74,3 +74,23 @@
 /* Only the chosen mode explains itself; the others are their names (Owner: fewer words in Settings). */
 :where(html[data-v7]) .writing-aid-settings .writing-aid-mode:not(:has(input:checked)) small {display:none;}
 :where(html[data-v7]) .writing-aid-settings fieldset > .v7-button {justify-self:start;margin-top:var(--v7-space-2);}
+
+.writing-aid-settings fieldset.writing-aid-package-web {
+  gap: var(--v7-space-2, .5rem);
+}
+
+.writing-aid-package-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v7-space-2, .5rem);
+}
+
+.writing-aid-package-file {
+  display: grid;
+  gap: var(--v7-space-1, .25rem);
+  font-size: var(--v7-type-supporting, .875rem);
+}
+
+.writing-aid-package-file input {
+  max-inline-size: 100%;
+}

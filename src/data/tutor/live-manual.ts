@@ -223,6 +223,12 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  }
  return {
   close(){closed=true},
+  readSaved(){
+   active()
+   const saved=cached()
+   if(!saved?.head||!Array.isArray(saved.turns)||!Array.isArray(saved.recoveredDrafts))return
+   return {...usable(saved),canSubmit:false,canConnect:false}
+  },
   async resume(before,reconcile=false,connectorUrl){
    active()
    const request=++readSequence

@@ -15,7 +15,7 @@ import { calendarRoute } from './calendarRoute'
 import { tasksRoute } from './tasksRoute'
 import { weekRoute } from './weekRoute'
 import {isFlagOn} from '../flags'
-const TutorPage=lazy(()=>import('../features/tutor/TutorPage'))
+import {TutorScreen} from './v7/routeScreens'
 const OfflinePadPage=lazy(()=>import('../features/pad/OfflinePadPage'))
 const PracticePage=lazy(()=>import('../features/practice/Page'))
 const DayRitual=lazy(()=>import('../features/ritual/Page'))
@@ -47,7 +47,7 @@ const router = createHashRouter([{element: <AuthGate><StudyUiRelease><AppShell /
  // v7 Focus is a full screen of its own (PLAN §6.3); without v7 it stays the Today dialog.
  ...(isFlagOn('v7Shell')?[
   ...['/p/:slug/tutor','/p/:slug/cp/:code/tutor'].map(path=>({path,
-    element:<Suspense fallback={<RouteFallback/>}><TutorPage/></Suspense>,errorElement:<RouteError/>})),
+    element:<Suspense fallback={<RouteFallback/>}><TutorScreen/></Suspense>,errorElement:<RouteError/>})),
   {path:'/focus',element:<Suspense fallback={<RouteFallback/>}><FocusV7/></Suspense>,errorElement:<RouteError/>},
   // PLAN §6.15 first run: three skippable steps after the first sign-in.
   {path:'/welcome',element:<Suspense fallback={<RouteFallback/>}><WelcomeV7/></Suspense>,errorElement:<RouteError/>}]:[]),

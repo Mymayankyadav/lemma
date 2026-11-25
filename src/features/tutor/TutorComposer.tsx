@@ -149,7 +149,7 @@ export function TutorComposer(props: Props) {
   const decoderSeen = useRef(false);
   const [decoderReady, setDecoderReady] = useState(writingDecoderReady);
   const shownSuggestions = useRef(0);
-  const [swipeProgress, setSwipeProgress] = useState(0);
+  const writingReview = useRef<HTMLDivElement>(null);
   const swipe = useRef<{pointer: number; x: number; y: number; time: number; proposal: WritingAidProposal; cursor: PadEdit} | null>(null);
   const scopeKey = props.inputScopeKey ?? 'tutor-preview';
   const sheetScope = scopeKey + '|' + authGeneration();
@@ -259,9 +259,7 @@ export function TutorComposer(props: Props) {
   const ghostSuffix = writingGhost?.insert;
   const suggestionUndoable = !hideSuggestionUndo && Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
   const refreshable = writingWords.length > 0 || Boolean(writingEdit || writingGhost);
-  /** N220: a word is being typed (a collapsed caret right after a letter), so the strip is the word suggestions'. */
-  // N221: and has suggestions to show; with none, the strip keeps the maths symbols instead of empty slots, as Gboard
-  // keeps its toolbar.
+  /** With a word in progress, a review of an earlier word yields to current completions. */
   const wordInProgress = cursor.start === cursor.end && /[A-Za-z]$/.test(cursor.text.slice(0, cursor.start)) && writingWords.length > 0;
   shownSuggestions.current = writingWords.length + Number(Boolean(writingEdit || writingGhost || suggestionUndoable));
   // N221 (Owner): the writing aid's replacement or continuation takes the strip as Gboard shows a correction: for the
@@ -272,10 +270,10 @@ export function TutorComposer(props: Props) {
   const shownEdit = writingEdit && (writingEdit.end === cursor.end || !wordInProgress) ? writingEdit : null;
   const reviewChoice = Boolean(shownEdit || writingGhost || aidExhausted) && !suggestionUndoable;
   const review = reviewChoice || suggestionUndoable;
-  // N221 (Owner): symbols for a LaTeX command or short form being typed. A command (\alp) or short form (->) takes the
-  // word slots; a bare name (lambda) puts its symbol beside the words. Off mode turns them off with the rest of the aid.
-  const symbolOptions = useMemo(() => writingPrefs.mode === 'off' || !shown ? [] : latexSymbolOptions(cursor),
-    [cursor, writingPrefs.mode, shown]);
+  const mathContext = useMemo(() => tutorMathContext(cursor), [cursor]);
+  const mathKeys = view !== 'abc' || mathContext === 'tex';
+  const symbolOptions = useMemo(() => writingPrefs.mode === 'off' || !shown ? [] : latexSymbolOptions(cursor, 3, mathKeys),
+    [cursor, writingPrefs.mode, shown, mathKeys]);
   // N223 (Owner: "integrate all this in one hood"): an equation just typed in prose (x1 + x2 = 4) is read by N222's
   // autoeq, its rules and then its on-device model, ordered by the words before it.
   const typedEquation = useMemo(() => shown && !scratch && writingPrefs.mode !== 'off' ? typedEquationAt(cursor) : null,
@@ -284,7 +282,7 @@ export function TutorComposer(props: Props) {
   /**
    * One strip, one frame: Draw symbol (or Next □) at the left edge, Equation mode at the right, and three slots between
    * them that show the first of: autoeq's readings of a typed equation; the symbols for a LaTeX command, short form or
-   * name (\al, ->, eps); the word suggestions; and, with nothing to suggest, ∀ ∈ ⇒.
+   * name (\al, ->, eps); or word suggestions. Quick symbols belong on the math or number layouts and inside LaTeX.
    */
   const mathSpan = useMemo(() => shown && !scratch && !equationEdit && writingPrefs.mode !== 'off' &&
     !editingDisabled && enhancedMenu ? unfinishedMath(cursor) : null,
@@ -301,7 +299,7 @@ export function TutorComposer(props: Props) {
   const liveMenu = useRef<{key: string; target: EditTarget; entries: readonly MenuEntry[]}>({key: '', target: offeredTarget, entries: []});
   const pressedOffer = useRef<{key: string; epoch: string} | null>(null);
   const slotHistory = useRef<{epoch: string; entries: readonly MenuEntry[]}>({epoch: '', entries: []});
-  const mode = tutorMathContext(cursor) === 'prose' ? 'prose' : 'equation';
+  const mode = mathContext === 'prose' ? 'prose' : 'equation';
   const allowed = (replacement: NonNullable<MenuEntry['replacement']>, edit = cursor) =>
     insertionEligible({text: edit.text, start: replacement.start, end: replacement.end, insert: replacement.insert,
       mode: replacement.equation ? 'equation' : mode, notation: true, role: replacement.role, aid,
@@ -425,9 +423,11 @@ export function TutorComposer(props: Props) {
   const equationOptions = equationReadings.filter(reading => entries.some(entry => entry.key === 'equation:' + reading.latex)).slice(0, 3);
   const symbolSlots = symbolOptions.filter(option => entries.some(entry => entry.key === 'symbol:' + option.symbol.id));
   const eligibleLatex = latexOptions.filter(option => entries.some(entry => entry.key === 'latex:' + option.insert)).slice(0, 3);
-  const slots = inkSlots ? 'ink' : enhancedMenu ? menuEntries.length ? 'unified' : 'quick'
-    : equationOptions.length ? 'equation' : symbolSlots.length ? 'symbols' : eligibleLatex.length ? 'latex' : writingWords.length ? 'words' : 'quick';
-  const stripActive = slots !== 'quick' || reviewChoice;
+  const fallback = mathKeys ? 'quick' : 'idle';
+  const preferSymbols = symbolSlots.length && (mathKeys || symbolSlots[0].kind !== 'name');
+  const slots = inkSlots ? 'ink' : enhancedMenu ? menuEntries.length ? 'unified' : fallback
+    : equationOptions.length ? 'equation' : preferSymbols ? 'symbols' : eligibleLatex.length ? 'latex'
+      : writingWords.length ? 'words' : symbolSlots.length ? 'symbols' : fallback;
 
   useEffect(() => {
     const reportVisibility = () => {
@@ -1305,6 +1305,13 @@ export function TutorComposer(props: Props) {
     setSwipeProgress(0);
     remember();
   }
+  function setSwipeProgress(progress: number) {
+    const review = writingReview.current;
+    if (!review) return;
+    review.style.setProperty('--writing-swipe', String(progress));
+    if (progress > 0) review.setAttribute('data-swiping', 'true');
+    else review.removeAttribute('data-swiping');
+  }
   function beginSwipe(event: PointerEvent<HTMLDivElement>) {
     const editor = fieldElement();
     if (!writingGhost || editingDisabled || event.pointerType !== 'touch' || !event.isPrimary ||
@@ -1662,11 +1669,12 @@ export function TutorComposer(props: Props) {
             disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
           {props.ink && incomplete && nextSlotButton}
         </div>}
+        {slots === 'idle' && <div className="sugg">{props.ink && incomplete && nextSlotButton}</div>}
         {equationButton}
         {hideButton('sbtn')}
         {/* N249: the drawn symbol's readings have the strip to themselves; the correction overlay waits. */}
         {!scratch && slots !== 'ink' && <WritingAidBar words={writingWords} edit={shownEdit} ghost={writingGhost}
-          disabled={editingDisabled} undoable={suggestionUndoable} swipeProgress={swipeProgress} exhausted={aidExhausted}
+          disabled={editingDisabled} undoable={suggestionUndoable} reviewRef={writingReview} exhausted={aidExhausted}
           onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
           onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>

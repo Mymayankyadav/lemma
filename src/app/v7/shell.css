@@ -1,6 +1,19 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 /* PLAN §6.1: the v7 shell. Role tokens only. */
 @layer v7-components {
+ /* An incoming page is readable and interactive from its first frame. Only the title moves, so
+    sticky headers, fixed action bars and the tutor's keyboard stay anchored to the viewport. */
+ @media (prefers-reduced-motion:no-preference) {
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-shell[data-travel] > :is(.v7-page,.v7-library-split) {
+   animation:v7-route-in var(--v7-m-quick,160ms) ease-out;
+  }
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-shell[data-travel] :is(.v7-hub-title,.v7-detail-title,.tutor-header-title) {
+   animation:v7-route-title var(--v7-m-quick,160ms) var(--v7-ease-standard);
+  }
+  .v7-shell[data-travel="back"] {--v7-title-offset:-6px;}
+ }
+ @keyframes v7-route-in {from {opacity:.82;} to {opacity:1;}}
+ @keyframes v7-route-title {from {translate:var(--v7-title-offset,6px) 0;} to {translate:0 0;}}
  :where(html[data-v7]) .v7-shell {--v7-dock-height:calc(64px + var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));min-height:100dvh;background:var(--v7-role-surface-page);color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
  :where(html[data-v7]) .v7-shell[data-session="true"] {--v7-dock-height:calc(112px + var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));}
  :where(html[data-v7]) .v7-shell[data-immersive="true"] {--v7-dock-height:0px;}

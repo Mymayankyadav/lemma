@@ -17,3 +17,5 @@ body:has(nav[aria-label="Main navigation"]) .lemma-lab-fab { bottom: calc(var(--
 .clip-1 { display:block; min-width:0; max-width:100%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .wrap { min-width:0; white-space:normal; overflow-wrap:anywhere; }
 .math-block { min-width:0; max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin; }
+:where(html[data-v7]) .lemma-route-loading {background:transparent;color:var(--v7-role-text-primary,inherit);}
+:where(html[data-v7]) .lemma-route-loading > [aria-hidden] {animation:none;background:var(--v7-role-surface-muted,var(--fill-1));}

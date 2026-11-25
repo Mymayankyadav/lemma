@@ -491,6 +491,9 @@ it('ranks the known ambient set in the actual menu candidate pool and cannot sel
     };
     expect(scores('set').get('Y')).toBeGreaterThan(scores('set').get('X')!);
     expect(scores('unknown').get('X')).toBeGreaterThan(scores('unknown').get('Y')!);
+    const newSentence = padEdit('That follows. ');
+    expect(predictWritingAidPool({...request, cursor: newSentence, anchor: {text: newSentence.text, start: 0}})
+      .words.some(item => item.source === 'symbol')).toBe(false);
     const witness = padEdit('Let ');
     expect(predictWritingAidPool({...request, question: ['Choose a witness X or Y'],
       cursor: witness, anchor: {text: witness.text, start: 0}}).words.some(item => item.source === 'symbol')).toBe(false);

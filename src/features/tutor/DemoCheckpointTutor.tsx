@@ -186,6 +186,8 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     ?'Some draft changes could not be saved on this device and may be lost on reload.':undefined
   const [preview,setPreview]=useState<ReturnType<typeof previewLocalTutorExcerpt>>()
   const [session,setSession]=useState<{api:ManualTutor; thread:TutorThreadView}>()
+  const [savedThread,setSavedThread]=useState<TutorThreadView>()
+  const [sending,setSending]=useState<{text:string;after:number;followupId?:string}>()
   // N228: the tutor's quick questionnaires on this thread, shown in each reply's row.
   const questionnaireApi=session?.api.questionnaires
   const [questionnaires,setQuestionnaires]=useState<readonly TutorQuestionnaire[]>([])
@@ -198,9 +200,14 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   // N228 (Owner: "allow posting of messages even when tutor is not"): extra messages on the turn waiting for the tutor.
   const followupApi=session?.api.followups
   const [followups,setFollowups]=useState<readonly TutorFollowUp[]>([])
+  const followupRead=useRef(0)
   const loadFollowups=useCallback(async()=>{
+    const request=++followupRead.current
     if(!followupApi){setFollowups([]);return}
-    try{setFollowups(await followupApi.list())}catch{/* They are shown when the thread reloads. */}
+    try{
+      const items=await followupApi.list()
+      if(request===followupRead.current)setFollowups(items)
+    }catch{/* They are shown when the thread reloads. */}
   },[followupApi])
   useEffect(()=>{void loadFollowups()},[loadFollowups,session?.thread.readAt])
   // N234: the tutor's answer aids (behind tutorAnswerAids): the latest set on this thread shapes the strip while the learner
@@ -295,8 +302,10 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
           pathId,checkpointId,sittingId:scope.sittingId,ownerId:ownerId!,generation:generation!,readOnly,
         }):await openDemoManualTutor({pathId,checkpointId})
         if(!active){api.close();return}
+        setSavedThread(api.readSaved?.())
         await refresh(api,true)
-      } catch {if(active)setError('Could not open the saved conversation. Try again.')}
+        if(active)setSavedThread(undefined)
+      } catch {if(active){setSavedThread(undefined);setError('Could not open the saved conversation. Try again.')}}
     }
     void connect()
     return ()=>{active=false;readVersion.current++;api?.close()}
@@ -377,22 +386,26 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       const stored=JSON.stringify(attempt)
       // A failed write still leaves the ID in memory. Require a durable ID before every send.
       if(!followupDraft.change(stored)){setError('');return}
+      setSending({text:body,followupId:attempt.id,after:session.thread.head.lastSequence})
       setBusy(true);setError('')
       try {
         const saved=await followupApi.add(attempt.turnId,attempt.id,attempt.body)
+        ++followupRead.current
         setFollowups(list=>list.some(item=>item.id===saved.id)?list:[...list,saved])
         question.clearIfUnchanged(text)
         followupDraft.clearIfUnchanged(stored)
       } catch (err) {
         if(err instanceof Error&&'code' in err&&err.code==='40001')followupDraft.clearIfUnchanged(stored)
+        setSending(undefined)
         await refresh(session.api).catch(()=>{})
         setError(err instanceof Error?err.message:'Your message was not saved. It is still in the box.')
-      } finally {setBusy(false)}
+      } finally {setSending(undefined);setBusy(false)}
       return
     }
     if (!session || busy || readOnly || session.thread.offline || session.thread.canSubmit===false ||
       session.thread.head.pendingTurnId || session.thread.outbox?.length || !text.trim()&&!hasImages || text.length>2000 ||
       (page && !options.keepDraft && text.includes('□')) || connectorLoading) return
+    setSending({text:hasImages?'Answer with attachment':body,after:session.thread.head.lastSequence})
     setBusy(true);setError('');setCopyStatus('')
     try {
       const local=!options.keepDraft && attachedLocal.text ? previewLocalTutorExcerpt(attachedLocal.text) : undefined
@@ -428,10 +441,11 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       await refresh(session.api).catch(()=>setError('Question confirmed. Reconnect to refresh the conversation.'))
       if(result.kind!=='submitted')setError('The question was not saved. Your draft was kept.')
     } catch (err) {
+      setSending(undefined)
       await refresh(session.api).catch(()=>{})
       setError(err instanceof Error?err.message:'Could not confirm the saved question. Check its pending submission.')
     }
-    finally {setBusy(false)}
+    finally {setSending(undefined);setBusy(false)}
   }
 
   async function confirm(body:string,turnId:string,version:number,draftId:string) {
@@ -463,12 +477,15 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     finally {setBusy(false)}
   }
 
-  const thread=session?.thread,last=thread?.turns.at(-1)
-  const recoveryOnly=readOnly||Boolean(thread?.offline)
-  const allTurns=withTutorMessageDeletions(
+  const thread=session?.thread??savedThread,last=thread?.turns.at(-1)
+  const recoveryOnly=readOnly||Boolean(thread?.offline)||(!session&&!!savedThread)
+  const allTurns=useMemo(()=>withTutorMessageDeletions(
     Array.from(new Map([...history,...(thread?.turns??[])].map(t=>[t.id,t])).values()).sort((a,b)=>a.sequence-b.sequence),
     deletedMessages,
-  )
+  ),[history,thread?.turns,deletedMessages])
+  const sendingText=sending&&(sending.followupId
+    ? !followups.some(item=>item.id===sending.followupId)
+    : !allTurns.some(turn=>turn.sequence>sending.after&&turn.snapshot.question.trim()===sending.text))?sending.text:undefined
   // Aids belong to the visible reply the learner is answering.
   const activeTurn=allTurns.at(-1)
   const answerAid=!isFlagOn('tutorAnswerAids')?undefined:!live?DEMO_ANSWER_AID:
@@ -727,7 +744,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         <textarea className="v7-field" aria-label={'Recoverable reply '+(i+1)} readOnly value={item.body}/>
       </div>)}
     </Disclosure>}  </>
-  if(page)return <TutorChat timedLabel={sitting?.status==='active'?timer?.label:undefined} page={page} turns={allTurns} draft={ink.draft.queuedText??question.text}
+  if(page)return <TutorChat sendingText={sendingText} timedLabel={sitting?.status==='active'?timer?.label:undefined} page={page} turns={allTurns} draft={ink.draft.queuedText??question.text}
     acceptedSpans={ink.draft.queuedText!==undefined?ink.draft.queuedAcceptedSpans:question.spans} onChange={editQuestion} answerAid={answerAid} mastery={mastery}
     onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread&&!readOnly&&!busy&&!connectorLoading&&!thread.outbox?.length&&
       (pending&&thread.canSubmit!==false||thread.offline&&!pending))} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
@@ -736,7 +753,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     listenerSeenAt={thread?.listenerSeenAt} resumePrompt={delivery
       ? 'Continue my Lemma tutor session. Use get(what=tutor_turn, id='+delivery.reference+').'
       : 'Continue my Lemma tutor session. Use get(what=tutor_turn) to find my answer.'}
-    pendingStatus={recoveryOnly?'Offline · Saved conversation':!live?'Demo: import a reply to continue':claimed?'Replying…':'Waiting for '+clientName}
+    pendingStatus={!session&&savedThread?'Refreshing saved conversation…':recoveryOnly?'Offline · Saved conversation':!live?'Demo: import a reply to continue':claimed?'Replying…':'Waiting for '+clientName}
     status={<>{queueSaving?<p role="status">Saving queued answer…</p>:ink.draft.queuedText!==undefined&&<p role="status">{tutorInkIssue(ink.draft.queuedText,ink)?'Queued answer needs its images.':
       pending?'Answer queued. It will send after the tutor replies.':thread?.offline?'Answer queued. It will send when you reconnect.':'Answer queued.'}
       <Button small disabled={readOnly||busy||!ink.ready} onClick={()=>{
@@ -744,8 +761,8 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         if(queued===undefined||!question.change(queued,false,ink.snapshot().draft.queuedAcceptedSpans))return;
         void ink.update(current=>({...current,queuedText:undefined,queuedAcceptedSpans:undefined})).catch(()=>{});
       }}>Keep as draft</Button>
-    </p>}{statusControls}{thread?.canSubmit===false&&!thread.offline&&!readOnly&&<p role="status">New tutor questions are currently paused.</p>}
-      {live&&thread&&!thread.offline&&(readOnly||!thread.canSubmit)&&!pending&&
+    </p>}{statusControls}{session&&thread?.canSubmit===false&&!thread.offline&&!readOnly&&<p role="status">New tutor questions are currently paused.</p>}
+      {live&&session&&thread&&!thread.offline&&(readOnly||!thread.canSubmit)&&!pending&&
         <a href={chatLink(page.client,studyPrompt(page.project.project.title,page.detail.view.code,page.detail.view.title))}
           className="v7-button v7-secondary v7-small" rel="noopener noreferrer" target="_blank">Study in {clientName}</a>}
       {live&&thread?.canSubmit&&!recoveryOnly&&!connectorLoading&&!canConnect&&

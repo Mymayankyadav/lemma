@@ -28,11 +28,12 @@ function RouteMessage({slug, message, retry}: {slug: string; message: string; re
 export default function TutorPage() {
   const {slug = '', code} = useParams();
   const [params]=useSearchParams();
+  const examId=isFlagOn('examMode')?params.get('exam'):null;
   const project = useProject(slug);
+  const checkpoint = useCheckpoint(slug, examId?'':code??'');
   if (!project.data) return <RouteMessage slug={slug}
     message={project.isError ? 'Could not load this path.' : 'Opening your path…'}
     retry={project.isError ? () => void project.refetch() : undefined}/>;
-  const examId=isFlagOn('examMode')?params.get('exam'):null;
   if(examId)return <ExamTutor key={JSON.stringify([slug,examId])} project={project.data} id={examId} question={params.get('question')?.trim().slice(0,2000)}/>;
   const checkpoints = project.data.checkpoints.filter(cp => cp.ui !== 'proposed');
   if (code && !checkpoints.some(cp => cp.code === code))
@@ -52,7 +53,7 @@ export default function TutorPage() {
       <Link to={'/p/' + encodeURIComponent(slug)}>Back to path</Link>
     </main>;
   }
-  return <SelectedTutor key={JSON.stringify([slug, code])} slug={slug} code={code} project={project.data}/>;
+  return <SelectedTutor key={JSON.stringify([slug, code])} slug={slug} code={code} project={project.data} checkpoint={checkpoint}/>;
 }
 
 function ExamTutor({project,id,question}:{project:ProjectDetail;id:string;question?:string}){
@@ -76,10 +77,12 @@ function ExamTutor({project,id,question}:{project:ProjectDetail;id:string;questi
    scope={{pathId:slug,checkpointId,sittingId:sitting.id,title:sitting.title,objective:'',authScope}}/>;
 }
 
-function SelectedTutor({slug, code, project}: {slug: string; code: string; project: ProjectDetail}) {
+function SelectedTutor({slug, code, project, checkpoint}: {
+  slug: string; code: string; project: ProjectDetail; checkpoint: ReturnType<typeof useCheckpoint>;
+}) {
   useSyncExternalStore(onAccountChange, authGeneration);
   const [params]=useSearchParams();
-  const checkpoint = useCheckpoint(slug, code), settings = useSettings();
+  const settings = useSettings();
   const {query:exam}=useExamSnapshot(project.project.id,slug,isFlagOn('examMode'));
   const detail = checkpoint.data;
   if (!detail || detail.view.code !== code) return <RouteMessage slug={slug}
