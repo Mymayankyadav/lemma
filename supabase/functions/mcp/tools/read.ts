@@ -4,6 +4,7 @@ import { settings, packet } from '../packet.ts';
 import { day, ui, display } from '../derive.ts';
 import { cut, capped, date, pageRange, number, validPdfPageIndex } from '../text.ts';
 import { sourceLine } from '../v3.ts';
+import {readExam} from '../exam.ts';
 import {readStudyRecords} from './study-read.ts';
 import {readTaskRecords} from './task-read.ts';
 import {registeredResources,readRegisteredResource} from './registry.ts';
@@ -16,6 +17,7 @@ import {ATLAS_READS} from '../atlas.ts';
 import {readAtlasWorker,readAtlasTagSuggestions} from './atlas-worker-read.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
+  if(a.what==='exam')return readExam(c,a);
   if(a.what==='resources')return registeredResources(c);
   if(a.what==='atlas_worker')return readAtlasWorker(c,a);
   if(a.what==='atlas_tag_suggestions')return readAtlasTagSuggestions(c,a);

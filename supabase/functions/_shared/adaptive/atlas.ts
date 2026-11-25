@@ -12,7 +12,8 @@ import {sessionQueue,type Action} from './kg.ts';
 import {reentryProbes,finalReviews,allocateProjects,type FinalReview} from './scheduler.ts';
 import {bridgeStrength,bridgeCounts,type AtlasLink} from './links.ts';
 import {DAY,logit,clamp} from './math.ts';
-export type AtlasRows={settings:any;concepts:any[];projects:any[];checkpoints:any[];cpConcepts:any[];sessions:any[];attempts?:any[];attemptTags?:any[];instructionEvents?:any[];atlasLinks?:any[];prereqs?:any[];aliases?:any[];modelFits?:any[];items?:any[];assumptions?:any[];cards?:any[];notes?:any[];reviews?:any[];intervals?:any[];busy?:any[];studyEntries?:any[]};
+import {examBlock,type ExamInput} from '../exam/block.ts';
+export type AtlasRows={examInputs?:ExamInput[];settings:any;concepts:any[];projects:any[];checkpoints:any[];cpConcepts:any[];sessions:any[];attempts?:any[];attemptTags?:any[];instructionEvents?:any[];atlasLinks?:any[];prereqs?:any[];aliases?:any[];modelFits?:any[];items?:any[];assumptions?:any[];cards?:any[];notes?:any[];reviews?:any[];intervals?:any[];busy?:any[];studyEntries?:any[]};
 export type FacetValue=Estimate&{certified:boolean;status:string};
 export type AtlasReadModel={sessions?:AtlasRows['sessions'];settings:typeof ATLAS_DEFAULTS;checkpoints:any[];checkpointConcepts:any[];model:MeasurementState;facets:Record<string,FacetValue[]>;health:Health[];fits:Record<string,ReturnType<typeof feasibility>>;durations:Record<string,ReturnType<typeof predictDuration>>;budget:ReturnType<typeof cardBudget>;queue:ReturnType<typeof sessionQueue>;slots:ReturnType<typeof rankSlots>;themes:{id:string;name:string;instances:string[]}[];bridges:{from:string;to:string;strength:ReturnType<typeof bridgeStrength>}[];attempts:any[];links:AtlasLink[];frustration:ReturnType<typeof frustration>;capacity:number|null;finalReviews:FinalReview[];allocation:ReturnType<typeof allocateProjects>};
 export function factsForAtlas(rows:AtlasRows):AtlasFacts{
@@ -81,6 +82,17 @@ export function assembleAtlas(rows:AtlasRows,now:Date,collectCandidates?:(action
  }
  const budget=cardBudget({capacity:capacity??0,reviewShare:st.capacity?.review_share??.25,reviewBudget:st.review_budget?.minutes,quotaShare:settings.card_quota_share,used7:(rows.notes??[]).filter(n=>Date.parse(n.created_at)>time-7*DAY).reduce((z,n)=>z+(n.atlas_kind==='skeleton'?3:1),0),usedToday:(rows.notes??[]).filter(n=>String(n.created_at).slice(0,10)===now.toISOString().slice(0,10)).reduce((z,n)=>z+(n.atlas_kind==='skeleton'?3:1),0)});
  const actions:Action[]=[],finalReviewList:FinalReview[]=[],today=now.toISOString().slice(0,10);
+ for(const input of rows.examInputs??[]) {
+  if(!rows.projects.some(p=>p.id===input.sitting.project_id))continue;
+  const b=examBlock(input,now.toISOString(),30);
+  if(!b)continue;
+  const row=input.sitting.blueprint.find(r=>r.key===b.next.keys[0]);
+  const project=rows.projects.find(p=>p.id===b.projectId);
+  const concept=rows.concepts.find(c=>c.subject_id===project.subject_id&&row?.concepts?.includes(c.slug));
+  const deadline=[input.sitting.starts_at,input.sitting.last_study_at].filter((x):x is string=>!!x).map(Date.parse);
+  actions.push({id:'exam:'+b.sittingId,project_id:b.projectId,kind:'practice',concept_id:concept?.id??('exam:'+b.sittingId),
+    minutes:b.slotMinutes,p:.5,weight:project.share_weight??3,needAt:deadline.length?Math.min(...deadline):undefined,exam:input});
+ }
  for(const p of rows.projects){const next=rows.checkpoints.filter(c=>c.project_id===p.id&&c.status!=='demonstrated'&&(!c.plan_state||c.plan_state==='active')).sort((a,b)=>a.position-b.position)[0];if(!next)continue;
   const k=rows.cpConcepts.find(x=>x.checkpoint_id===next.id)?.concept_id;if(!k)continue;const needAt=Date.parse(p.last_study_on??now.toISOString())+12*3600000,weight=p.share_weight??(next.tier==='core'?3:2);
   if(!model.lastInstruction[k])actions.push({project_id:p.id,id:'teach:'+next.id,kind:'teach',concept_id:k,minutes:Math.min(30,next.estimate_minutes??30),p:.5,forced:true,needAt,weight});

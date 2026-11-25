@@ -20,5 +20,6 @@ export interface AgendaDecision {
   reason: string;
   outcome: AgendaOutcome;
   baseline: AgendaOutcome;
+  exam?:import('../exam/block.ts').ExamBlock;
   unresolved?: {taskId:string;reason:string}[];
 }

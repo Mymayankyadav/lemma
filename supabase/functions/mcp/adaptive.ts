@@ -53,8 +53,13 @@ export async function loadRows(c:Context,now=new Date()):Promise<Rows>{
     scoped(c,'calendar_blocks','kind,status,starts_at,ends_at,time_zone').gte('ends_at',sinceDay).limit(500).then(must),
     dueCardsByProject(c),
     scoped(c,'scheduler_runs','*').gte('study_day',new Date(now.getTime()-4*86400000).toISOString().slice(0,10)).limit(200).then(must).catch(()=>[] as any[])]);
+  let examInputs:Rows['examInputs']=[];
+  try {
+    const result=await c.db.rpc('exam_agenda_inputs',{p_owner:c.userId,p_as_of:now.toISOString()});
+    if(Array.isArray(result?.data))examInputs=result.data;
+  } catch { /* Older adapters have no active exam inputs. */ }
   const atlas=settings.atlas_migrated_at?await loadAtlasRows(c):{};   // `settings.atlas` always has its default, so it cannot say whether the owner has migrated
-  return {settings,projects:visibleProjects(projects),checkpoints,prereqs,cpConcepts,concepts,conceptLinks,evidence,misconceptions:misc,
+  return {settings,examInputs,projects:visibleProjects(projects),checkpoints,prereqs,cpConcepts,concepts,conceptLinks,evidence,misconceptions:misc,
     decisions,baselines,overrides,sessions,intervals,busy,dueCards,frozen,items,assumptions,aliases,...atlas};
 }
 /** Facts → state. The derived rechecks cache is refreshed best-effort; a cache failure never breaks a read. */
@@ -84,7 +89,7 @@ export function flagLines(s:State,slug?:string):string[]{
   const mine=slug?Object.values(s.projects).filter(p=>p.slug===slug):Object.values(s.projects);
   for(const p of mine){
     if(p.unconfirmed)out.push(p.slug+': deadline/last study day not confirmed; ask');
-    if(p.mode==='post_deadline')out.push(p.slug+': deadline passed; ask for a new one or archive');
+    if(p.mode==='post_deadline'&&!p.examActive)out.push(p.slug+': deadline passed; ask for a new one or archive');
     if(p.feasibility&&p.feasibility.slack<0)out.push(p.slug+': infeasible by '+Math.abs(p.feasibility.slack)+'m; pruning proposed');
     if(p.atRisk)out.push(p.slug+': core at risk; choose extend deadline, add capacity or cut named items');
   }
@@ -128,7 +133,7 @@ export function renderForecast(s:State,rows:Rows,slug?:string):string{
 export function renderAtlasQueue(items:any[],rows:Rows,projectId?:string,limit=8):string{
  const slugOf=new Map<string,string>(rows.projects.map((x:any)=>[x.id,x.slug])),multi=rows.projects.length>1,pidOf=(a:any)=>a.project_id??a.home,mine=(a:any)=>!projectId||pidOf(a)===projectId;
  const ordered=[...items.filter(mine),...items.filter(a=>!mine(a))],tag=(a:any)=>multi&&(!projectId||pidOf(a)!==projectId)?'['+(slugOf.get(pidOf(a))??'no project')+'] ':'';
- return 'QUEUE\n'+ordered.slice(0,limit).map((a,i)=>(i+1)+'. '+a.kind+' '+tag(a)+rows.concepts.find((c:any)=>c.id===a.concept_id)?.name+' '+a.reason).join('\n');
+ return 'QUEUE\n'+ordered.slice(0,limit).map((a,i)=>(i+1)+'. '+(a.exam?'Exam prep · '+a.exam.sitting.title:a.kind+' '+tag(a)+rows.concepts.find((c:any)=>c.id===a.concept_id)?.name)+' '+a.reason).join('\n');
 }
 /** Resume v2 (spec §13.1): OWNER (added by packet), RULES, TIME, QUEUE, BRIEF, FLAGS; the server appends NEXT. */
 export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:string,brief:{now?:string;last?:string;fix?:string;cards?:string;src?:string;adapt?:string;mandatory?:string[];nodes?:string[]},agenda?:AgendaRead|null):string{

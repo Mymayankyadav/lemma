@@ -43,7 +43,10 @@ export function atlasChoice(state:State,legal:Legal) {
       throw new TypeError('Invalid Atlas action evidence')
     }
     const minutes = fitting(task,state.now,window,nextBoundary(state,window)) || full
-    return {...atlas,id:task.nativeId??task.id,minutes:minutes+task.pending,
+    // An exam is a splittable study block. Native ranking reserves its usual
+    // close time before choosing a block, just as it does for fixed-size lessons.
+    const usable=atlas.exam?Math.min(minutes,Math.floor(block-Math.min(10,block*.1))-task.pending):minutes;
+    return {...atlas,id:task.nativeId??task.id,minutes:usable>=task.minimum?usable+task.pending:minutes+task.pending,
       needAt:atlas.needAt ?? at(task.deadline),
       project_id:atlas.kind === 'review' ? undefined : task.projectId,home:task.projectId}
   })
@@ -67,6 +70,8 @@ export function atlasChoice(state:State,legal:Legal) {
     (!task.nativeId || task.projectId===(first.project_id??first.home)))
   const pick = !nextStudy ? other : !other ? nextStudy
     : byDeadline(nextStudy.task,other.task) <= 0 ? nextStudy : other
+  if (pick===nextStudy && pick?.task.atlasAction?.exam && first)
+    return {action:makeAction(pick.task,state.now,first.minutes-pick.task.pending),hold:null,origin:'Atlas v3 exam study block'};
   if (pick) return {...decision(state,window,pick),
     origin:pick === nextStudy ? 'Atlas v3 session queue' : 'mixed calendar deadline merge'}
   return {...holdDecision(state,'Atlas v3 reserves this time for its study-session constraints'),
