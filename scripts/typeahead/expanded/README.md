@@ -173,3 +173,23 @@ the file ledger must match its independently recorded dependency inventory from 
 The selector checks the actual distinct download paths, including the ORT wrapper and pinned WASM payload,
 and the runtime's cold ceiling. A selected report is an input to device validation. Production and replay
 qualification remain separate.
+
+## Public natural-answer replay and the optional FP16 file
+
+The revised evaluation uses the group exclusions from the audited corpus, the verified legacy training identities and all earlier inspected schedules. The frozen manifest records the raw-source digests. The private Kaggle sample contains a deterministic bottom-hash sample from each of the two Stack Math Q&A source files. Each selected thread retains its original question and answer links. Aggregate evidence is published in the repository.
+
+Run the following from a configured training environment. Supply the local file paths for the audited inputs. `PYTHONPATH` must include `scripts/typeahead` and `scripts/typeahead/expanded`.
+
+```sh
+python scripts/typeahead/expanded/sample_stackmath.py --source-root "$provider_input" --out "$sample"
+python scripts/typeahead/expanded/natural_cohort.py exclude --corpus "$audited_corpus" --legacy "$legacy_training_index" --previous "${earlier_schedules[@]}" --out "$work/exclusions.sqlite"
+python scripts/typeahead/expanded/natural_cohort.py freeze --source "$sample/questions.jsonl.gz" --exclusion "$work/exclusions.sqlite" --out "$work/frozen" --fit 200 --validation 100 --final 1000
+python scripts/typeahead/expanded/natural_cohort.py middle --split "$work/frozen/validation" --out "$work/interior"
+python scripts/typeahead/expanded/run_cohort.py --split "$work/frozen/fit" --phase capture --arm expanded-kn --build "$static_build" --config "$browser_config" --sha "$count_sha256" --output "$work/fit"
+python scripts/typeahead/expanded/run_cohort.py --split "$work/frozen/validation" --phase capture --arm expanded-kn --build "$static_build" --config "$browser_config" --sha "$count_sha256" --output "$work/validation"
+python scripts/typeahead/expanded/menu_evaluation.py fit --fit "$work/fit/impressions.jsonl" --fit-gold "$work/frozen/fit/gold.jsonl" --validation "$work/validation/impressions.jsonl" --val-gold "$work/frozen/validation/gold.jsonl" --sha "$count_sha256" --out "$ranker"
+```
+
+Set `--phase cost` to type complete answers and verify the result of each accepted suggestion. Use the `paired` command on development key files to select final thread count. Pass that count to the fixed-caret and full-answer runners with `--threads`. The `score` command takes `gold.jsonl`, the captured impressions and the same count. Each full-answer cost includes manual input through empty and late menus. Runners group ten public threads per independent browser profile. Preserve the built assets, the per-block driver digests and the frozen schedule to make comparisons reproducible.
+
+For the optional 512-token model, package the audited FP16 export with `package_android_fp16.py --export "$export_dir" --out "$pack"`. Native references come from `android_reference.py --checkpoint "$checkpoint" --cases "$cases" --out "$reference"`. Run `run_cohort.py` with `--arm neural --fp16-pack "$pack"` for an explicitly installed, strict browser trial. A physical test uses a debuggable Android build containing the normal Tutor UI and the lab overrides. Run `node scripts/typeahead/expanded/qualify_android.mjs --pack "$pack" --reference "$reference" --out "$device_result"`. Supply `--serial` when multiple devices are attached and `--renderer` if WebView cannot identify a unique renderer through CDP. The lab records top-three parity by group, cached decode latency, actual keyboard taps, PSS and offline behavior.

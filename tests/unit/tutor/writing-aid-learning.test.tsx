@@ -323,8 +323,8 @@ it('labels a passively completed Unicode compound as one exact continuation', as
     const question = ['Use a non‑Archimedean example.'];
     const input = request('Use non‑Arch', {question, mode:'balanced'});
     await render(input);
+    await expect.poll(async () => {await settle(); return view.rankedWords.some(item => item.label === 'non‑Archimedean');}).toBe(true);
     const chosen = view.rankedWords.find(item => item.label === 'non‑Archimedean');
-    expect(chosen).toBeDefined();
     await act(async () => view.shown('words', [chosen!]));
     now.mockReturnValue(50_400);
     await render(request('Use non‑Archimedean ', {question, mode:'balanced', target: {...input.target, editorRevision: 2}}));

@@ -4,12 +4,12 @@ import {expect, test, type Locator, type Page} from '@playwright/test';
 import {liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
 import type {AnswerAidDraft} from '../../supabase/functions/_shared/tutor-answer-aids';
 
-type ReplayEvent = {eventId: string; answerId: string; prefix: string; target?: string; route?: string};
+type ReplayEvent = {eventId: string; answerId: string; prefix: string; draft?: string; target?: string; route?: string};
 type ReplayAnswer = {answerId: string; answer: string; route?: string; question?: string; subject?: string; aid?: AnswerAidDraft;
   documentGroup?: string};
 type GoldEvent = {eventId: string; exactInsertion: string; exactGhost?: string; kind: 'word' | 'symbol'};
 type RuntimeAsset = {ngram?: string; subject?: string; subjectPack?: string; latex?: string; neural?: string;
-  graphTrial?: string; ghostEligible: boolean; ngramAbsence?: 'empty' | 'ineligible' | 'no-current-model'};
+  graphTrial?: string; ghostEligible: boolean; neuralEligible: boolean; ngramAbsence?: 'empty' | 'ineligible' | 'no-current-model'};
 type Displayed = {text: string; family: string; start: number; end: number; caret?: number; selectionEnd?: number};
 type ComponentSample = {id: string; subject?: string; probability?: Record<string, number>; assetSha256?: string; subjectAssetSha256?: string};
 type GhostSample = {id: string; modelFingerprint?: string;
@@ -40,15 +40,15 @@ async function exactDraft(answer: Locator) {
   });
 }
 
-async function slate(page: Page) {
+async function slate(page: Page, trace = true) {
   const slots = page.getByRole('group', {name: /^(?:Answer|Word|Equation|LaTeX|Symbol) suggestions$/u})
     .locator('button:enabled[data-typeahead-insert]:visible');
-  const {items, diagnostics} = await page.evaluate(() => {
+  const {items, diagnostics} = await page.evaluate(captureTrace => {
     const groups = ['Answer', 'Word', 'Equation', 'LaTeX', 'Symbol'].map(name => '[role="group"][aria-label="'+name+' suggestions"]');
     const nodes = Array.from(document.querySelectorAll<HTMLButtonElement>(groups.map(group => group+' button:enabled[data-typeahead-insert]').join(',')))
       .filter(button => button.checkVisibility());
     let diagnostics: unknown;
-    window.dispatchEvent(new CustomEvent('lemma-typeahead-read-menu', {detail: (value: unknown) => {diagnostics = value;}}));
+    if (captureTrace) window.dispatchEvent(new CustomEvent('lemma-typeahead-read-menu', {detail: (value: unknown) => {diagnostics = value;}}));
     return {diagnostics, items: nodes.map(node => {
       const button = node as HTMLButtonElement;
       const text = button.dataset.typeaheadInsert!;
@@ -56,7 +56,7 @@ async function slate(page: Page) {
         end: Number(button.dataset.typeaheadEnd), caret: button.dataset.typeaheadCaret === undefined ? undefined : Number(button.dataset.typeaheadCaret),
         selectionEnd: button.dataset.typeaheadSelectionEnd === undefined ? undefined : Number(button.dataset.typeaheadSelectionEnd)};
     })};
-  });
+  }, trace);
   expect(items.length).toBeLessThanOrEqual(3);
   return {slots, items, diagnostics};
 }
@@ -122,6 +122,19 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       events.some(event => !contexts.get(event.answerId)?.documentGroup || typeof gold.get(event.eventId)?.exactGhost !== 'string'))) {
     throw new Error('Ghost calibration needs capture-only graph trial, verified fingerprints, and disjoint grouped replay outcomes');
   }
+  const optionalPack = process.env.LEMMA_TYPEAHEAD_REPLAY_FP16_PACK;
+  if (optionalPack) {
+    if (arm !== 'neural' || !strictGraphTrial) throw new Error('The optional package replay requires a pinned strict neural arm');
+    await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch,typeaheadV2,writingAidSettings#' + defaultRoute);
+    const menu = page.getByRole('button',{name:'Session actions',exact:true});
+    await menu.click();
+    await page.getByRole('button',{name:'Writing assistance',exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:'Writing assistance',exact:true});
+    await dialog.locator('input[type=file]').setInputFiles(optionalPack);
+    await expect(dialog.getByRole('button',{name:'Remove model'})).toBeVisible({timeout:90000});
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+  }
   let active: ReplayAnswer | undefined;
   if (answers.some(sample => sample.question)) {
     const {threadId, payload} = await prepareLiveTutor(page);
@@ -155,7 +168,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       const data = (form as HTMLElement).dataset;
       return {ngram: data.typeaheadNgramSha, subject: data.typeaheadSubject, subjectPack: data.typeaheadSubjectSha,
         latex: data.typeaheadLatexSha, neural: data.typeaheadNeuralSha, graphTrial: data.typeaheadGraphTrial,
-        ngramEligible: data.typeaheadNgramEligible === '1', ghostEligible: data.typeaheadGhostEligible === '1'};
+        ngramEligible: data.typeaheadNgramEligible === '1', neuralEligible: data.typeaheadNeuralEligible === '1', ghostEligible: data.typeaheadGhostEligible === '1'};
     });
     const sample = contexts.get(answerId);
     if (sample?.question && sample.subject) {
@@ -257,7 +270,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       active = context;
       const query = '/lemma/?typeahead-answer='+encodeURIComponent(answerId)+'&typeahead-replay=1&demo=' + (hasQuestion ? '0' : '1') + '&flags=v7Shell,v6Shell,tutorScratch,' + encodeURIComponent(flags)
         + (arm ? '&typeahead-arm=' + encodeURIComponent(arm) : '') + (frozen ? '&typeahead-frozen-profile=1' : '')
-        + (graphTrial ? '&typeahead-graph-trial=1' : '') + (strictGraphTrial ? '&typeahead-strict-trial=1' : '')
+        + (captureOnly ? '' : '&typeahead-trace=0') + (graphTrial ? '&typeahead-graph-trial=1' : '') + (strictGraphTrial ? '&typeahead-strict-trial=1' : '')
         + (ghostCalibration ? '&typeahead-ghost-probe=1' : '');
       await page.goto(query + '#' + destination);
       editor = page.getByRole('textbox', {name: 'Your answer', exact: true});
@@ -282,11 +295,27 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   // Freeze eligibility opportunities before applying any gold decisions.
   let priorPrefix = '', priorId = '';
   for (const event of events) {
-    const retain = blind && event.answerId === priorId && event.prefix.startsWith(priorPrefix);
+    const retain = blind && event.draft === undefined && event.answerId === priorId && event.prefix.startsWith(priorPrefix);
     const answer = await start(event.route ?? defaultRoute, event.answerId, true, retain);
     const delta = retain ? event.prefix.slice(priorPrefix.length) : event.prefix;
     // Restore intervening independently typed context, then deliver the measured edit through the native input path.
-    if (blind) {
+    if (event.draft !== undefined) {
+      if (!blind || !event.draft.startsWith(event.prefix) || !event.prefix.length) throw new Error('Invalid interior fixture');
+      const suffix = event.draft.slice(event.prefix.length);
+      const leading = [...event.prefix], last = leading.pop()!;
+      const left = leading.join('');
+      await answer.fill(left + suffix);
+      await answer.evaluate((root, offset) => {
+        const walker = document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const length = node.textContent?.length ?? 0;
+          if (offset <= length) {window.getSelection()!.setPosition(node,offset); return;}
+          offset -= length;
+        }
+        throw new Error('Frozen plain-text cursor is outside the editor');
+      }, left.length);
+      await page.keyboard.insertText(last);
+    } else if (blind) {
       const points = [...delta], last = points.pop();
       if (points.length) await page.keyboard.insertText(points.join(''));
       if (last) await page.keyboard.insertText(last);
@@ -301,7 +330,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     } else await page.keyboard.type(delta);
     priorId = event.answerId;
     priorPrefix = event.prefix;
-    expect(await exactDraft(answer), 'Frozen prefix at '+event.eventId).toBe(event.prefix);
+    expect(await exactDraft(answer), 'Frozen draft at '+event.eventId).toBe(event.draft ?? event.prefix);
     await painted(page);
     const functionalTarget = !eventInput && process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS === undefined ? event.target : undefined;
     if (functionalTarget) {
@@ -318,8 +347,9 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     }
     const ghostButton = page.locator('[data-writing-aid-ghost][data-typeahead-insert]:visible');
     const ghost = await ghostButton.count() ? await ghostButton.getAttribute('data-typeahead-insert') : undefined;
-    const impression = {trace: diagnostics, eventId: event.eventId, prefixSha256: hash(event.prefix), slate: items,
-      ghostEligible: assets.ghostEligible, assets,
+    const impression = {trace: diagnostics, eventId: event.eventId, prefixSha256: hash(event.prefix),
+      ...(event.draft === undefined ? {} : {draftSha256: hash(event.draft)}), slate: items,
+      ghostEligible: assets.ghostEligible, neuralEligible: assets.neuralEligible, assets,
       ...(ghost ? {ghost: {text: ghost, source: assets.neural ? 'neural' : 'visible-ui'}} : {})};
     impressions.push(impression);
     retainPartial('impressions', impression);
@@ -371,7 +401,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     const actions: {at: number; edit: Displayed}[] = [];
     while (draft.length < sample.answer.length) {
       if (draft) await painted(page);
-      const {slots, items} = await slate(page);
+      const {slots, items} = await slate(page, false);
       const assets = await observeAssets(sample.answerId, draft);
       if (assets.ngram) activeAssets.add(assets.ngram);
       if (assets.subjectPack) activeAssets.add(assets.subjectPack);

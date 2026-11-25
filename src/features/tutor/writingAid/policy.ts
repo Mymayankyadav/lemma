@@ -35,6 +35,7 @@ export interface WritingAidRequest {
   readonly contextKey?: string;
   readonly arm?: TypeaheadArm;
   readonly replayDiagnostics?: boolean;
+  readonly tracePool?: boolean;
   /** Differential test oracle for the eligible pool. */
   readonly exhaustivePool?: boolean;
   readonly middleEdits?: boolean;

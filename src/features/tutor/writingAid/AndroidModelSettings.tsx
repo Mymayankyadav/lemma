@@ -10,7 +10,9 @@ export function AndroidModelSettings() {
     const read = () => {void installedAndroidPack().then(ready => {if (mounted) setInstalled(ready);});};
     read();
     window.addEventListener(packageChanged, read);
-    return () => {mounted = false; window.removeEventListener(packageChanged, read); controller.current?.abort();};
+    const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(packageChanged);
+    if (channel) channel.onmessage = read;
+    return () => {mounted = false; window.removeEventListener(packageChanged, read); channel?.close(); controller.current?.abort();};
   }, []);
   async function install(file?: File) {
     if (controller.current) return;

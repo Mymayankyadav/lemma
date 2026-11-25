@@ -1,5 +1,5 @@
 /** Run against a connected lab phone and a debuggable build of the normal Lemma Android WebView. */
-import {randomUUID} from 'node:crypto';
+import {createHash, randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {readFile, writeFile} from 'node:fs/promises';
 import {parseArgs} from 'node:util';
@@ -24,6 +24,12 @@ try {
   result.device={model:shell('getprop','ro.product.model'),build:shell('getprop','ro.build.fingerprint'), os:shell('getprop','ro.build.version.release'),
     webview:shell('dumpsys','webviewupdate').split('\n').find(x=>x.includes('Current WebView package'))?.trim()};
   if (!opts.pack || !opts.reference) throw new Error('Supply the pinned .lemmapack and native reference');
+  const descriptor=JSON.parse(await readFile(new URL('../../../src/features/tutor/writingAid/decoder/android-fp16.json',import.meta.url),'utf8'));
+  const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+  const referenceBytes=await readFile(opts.reference);
+  result.identity={packageSha256:digest(await readFile(opts.pack)),referenceSha256:digest(referenceBytes)};
+  if (result.identity.packageSha256!==descriptor.packageSha256 ||
+      result.identity.referenceSha256!=='4f626357c80b481c2a7f602aa4d628a59eaee9d1cb3c26d0f8bf03e3a0fed886') throw new Error('The phone lab inputs differ from the pinned export');
   shell('am','start','-W','-n',pkg+'/.MainActivity','--ez','lemmaTypeaheadLab','true');
   const pid=shell('pidof',pkg).split(/\s/u)[0];
   if (!/^\d+$/u.test(pid)) throw new Error('Lemma is not running');
@@ -96,7 +102,7 @@ try {
     {features:[...adapter.features],vendor:adapter.info?.vendor,device:adapter.info?.device,description:adapter.info?.description,
       fallback:adapter.info?.isFallbackAdapter};});
   result.adapter=gpu ?? null;
-  const refs=JSON.parse(await readFile(opts.reference,'utf8'));
+  const refs=JSON.parse(referenceBytes);
   if (refs.length<300 || !refs.some(r=>r.ids.length===512) || !refs.some(r=>r.ids.length===1)) throw new Error('Incomplete native reference');
   const rows=[];
   for (const [i,r] of refs.entries()) {
@@ -116,14 +122,39 @@ try {
   result.prefillP95=quantile(rows.map(r=>r.prefillMs),.95);
   result.decodeP95=quantile(rows.map(r=>r.decodeMs).filter(Number.isFinite),.95);
   const mem=process=>{const data=shell('dumpsys','meminfo',process); return Number(/TOTAL PSS:\s*(\d+)/u.exec(data)?.[1])||null;};
-  const renderer=opts.renderer;
+  let renderer=opts.renderer;
+  try {
+    const session=await browser.newBrowserCDPSession();
+    const {processInfo}=await session.send('SystemInfo.getProcessInfo');
+    const ids=processInfo.filter(process=>process.type.toLowerCase()==='renderer').map(process=>String(process.id));
+    if (renderer && ids.length && !ids.includes(renderer)) throw new Error('Renderer belongs to another browser');
+    if (!renderer && ids.length===1) renderer=ids[0];
+    await session.detach();
+  } catch (error) {if (String(error.message).includes('another browser')) throw error;}
   if (renderer && (!/^\d+$/u.test(renderer) || !/sandboxed_process|webview/iu.test(shell('cat','/proc/'+renderer+'/cmdline')))) throw new Error('Invalid renderer process');
+  result.rendererPid=renderer ?? null;
   result.memory=[];
+  result.menuDelivery={requests:0,onTimeWithScores:0,deliveredContinuations:0};
+  async function drainDelivery() {
+    const marks=await page.evaluate(()=>{
+      const results=performance.getEntriesByName('lemma.typeahead.neural.coverage').map(entry=>entry.detail);
+      performance.clearMarks('lemma.typeahead.neural.coverage');
+      return results;
+    });
+    for (const row of marks) {
+      result.menuDelivery.requests++;
+      if (row.matchedPending && row.arrivedBeforeDeadline && !row.late) {
+        if (row.scored>0) result.menuDelivery.onTimeWithScores++;
+        if (row.hasContinuation) result.menuDelivery.deliveredContinuations++;
+      }
+    }
+  }
   const latencies=[];
   const tap=page.getByRole('button',{name:'q',exact:true}).first();
   const view=nativeNodes().find(node=>node.class==='android.webkit.WebView' && node.box)?.box;
   if (!view) throw new Error('Could not locate the physical WebView bounds');
   const scale=(view[2]-view[0])/await page.evaluate(()=>innerWidth);
+  await drainDelivery();
   const end=Date.now()+600000;
   while (Date.now()<end) {
     await answer.fill('');await answer.focus();
@@ -154,6 +185,7 @@ try {
     }
     await page.keyboard.type('We use the upper bound of the sequence. ',{delay:60});
     await page.keyboard.press('ArrowLeft');await page.keyboard.press('Backspace');await page.keyboard.insertText('s');
+    await drainDelivery();
     result.memory.push({appPssKiB:mem(pid),rendererPssKiB:renderer?mem(renderer):null});
     await page.waitForTimeout(2000);
   }
@@ -162,7 +194,7 @@ try {
   result.adbTap={attempts:latencies.length, valid:measured.length, missed:latencies.length-measured.length,
     pointerToFrameP95:measured.length ? quantile(measured,.95) : null};
   result.peakAppAndRendererPssKiB=renderer?Math.max(...result.memory.map(row=>row.appPssKiB+row.rendererPssKiB)):null;
-  result.menuDelivery=await page.evaluate(()=>performance.getEntriesByName('lemma.typeahead.neural.coverage').map(x=>x.detail));
+  await drainDelivery();
   await context.setOffline(true);
   try {
     await page.reload();

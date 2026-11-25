@@ -366,7 +366,7 @@ export function predictWritingAidPool(request: WritingAidRequest, model?: Writin
   const authoredText = anchor.text.slice(start, anchor.caret ?? anchor.text.length);
   if (!authoredText.trim()) return EMPTY_POOL;
   const text = cursor.text.slice(start, cursor.end);
-  const trace: WordTrace[] | undefined = request.replayDiagnostics ? [] : undefined;
+  const trace: WordTrace[] | undefined = request.replayDiagnostics && request.tracePool !== false ? [] : undefined;
   return {
     trace, words: surfaces.words ? keyProposals(request, text, authoredText, start, model, observeLanguage, trace) : [],
     ghost: surfaces.ghost && cursor.end === cursor.text.length && !typeaheadRequested() ? ghostProposals(request, text, authoredText).filter(proposal => proposalEligible(request, proposal)) : [],

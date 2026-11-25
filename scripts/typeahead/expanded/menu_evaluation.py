@@ -1,6 +1,6 @@
 """Fit and evaluate exact Tutor menu edits. Join the gold only after browser capture."""
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
 import json
 import math
 from pathlib import Path
@@ -33,7 +33,8 @@ def joined(gold, observations, selected=None):
     for impression in records(observations):
         key = impression['eventId']
         outcome = expected.get(key)
-        if outcome is None or key in seen or outcome['prefixSha256'] != impression['prefixSha256']:
+        if (outcome is None or key in seen or outcome['prefixSha256'] != impression['prefixSha256'] or
+                outcome.get('draftSha256') != impression.get('draftSha256')):
             raise ValueError('Unmatched, repeated or misaligned event')
         seen.add(key)
         yield outcome, impression
@@ -44,7 +45,10 @@ def joined(gold, observations, selected=None):
 def fit_inputs(gold, observations):
     batches, totals = [], Counter()
     for outcome, row in joined(gold, observations):
-        candidates = (row.get('trace') or {}).get('eligible', [])
+        traced = (row.get('trace') or {}).get('eligible', [])
+        # JSON represents a log probability of negative infinity as null.
+        candidates = [r for r in traced if isinstance(r.get('score'), (float, int)) and math.isfinite(r['score'])]
+        totals['zeroScoreCandidates'] += len(traced) - len(candidates)
         target = identity(outcome['edit'])
         if target is None:
             raise ValueError('Invalid gold edit')
@@ -129,10 +133,10 @@ def fit(args):
 
 
 def score(gold, captured, selected=None):
-    counts, reasons, ghosts = Counter(), Counter(), Counter()
-    groups = set()
+    counts, reasons, ghosts, neural = Counter(), Counter(), Counter(), Counter()
+    groups = defaultdict(Counter)
     for outcome, row in joined(gold, captured, selected):
-        groups.add(outcome['answerId'])
+        group = groups[outcome['answerId']]
         target = identity(outcome['edit'])
         if target is None:
             raise ValueError('Unusable reference edit')
@@ -148,13 +152,30 @@ def score(gold, captured, selected=None):
         counts[kind+'Hits'] += int(visible)
         counts[outcome['kind']+'Opportunities'] += 1
         counts[outcome['kind']+'Hits'] += int(visible)
+        for lane in (kind,outcome['kind']):
+            group[lane+'Opportunities'] += 1
+            group[lane+'Hits'] += int(visible)
+        if row.get('neuralEligible'):
+            neural['eligible'] += 1
+            neural['deliveredAtObservation'] += bool(row['assets'].get('neural'))
         if row.get('ghostEligible'):
             ghosts['eligible'] += 1
         ghost = row.get('ghost')
         if ghost and ghost.get('text'):
             ghosts['shown'] += 1
             ghosts['exact'] += outcome['exactGhost'].startswith(ghost['text'])
-    return dict(threads=len(groups), totals=dict(counts), firstLoss=dict(reasons), visibleGhost=dict(ghosts))
+    intervals = {}
+    if len(groups) >= 2:
+        ordered = [groups[key] for key in sorted(groups)]
+        ids = np.random.default_rng(238).integers(0,len(ordered),(3000,len(ordered)))
+        for lane in ('prefix','boundary','word','symbol'):
+            hits = np.array([r[lane+'Hits'] for r in ordered])[ids].sum(axis=1)
+            exposure = np.array([r[lane+'Opportunities'] for r in ordered])[ids].sum(axis=1)
+            valid = exposure > 0
+            if valid.any():
+                intervals[lane] = np.quantile(hits[valid]/exposure[valid],[.025,.975]).tolist()
+    return dict(threads=len(groups), totals=dict(counts), topThreeCi95=intervals, firstLoss=dict(reasons),
+                visibleGhost=dict(ghosts), neural=dict(neural))
 
 
 def paired(left, right):

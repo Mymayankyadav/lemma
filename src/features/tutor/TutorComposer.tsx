@@ -37,7 +37,7 @@ import {tutorHint} from './writingAid/answerAids';
 import {ACCEPTED_SPAN_LIMIT, addAuthoredSpan, moveAcceptedSpans} from './writingAid/authorship';
 import {insertionEligible} from './writingAid/eligibility';
 import {offerFamilies} from './writingAid/offerFamilies';
-import {canSuggestWritingAid, eligibleGhostContext, proposalEdit, writingAidProposalKey} from './writingAid/policy';
+import {canSuggestWritingAid, eligibleGhostContext, eligibleNeuralContext, proposalEdit, writingAidProposalKey} from './writingAid/policy';
 import {effectiveAidLevel, type AidRole, type TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids';
 import {typedEquationAt} from './input/typedEquation';
 import {useAutoeqReadings} from './input/useAutoeqReadings';
@@ -208,6 +208,7 @@ export function TutorComposer(props: Props) {
   const enhancedMenu = isFlagOn('typeaheadV2');
   const arm = currentTypeaheadArm();
   const replayDiagnostics = typeaheadReplayEnabled();
+  const tracePool = replayDiagnostics && new URLSearchParams(window.location.search).get('typeahead-trace') !== '0';
   const activeAid = isFlagOn('tutorAnswerAids') ? props.answerAid : undefined;
   const aid = useMemo(() => !activeAid?.ranking || usesTutorBias(arm) ? activeAid :
     {...activeAid, ranking: {...activeAid.ranking, hints: activeAid.ranking.hints?.map(hint => ({...hint, priority: 'neutral' as const}))}},
@@ -218,7 +219,7 @@ export function TutorComposer(props: Props) {
     notationKey].join('|');
   const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, aidContextKey, revision.current, cursor]);
   const question = useMemo(() => JSON.parse(notationKey) as string[], [notationKey]);
-  const writingRequest = {cursor, acceptedSpans: acceptedSpans.current.get(cursor), arm, replayDiagnostics, contextKey: aidContextKey, aid, mastery: props.mastery, middleEdits: enhancedMenu,
+  const writingRequest = {cursor, acceptedSpans: acceptedSpans.current.get(cursor), arm, replayDiagnostics, tracePool, contextKey: aidContextKey, aid, mastery: props.mastery, middleEdits: enhancedMenu,
     subject: props.aidSubject, step: props.aidStep, question, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
     surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown || props.suspended || provenanceFull};
   const writing = useWritingAid(writingRequest);
@@ -268,7 +269,7 @@ export function TutorComposer(props: Props) {
   type MenuEntry = {key: string; slotKey: string; score: number; base: number; features: number[]; label: string; title?: string; display?: string; math?: string; word?: WritingAidProposal;
     edit: MenuEdit; replacement?: {start: number; end: number; insert: string; equation: boolean; role?: AidRole}};
   const entries: MenuEntry[] = [];
-  const notationTrace: WordTrace[] | undefined = replayDiagnostics ? [] : undefined;
+  const notationTrace: WordTrace[] | undefined = tracePool ? [] : undefined;
   const offeredTarget = writingRequest.target;
   const liveMenu = useRef<{key: string; target: EditTarget; entries: readonly MenuEntry[]}>({key: '', target: offeredTarget, entries: []});
   const pressedOffer = useRef<{key: string; epoch: string} | null>(null);
@@ -374,7 +375,7 @@ export function TutorComposer(props: Props) {
   });
   const traceRef = useRef<() => unknown>(() => null);
   useLayoutEffect(() => {
-    if (!replayDiagnostics) return;
+    if (!tracePool) return;
     const publishedAt = performance.now();
     const mark = performance.getEntriesByName('lemma.typeahead.ngram', 'mark').at(-1) as PerformanceMark | undefined;
     const matched = mark?.detail?.mountId === offeredTarget.mountId && mark?.detail?.editorRevision === offeredTarget.editorRevision &&
@@ -1289,6 +1290,7 @@ export function TutorComposer(props: Props) {
     </div>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
     <form className="composer"
+      data-typeahead-neural-eligible={replayDiagnostics ? Number(eligibleNeuralContext(writingRequest)) : undefined}
       data-typeahead-ghost-eligible={replayDiagnostics ? Number(isFlagOn('proofAssistGhost') && eligibleGhostContext(writingRequest)) : undefined}
       data-typeahead-ngram-sha={replayDiagnostics ? writing.assetHashes.ngram : undefined}
       data-typeahead-ngram-eligible={replayDiagnostics ? Number(canSuggestWritingAid(writingRequest)) : undefined}

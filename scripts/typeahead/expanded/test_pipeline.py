@@ -11,7 +11,7 @@ import numpy as np
 
 from corpus import SPLITS, build, file_hash, fingerprint, group_identity, group_preflight, publisher_reference, records, split_for, text_hash
 from fit import fit_calibration, fit_mixtures, mixture, mixture_records, PRIOR, threshold
-from ngram import SPECIAL, accumulate, build_models, compile_model, count_checkpoint, encode, entropy_cost, high_priority, key, pack_checkpoint, publish_checkpoint
+from ngram import SPECIAL, accumulate, build_models, compile_model, count_checkpoint, encode, entropy_cost, high_priority, key, log16_code, log16_probability, pack_checkpoint, publish_checkpoint
 from replay_metrics import paired, summarize
 from replay_sample import boundary_cases, freeze, math_spans
 from score_assets import model_file
@@ -73,6 +73,10 @@ class PipelineTests(unittest.TestCase):
             path.write_text(json.dumps({'meta': {'set_name': 'stack_exchange'}}) + '\n')
             with self.assertRaisesRegex(ValueError, 'Missing publisher provenance'):
                 group_preflight(path, learner)
+
+    def test_log16_reserves_the_zero_code_for_zero(self):
+        self.assertGreater(log16_probability(log16_code(1e-30)), 0)
+        self.assertEqual(log16_probability(log16_code(0)), 0)
 
     def test_quantized_rows_preserve_full_support(self):
         vocab = [*SPECIAL, 'a', 'in', 'set', 'open', 'space']

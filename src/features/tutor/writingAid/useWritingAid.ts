@@ -105,14 +105,14 @@ const sameProposal = (a: WritingAidProposal, b: WritingAidProposal) =>
 
 /** The model and draft stay local. Stale and hidden proposals cannot be fed back. */
 export function useWritingAid(request: WritingAidRequest): WritingAidView {
-  const {cursor, anchor, target, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics} = request;
+  const {cursor, anchor, target, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool} = request;
   const {scopeKey, mountId, editorRevision, selectionRevision, modeRevision} = target;
   const {words, replace, correction, ghost} = request.surfaces ?? ALL_WRITING_AID_SURFACES;
   const snapshot = useMemo<WritingAidRequest>(() => ({
-    cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics,
+    cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool,
     target: {scopeKey, mountId, editorRevision, selectionRevision, modeRevision},
     surfaces: {words, replace, correction, ghost},
-  }), [cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, scopeKey, mountId, editorRevision, selectionRevision, modeRevision,
+  }), [cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, tracePool, scopeKey, mountId, editorRevision, selectionRevision, modeRevision,
     words, replace, correction, ghost]);
   const storedPersonalization = useWritingAidPersonalization();
   const personalization = usesPersonalization(arm) && !typeaheadFrozenProfile() ? storedPersonalization : {...storedPersonalization, enabled: false};

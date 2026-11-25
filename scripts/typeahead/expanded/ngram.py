@@ -174,7 +174,7 @@ def high_priority(rows, n, budget, edge_bits=32):
 
 
 def log16_code(probability, rounding=round):
-    return min(65535, max(0, rounding(-2048 * math.log2(probability)))) if probability > 0 else 65535
+    return min(65534, max(0, rounding(-2048 * math.log2(probability)))) if probability > 0 else 65535
 
 
 def log16_probability(code):
@@ -201,7 +201,8 @@ def compile_model(db, vocab, order, limit, pruning, progress=False, edge_bits=32
         raise ValueError('Asset budget is smaller than the vocabulary and header')
     row_budgets = [available_bytes // (order - 1)] * (order - 1)
     row_budgets[-1] += available_bytes % (order - 1)
-    mass_error = abs(math.fsum(packed_unigram) - 1)
+    unigram_mass = math.fsum(packed_unigram)
+    mass_error = abs(unigram_mass - 1)
     params = {}
     row_mass = {}
     for n in range(2, order + 1):
@@ -260,7 +261,7 @@ def compile_model(db, vocab, order, limit, pruning, progress=False, edge_bits=32
                         break
                     suffix = suffix[1:]
                 if not suffix:
-                    lower_row_mass = math.fsum(model.unigram)
+                    lower_row_mass = unigram_mass
                 omitted_mass = lower_row_mass - lower_seen
                 if omitted_mass <= 0:
                     raise ValueError('Packed lower-order omitted mass must be positive')

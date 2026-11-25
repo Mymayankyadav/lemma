@@ -122,6 +122,36 @@ test('the Equation sheet completes a nested root argument, supports Undo, and pr
   await expect(answer.getByRole('button', {name: 'Edit equation ' + root + '{2}}', exact: true})).toBeVisible();
 });
 
+test('accepts the exact scoped word in the middle of a learner sentence and restores it on undo', async ({page}) => {
+  const setup = await fixture(page);
+  setup.changeAid({terms:['notation','notational'],wording:[],ranking:{version:1,hints:[
+    {id:'notation',kind:'word',entry:'notation',priority:'prefer',role:'neutral',scope:{subject:'logic',mode:'prose'}},
+    {id:'notational',kind:'word',entry:'notational',priority:'deemphasize',role:'neutral',scope:{subject:'logic',mode:'prose'}},
+  ]}});
+  const answer = await answerField(page,route);
+  await expect.poll(setup.aidReads).toBeGreaterThan(0);
+  await answer.fill('Please explain the  here.');
+  await answer.press('End');
+  for (let i=0; i<6; i++) await answer.press('ArrowLeft');
+  await page.keyboard.type('nota');
+  const offer = strip(page).getByRole('button',{name:'Insert notation',exact:true});
+  await expect(offer).toHaveAttribute('data-typeahead-start','19');
+  await expect(offer).toHaveAttribute('data-typeahead-end','23');
+  await expect(offer).toHaveAttribute('data-typeahead-caret','27');
+  await offer.click();
+  await expect(answer).toHaveJSProperty('textContent','Please explain the notation here.');
+  await expect.poll(() => answer.evaluate(field => {
+    const selection = getSelection();
+    if (!selection?.rangeCount || !field.contains(selection.focusNode)) return null;
+    const before = selection.getRangeAt(0).cloneRange();
+    before.selectNodeContents(field);
+    before.setEnd(selection.focusNode!,selection.focusOffset);
+    return before.toString().length;
+  })).toBe(27);
+  await answer.press('Control+z');
+  await expect(answer).toHaveJSProperty('textContent','Please explain the nota here.');
+});
+
 test('scoped tutor priority reranks the same prefix and a held tap cannot accept across aid versions', async ({page}, info) => {
   const setup = await fixture(page);
   setup.changeAid({wording: ['With this zzmoa', 'With this zzmob'], ranking: {version: 1, hints: [
@@ -371,7 +401,7 @@ test('writing assistance shows local weekly evidence and a reset control', async
   await expect(settings.getByText('This week on this device', {exact: true})).toHaveCount(0);
 });
 
-test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', async ({page}, info) => {
+test('reports tap-to-paint for empty, eight-equation, boundary and interior edits at 4× CPU', async ({page}, info) => {
   const extended = process.env.LEMMA_TYPEAHEAD_PERF_EXTENDED === '1';
   const expectedAsset = process.env.LEMMA_TYPEAHEAD_EXPECTED_ASSET;
   test.setTimeout(extended ? 900_000 : 120_000);
@@ -382,11 +412,12 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
   await client.send('Emulation.setCPUThrottlingRate', {rate: 4});
   type Sample = {frameMs: number; domMs: number; clickDelayMs: number; physicalMs: number; presentationMs?: number;
     worker?: {computeMs: number; elapsedMs: number; assetSha256?: string; requests: number; dropped: number; failures: number; timeouts: number}};
-  const measurement: Record<string, {samples: Sample[]; p95: number; p99: number; max: number; domP95: number; workerP95: number; roundTripP95: number; presentationP95?: number; presentationSamples: number}> = {};
+  const measurement: Record<string, {samples: Sample[]; p95: number; p99: number; max: number; domP95: number; workerP95?: number; workerReplies: number; roundTripP95?: number; presentationP95?: number; presentationSamples: number}> = {};
   const quantile = (sorted: number[], value: number) => sorted[Math.ceil(value * sorted.length) - 1] ?? 0;
   const sorted = (values: number[]) => values.sort((a, b) => a - b);
 
-  async function tap(button: Locator, target: string, expected: string) {
+  async function tap(button: Locator, target: string, expected: string, onDown = false) {
+    await button.scrollIntoViewIfNeeded();
     await button.evaluate((node, state) => {
       const sink = window as typeof window & {typeaheadTap?: Sample};
       delete sink.typeaheadTap;
@@ -399,7 +430,7 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
       timing.observe({type: 'event', durationThreshold: 16} as PerformanceObserverInit);
       node.addEventListener('pointerdown', event => {physicalStart = event.timeStamp;}, {once: true, capture: true});
       node.addEventListener('click', () => {clickAt = performance.now();}, {once: true, capture: true});
-      node.addEventListener('pointerup', event => {
+      node.addEventListener(state.onDown ? 'pointerdown' : 'pointerup', event => {
         start = event.timeStamp;
         const field = document.querySelector(state.target);
         const finish = () => {
@@ -414,11 +445,11 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
           });
         };
         const observer = new MutationObserver(() => {
-          if (field?.textContent === state.expected) {observer.disconnect(); finish();}
+          if (field?.textContent?.replace(/\u00a0/gu,' ') === state.expected.replace(/\u00a0/gu,' ')) {observer.disconnect(); finish();}
         });
         if (field) observer.observe(field, {subtree: true, childList: true, characterData: true});
       }, {once: true, capture: true});
-    }, {target, expected});
+    }, {target, expected, onDown});
     const box = (await button.boundingBox())!;
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     const sample = await page.waitForFunction(() => (window as typeof window & {typeaheadTap?: Sample}).typeaheadTap, undefined, {timeout: 2500});
@@ -429,10 +460,11 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
     const warm = samples.slice(1);
     const frame = sorted(warm.map(sample => sample.frameMs));
     const presented = sorted(warm.flatMap(sample => sample.presentationMs === undefined ? [] : [sample.presentationMs]));
-    measurement[name] = {samples, p95: quantile(frame, .95), p99: quantile(frame, .99), max: frame.at(-1) ?? 0,
+    const replies = warm.flatMap(sample => sample.worker ? [sample.worker] : []);
+    measurement[name] = {workerReplies:replies.length, samples, p95: quantile(frame, .95), p99: quantile(frame, .99), max: frame.at(-1) ?? 0,
       domP95: quantile(sorted(warm.map(sample => sample.domMs)), .95),
-      workerP95: quantile(sorted(warm.flatMap(sample => sample.worker ? [sample.worker.computeMs] : [])), .95),
-      roundTripP95: quantile(sorted(warm.flatMap(sample => sample.worker ? [sample.worker.elapsedMs] : [])), .95),
+      workerP95: replies.length ? quantile(sorted(replies.map(reply => reply.computeMs)),.95) : undefined,
+      roundTripP95: replies.length ? quantile(sorted(replies.map(reply => reply.elapsedMs)),.95) : undefined,
       presentationP95: presented.length ? quantile(presented,.95) : undefined, presentationSamples: presented.length};
   }
 
@@ -454,14 +486,21 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
       const before = await answer.evaluate(node => node.textContent ?? '');
       const caret = before.length - scenario.suffix;
       const expected = before.slice(0,caret-scenario.remove) + scenario.add + before.slice(caret);
-      const timing = await tap(key, '[aria-label="Your answer"]', expected);
-      const diagnostic = await page.waitForFunction(() => (performance.getEntriesByName('lemma.typeahead.ngram').at(-1) as PerformanceMark | undefined)?.detail,
-        undefined, {timeout: sample ? 2500 : 12_000});
-      const worker = await diagnostic.jsonValue() as NonNullable<Sample['worker']>;
-      if (expectedAsset) expect(worker.assetSha256, 'verified n-gram asset used by timing worker').toBe(expectedAsset);
+      const timing = await test.step(scenario.name + ' sample ' + sample, () => tap(key, '[aria-label="Your answer"]', expected, scenario.key === 'Delete'));
+      const worker = await page.evaluate(async () => {
+        const read = () => (performance.getEntriesByName('lemma.typeahead.ngram').at(-1) as PerformanceMark | undefined)?.detail;
+        if (read()) return read();
+        // Charge absent/late replies to the denominator. The input paint is measured independently.
+        await new Promise<void>(resolve => setTimeout(resolve,200));
+        return read();
+      }) as Sample['worker'];
+      if (expectedAsset && worker) expect(worker.assetSha256).toBe(expectedAsset);
       samples.push({...timing, worker});
     }
     record(scenario.name, samples);
+    if (expectedAsset && (scenario.name === 'empty' || scenario.name === 'eightEquations')) {
+      expect(measurement[scenario.name].workerReplies,'warm model replies for '+scenario.name).toBeGreaterThan(0);
+    }
   }
 
   await page.evaluate(() => {
@@ -485,7 +524,7 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
   const path = info.outputPath('tap-to-paint-4x.json');
   await writeFile(path, JSON.stringify(measurement, null, 2));
   await info.attach('tap-to-paint-4x', {contentType: 'application/json', path});
-  console.log('Typeahead tap-to-paint (4× CPU):', Object.fromEntries(Object.entries(measurement).map(([name, {samples, p95, p99, max, domP95, workerP95, roundTripP95, presentationP95, presentationSamples}]) =>
+  console.log('Typeahead tap-to-paint (4× CPU):', Object.fromEntries(Object.entries(measurement).map(([name, {samples, p95, p99, max, domP95, workerP95, workerReplies, roundTripP95, presentationP95, presentationSamples}]) =>
     [name, {warmSamples: samples.length - 1, tapP95Ms: p95, tapP99Ms: p99, tapMaxMs: max, domP95Ms: domP95,
-      workerP95Ms: workerP95, roundTripP95Ms: roundTripP95, presentationP95Ms: presentationP95, presentationSamples, asset: samples.at(-1)?.worker?.assetSha256}])));
+      workerP95Ms: workerP95, workerReplies, roundTripP95Ms: roundTripP95, presentationP95Ms: presentationP95, presentationSamples, asset: samples.at(-1)?.worker?.assetSha256}])));
 });

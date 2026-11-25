@@ -62,6 +62,15 @@ def run(opts):
     invocation = dict(arm=opts.arm, phase=opts.phase, sha=opts.sha, static=static.hexdigest(),
                       config=file_hash(opts.config), harness=file_hash(driver/'n238-typeahead-replay.spec.ts'), fixture=file_hash(driver/'helpers/live-tutor.ts'),
                       split=manifest['files'])
+    pack_env = {}
+    if opts.fp16_pack:
+        spec = json.loads((repo/'src/features/tutor/writingAid/decoder/android-fp16.json').read_bytes())
+        if opts.arm != 'neural' or file_hash(opts.fp16_pack) != spec['packageSha256']:
+            raise ValueError('Strict FP16 replay needs the pinned package on the neural arm')
+        fingerprint = ':'.join(spec['files'][role]['sha256'] for role in ('prefill','incremental','tokenizer','weights'))
+        pack_env = {'LEMMA_TYPEAHEAD_REPLAY_FP16_PACK':str(opts.fp16_pack),'LEMMA_TYPEAHEAD_REPLAY_GRAPH_TRIAL':'1',
+                    'LEMMA_TYPEAHEAD_REPLAY_STRICT_GRAPH_TRIAL':'1','LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NEURAL_FINGERPRINT':fingerprint}
+        invocation['optionalPackage'] = spec['packageSha256']
     capture = opts.phase == 'capture'
     context_file = 'contexts.jsonl' if capture else 'answers.jsonl'
     for name in [context_file, 'events.jsonl']:
@@ -92,7 +101,7 @@ def run(opts):
             if json.loads(receipt.read_bytes()) == {**invocation, 'sha256': file_hash(expected)} and [r[field] for r in existing] == scheduled:
                 return existing
             raise ValueError('Existing block mismatches schedule')
-        env = {**os.environ, 'LEMMA_TYPEAHEAD_REPLAY_INPUT':str(directory/'events.jsonl'),
+        env = {**os.environ, **pack_env, 'LEMMA_TYPEAHEAD_REPLAY_INPUT':str(directory/'events.jsonl'),
             'LEMMA_TYPEAHEAD_REPLAY_ANSWERS':str(directory/'context.jsonl'), 'LEMMA_TYPEAHEAD_REPLAY_OUTPUT':str(dest),
             'LEMMA_TYPEAHEAD_REPLAY_ARM':opts.arm,'LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NGRAM_SHA':opts.sha,
             'LEMMA_TYPEAHEAD_REPLAY_COMPARE':'1', 'LEMMA_TYPEAHEAD_REPLAY_CAPTURE_ONLY':str(int(capture)),
@@ -125,6 +134,7 @@ if __name__ == '__main__':
     p.add_argument('--phase', choices=['capture','cost'],required=True)
     p.add_argument('--sha', required=True)
     p.add_argument('--threads',type=int)
+    p.add_argument('--fp16-pack',type=lambda path:Path(path).resolve(),help='Install and validate a pinned optional model through the real settings UI')
     p.add_argument('--jobs', type=int, default=2)
     p.add_argument('--block', type=int, default=10)
     run(p.parse_args())
