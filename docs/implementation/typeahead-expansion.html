@@ -357,6 +357,19 @@ and 0.2 ms with equations. The inert control was 8.4 ms. Physical phone testing 
 native caret restoration and synchronous layout on the slow taps. An interleaved comparison replaced the native
 selection setter only for collapsed carets. Both policies measured 34.6 ms pooled p95 over 50 warm taps each.
 All 100 carets were restored exactly. The change showed no repeatable gain, and the existing caret behavior was retained.</td></tr>
+<tr><th scope="row">Completed full-pool and role training</th><td data-label="Observation">The primary model
+processed 500M scored targets in 16,769 batches and recorded 16,765 Adam updates. Its native perplexity on
+30,855 training-validation targets fell from 7.5415 at 100M scored targets to 5.5759 at 500M. The role run added
+17.84M reply-masked targets within its time budget. On the distinct 300 next-token export cases, perplexity was
+24.6798 for the 100M development pool, 26.1133 for the 100M full pool, 25.5873 for the 500M full pool and
+24.6685 after role adaptation. The larger pool did not beat the development pool on these cases.</td></tr>
+<tr><th scope="row">Primary precision validation</th><td data-label="Observation">The weight-only int8,
+int4 and mixed primary exports matched 46, 31 and 32 of 50 partial-role retokenization cases, below the 95%
+gate. The 5.02M capacity reference passed export validation. Its matched primary browser contrast is unavailable.</td></tr>
+<tr><th scope="row">Requested FP16 diagnostic</th><td data-label="Observation">FP16 matched 298 of 300
+top-three sets and 48 of 50 partial-role cases. One desktop WASM probe verified finite FP32 logits and caches
+with matching incremental and fresh-prefix top-three sets. The 68,194,895-byte bundle exceeded the 40 MiB graph
+limit and the accounted cold path exceeded 68 MiB. No neural candidate qualifies for product use.</td></tr>
 <tr><th scope="row">Neural export</th><td data-label="Observation">A 34,587,365-byte weight-only int8 bundle
 matched the float graph’s top-three set in 297 of 300 validation contexts on native ONNX. This establishes export parity
 under that test. The browser probe produced zero scored requests within the edit deadline on WASM (77 dropped requests)
@@ -382,6 +395,7 @@ and feature gates stay in place while device, quality and calibration evidence i
 <a href="typeahead-evidence/concurrent-diagnostic.json">Recovered concurrent diagnostics</a>
 <a href="typeahead-evidence/audited-corpus-and-schedules.json">Audited corpus and schedules</a>
 <a href="typeahead-evidence/subject-replay-smoke.json">Subject pack replay smoke</a>
+<a href="typeahead-evidence/final-neural-training-and-validation.json">Completed neural training and validation</a>
 <a href="typeahead-evidence/audited-controls-count-and-latex.json">Counts, LaTeX and matched neural evidence</a>
 <a href="typeahead-evidence/empty-editor-caret-diagnostic.json">Empty-editor caret diagnostic</a>
 <a href="typeahead-evidence/phone-tap-timings.json">Phone-sized Chromium timings</a>
