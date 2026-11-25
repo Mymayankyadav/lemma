@@ -63,12 +63,15 @@ for (const [name, path, kind, subject, budget] of specifications) {
   assert.equal(bytes.length, file.bytes, name);
   assert(bytes.length <= budget * 1024 * 1024, name + ' over budget');
   assert.equal(sha(bytes), file.sha256, name);
+  const edgeBits = file.edgeBits ?? 32;
+  assert([16, 32].includes(edgeBits), name + ' unsupported probability width');
+  assert.equal(bytes.toString('ascii', 0, 8), edgeBits === 16 ? 'LEMMANG3' : 'LEMMANG2', name);
   assert.match(file.vocabSha256, /^[a-f0-9]{64}$/u, name);
   assert.match(file.corpusSha256, /^[a-f0-9]{64}$/u, name);
   assert(file.metrics.trainTokens > 0, name);
   manifests[name] = {sha256: file.sha256, manifestSha256: sha(manifestBytes), bytes: file.bytes, budgetMiB: budget,
     corpusSha256: file.corpusSha256, vocabSha256: file.vocabSha256,
-    vocabSize: file.vocabSize, order: file.order, trainTokens: file.metrics.trainTokens, subject};
+    vocabSize: file.vocabSize, order: file.order, trainTokens: file.metrics.trainTokens, edgeBits, subject};
 }
 const general = manifests['ngram-v2'];
 let provenance = null;
@@ -185,6 +188,8 @@ try {
         return unigram;
       }
       const remainingRoundoff = 1e-10;
+      const log16Floor = Math.fround(2 ** (-65534 / 2048));
+      let zeroEdges = 0, floorEdges = 0;
       let minimumRemaining = 1, negativeRemaining = 0, worst = Math.abs(unigram - 1), worstHistory = [], worstTotal = unigram;
       const coverage = [];
       for (let width = 1; width <= tables.length; width++) {
@@ -198,6 +203,8 @@ try {
           let explicit = 0, replaced = 0;
           for (let edge = table.start[row]; edge < table.start[row + 1]; edge++) {
             const p = table.probability[edge];
+            if (p === 0) zeroEdges++;
+            if (manifests[name].edgeBits === 16 && p === log16Floor) floorEdges++;
             const lower = Math.exp(kn.historyLog(model, table.next[edge], suffix));
             check(Number.isFinite(p) && p >= 0 && Number.isFinite(lower) && lower >= 0, name + ' invalid sparse edge');
             explicit += p;
@@ -220,7 +227,9 @@ try {
         coverage.push({width, rows: rowCount, edges});
         cache.push(totalByRow);
       }
-      return {mass, coverage, maxMassError: worst, worstHistory, worstTotal, minimumRemaining,
+      // Every explicit edge in the smoothed positive-probability model must survive encoding.
+      if (manifests[name].edgeBits === 16) check(zeroEdges === 0, name + ' positive edge decoded to zero');
+      return {mass, coverage, zeroEdges, floorEdges, maxMassError: worst, worstHistory, worstTotal, minimumRemaining,
         negativeRemaining, remainingRoundoff, elapsedMs: performance.now() - started};
     }
     async function massCheck(name, model) {

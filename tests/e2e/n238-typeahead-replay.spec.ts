@@ -126,6 +126,13 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   if (optionalPack) {
     if (arm !== 'neural' || !strictGraphTrial) throw new Error('The optional package replay requires a pinned strict neural arm');
     await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch,typeaheadV2,writingAidSettings#' + defaultRoute);
+    const write = page.getByRole('button', {name: 'Write a question', exact: true});
+    const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+    await expect(write.or(answer).filter({visible: true}).first()).toBeVisible();
+    if (!await answer.isVisible()) {
+      try {await write.click({timeout: 2000});} catch (error) {if (!await answer.isVisible()) throw error;}
+    }
+    await answer.focus();
     const menu = page.getByRole('button',{name:'Session actions',exact:true});
     await menu.click();
     await page.getByRole('button',{name:'Writing assistance',exact:true}).click();

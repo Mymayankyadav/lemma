@@ -253,6 +253,16 @@ describe('scoped guidance and exact insertion guard', () => {
     expect(result).toMatchObject({text: 'Use notation again', start: 12, end: 12});
   });
 
+  it('reuses only the learner’s own current word when resuming a middle edit', () => {
+    const earlier = padEdit('Use not again', 7), cursor = padEdit('Use nota again', 8);
+    expect(advanceWritingAidAnchor(earlier, cursor, null, true, [])?.start).toBe(4);
+    expect(advanceWritingAidAnchor(earlier, cursor, null, true, [{start: 0, end: 3}])?.start).toBe(4);
+    expect(advanceWritingAidAnchor(earlier, cursor, null, true, [{start: 5, end: 6}])?.start).toBe(7);
+    expect(advanceWritingAidAnchor(earlier, cursor, null, true)?.start).toBe(7);
+    expect(advanceWritingAidAnchor(earlier, padEdit('Use not  again', 8), null, true, [])?.start).toBe(7);
+    expect(advanceWritingAidAnchor(earlier, earlier, null, true, [])).toBeNull();
+  });
+
   it('rejects stale versions and withholds changed proposals again at acceptance', () => {
     const cursor = padEdit('Use nota');
     const request: WritingAidRequest = {anchor: {text: cursor.text, start: 0}, cursor, mode: 'balanced', aid, contextKey: 'turn:1',

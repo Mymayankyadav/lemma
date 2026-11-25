@@ -130,10 +130,10 @@ test('accepts the exact scoped word in the middle of a learner sentence and rest
   ]}});
   const answer = await answerField(page,route);
   await expect.poll(setup.aidReads).toBeGreaterThan(0);
-  await answer.fill('Please explain the  here.');
+  await answer.fill('Please explain the not here.');
   await answer.press('End');
   for (let i=0; i<6; i++) await answer.press('ArrowLeft');
-  await page.keyboard.type('nota');
+  await page.keyboard.type('a');
   const offer = strip(page).getByRole('button',{name:'Insert notation',exact:true});
   await expect(offer).toHaveAttribute('data-typeahead-start','19');
   await expect(offer).toHaveAttribute('data-typeahead-end','23');

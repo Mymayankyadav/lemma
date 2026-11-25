@@ -82,6 +82,8 @@ def run(opts):
     if opts.threads:
         contexts = contexts[:opts.threads]
     fixed = list(records(opts.split/'events.jsonl')) if capture else []
+    # A prior shell experiment must not silently change this frozen cohort's flags or model.
+    process_env = {key: value for key, value in os.environ.items() if not key.startswith('LEMMA_TYPEAHEAD_REPLAY_')}
     (opts.output/'invocation.json').write_text(json.dumps(invocation, sort_keys=True)+'\n')
     def block(index_and_chunk):
         i, chunk = index_and_chunk
@@ -101,12 +103,11 @@ def run(opts):
             if json.loads(receipt.read_bytes()) == {**invocation, 'sha256': file_hash(expected)} and [r[field] for r in existing] == scheduled:
                 return existing
             raise ValueError('Existing block mismatches schedule')
-        env = {**os.environ, **pack_env, 'LEMMA_TYPEAHEAD_REPLAY_INPUT':str(directory/'events.jsonl'),
+        env = {**process_env, **pack_env, 'LEMMA_TYPEAHEAD_REPLAY_INPUT':str(directory/'events.jsonl'),
             'LEMMA_TYPEAHEAD_REPLAY_ANSWERS':str(directory/'context.jsonl'), 'LEMMA_TYPEAHEAD_REPLAY_OUTPUT':str(dest),
             'LEMMA_TYPEAHEAD_REPLAY_ARM':opts.arm,'LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NGRAM_SHA':opts.sha,
             'LEMMA_TYPEAHEAD_REPLAY_COMPARE':'1', 'LEMMA_TYPEAHEAD_REPLAY_CAPTURE_ONLY':str(int(capture)),
             'LEMMA_TYPEAHEAD_REPLAY_BLIND':str(int(capture))}
-        env.pop('LEMMA_TYPEAHEAD_REPLAY_GOLD', None)
         with (directory/'browser.log').open('w') as log:
             subprocess.run([str(repo/'node_modules/.bin/playwright'),'test','-c',str(config),
                 'n238-typeahead-replay.spec.ts','-g','replays visible','--workers=1',

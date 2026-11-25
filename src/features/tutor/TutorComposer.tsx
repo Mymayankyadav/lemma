@@ -639,8 +639,8 @@ export function TutorComposer(props: Props) {
     const previous=history.current.present;
     const changed = edit.text !== previous.text;
     const moved = edit.start!==previous.start||edit.end!==previous.end||edit.direction!==previous.direction;
-    const nextAnchor = manuallyTyped ? advanceWritingAidAnchor(previous, edit, authoredAnchor.current, enhancedMenu) : null;
     const provenance = acceptedSpans.current.get(previous);
+    const nextAnchor = manuallyTyped ? advanceWritingAidAnchor(previous, edit, authoredAnchor.current, enhancedMenu, provenance ?? []) : null;
     if (provenance && !acceptedSpans.current.has(edit)) {
       acceptedSpans.current.set(edit, moveAcceptedSpans(previous.text, edit.text, provenance, exact ? {start: exact.start, end: exact.end, nextEnd: exact.start + exact.insert.length} : {
         start: Math.min(previous.start, edit.start), end: previous.end, nextEnd: edit.end,

@@ -1,6 +1,7 @@
 import {applyMenuEdit, learnerAuthored, type OriginRange, type MenuEdit} from './menuEdit';
 import {type PadEdit} from '../../pad/padEdit';
 import {sameEditTarget} from '../input/recognitionPolicy';
+import {wordAtCaret} from '../input/completionPolicy';
 import type {TypeaheadArm} from './replayArm';
 import {tutorHint} from './answerAids';
 import {tutorMathContext} from '../input/symbolEdit';
@@ -94,13 +95,20 @@ const anchorText = (anchor: WritingAidAnchor) => anchor.continuation ?? anchor.t
 /** Call only on direct native/custom-key typing. Revisions for other edit sources clear the anchor. */
 export function advanceWritingAidAnchor(
   before: PadEdit, after: PadEdit, previous: WritingAidAnchor | null, middleEdits = false,
+  acceptedSpans?: readonly OriginRange[],
 ): WritingAidAnchor | null {
   if (middleEdits && before.start === before.end && after.start === after.end && !atEnd(after) &&
       after.end > before.end && after.text.length <= WRITING_AID_LIMIT &&
       before.text.slice(0, before.end) === after.text.slice(0, before.end) &&
       before.text.slice(before.end) === after.text.slice(after.end)) {
-    const continuing = previous?.caret === before.end && previous.text === before.text;
-    return {text: after.text, start: continuing ? previous.start : before.end, caret: after.end};
+    if (previous?.caret === before.end && previous.text === before.text && !previous.continuation) {
+      return {text: after.text, start: previous.start, caret: after.end};
+    }
+    // A learner can return to their own partial word after moving the caret.
+    const word = wordAtCaret(after);
+    const start = after.end - (word?.length ?? 0);
+    const ownStem = start < before.end && acceptedSpans !== undefined && learnerAuthored(acceptedSpans, start, before.end);
+    return {text: after.text, start: ownStem ? start : before.end, caret: after.end};
   }
   if (!atEnd(before) || !atEnd(after) || after.text.length <= before.text.length ||
       after.text.length > WRITING_AID_LIMIT || !after.text.startsWith(before.text)) return null;

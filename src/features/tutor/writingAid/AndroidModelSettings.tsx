@@ -22,7 +22,7 @@ export function AndroidModelSettings() {
     catch (error) {setMessage(pending.signal.aborted ? 'Installation canceled.' : error instanceof Error ? error.message : 'Installation failed. Try again.');}
     finally {controller.current = null; setBusy(false);}
   }
-  return <fieldset><legend>Optional FP16 model</legend>
+  return <fieldset className="writing-aid-package"><legend>Optional FP16 model</legend>
     <p>512-token context · {androidBytes.toLocaleString()} bytes. Android qualification is pending.</p>
     {installed ? <button type="button" onClick={() => {void removeAndroidPack().then(() => setInstalled(false)).catch(() => setMessage('Could not remove the model.'));}}>Remove model</button>
       : <>{downloadUrl && <button type="button" disabled={busy} onClick={() => {void install();}}>Download model</button>}

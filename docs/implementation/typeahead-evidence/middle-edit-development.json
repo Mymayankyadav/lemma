@@ -1,0 +1,123 @@
+{
+  "scope": "Diagnostic of returning to an unfinished word in an existing learner-authored sentence. One scheduled edit per development thread.",
+  "method": "The browser restored the public draft, set the scheduled caret before the retained suffix and typed the final stem character. A separate join checked the displayed replacement, spacing and resulting selection.",
+  "schedule": {
+    "provenance": {
+      "answers.jsonl": "cea3e2b59f38a4395e6f5ba6f62c9457d832004a806d81ae4ca7285e68848857",
+      "contexts.jsonl": "03cc45ca75eea81889ba86e2e645345b6fbf871c1a92147b9fbb3858ccaa8a10",
+      "events.jsonl": "2c103255055b47a0430362cbaedf6a79ebebc691ac3f3d6c03dd017cc104a725",
+      "gold.jsonl": "ec1c90fef6ac49e0a18df29bf365cd6561eb3298a1d317fab291c5abf0e23ac6"
+    },
+    "splits": {
+      "middle": {
+        "threads": 50,
+        "events": 50,
+        "files": {
+          "answers.jsonl": "25cf12c998db3ded9928cf5de4900ce159a54fd0d6abd086ccf5f1672dca8598",
+          "contexts.jsonl": "733ed42314ab3f58eef926cbb9bb962a07281df0b8240afd7be7b8422e4a5be4",
+          "events.jsonl": "d151a884a1331e383265cb0a1e8f66b2724cc31835993114b4387e6c86baa041",
+          "gold.jsonl": "5dac1684b9fd66032cebb561879111f587f9958fccb7d970b5f10f67d0f80562"
+        }
+      }
+    }
+  },
+  "before": {
+    "run": {
+      "arm": "expanded-kn",
+      "config": "fdcc961ce03d07eb6dbc0cc7253f0620a0a291abd1d84dfbc3a1d6787dc616a5",
+      "fixture": "6918591c69af815ec0e34ec4e3dff28034e615d01ce1be6c5884640df5245cdf",
+      "harness": "cc674133f9481881115ae0c22dbcd3e23524c0d7e6f7b3a7ec339c9e41c88d57",
+      "phase": "capture",
+      "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+      "split": {
+        "answers.jsonl": "25cf12c998db3ded9928cf5de4900ce159a54fd0d6abd086ccf5f1672dca8598",
+        "contexts.jsonl": "733ed42314ab3f58eef926cbb9bb962a07281df0b8240afd7be7b8422e4a5be4",
+        "events.jsonl": "d151a884a1331e383265cb0a1e8f66b2724cc31835993114b4387e6c86baa041",
+        "gold.jsonl": "5dac1684b9fd66032cebb561879111f587f9958fccb7d970b5f10f67d0f80562"
+      },
+      "static": "a9d260fae3cdb9d839e4bfd8ea7d5e84fef311dc644d57ba5c43f0d55e9dba87"
+    },
+    "observed": "2fd11c54b241790a6eb165c0a04e29e0d25bc9fd88bb303ada2ef11a58b6045f",
+    "score": {
+      "threads": 50,
+      "totals": {
+        "prefixOpportunities": 50,
+        "prefixHits": 0,
+        "wordOpportunities": 50,
+        "wordHits": 0
+      },
+      "topThreeCi95": {
+        "prefix": [
+          0.0,
+          0.0
+        ],
+        "word": [
+          0.0,
+          0.0
+        ]
+      },
+      "firstLoss": {
+        "unobserved-or-unproposed": 50
+      },
+      "visibleGhost": {},
+      "neural": {
+        "eligible": 48,
+        "deliveredAtObservation": 0
+      }
+    }
+  },
+  "after": {
+    "run": {
+      "arm": "expanded-kn",
+      "config": "7076bbb601c5fbf4f6fa5d01def7e250894fd9c899866652b76bd4909e0bb265",
+      "fixture": "6918591c69af815ec0e34ec4e3dff28034e615d01ce1be6c5884640df5245cdf",
+      "harness": "a599c179164b6f6eece83d88bbce3e7c95c55ea826187681900fc40ddfb8f0dd",
+      "phase": "capture",
+      "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+      "split": {
+        "answers.jsonl": "25cf12c998db3ded9928cf5de4900ce159a54fd0d6abd086ccf5f1672dca8598",
+        "contexts.jsonl": "733ed42314ab3f58eef926cbb9bb962a07281df0b8240afd7be7b8422e4a5be4",
+        "events.jsonl": "d151a884a1331e383265cb0a1e8f66b2724cc31835993114b4387e6c86baa041",
+        "gold.jsonl": "5dac1684b9fd66032cebb561879111f587f9958fccb7d970b5f10f67d0f80562"
+      },
+      "static": "f5270f752d3645c1aa807b6722d20cae87c4c4233734efce1aabb69d920b95a1"
+    },
+    "observed": "a3e317d6996ec84311450209e63918d7435d159471ec912d24e948a85bb650e9",
+    "score": {
+      "threads": 50,
+      "totals": {
+        "prefixOpportunities": 50,
+        "prefixHits": 28,
+        "wordOpportunities": 50,
+        "wordHits": 28
+      },
+      "topThreeCi95": {
+        "prefix": [
+          0.42,
+          0.7
+        ],
+        "word": [
+          0.42,
+          0.7
+        ]
+      },
+      "firstLoss": {
+        "outside-visible-three": 5,
+        "policy": 4,
+        "visible": 28,
+        "unobserved-or-unproposed": 12,
+        "eligible-pool-limit": 1
+      },
+      "visibleGhost": {},
+      "neural": {
+        "eligible": 45,
+        "deliveredAtObservation": 0
+      }
+    }
+  },
+  "paired": {
+    "gained": 28,
+    "lost": 0
+  },
+  "interpretation": "The 50 deliberately selected middle-edit cases estimate performance on this scenario. The primary held-out complete-answer study uses its independently frozen trajectory."
+}
