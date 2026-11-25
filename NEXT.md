@@ -6,6 +6,13 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N250 Faster return navigation, tutor typing and a custom PWA model download
+
+Stage: Harden · Status: in progress · Needs: — · Assigned: chat-631904#ouou
+
+Done = Returning to a study screen preserves usable data, actions give immediate feedback, navigation respects reduced motion, the text keyboard opens with prose suggestions and Settings can install the optional suggestion model from a custom download.
+Scope: Study navigation, focus reads, motion, Tutor, keyboard, PWA model installation and their regression tests.
+
 ## N249 Draw one symbol over the tutor's keys (N248 moved from the Pad page)
 
 Owner task: "Ok now you remove the lemma pad shit whatever you made and shift the logic to the keyboard there. Don't change anything in the layout it should be same as before"
