@@ -101,8 +101,10 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     const dedicated=!!turn.examProjectId
     const examInstructions=examStatus==='planned'
       ? ' The sitting is planned. Help draft its scored blueprint from the learner’s sources and ask before activating.'
+      : examStatus==='paused'
+      ? ' The sitting is paused. Answer in ordinary-study style and ask whether the learner wants to resume exam prep. If the learner submitted a bound questionnaire, grade only answers they actually gave and use the original deliveryRef. Never score missing answers or an expired timer as incorrect.'
       : examStatus&&examStatus!=='active'
-      ? ' The sitting is '+examStatus+'. Answer in ordinary-study style and ask whether the learner wants to resume exam prep.'
+      ? ' The sitting is '+examStatus+'. Acknowledge any late questionnaire answers as saved. Leave them unscored unless the learner reopens the sitting. Answer in ordinary-study style.'
       : exam ? ' '+EXAM_HANDOFF_NOTE+(dedicated?' In this exam thread you may set timedSeconds on a reply. Read answerMeta.seconds and overtime when provided. A paused or expired timer is never a failure. To bind a diagnose or check questionnaire, put examRows next to questions: [{questionId,rowKey,scoringKey,rubricSteps}]. Keep every scoring key outside learner-visible questions. Grade the private examQuestionnaireAnswers on the next handoff.':'') : ''
     return {
       ...(exam ? {exam} : {}),

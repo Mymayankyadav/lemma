@@ -42,10 +42,11 @@ async function sittingPlan(c: Context, sitting: JoinedSitting, now: string, log 
       .eq('sitting_id',sitting.id).is('voided_at',null).lte('occurred_at',now).order('occurred_at',{ascending:false}).order('id',{ascending:false}).limit(500),
     rowEvidence(c,sitting,now),
   ]);
-  const plan = planExam({sitting, attempts:data<ExamAttempt[]>(attempts), evidence, now,slotMinutes});
+  const snapshot={sitting,attempts:data<ExamAttempt[]>(attempts),evidence,now,slotMinutes};
+  const plan=planExam(snapshot);
   if (log) {
     try {
-      const inputs={...selectorModel(slotMinutes===undefined?plan:{...plan,minutes:Math.min(plan.minutes??0,slotMinutes)}),blueprintVersion:sitting.blueprint_version}, predictions=predictionRows(plan);
+      const inputs={...selectorModel(slotMinutes===undefined?plan:{...plan,minutes:Math.min(plan.minutes??0,slotMinutes)}),blueprintVersion:sitting.blueprint_version}, predictions=predictionRows(plan,snapshot);
       const hash=await inputsHash({inputs,predictions,qualitative:plan.next});
       const result=await c.db.rpc('log_exam_decision',{p_owner:c.userId,p_sitting:sitting.id,p_as_of:now,
         p_decision:{...selectExam(inputs),inputs,inputs_hash:hash,qualitative:plan.next,predictions}});

@@ -1,5 +1,5 @@
 // Shadow forecasts are frozen before the answer. Only the qualitative plan is served.
-import type {ExamAction, ExamPlan, ExamRow, EvidenceStatus} from './plan.ts';
+import type {ExamAction, ExamPlan, ExamRow, ExamSnapshot, EvidenceStatus} from './plan.ts';
 
 export type Triplet = [number, number, number];
 export const answers = ['correct', 'partial', 'incorrect', 'unscorable'] as const;
@@ -14,7 +14,7 @@ export interface Model {
 }
 export interface Candidate {
   action:string; keys:string[]; minutes:number; gain_low:number; gain_mid:number; gain_high:number;
-  rationale:string; voi?:number; breakEvenMinutes?:number;
+  rationale:string; voi?:number; netVoi?:number; breakEvenMinutes?:number;
   branches?:{outcome:Outcome; probability:number; gap:number; next:string[]; followupMinutes:number}[];
 }
 const round=(n:number)=>Math.round(n*1e8)/1e8;
@@ -112,6 +112,7 @@ export function selectExam(model:Model) {
       if(new Set(branches.filter(b=>b.probability>0).map(b=>JSON.stringify(b.next))).size<2)continue;
       const c=candidate('probe',[probe.key],probe.minutes,values,'The response changes which feasible lesson follows.');
       c.voi=round(values[1]-best(model,followup,1).value);
+      c.netVoi=round(values[1]-best(model,model.minutes,1).value);
       if(model.fallback.rate[1]>0)c.breakEvenMinutes=round(c.voi/model.fallback.rate[1]);
       c.branches=branches;candidates.push(c);
     }
@@ -120,9 +121,17 @@ export function selectExam(model:Model) {
   candidates.sort((a,b)=>pinned(b)-pinned(a)||b.gain_mid-a.gain_mid||a.minutes-b.minutes);
   return {policy:'selector-v1' as const,shadow:true as const,candidates:candidates.slice(0,10),chosen:candidates[0],runner_up:candidates[1]??null};
 }
-export function predictionRows(plan:ExamPlan) {
-  return plan.rows.map(r=>({key:r.row.key,form:r.row.format??'unspecified',facet:r.row.level??'unspecified',
-    evidence:r.status,p:r.probability,low:seeds[r.status][0],high:seeds[r.status][2]}));
+export function predictionRows(plan:ExamPlan,snapshot:ExamSnapshot) {
+  const asOf=Date.parse(snapshot.now);
+  return plan.rows.map(r=>{
+    const attempts=snapshot.attempts.filter(a=>a.row_key===r.row.key&&!a.voided_at&&Date.parse(a.occurred_at)<=asOf&&
+      a.independence==='independent'&&!a.hint_level&&a.novelty!=='seen_solution'&&['correct','partial','incorrect'].includes(a.outcome));
+    const times=new Set(attempts.map(a=>Date.parse(a.occurred_at)));
+    const course=snapshot.evidence.filter(e=>r.row.concepts?.includes(e.concept)&&!e.voided_at&&Date.parse(e.occurred_at)<=asOf&&
+      !times.has(Date.parse(e.occurred_at))&&!e.hint_level&&!['seen_solution','self_reported'].includes(e.novelty)&&['pass','partial','fail'].includes(e.outcome));
+    return {key:r.row.key,form:r.row.format??'unspecified',facet:r.row.level??'unspecified',priorCount:attempts.length+course.length,
+      evidence:r.status,source:'qualitative-v1 status seed',p:r.probability,low:seeds[r.status][0],high:seeds[r.status][2]};
+  });
 }
 export async function inputsHash(value:unknown) {
   const canonical=(v:unknown):unknown=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?

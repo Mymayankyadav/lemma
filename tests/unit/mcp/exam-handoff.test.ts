@@ -15,18 +15,20 @@ afterEach(() => vi.useRealTimers());
 const turnId='33333333-3333-4333-8333-333333333333';
 const handoff=turnId+'.44444444-4444-4444-8444-444444444444';
 const turn={turnId,status:'pending',version:1,snapshot:{question:'Which eigenvectors span the space?'}};
-function fixture({failure,paused=false,finished=false,foreign=false,denied=false}:{
-  failure?:string;paused?:boolean;finished?:boolean;foreign?:boolean;denied?:boolean;
+function fixture({failure,paused=false,finished=false,foreign=false,denied=false,examStatus}:{
+  failure?:string;paused?:boolean;finished?:boolean;foreign?:boolean;denied?:boolean;examStatus?:'paused'|'finished';
 } = {}) {
   const setup=examFixture({
-    exam_sittings:[sitting({status:paused?'paused':'active'})],
+    exam_sittings:[sitting({status:examStatus??(paused?'paused':'active')})],
     tutor_turns:[{id:turnId,user_id:foreign?other:owner,tutor_threads:{project_id:'linear'}}],
   },{
     fail:failure,
     rpc:(name)=>name==='tutor_followup_connector'
       ? {data:{unseen:0,followups:[]},error:null}
       : denied ? {data:null,error:{message:'Grant is invalid'}}
-      : {data:{...turn,status:finished?'completed':'pending'},error:null},
+      : {data:{...turn,status:finished?'completed':'pending',
+        ...(examStatus?{examSittingId:'sitting',examProjectId:'linear',sittingStatus:examStatus,
+          examQuestionnaireAnswers:[{questionId:'q1',answer:'2',deliveryRef:'questionnaire-id:q1'}]}:{})},error:null},
   });
   return {...setup,tutor:tutorConnector(setup.context,'a'.repeat(48))};
 }
@@ -64,6 +66,19 @@ describe('pending tutor exam handoff', () => {
       expect(result.instructions).not.toContain(EXAM_HANDOFF_NOTE);
     },
   );
+
+  it.each([
+    ['paused',/ordinary-study style.*original deliveryRef/],
+    ['finished',/answers as saved.*unscored unless the learner reopens/],
+  ] as const)('preserves a late submission and gives a %s mode-change notice', async (examStatus,notice) => {
+    const {tutor,reads}=fixture({examStatus});
+    const result=JSON.parse(await tutor.read(handoff));
+    expect(result.exam.status).toBe(examStatus);
+    expect(result.instructions).toContain('The sitting is '+examStatus);
+    expect(result.instructions).toMatch(notice);
+    expect(result.examQuestionnaireAnswers).toEqual([{questionId:'q1',answer:'2',deliveryRef:'questionnaire-id:q1'}]);
+    expect(reads.some(read=>read.table==='tutor_turns')).toBe(false);
+  });
 
   it('skips lookup on completed turns and denied grants', async () => {
     const completed=fixture({finished:true});

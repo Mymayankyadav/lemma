@@ -1,6 +1,7 @@
 import {expect,test,type Page} from '@playwright/test'
 import {copyFile,mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
+import {examThread,examTutor,importExamReply,saveExamIdea,sendExamQuestion} from './helpers/exam'
 
 const url=(path:string)=>'/lemma/?demo=1&flags=v7Shell,v6Shell,examMode#'+path
 const viewports=[{width:320,height:640},{width:390,height:844},{width:844,height:390}]
@@ -95,18 +96,50 @@ test('a past start can be dismissed, rescheduled or confirmed',async({page})=>{
 })
 
 for(const theme of ['light','dark'] as const){
- test('captures the '+theme+' ledger',async({page},testInfo)=>{
+ test('captures the '+theme+' exam screens at 390×844',async({page},testInfo)=>{
+  await page.setViewportSize({width:390,height:844})
   await page.emulateMedia({colorScheme:theme})
   await page.goto(url('/p/linear-algebra?tab=exam'))
-  await expect(page.getByRole('heading',{name:'Coverage ledger'})).toBeVisible()
-  const photo=testInfo.outputPath('exam-ledger-'+theme+'.png')
-  await page.screenshot({path:photo,fullPage:true})
-  await testInfo.attach('Exam ledger · '+theme,{path:photo,contentType:'image/png'})
-  if(process.env.CI_JUNIT_DIR){
-   const artifacts=join(process.env.CI_JUNIT_DIR,'exam-captures')
-   await mkdir(artifacts,{recursive:true})
-   await copyFile(photo,join(artifacts,'exam-ledger-'+theme+'.png'))
+  await expect(page.locator('html')).toHaveAttribute('data-theme',theme==='light'?'graph':'graph-night')
+  async function capture(name:string,fullPage=false){
+   const filename='exam-'+name+'-'+theme+'.png'
+   const photo=testInfo.outputPath(filename)
+   await page.screenshot({path:photo,fullPage})
+   await testInfo.attach('Exam '+name+' · '+theme,{path:photo,contentType:'image/png'})
+   const destinations=[
+    process.env.CI_JUNIT_DIR?join(process.env.CI_JUNIT_DIR,'exam-captures'):undefined,
+    process.env.LEMMA_EXAM_CAPTURES_DIR,
+   ]
+   for(const destination of destinations){
+    if(!destination)continue
+    await mkdir(destination,{recursive:true})
+    await copyFile(photo,join(destination,filename))
+   }
   }
+  await expect(page.getByRole('heading',{name:'Coverage ledger'})).toBeVisible()
+  await capture('path')
+  await capture('ledger',true)
+  await page.getByRole('button',{name:'More path actions'}).click()
+  await page.getByRole('menuitem',{name:'Prepare for an exam…'}).click()
+  const setup=page.getByRole('dialog',{name:'Prepare for an exam'})
+  await setup.getByLabel('Exam title').fill('Linear Algebra final')
+  await setup.getByLabel('Exam date and start time').fill(future(5))
+  await capture('setup')
+  await setup.getByRole('button',{name:'Cancel',exact:true}).click()
+  await page.goto(url(examThread))
+  await sendExamQuestion(page,'Give me a short check on eigenbases.')
+  await importExamReply(page,'When does a vector space have a basis of eigenvectors?')
+  await saveExamIdea(page,'Check that the eigenspace dimensions add up to the space dimension')
+  await examTutor(page).getByRole('button',{name:'Back to study',exact:true}).click()
+  const returned=page.getByRole('region',{name:'Return to study'})
+  await expect(returned).toBeVisible()
+  await returned.scrollIntoViewIfNeeded()
+  await capture('return')
+  await returned.getByRole('link',{name:'Card ideas (1)'}).click()
+  const ideas=page.getByRole('region',{name:'Card ideas'})
+  await expect(ideas.getByRole('heading',{name:/Check that the eigenspace dimensions/})).toBeVisible()
+  await ideas.scrollIntoViewIfNeeded()
+  await capture('ideas')
  })
 }
 

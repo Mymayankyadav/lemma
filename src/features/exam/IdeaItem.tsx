@@ -1,4 +1,4 @@
-import {useId,useState,type FormEvent} from 'react'
+import {useEffect,useId,useState,type FormEvent} from 'react'
 import {Link,useSearchParams} from 'react-router'
 import {getApi} from '../../data'
 import {useQuery} from '@tanstack/react-query'
@@ -16,6 +16,9 @@ export function IdeaItem({idea,slug,canEdit}:{idea:CardIdea;slug:string;canEdit:
  const [search,setSearch]=useState(''),[card,setCard]=useState<number>()
  const formId=useId()
  const waiting=idea.status==='drafted'&&idea.proposal_status!=='rejected'&&idea.proposal_status!=='withdrawn'
+ useEffect(()=>{
+  if(waiting&&edit==='draft'){setEdit(null);setError('')}
+ },[waiting,edit])
  const cards=useQuery({queryKey:['exam-link-search',slug,search],enabled:edit==='link'&&search.trim().length>=2,
   queryFn:()=>getApi().searchCards(search.trim(),slug)})
  async function apply(operation:string,patch?:object){

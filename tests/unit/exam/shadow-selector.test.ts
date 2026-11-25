@@ -11,7 +11,7 @@ it('prices all four branches and the fallback on an equal twelve-minute clock',(
   const {chosen,runner_up}=selectExam(worked());
   expect(runner_up?.gain_mid).toBe(4.3);expect(chosen.gain_mid).toBe(4.8225);
   expect(chosen.gain_mid-runner_up!.gain_mid).toBeCloseTo(.5225,8);
-  expect(chosen.action).toBe('probe');expect(chosen.voi).toBe(.9225);
+  expect(chosen.action).toBe('probe');expect(chosen.voi).toBe(.9225);expect(chosen.netVoi).toBe(.5225);
   expect(chosen.breakEvenMinutes?.toFixed(2)).toBe('2.31');
   expect(chosen.branches?.map(b=>b.outcome)).toEqual(['correct','partial','incorrect','unscorable']);
   expect(chosen.branches?.every(b=>b.followupMinutes===11)).toBe(true);

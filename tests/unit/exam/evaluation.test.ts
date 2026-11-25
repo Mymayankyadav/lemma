@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest';
-import {audit,design,evaluateTrial,report} from '../../../research/sim/exam-evaluation.mjs';
+import {assessmentsFromExport,audit,design,evaluateTrial,report} from '../../../research/sim/exam-evaluation.mjs';
 import {applyR0,r0Import} from '../../../scripts/exam/import-r0.mjs';
 import {noticePlan} from '../../../supabase/functions/push/notice';
 it('counterbalances disjoint families and refuses retrospective or incomplete data',async()=>{
@@ -15,10 +15,19 @@ it('counterbalances disjoint families and refuses retrospective or incomplete da
       reentryMinutes:5,reviewMinutes:4,wronglySkipped:0,repeatDiagnostics:0,prepAuthorMinutes:1,duplicateProposals:0,ideasStillUseful:2}))};
   expect(evaluateTrial(trial)).toMatchObject({recommendation:'eligible-for-independent-review',metrics:{deferredFamilies:1}});
   expect(evaluateTrial({...trial,families:trial.families.slice(1)}).recommendation).toBe('keep-off');
-  const d={id:'d',decided_at:'2026-11-24',predictions:[{key:'a',p:.8,low:.4,high:.9,form:'proof',facet:'use',evidence:'shaky'}]};
+  const d={id:'d',decided_at:'2026-11-24',predictions:[{key:'a',p:.8,low:.4,high:.9,form:'proof',facet:'use',evidence:'shaky',priorCount:2}]};
   const a={decisionId:'d',row:'a',observedAt:'2026-11-25',marks:1,maximum:1,binary:true};
-  const measured=audit([d],[a,{...a,observedAt:d.decided_at}]);expect(measured.excluded).toBe(1);
+  const measured=audit([d],[a,{...a,observedAt:d.decided_at}]);expect(measured.excluded).toBe(1);expect(measured.groups['prior/1-3'].n).toBe(1);
   expect(measured.groups.all.brier).toBeCloseTo(.04);expect(measured.groups.all.logLoss).toBeCloseTo(-Math.log(.8));
+});
+it('matches each forecast to its first later answer in the same owner, sitting and blueprint',()=>{
+  const d={id:'d',user_id:'a',sitting_id:'s',decided_at:'2026-11-23',inputs:{blueprintVersion:2},predictions:[{key:'r'}]};
+  const a={id:'a1',user_id:'a',sitting_id:'s',row_key:'r',blueprint_version:2,created_at:'2026-11-24',occurred_at:'2026-11-24',
+    outcome:'correct',independence:'independent',marks_possible:2,marks_awarded:2};
+  const rows=[{...a,id:'a2',occurred_at:'2026-11-25',created_at:'2026-11-25'},a,{...a,id:'foreign',user_id:'b'}];
+  expect(assessmentsFromExport([d],rows)).toMatchObject([{outcome_attempt_id:'a1',decisionId:'d',marks:2}]);
+  expect(assessmentsFromExport([d,{...d,id:'ambiguous'}],rows)).toEqual([]);
+  expect(assessmentsFromExport([d],[{...a,occurred_at:d.decided_at}])).toEqual([]);
 });
 it('only imports matching owner, project and tag, and never dismisses ahead of an acknowledged save',async()=>{
   const event={user_id:'u',id:6,session_id:'s',created_at:'2026-11-24',kind:'attempt',outcome:'partial',body:'EXAM TOP ROW p MARKS 2/3 45s IND'};
@@ -35,5 +44,7 @@ it('offers each deadline reminder only after its own opt-in, at the sitting’s 
   const notices=(kinds:Record<string,boolean>,time=now)=>noticePlan({exams:[exam]}, {kinds,studyTime:'08:00'},time).candidates.filter(c=>c.key.startsWith('exam/'));
   expect(notices({})).toHaveLength(0);expect(notices({examMorning:true})[0].dueAt).toBeLessThan(now);
   expect(notices({examFollowup:true},Date.parse('2026-11-27T05:00Z'))).toHaveLength(0);
+  const unknown=noticePlan({exams:[{...exam,minutes:null}]},{kinds:{examFollowup:true}},Date.parse('2026-11-27T06:01Z'));
+  expect(unknown.candidates.some(c=>c.key.startsWith('exam/'))).toBe(false);
   expect(notices({examFollowup:true},Date.parse('2026-11-27T06:01Z'))[0].key).toContain('/examFollowup/');
 });

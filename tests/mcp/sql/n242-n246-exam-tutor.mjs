@@ -102,6 +102,8 @@ try {
  const attached=await attach(questionnaire);
  assert.equal(attached.status,'created');
  assert.deepEqual(await attach(questionnaire),attached);
+ const closedQuestionnaireId=randomUUID();
+ await attach({...questionnaire,questionnaireId:closedQuestionnaireId,title:'One more rank check'});
  await as('authenticated',owner);
  const state=await result("select public.exam_tutor_questionnaire_state($1,'exam-path',null,$2) result",[owner,sitting.id]);
  assert.equal(state[0].questions[0].prompt,'What is the rank?');
@@ -117,7 +119,6 @@ try {
  }
  await q('select public.end_owner_export($1)',[exportId]);
  await assert.rejects(q('select * from public.tutor_questionnaire_rows'),/permission denied/i);
- assert.equal((await result("select public.tutor_questionnaire_save($1,$2,0,$3,true) result",[owner,questionnaireId,{q1:'2'}])).status,'submitted');
  assert.equal((await threadState(sitting.id)).turns[0].finalReply.timedSeconds,120);
  const next=await ownerCommand(sitting.id,command('start',{question:'Rank 2.',expectedVersion:1,answerMeta:{seconds:190,overtime:true}}));
  const nextGrantId=randomUUID();
@@ -126,11 +127,41 @@ try {
  await as('authenticated',owner);
  await ownerCommand(sitting.id,{...command('grant',{turnId:next.turnId,expectedVersion:next.version,tokenHash:nextVerifier}),operationId:nextGrantId});
  await as('service_role');
+ const paused=await mcp(registered('exam_sittings','pause',{},sitting));
+ assert.equal(paused.sittingStatus,'paused');
+ await as('authenticated',owner);
+ const submit=async (id,text)=>result("select public.tutor_questionnaire_save($1,$2,0,$3,true) result",[owner,id,{q1:text}]);
+ const lateAnswer=await submit(questionnaireId,'2');
+ assert.equal(lateAnswer.status,'submitted');
+ assert.deepEqual(lateAnswer.questionnaire.answers,{q1:'2'});
+ assert.deepEqual(await submit(questionnaireId,'different retry'),lateAnswer);
+ assert.equal((await threadState(sitting.id)).canSubmit,false);
+ assert.deepEqual(await q('select id from public.exam_attempts where sitting_id=$1',[sitting.id]),[]);
+ await as('service_role');
  assert.equal((await connector(operationId,{operation:'next',turnId:created.turnId})).id,next.turnId+'.'+nextGrantId);
  const nextRead=await connector(nextGrantId,{operation:'get',turnId:next.turnId});
+ assert.equal(nextRead.sittingStatus,'paused');
  assert.deepEqual(nextRead.snapshot.answerMeta,{seconds:190,overtime:true});
  assert.deepEqual(nextRead.examQuestionnaireAnswers,[{questionnaireId,questionId:'q1',rowKey:'rank',blueprintVersion:1,
-  scoringKey:'Two pivots → rank 2',rubricSteps:['Count pivots'],answer:'2'}]);
+  scoringKey:'Two pivots → rank 2',rubricSteps:['Count pivots'],answer:'2',deliveryRef:questionnaireId+':q1'}]);
+ const scoredLate={sitting_id:sitting.id,row_key:'rank',delivery:'questionnaire',delivery_ref:nextRead.examQuestionnaireAnswers[0].deliveryRef,
+  outcome:'correct',marks_awarded:2,marks_possible:2};
+ const lateAttempt=await mcp(registered('exam_attempts','record',scoredLate));
+ const duplicateLate=await mcp(registered('exam_attempts','record',scoredLate));
+ assert.deepEqual([lateAttempt.status,duplicateLate.status,duplicateLate.id],['ok','duplicate',lateAttempt.id]);
+ const finished=await mcp(registered('exam_sittings','finish',{happened:true},{id:sitting.id,version:paused.version}));
+ assert.equal(finished.sittingStatus,'finished');
+ await as('authenticated',owner);
+ assert.equal((await submit(closedQuestionnaireId,'kept for later')).status,'submitted');
+ assert.deepEqual(await q('select outcome,delivery_ref from public.exam_attempts where sitting_id=$1',[sitting.id]),
+  [{outcome:'correct',delivery_ref:questionnaireId+':q1'}]);
+ await as('service_role');
+ const closedHandoff=await connector(nextGrantId,{operation:'get',turnId:next.turnId});
+ assert.equal(closedHandoff.sittingStatus,'finished');
+ assert.equal(closedHandoff.examQuestionnaireAnswers.find(response=>response.questionnaireId===closedQuestionnaireId).answer,'kept for later');
+ await assert.rejects(mcp(registered('exam_attempts','record',{...scoredLate,delivery_ref:closedQuestionnaireId+':q1'})),/reopen it/);
+ const reopened=await mcp(registered('exam_sittings','reopen',{}, {id:sitting.id,version:finished.version}));
+ await mcp(registered('exam_sittings','activate',{}, {id:sitting.id,version:reopened.version}));
  await as('authenticated',other);
  await assert.rejects(threadState(sitting.id),/unavailable/i);
  await as('authenticated',owner);

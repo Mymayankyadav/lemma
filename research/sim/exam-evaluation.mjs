@@ -36,16 +36,20 @@ export async function replay(decisions) {
 // Use the latest applicable pre-response forecast. Equal timestamps cannot
 // establish causal order. Corrections keep the original response and revised score.
 export function assessmentsFromExport(decisions,attempts) {
-  const assessments=[];
-  for(const a of attempts) {
+  const assessments=[],seen=new Set();
+  const observed=a=>Math.min(Date.parse(a.created_at),Date.parse(a.occurred_at));
+  for(const a of [...attempts].sort((x,y)=>observed(x)-observed(y)||String(x.id).localeCompare(String(y.id)))) {
     if(a.voided_at||a.independence==='reading'||!['correct','partial','incorrect'].includes(a.outcome))continue;
-    const time=Math.min(Date.parse(a.created_at),Date.parse(a.occurred_at));
+    const time=observed(a);
     if(!finite(time))continue;
     const prior=decisions.filter(d=>d.user_id===a.user_id&&d.sitting_id===a.sitting_id&&d.inputs?.blueprintVersion===a.blueprint_version&&
       Date.parse(d.decided_at)<time&&d.predictions?.some(p=>p.key===a.row_key)).sort((x,y)=>Date.parse(y.decided_at)-Date.parse(x.decided_at));
     if(!prior.length||prior[1]&&Date.parse(prior[0].decided_at)===Date.parse(prior[1].decided_at))continue;
+    const pair=JSON.stringify([prior[0].id,a.row_key]);
+    if(seen.has(pair))continue;
+    seen.add(pair);
     const fraction={correct:1,partial:.5,incorrect:0}[a.outcome];
-    assessments.push({decisionId:prior[0].id,row:a.row_key,observedAt:new Date(time).toISOString(),marks:a.marks_awarded??fraction,
+    assessments.push({outcome_attempt_id:a.id,decisionId:prior[0].id,row:a.row_key,observedAt:new Date(time).toISOString(),marks:a.marks_awarded??fraction,
       maximum:a.marks_possible??1,binary:a.marks_possible==null&&a.outcome!=='partial',hinted:a.hint_level>0||a.independence!=='independent'});
   }
   return assessments;
@@ -61,7 +65,8 @@ export function audit(decisions,assessments) {
     }
     matched++;
     const y=a.marks/a.maximum,prob=Math.max(1e-9,Math.min(1-1e-9,p.p)),binary=a.binary===true&&(y===0||y===1);
-    for(const key of ['all','facet/'+p.facet,'form/'+p.form,'hint/'+(a.hinted?'assisted':'independent'),'evidence/'+p.evidence]){
+    const prior=p.priorCount==null?'unspecified':p.priorCount===0?'0':p.priorCount<=3?'1-3':'4+';
+    for(const key of ['all','prior/'+prior,'facet/'+p.facet,'form/'+p.form,'hint/'+(a.hinted?'assisted':'independent'),'evidence/'+p.evidence]){
       const g=groups.get(key)??{brier:[],logLoss:[],absoluteMarkError:[],intervalCoverage:[]};
       if(binary){g.brier.push((prob-y)**2);g.logLoss.push(-Math.log(y?prob:1-prob));}
       g.absoluteMarkError.push(Math.abs(a.marks-a.maximum*p.p));g.intervalCoverage.push(Number(p.low<=y&&y<=p.high));groups.set(key,g);

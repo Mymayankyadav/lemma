@@ -320,7 +320,8 @@ begin
   select x.reply into prior_reply from public.exam_tutor_turns x where x.user_id=p_owner and x.thread_id=h.id
    and x.sequence<t.sequence and x.reply is not null order by x.sequence desc limit 1;
   select jsonb_agg(jsonb_build_object('questionnaireId',x.id,'questionId',b.question_id,'rowKey',b.row_key,
-    'blueprintVersion',b.blueprint_version,'scoringKey',b.scoring_key,'rubricSteps',b.rubric_steps,'answer',x.answers->b.question_id)
+    'blueprintVersion',b.blueprint_version,'scoringKey',b.scoring_key,'rubricSteps',b.rubric_steps,'answer',x.answers->b.question_id,
+    'deliveryRef',x.id::text||':'||b.question_id)
     order by x.submitted_at,x.id,b.question_id) into bound
   from public.tutor_questionnaire_rows b join public.exam_tutor_questionnaires x on x.user_id=b.user_id and x.id=b.questionnaire_id
   join public.exam_tutor_turns prior on prior.user_id=x.user_id and prior.id=x.turn_id

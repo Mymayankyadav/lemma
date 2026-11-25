@@ -29,10 +29,10 @@ begin
     select from public.exam_sittings s join public.settings st on st.user_id=s.user_id
     join public.projects p on p.id=s.project_id and p.user_id=s.user_id
     where s.user_id=q.user_id and s.status='active' and not p.system and p.status<>'archived'
-      and s.id::text=split_part(q.key,'/',3) and extract(epoch from s.starts_at)*1000=split_part(q.key,'/',4)::numeric
+      and s.id::text=split_part(q.key,'/',3) and floor(extract(epoch from s.starts_at)*1000)::bigint::text=split_part(q.key,'/',4)
       and st.notify->'enabled'='true' and st.notify->'kinds'->(split_part(q.key,'/',2))='true'
       and ((split_part(q.key,'/',2)='examMorning' and now()<s.starts_at)
-        or (split_part(q.key,'/',2)='examFollowup' and now() between s.starts_at+make_interval(mins=>coalesce(s.duration_minutes,0)) and s.starts_at+interval '2 days'))
+        or (split_part(q.key,'/',2)='examFollowup' and s.duration_minutes is not null and now() between s.starts_at+make_interval(mins=>s.duration_minutes) and s.starts_at+interval '2 days'))
   ))
   order by q.due_at,q.id limit least(greatest(p_limit,1),50) for update skip locked)
  returning n.id,n.kind,n.key,n.title,n.body,n.url,n.facts,n.status,n.sent_at;

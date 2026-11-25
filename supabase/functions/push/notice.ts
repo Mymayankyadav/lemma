@@ -93,7 +93,9 @@ export function noticePlan(facts: NoticeFacts, prefs: NoticePrefs, now: number):
     const examDay=localDate(start,exam.zone), end=start+(exam.minutes??0)*60000;
     const morning=now<start;
     const preference=morning?'examMorning':'examFollowup';
-    if(kinds[preference]!==true||localDate(now,exam.zone)!==examDay&&morning||!morning&&(now<end||now>start+2*DAY))continue;
+    if(kinds[preference]!==true)continue;
+    if(morning && localDate(now,exam.zone)!==examDay)continue;
+    if(!morning && (exam.minutes==null||exam.minutes<=0||now<end||now>start+2*DAY))continue;
     const key=['exam',preference,exam.id,start].join('/');
     const url=link(exam.slug)+(morning?'/tutor?exam=':'?tab=exam&examSitting=')+encodeURIComponent(exam.id);
     const time=new Intl.DateTimeFormat('en-GB',{timeZone:exam.zone,hour:'2-digit',minute:'2-digit'}).format(start);

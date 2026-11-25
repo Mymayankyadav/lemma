@@ -180,6 +180,11 @@ try {
     const request=command('exam_sittings','create',base);
     const receipts=await Promise.all([1,2].map(()=>db.transaction(c=>mcp(request,owner,c))));
     assert.deepEqual(receipts[0],receipts[1]);
+    const race=await write('card_ideas','save',{project_id:project,target:'Explain finite dimension'});
+    const draftFromDevice=()=>command('card_ideas','draft',{front:'Why does dimension matter?',back:'Count a basis.'},race.id,race.version);
+    const competing=await Promise.all([draftFromDevice(),draftFromDevice()].map(cmd=>db.transaction(c=>mcp(cmd,owner,c))));
+    assert.deepEqual(competing.map(r=>r.status).sort(),['conflict','ok']);
+    assert.equal(await one("select count(*)::int value from public.proposals where user_id=$1 and payload->>'cardIdea'=$2",[owner,race.id]),1);
   }
   console.log('PASS exam command lifecycle, permissions, retry, scored responses, proposals and undo');
 } finally {await db.close();}
