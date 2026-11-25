@@ -1,5 +1,7 @@
 import {useId, useRef, useState, type KeyboardEvent, type PointerEvent} from 'react';
 import {PAD_SYMBOLS, type PadSymbol, type PadTemplate} from './padEdit';
+import {LatentInkStrip} from './latentInk/LatentInkStrip';
+import {useLatentInk, type LatentInkHandlers} from './latentInk/useLatentInk';
 import './pad-math-keyboard.css';
 
 export type PadKeyboardAction = 'backspace' | 'left' | 'right' | 'home' | 'end' | 'enter' | 'space' | 'undo' | 'redo' | 'slot';
@@ -41,7 +43,10 @@ interface Props {
   onShown: (shown: boolean) => void; onMode: (mode: 'device' | 'math') => void;
   onSymbol: (symbol: PadSymbol) => void; onTemplate: (template: PadTemplate) => void;
   onAction: (action: PadKeyboardAction) => void; keepSelection: (event: PointerEvent<HTMLButtonElement>) => void;
+  /** N248 (flag padLatentInk): draw one symbol at a time over the keys. */
+  latentInk?: LatentInkHandlers;
 }
+const noInk: LatentInkHandlers = {onInsert: () => false, onRetract: () => false};
 
 /** Ordinary labeled buttons, in document flow: neither the editor nor the native
  * keyboard is covered by a fixed overlay. The key area has its own bounded scroll. */
@@ -49,6 +54,8 @@ export function PadMathKeyboard(props: Props) {
   const [group, setGroup] = useState('Symbols'), id = useId();
   const tabs = useRef<HTMLDivElement>(null);
   const expanded = props.shown && !props.nativeKeyboardOpen;
+  const inkOn = !!props.latentInk && expanded && !props.composing;
+  const ink = useLatentInk(inkOn, props.latentInk ?? noInk);
   function tabKey(event: KeyboardEvent<HTMLButtonElement>) {
     const names = Object.keys(groups), index = names.indexOf(group);
     const next = event.key === 'ArrowRight' ? (index + 1) % names.length
@@ -74,9 +81,13 @@ export function PadMathKeyboard(props: Props) {
     <p className="pad-keyboard-mode" role="status">{props.composing ? 'Finish composing before using math keys.'
       : props.nativeKeyboardOpen && props.shown ? 'Device keyboard open. Choose Use math keyboard to switch.'
       : !props.shown ? 'Math keyboard hidden. Native typing is available.'
+      : props.mode === 'math' && inkOn ? 'Math keyboard selected. Tap a key, or draw one symbol over the keys.'
       : props.mode === 'math' ? 'Math keyboard selected. Hardware typing still works.'
       : 'Native typing is available. Math keys insert at your selection.'}</p>
-    <div id={id + '-keys'} hidden={!expanded} className="pad-keyboard-body">
+    {inkOn && <LatentInkStrip view={ink.view} keepSelection={props.keepSelection} onChoose={ink.choose} onClear={ink.clear}/>}
+    <div id={id + '-keys'} hidden={!expanded} ref={ink.body} {...ink.bind}
+      className={inkOn ? 'pad-keyboard-body pad-keyboard-body--ink' : 'pad-keyboard-body'}>
+      {inkOn && <canvas ref={ink.canvas} className="pad-latent-ink" aria-hidden="true"/>}
       <div ref={tabs} role="tablist" aria-label="Math key groups" className="pad-keyboard-tabs">
         {Object.keys(groups).map(name => <button key={name} type="button" role="tab" id={id + '-' + name}
           aria-selected={name === group} aria-controls={id + '-panel'} tabIndex={name === group ? 0 : -1}
@@ -96,7 +107,10 @@ export function PadMathKeyboard(props: Props) {
         {actions.map(({action, label, glyph}) => <button key={action} type="button" aria-label={label}
           disabled={props.composing || (action === 'undo' && !props.canUndo) || (action === 'redo' && !props.canRedo)
             || (action === 'slot' && !props.hasSlot)}
-          onPointerDown={props.keepSelection} onClick={() => props.onAction(action)}>{glyph}</button>)}
+          onPointerDown={props.keepSelection} onClick={() => {
+            if (action === 'undo') ink.noteUndo();
+            props.onAction(action);
+          }}>{glyph}</button>)}
       </div>
     </div>
   </section>;
