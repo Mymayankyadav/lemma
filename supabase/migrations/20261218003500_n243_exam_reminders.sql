@@ -15,25 +15,30 @@ $$;
 revoke all on function public.exam_notice_facts(uuid,timestamptz) from public,anon,authenticated;
 grant execute on function public.exam_notice_facts(uuid,timestamptz) to service_role;
 
-create or replace function public.notify_claim(p_user uuid,p_limit integer default 10)
+-- The shared worker owns retries, quiet holds, exhausted leases and row locks.
+-- Recheck timing and consent for an exam only after it has claimed the delivery.
+create function public.exam_claim_notices(p_user uuid,p_limit integer default 10)
 returns table(id bigint,kind text,key text,title text,body text,url text,facts jsonb,status text,sent_at timestamptz)
 language plpgsql security definer set search_path='' as $claim$
+declare notice record;
 begin
- if current_setting('role',true)<>'service_role' then raise exception 'Service role required'; end if;
- return query update public.notifications n set delivery_claimed_at=now(),delivery_attempts=delivery_attempts+1
- where n.id in(select q.id from public.notifications q where q.user_id=p_user and q.status='queued' and q.due_at<=now()
-  and (q.delivery_claimed_at is null or q.delivery_claimed_at<now()-interval '2 minutes') and q.delivery_attempts<8
-  and not exists(select 1 from public.notify_holds h where h.user_id=q.user_id and h."until">now() and
-   (h.scope in ('all',q.kind) or h.scope=q.facts->>'scope' or h.scope=q.key))
-  and (q.key not like 'exam/%' or exists (
-    select from public.exam_sittings s join public.settings st on st.user_id=s.user_id
-    join public.projects p on p.id=s.project_id and p.user_id=s.user_id
-    where s.user_id=q.user_id and s.status='active' and not p.system and p.status<>'archived'
-      and s.id::text=split_part(q.key,'/',3) and floor(extract(epoch from s.starts_at)*1000)::bigint::text=split_part(q.key,'/',4)
-      and st.notify->'enabled'='true' and st.notify->'kinds'->(split_part(q.key,'/',2))='true'
-      and ((split_part(q.key,'/',2)='examMorning' and now()<s.starts_at)
-        or (split_part(q.key,'/',2)='examFollowup' and s.duration_minutes is not null and now() between s.starts_at+make_interval(mins=>s.duration_minutes) and s.starts_at+interval '2 days'))
-  ))
-  order by q.due_at,q.id limit least(greatest(p_limit,1),50) for update skip locked)
- returning n.id,n.kind,n.key,n.title,n.body,n.url,n.facts,n.status,n.sent_at;
+ if current_setting('role',true) is distinct from 'service_role' then raise insufficient_privilege; end if;
+ for notice in select * from public.notify_claim(p_user,p_limit) loop
+   if notice.key not like 'exam/%' or exists (
+     select from public.exam_sittings s join public.settings st on st.user_id=s.user_id
+     join public.projects p on p.id=s.project_id and p.user_id=s.user_id
+     where s.user_id=p_user and s.status='active' and not p.system and p.status<>'archived'
+       and s.id::text=split_part(notice.key,'/',3) and floor(extract(epoch from s.starts_at)*1000)::bigint::text=split_part(notice.key,'/',4)
+       and st.notify->'enabled'='true' and st.notify->'kinds'->(split_part(notice.key,'/',2))='true'
+       and ((split_part(notice.key,'/',2)='examMorning' and now()<s.starts_at)
+         or (split_part(notice.key,'/',2)='examFollowup' and s.duration_minutes is not null and
+           now() between s.starts_at+make_interval(mins=>s.duration_minutes) and s.starts_at+interval '2 days'))
+   ) then
+     return query select notice.id,notice.kind,notice.key,notice.title,notice.body,notice.url,notice.facts,notice.status,notice.sent_at;
+   else
+     update public.notifications n set status='skipped',reason='resolved',delivery_claimed_at=null where n.user_id=p_user and n.id=notice.id;
+   end if;
+ end loop;
 end $claim$;
+revoke all on function public.exam_claim_notices(uuid,integer) from public,anon,authenticated;
+grant execute on function public.exam_claim_notices(uuid,integer) to service_role;

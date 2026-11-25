@@ -42,7 +42,7 @@ function noticeDatabase(): NoticeDb {
     },
     prefs: async userId => ((ok(await admin.from('settings').select('notify').eq('user_id', userId).maybeSingle()) as {notify?: Record<string, unknown>} | null)?.notify ?? {}) as NoticePrefs,
     queue: async (userId, rows) => (ok(await admin.rpc('notify_queue', {p_user: userId, p_rows: rows})) ?? 0) as number,
-    claim: async (userId, limit) => (ok(await admin.rpc('notify_claim', {p_user: userId, p_limit: limit})) ?? []) as NoticeRow[],
+    claim: async (userId, limit) => (ok(await admin.rpc('exam_claim_notices', {p_user: userId, p_limit: limit})) ?? []) as NoticeRow[],
     record: async (userId, id, reason) => {ok(await admin.rpc('notify_record', {p_user: userId, p_id: id, p_reason: reason}));},
     tokens: async userId => ok(await admin.from('device_push_tokens').select('id,token').eq('user_id', userId)) ?? [],
     deleteToken: async id => {ok(await admin.from('device_push_tokens').delete().eq('id', id));},

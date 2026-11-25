@@ -184,6 +184,17 @@ try {
   await query("select set_config('test.uid',$1,false),set_config('lemma.source','claude',false)",[owner]);
   const direct=await one('select public.exam_sitting_command($1) value',[JSON.stringify(command('exam_sittings','create',base))]); await query('reset role');
   assert.deepEqual(await query('select source,tool from public.actions where no=$1',[direct.actionNo]),[{source:'app',tool:'exam_sitting_command'}]);
+  await write('exam_sittings','activate',{},upcomingA.id,upcomingA.version);
+  const morning='exam/examMorning/'+upcomingA.id+'/'+Date.parse(soon), followup=morning.replace('examMorning','examFollowup');
+  await query("update public.settings set notify=$2 where user_id=$1",[owner,{enabled:true,kinds:{examMorning:true,examFollowup:false}}]);
+  const noticeKeys=[morning,followup,'ordinary','expired'];
+  for(const key of noticeKeys)await query("insert into public.notifications(user_id,kind,key,title,body,url,due_at,delivery_attempts,delivery_claimed_at) values($1,'deadline',$2,'Exam','Study','#/',now(),$3,now()-interval '3 minutes')",[owner,key,key==='expired'?8:0]);
+  await query('set role service_role');
+  const claims=await query('select key from public.exam_claim_notices($1,10)',[owner]);
+  await query('reset role');
+  assert.deepEqual(claims.map(x=>x.key).sort(),[morning,'ordinary'].sort());
+  assert.equal(await one('select status value from public.notifications where user_id=$1 and key=$2',[owner,followup]),'skipped');
+  assert.equal(await one("select status value from public.notifications where user_id=$1 and key='expired'",[owner]),'failed');
   if (db.native) {
     const request=command('exam_sittings','create',base);
     const receipts=await Promise.all([1,2].map(()=>db.transaction(c=>mcp(request,owner,c))));
