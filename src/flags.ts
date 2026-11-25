@@ -51,6 +51,9 @@ export const FLAG_DEFAULTS = {
   v7Scratch: true,
   /** N198: full-page Pad in Settings and the device-local offline entry. */
   padLocal: true,
+  /** N248 (Owner): the Pad's math keys double as paper for one drawn symbol at a time; confident complete readings
+   *  go in by themselves (docs/current/N248.md). Build stage, default off. */
+  padLatentInk: false,
   /** N222: explicit Equation Assist and notation slots in the local Pad. */
   equationAssist: false,
   /** N223 (Owner): the tutor keyboard's suggestions are always on, with no settings; the old Writing assistance settings
