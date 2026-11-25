@@ -1,3 +1,5 @@
+import {packageChanged} from './decoder/androidPack';
+import {learnerAuthored} from './menuEdit';
 import {moveAcceptedSpans} from './authorship';
 import {neuralAidPrompt} from './answerAids';
 import {exposureIdentity, visibleTime} from './visibleTime';
@@ -60,6 +62,7 @@ function censorRetention(value: PendingAcceptance | null): void {
 
 export interface WritingAidView extends WritingAidSuggestions {
   readonly assetHashes: PredictionAssets;
+  readonly rawTrace?: WritingAidPool['trace'];
   readonly rankedWords: readonly WritingAidProposal[];
   /** Indicate actual visibility; undisplayed candidates are never treated as rejections. */
   readonly shown: (surface: WritingAidRefreshSurface, displayed: readonly WritingAidProposal[], covered?: boolean) => void;
@@ -102,14 +105,14 @@ const sameProposal = (a: WritingAidProposal, b: WritingAidProposal) =>
 
 /** The model and draft stay local. Stale and hidden proposals cannot be fed back. */
 export function useWritingAid(request: WritingAidRequest): WritingAidView {
-  const {cursor, anchor, target, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, arm, replayDiagnostics} = request;
+  const {cursor, anchor, target, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics} = request;
   const {scopeKey, mountId, editorRevision, selectionRevision, modeRevision} = target;
   const {words, replace, correction, ghost} = request.surfaces ?? ALL_WRITING_AID_SURFACES;
   const snapshot = useMemo<WritingAidRequest>(() => ({
-    cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, arm, replayDiagnostics,
+    cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics,
     target: {scopeKey, mountId, editorRevision, selectionRevision, modeRevision},
     surfaces: {words, replace, correction, ghost},
-  }), [cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, arm, replayDiagnostics, scopeKey, mountId, editorRevision, selectionRevision, modeRevision,
+  }), [cursor, anchor, mode, composing, readOnly, contextKey, aid, mastery, subject, step, question, middleEdits, acceptedSpans, arm, replayDiagnostics, scopeKey, mountId, editorRevision, selectionRevision, modeRevision,
     words, replace, correction, ghost]);
   const storedPersonalization = useWritingAidPersonalization();
   const personalization = usesPersonalization(arm) && !typeaheadFrozenProfile() ? storedPersonalization : {...storedPersonalization, enabled: false};
@@ -192,7 +195,15 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
   }, []);
 
   const neural = useRef<NeuralClient | undefined>(undefined);
-  const neuralEpoch = [scopeKey, mountId, contextKey, profileScope, generation, mode].join('|');
+  const [packVersion, setPackVersion] = useState(0);
+  useEffect(() => {
+    const changed = () => setPackVersion(value => value + 1);
+    window.addEventListener(packageChanged, changed);
+    const channel = typeof BroadcastChannel === 'undefined' ? undefined : new BroadcastChannel(packageChanged);
+    channel?.addEventListener('message', changed);
+    return () => {window.removeEventListener(packageChanged, changed); channel?.close();};
+  }, []);
+  const neuralEpoch = [scopeKey, mountId, contextKey, profileScope, generation, mode, packVersion].join('|');
   useEffect(() => {
     if (!isFlagOn('typeaheadV2') || !usesNeural(arm) || mode === 'off' || readOnly) return;
     let closed = false;
@@ -201,7 +212,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       else neural.current = client;
     }).catch(() => undefined);
     return () => {closed = true; neural.current?.close(); neural.current = undefined;};
-  }, [readOnly, mode, scopeKey, mountId, profileScope, generation, arm]);
+  }, [readOnly, mode, scopeKey, mountId, profileScope, generation, arm, packVersion]);
   useEffect(() => neural.current?.reset(), [neuralEpoch]);
 
   const impressionBatch = useRef<{scope: LearningScope; count: number; at: number; timer: number} | null>(null);
@@ -393,9 +404,9 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     const sameEditor = old.target.scopeKey === snapshot.target.scopeKey && old.target.mountId === snapshot.target.mountId;
     const direct = sameEditor && !snapshot.composing && !snapshot.readOnly && snapshot.anchor &&
       !snapshot.anchor.continuation && snapshot.anchor.text === snapshot.cursor.text &&
-      snapshot.cursor.text.length > old.cursor.text.length && snapshot.cursor.text.startsWith(old.cursor.text) &&
-      old.cursor.start === old.cursor.end && old.cursor.end === old.cursor.text.length &&
-      snapshot.cursor.start === snapshot.cursor.end && snapshot.cursor.end === snapshot.cursor.text.length;
+      old.cursor.start === old.cursor.end && snapshot.cursor.start === snapshot.cursor.end && snapshot.cursor.end > old.cursor.end &&
+      snapshot.cursor.text.slice(0, old.cursor.end) === old.cursor.text.slice(0, old.cursor.end) &&
+      snapshot.cursor.text.slice(snapshot.cursor.end) === old.cursor.text.slice(old.cursor.end);
     if (!sameEditor || old.contextKey !== snapshot.contextKey || old.mode !== snapshot.mode || snapshot.mode === 'off') {
       retireFeedback();
       return;
@@ -430,14 +441,15 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     if (!model.enabled) return;
     let changed = false;
     const authored = snapshot.anchor!;
-    const newlyCompleted = authored.text.slice(authored.start);
+    const newlyCompleted = authored.text.slice(authored.start, snapshot.cursor.end);
     if (isFlagOn('typeaheadV2')) {
       const words = [...newlyCompleted.matchAll(/[\p{L}\p{M}]{1,32}(?=[^\p{L}\p{M}])/gu)];
       for (let index = 1; index < words.length; index++) {
         const prior = words[index - 1], word = words[index];
         const separator = newlyCompleted.slice(prior.index + prior[0].length, word.index);
         const wordEnd = authored.start + word.index + word[0].length;
-        if (/^[ \t]+$/u.test(separator) && wordEnd >= old.cursor.text.length && wordEnd < snapshot.cursor.text.length) {
+        if (/^[ \t]+$/u.test(separator) && wordEnd >= old.cursor.end && wordEnd < snapshot.cursor.end &&
+            learnerAuthored(snapshot.acceptedSpans, authored.start + prior.index, wordEnd)) {
           countPersonalTransition(model.model.adaptation, prior[0], word[0], snapshot.subject);
           changed = true;
         }
@@ -445,7 +457,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     }
     for (const match of newlyCompleted.matchAll(/[\p{L}\p{M}]{4,32}(?=[^\p{L}\p{M}])/gu)) {
       const end = authored.start + match.index + match[0].length;
-      if (end >= old.cursor.text.length && end < snapshot.cursor.text.length) {
+      if (end >= old.cursor.end && end < snapshot.cursor.end && learnerAuthored(snapshot.acceptedSpans, authored.start + match.index, end)) {
         recordWritingAidVocabulary(model.model, match[0]);
         updateWritingAidModel(model.model, 'personal-use', {
           kind: 'word', candidate: match[0], previous: '', prefix: match[0], mode: snapshot.mode,
@@ -457,8 +469,8 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     for (const item of exposures.current) {
       const proposal = item.proposal;
       if (proposal.source === 'notation' || proposal.source === 'equation') continue;
-      if (proposal.start < authored.start || proposal.start > old.cursor.text.length) continue;
-      const tail = snapshot.cursor.text.slice(proposal.start);
+      if (proposal.start < authored.start || proposal.start > old.cursor.end) continue;
+      const tail = snapshot.cursor.text.slice(proposal.start, snapshot.cursor.end);
       if (proposal.kind === 'ghost') {
         const actual = tail.toLocaleLowerCase(), expected = proposal.insert.toLocaleLowerCase();
         const matches = actual.startsWith(expected);
@@ -537,7 +549,8 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
         if (!stillCurrent() || reply === null) return;
         if (reply === 'unavailable') return showFallback();
         performance.clearMarks('lemma.typeahead.ngram');
-        performance.mark('lemma.typeahead.ngram', {detail: {...worker?.diagnostics(), computeMs: reply.computeMs, elapsedMs: reply.elapsedMs, assetSha256: reply.assetSha256}});
+        performance.mark('lemma.typeahead.ngram', {detail: {...worker?.diagnostics(), editorRevision: snapshot.target.editorRevision, selectionRevision: snapshot.target.selectionRevision,
+          mountId: snapshot.target.mountId, computeMs: reply.computeMs, elapsedMs: reply.elapsedMs, assetSha256: reply.assetSha256}});
         report(reply.pool, {ngram: reply.assetSha256, subject: reply.subjectAssetSha256});
       }).catch(() => undefined);
     } else void showFallback().catch(() => undefined);
@@ -559,5 +572,5 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
     edit: cycle.current.attempted.edit && !suggestions.edit,
     ghost: cycle.current.attempted.ghost && !suggestions.ghost,
   } : noFlags;
-  return {...suggestions, assetHashes: current?.assets ?? {}, rankedWords, shown, refresh, feedback, isCurrent, canRefresh, exhausted};
+  return {...suggestions, rawTrace: current?.pool.trace, assetHashes: current?.assets ?? {}, rankedWords, shown, refresh, feedback, isCurrent, canRefresh, exhausted};
 }

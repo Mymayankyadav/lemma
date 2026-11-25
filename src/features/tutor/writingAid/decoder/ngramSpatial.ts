@@ -20,7 +20,7 @@ import {createDecoderLexicon, searchDecoderLexicon, type DecoderLexicon, type De
 import {usesExpandedNgram, type TypeaheadArm} from '../replayArm';
 import {loadTypeaheadMixture, subjectWeights} from './mixture';
 import {isFlagOn} from '../../../../flags';
-import {activeSubjectNgram, EOS, generalNgram, historyIds, historyLog, historyNext, loadExpandedNgram, loadLatexModel, loadNgram, MATH_TOKEN,
+import {activeSubjectNgram, generalNgram, historyIds, historyLog, historyWords, loadExpandedNgram, loadLatexModel, loadNgram, MATH_TOKEN,
   typeaheadNgramFingerprint, UNK, type NgramModel} from './kn';
 
 export interface KeyTouch {
@@ -151,7 +151,7 @@ let context = emptyCache();
 let forms = new Map<string, string>();
 const WORDS = /\p{L}[\p{L}\p{M}]*(?:['’\p{Pd}][\p{L}\p{M}]+)*/gu;
 /** N233: a single letter standing alone (f, X, U): a variable, not part of a word or a LaTeX command. "a" and "I" are words. */
-const SYMBOL = /(?<![A-Za-z\\])[A-Za-z](?![A-Za-z])/g;
+const SYMBOL = /(?<![\p{L}\p{N}\\_])(?:\\(?:alpha|beta|gamma|delta|epsilon|theta|lambda|mu|nu|pi|rho|sigma|tau|phi|psi|omega)|\p{L})(?:_(?:\{[A-Za-z0-9]{1,6}\}|[A-Za-z0-9]))?(?![\p{L}\p{N}_])/gu;
 let contextSymbols: string[] = [];
 function symbolsIn(text: string, latestFirst: boolean): string[] {
   const found = [...text.matchAll(SYMBOL)].map(match => match[0]).filter(letter => letter !== 'a' && letter !== 'I');
@@ -223,6 +223,7 @@ export interface LanguageDistribution {
   readonly components: (word: string) => ComponentProbabilities;
   readonly score: (word: string) => number;
   readonly next: readonly string[];
+  readonly matching?: (prefix: string) => readonly string[];
   readonly forms: ReadonlyMap<string, string>;
   readonly mathLog: number;
 }
@@ -268,8 +269,12 @@ export function prepareLanguage(before: string, options: LanguageContext = {}): 
   const subjectWeight = scoped ? fit ? fit[1] * fittedScale / Math.max(Number.EPSILON, 1 - cacheWeight) : scoped.weight : 0;
   const candidates = new Set([...source.counts.keys(), ...draft.counts.keys(), ...options.personal?.cache.counts.keys() ?? [],
     ...options.extraLexical?.map(word => word.toLowerCase()) ?? []]);
-  if (kn) for (const id of historyNext(kn, history)) if (id > EOS) candidates.add(kn.words[id]);
-  if (scoped) for (const id of historyNext(scoped.model, scopedHistory)) if (id > EOS) candidates.add(scoped.model.words[id]);
+  function matching(prefix: string) {
+    const words = new Set([...candidates].filter(word => word.startsWith(prefix)));
+    if (kn) for (const word of historyWords(kn, history, prefix)) words.add(word);
+    if (scoped) for (const word of historyWords(scoped.model, scopedHistory, prefix)) words.add(word);
+    return [...words];
+  }
   // Allocate the unknown event once across a fixed lexicon, explicit copy
   // candidates, and one residual bucket. Prefix filtering never changes it.
   const unknown = kn ? outOfVocabulary(kn, candidates) : () => 0;
@@ -290,7 +295,7 @@ export function prepareLanguage(before: string, options: LanguageContext = {}): 
     const base = scoped ? (1 - subjectWeight) * general + subjectWeight * modelProbability(word, scoped.model, scopedHistory) : general;
     return Math.log(mixtureProbability(base, word, cacheWeights));
   };
-  return {score, components, mathLog: score(kn?.words[MATH_TOKEN] ?? '<m>'), next: [...candidates],
+  return {score, components, mathLog: score(kn?.words[MATH_TOKEN] ?? '<m>'), matching, get next() {return matching('');},
     forms: options.question ? wordForms([...options.question, ...options.extraLexical ?? []]) : forms};
 }
 
@@ -427,17 +432,18 @@ export function decodeWord(before: string, typed: string, start: number, extra: 
         add(variant, exactSpatial - EDIT_COST);
       }
     }
-    const following = language.next;
+
     for (const beam of beams) {
       for (const word of completions(index, beam.prefix, PER_PREFIX)) add(word, beam.spatial);
       // N233: words the n-gram expects after the previous two, even when they are rarer overall.
+      const following = language.matching?.(beam.prefix) ?? language.next;
       for (const word of following) if (word.startsWith(beam.prefix) && model.frequency.has(word)) add(word, beam.spatial);
       // Words the bigram or the conversation favour, even when they are rarer overall.
       for (const word of bigramCount.get(previous)?.keys() ?? []) {
         if (word.startsWith(beam.prefix) && model.frequency.has(word)) add(word, beam.spatial);
       }
       // The conversation's own words, including names the lexicon does not list (only when typed exactly so far).
-      for (const word of language.next) {
+      for (const word of following) {
         if (word.startsWith(beam.prefix) && (model.frequency.has(word) || beam.prefix === lower)) add(word, beam.spatial);
       }
     }

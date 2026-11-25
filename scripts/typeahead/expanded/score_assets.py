@@ -81,7 +81,7 @@ def model_file(path):
         legacy = Legacy(data)
         return legacy.vocab, legacy, 3
     magic, order, size, header, total_rows, total_edges, vocab_bytes = struct.unpack_from('<8s6I', data)
-    if magic != b'LEMMANG2' or header != 32:
+    if magic not in (b'LEMMANG2', b'LEMMANG3') or header != 32:
         raise ValueError('Invalid word model asset')
     read = sections(data)
     vocab = read('u1', vocab_bytes).tobytes().decode('utf8').split('\n')
@@ -92,7 +92,11 @@ def model_file(path):
         offsets = read('<u4', rows + 1)
         alpha = read('<f4', rows)
         words = read('<u2', edges)
-        probability = read('<f4', edges)
+        if magic == b'LEMMANG3':
+            code = read('<u2', edges)
+            probability = np.where(code == 65535, 0., np.exp2(-code.astype('float64') / 2048)).astype('<f4')
+        else:
+            probability = read('<f4', edges)
         decoded = {}
         for i, state in enumerate(history):
             lo, hi = offsets[i:i+2]

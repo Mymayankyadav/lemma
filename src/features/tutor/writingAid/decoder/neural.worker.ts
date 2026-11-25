@@ -1,3 +1,4 @@
+import {ANDROID_TIER, androidFp16Weights, installedAndroidPack, readInstalledFile} from './androidPack';
 import {ghostQualified, neuralCalibrationFingerprint} from '../calibration';
 import type {InferenceSession, Tensor} from 'onnxruntime-web/wasm';
 import {loadTutorModelWasm} from '../../input/modelAssets';
@@ -19,6 +20,8 @@ export interface NeuralRequest {
   readonly trial?: boolean;
   readonly strictTrial?: boolean;
 }
+export interface LabCase {labId: string; ids: number[]; stablePrefix?: number; previousIds?: number[]}
+export interface LabResult {labId: string; top?: number[]; cachedTop?: number[]; retokenizedTop?: number[]; prefillMs?: number; decodeMs?: number; provider?: string; error?: string}
 export interface NeuralReply {
   readonly id: number;
   readonly assetSha256?: string;
@@ -51,8 +54,8 @@ interface State {
 type Admission = ReturnType<typeof neuralColdTransfer> &
   Readonly<{provider: NeuralBackend; result: 'selected' | 'cold-budget' | 'load-failed'}>;
 const scope = self as unknown as {
-  onmessage: ((event: MessageEvent<NeuralRequest | {reset: true} | {prepare: true; trial: boolean; strictTrial?: boolean}>) => void) | null;
-  postMessage: (reply: NeuralReply) => void;
+  onmessage: ((event: MessageEvent<LabCase | NeuralRequest | {reset: true} | {prepare: true; trial: boolean; strictTrial?: boolean}>) => void) | null;
+  postMessage: (reply: NeuralReply | LabResult) => void;
 };
 let model: Promise<ActiveModel | undefined> | undefined;
 let modelLoaded = false;
@@ -70,7 +73,7 @@ async function load(tier: NeuralTier, manifest: NeuralManifest, device: NeuralBa
   const loadFile = (file: typeof manifest.files.prefill) => {
     const current = downloads.get(file.path);
     if (current) return current;
-    const verified = fetchVerifiedTypeaheadFile(tier, file, 48 * 1024 * 1024);
+    const verified = tier === ANDROID_TIER ? readInstalledFile(file) : fetchVerifiedTypeaheadFile(tier, file, 48 * 1024 * 1024);
     downloads.set(file.path, verified);
     return verified;
   };
@@ -109,14 +112,17 @@ async function load(tier: NeuralTier, manifest: NeuralManifest, device: NeuralBa
 }
 
 async function available(trial = false, strictTrial = false): Promise<ActiveModel | undefined> {
-  const gpu = (navigator as Navigator & {gpu?: {requestAdapter: () => Promise<{info?: {isFallbackAdapter?: boolean}} | null>}}).gpu;
+  const gpu = (navigator as Navigator & {gpu?: {requestAdapter: () => Promise<{features?: {has(name: string): boolean}; info?: {isFallbackAdapter?: boolean}} | null>}}).gpu;
   const adapter = await Promise.race([gpu?.requestAdapter().catch(() => null), new Promise<null>(resolve => setTimeout(() => resolve(null), 300))]);
   const gpuAvailable = Boolean(adapter && (trial && !strictTrial || adapter.info?.isFallbackAdapter !== true));
   const jspi = typeof WebAssembly !== 'undefined' && 'Suspending' in WebAssembly && 'promising' in WebAssembly;
-  for (const tier of ['neural-large-v2', 'neural-v2'] as const) {
+  const tiers: NeuralTier[] = ['neural-large-v2', 'neural-v2'];
+  if (await installedAndroidPack()) tiers.unshift(ANDROID_TIER);
+  for (const tier of tiers) {
     const manifest = await neuralManifest(tier);
     if (!manifest) continue;
-    const device = selectNeuralBackend(manifest, tier, gpuAvailable, jspi, trial, strictTrial);
+    const eligibleGpu = gpuAvailable && (tier !== ANDROID_TIER || adapter?.info?.isFallbackAdapter !== true && adapter?.features?.has('shader-f16') === true);
+    const device = selectNeuralBackend(manifest, tier, eligibleGpu, jspi, trial, strictTrial || tier === ANDROID_TIER);
     if (!device) {
       const blocked = trial && strictTrial && selectNeuralBackend(manifest, tier, gpuAvailable, jspi, trial);
       if (blocked && !admission) admission = {provider: blocked, result: 'cold-budget', ...neuralColdTransfer(manifest, tier, blocked)};
@@ -172,11 +178,11 @@ function dispose(state?: State): void {
   for (const tensor of Object.values(state?.tensors ?? {})) tensor.dispose();
 }
 
-async function stateFor(model: ActiveModel, ids: readonly number[], current: () => boolean): Promise<State> {
-  let state = cached;
+async function stateFor(model: ActiveModel, ids: readonly number[], current: () => boolean,
+  prior: State | undefined, dropStale?: () => void): Promise<State> {
+  let state = prior;
   if (!state || state.ids.length > ids.length || !state.ids.every((id, index) => ids[index] === id)) {
-    dispose(state);
-    cached = undefined;
+    dropStale?.();
     return infer(model, ids); // Earlier edits and rollover prefill absolute positions.
   }
   let owned = false;
@@ -219,7 +225,7 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   // Leave room for complete candidate words before absolute-position rollover.
   const ids = promptIds(active.tokenizer, stable, active.manifest.context - 36);
   reusedPrefix = Boolean(cached?.ids.every((token, index) => token === ids[index]));
-  const state = await stateFor(active, ids, current);
+  const state = await stateFor(active, ids, current, cached, () => {dispose(cached); cached = undefined;});
   // One completed prefix can warm the next edit even after this slate's
   // deadline. stateFor checks the exact tokens again before reusing it.
   if (!sameEpoch()) {
@@ -352,9 +358,52 @@ function prepare(trial?: boolean, strictTrial?: boolean): Promise<ActiveModel | 
   return model ??= available(trial, strictTrial).then(active => {modelLoaded = Boolean(active); return active;});
 }
 
+let labEnabled = false;
+async function verifyLabCase(test: LabCase) {
+  const active = await prepare();
+  const {ids} = test;
+  if (!labEnabled || active?.manifest.files.weights?.sha256 !== androidFp16Weights ||
+      !Array.isArray(ids) || !ids.length || ids.length > 512 || ids.some(id => !Number.isInteger(id) || id < 0 || id >= active.manifest.vocabSize)) {
+    throw new Error('Unqualified lab input or model');
+  }
+  const top = (state: State) => {
+    if (!state.logs.every(Number.isFinite)) throw new Error('Non-finite logits');
+    return Array.from(state.logs.keys()).sort((a,b) => state.logs[b] - state.logs[a] || a-b).slice(0,3);
+  };
+  let full: State | undefined, prefix: State | undefined, tail: State | undefined;
+  try {
+    const start = performance.now();
+    full = await infer(active, ids);
+    const prefillMs = performance.now() - start;
+    const result: LabResult = {labId: test.labId, top: top(full), prefillMs, provider: active.provider};
+    if (ids.length > 1) {
+      const length = ids.length - 1;
+      prefix = await infer(active, ids.slice(0,length));
+      const t = performance.now();
+      tail = await stateFor(active, ids, () => true, prefix);
+      result.decodeMs = performance.now() - t;
+      result.cachedTop = top(tail);
+    }
+    if (test.previousIds) {
+      if (!test.previousIds.length || test.previousIds.length > 512 || test.previousIds.some(id => !Number.isInteger(id) || id < 0 || id >= active.manifest.vocabSize)) throw new Error('Invalid prior context');
+      const previous = await infer(active, test.previousIds);
+      try {
+        const revised = await stateFor(active, ids, () => true, previous);
+        try {result.retokenizedTop = top(revised);} finally {if (revised !== previous) dispose(revised);}
+      } finally {dispose(previous);}
+    }
+    return result;
+  } finally {dispose(full); dispose(prefix); dispose(tail);}
+}
+
 scope.onmessage = event => {
   const message = event.data;
-  if ('prepare' in message) {void prepare(message.trial, message.strictTrial); return;}
+  if ('labId' in message) {
+    if (labEnabled) void verifyLabCase(message).then(reply => scope.postMessage(reply))
+      .catch(() => scope.postMessage({labId: message.labId, error: 'FP16 parity case failed'}));
+    return;
+  }
+  if ('prepare' in message) {labEnabled = Boolean(message.trial && message.strictTrial); void prepare(message.trial, message.strictTrial); return;}
   if ('reset' in message) {
     generation++;
     wordScores.clear();

@@ -72,7 +72,7 @@ export function createNgramClient(): NgramClient | undefined {
     if (!waiter.cancelled) {
       const snapshot = waiter.request.request;
       waiter.resolve({pool: {
-        words: data.pool.words.map(fields => ({...fields, snapshot})),
+        trace: data.pool.trace, words: data.pool.words.map(fields => ({...fields, snapshot})),
         edit: data.pool.edit.map(fields => ({...fields, snapshot})),
         ghost: data.pool.ghost.map(fields => ({...fields, snapshot})),
       }, computeMs: data.computeMs, elapsedMs: performance.now() - waiter.startedAt, assetSha256: data.assetSha256,

@@ -1,4 +1,5 @@
-import {padEdit, type PadEdit} from '../../pad/padEdit';
+import {applyMenuEdit, learnerAuthored, type OriginRange, type MenuEdit} from './menuEdit';
+import {type PadEdit} from '../../pad/padEdit';
 import {sameEditTarget} from '../input/recognitionPolicy';
 import type {TypeaheadArm} from './replayArm';
 import {tutorHint} from './answerAids';
@@ -34,7 +35,10 @@ export interface WritingAidRequest {
   readonly contextKey?: string;
   readonly arm?: TypeaheadArm;
   readonly replayDiagnostics?: boolean;
+  /** Differential test oracle for the eligible pool. */
+  readonly exhaustivePool?: boolean;
   readonly middleEdits?: boolean;
+  readonly acceptedSpans?: readonly OriginRange[];
   readonly aid?: TutorAnswerAid;
   readonly mastery?: number;
   readonly subject?: string;
@@ -54,6 +58,7 @@ export interface WritingAidProposal {
   readonly snapshot: WritingAidRequest;
   /** N221: offered by the n-gram and touch decoder rather than the existing engine. */
   readonly source?: 'decoder' | 'bank' | 'personal' | 'symbol' | 'neural' | 'notation' | 'equation';
+  readonly caret?: number;
   readonly menuPosition?: number;
   readonly score?: number;
   readonly tutorAdjustment?: number;
@@ -70,6 +75,11 @@ export interface WritingAidSuggestions {
 export type WritingAidRefreshSurface = 'words' | 'edit' | 'ghost';
 
 /** The identity is scoped to a single request by the caller. */
+export function proposalEdit(proposal: WritingAidProposal): MenuEdit {
+  const {start, end, insert} = proposal;
+  return {start, end, insert, caret: proposal.caret ?? proposal.snapshot.cursor.end + insert.length - (end - start)};
+}
+
 export function writingAidProposalKey(proposal: WritingAidProposal): string {
   return JSON.stringify([proposal.kind, proposal.start, proposal.end, proposal.before, proposal.insert]);
 }
@@ -145,17 +155,18 @@ export function applyWritingAidProposal(request: WritingAidRequest, proposal: Wr
       cursor.text.slice(start, end) !== before || !insert || insert === before ||
       cursor.text.length - before.length + insert.length > WRITING_AID_LIMIT) return null;
   if (!proposalEligible(request, proposal)) return null;
-  return padEdit(cursor.text.slice(0, start) + insert + cursor.text.slice(end), cursor.end + insert.length - before.length);
+  return applyMenuEdit(cursor.text, proposalEdit(proposal));
 }
 
 /** Direct learner evidence comes from the anchor, never earlier accepted output. */
 export function proposalEligible(request: WritingAidRequest, proposal: WritingAidProposal): boolean {
   const {anchor, cursor} = request;
   const {start, end, insert} = proposal;
-  const authored = anchor ? anchor.text.slice(Math.max(anchor.start, start), Math.min(end, anchor.text.length)) : '';
+  const from = Math.max(anchor?.start ?? start, start), to = Math.min(end, anchor?.caret ?? anchor?.text.length ?? 0, cursor.end);
+  const authored = anchor && learnerAuthored(request.acceptedSpans, from, to) ? anchor.text.slice(from, to) : '';
   const ghostStem = proposal.kind === 'ghost' && anchor && !anchor.continuation
     ? /[\p{L}\p{M}]+$/u.exec(anchor.text.slice(anchor.start, start))?.[0] : undefined;
-  const prefix = authored || ghostStem || '';
+  const prefix = authored || (ghostStem && learnerAuthored(request.acceptedSpans, start - ghostStem.length, start) ? ghostStem : '');
   const prior = cursor.text.slice(0, start);
   const context = {aid: request.aid, mastery: request.mastery, subject: request.subject,
     step: request.step, mode: 'prose' as const, before: prior, prefix};
@@ -176,7 +187,7 @@ export function proposalEligible(request: WritingAidRequest, proposal: WritingAi
 export function continueWritingAidAnchor(
   anchor: WritingAidAnchor | null, proposal: WritingAidProposal, result: PadEdit,
 ): WritingAidAnchor | null {
-  if (!anchor || anchor.continuation || proposal.kind !== 'word' ||
+  if (!anchor || anchor.continuation || proposal.kind !== 'word' || proposal.source === 'bank' && /\S\s+\S/u.test(proposal.insert) ||
       proposal.snapshot.anchor?.text !== anchor.text || proposal.snapshot.anchor.start !== anchor.start ||
       !atEnd(result) || !result.text.startsWith(anchor.text) || result.text === anchor.text) return null;
   const expected = applyWritingAidProposal(proposal.snapshot, proposal);

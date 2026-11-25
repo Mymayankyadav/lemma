@@ -1,5 +1,7 @@
 import {selectWritingAidPool, type WritingAidPool} from './poolRanking';
 export {applyNeuralReply, selectWritingAidPool, type WritingAidPool} from './poolRanking';
+import type {WordTrace} from './menuRanking';
+import {proseSymbol} from './menuEdit';
 import {hasOpenLiteral} from './eligibility';
 import {personalContext} from './adaptation';
 import {effectiveAidLevel} from '../../../../supabase/functions/_shared/tutor-answer-aids';
@@ -8,7 +10,7 @@ import {plainProse, trailingSpace, wordAtCaret} from '../input/completionPolicy'
 import {tutorMathContext} from '../input/symbolEdit';
 import {
   ALL_WRITING_AID_SURFACES, NO_WRITING_AID, WRITING_AID_LIMIT, canSuggestWritingAid, proposalEligible, writingAidProposal, writingAidProposalKey,
-  type WritingAidProposal, type WritingAidRequest, type WritingAidSuggestions,
+  proposalEdit, type WritingAidProposal, type WritingAidRequest, type WritingAidSuggestions,
 } from './policy';
 import {writingAidVocabularyStrength, type WritingAidModel} from './learning';
 import {makeStudyInput} from './vendor/study_input.mjs';
@@ -22,7 +24,7 @@ import compactRanks from './vendor/compact-ranks.json';
 import speedPolicy from './vendor/speed-policy.json';
 import {decodeWord, decoderSymbols, prepareLanguage, type LanguageDistribution, typeaheadActive, typeaheadRequested, writingDecoderReady} from './decoder/ngramSpatial';
 import {atSentenceStart, capitalise, grammarAllows} from './grammar';
-import {contextualWording, tutorHint, type AidRankingContext} from './answerAids';
+import {aidScopeSpecificity, contextualWording, tutorHint, type AidRankingContext} from './answerAids';
 
 // Lemma already offers these spellings. The pinned rank asset includes
 // preimage, while the general-purpose dictionary omits both forms.
@@ -79,7 +81,7 @@ function startOfWindow(request: WritingAidRequest, authored: string, start: numb
 
 function keyProposals(
   request: WritingAidRequest, text: string, authoredText: string, start: number, model?: WritingAidModel,
-  observeLanguage?: (language: LanguageDistribution) => void,
+  observeLanguage?: (language: LanguageDistribution) => void, trace?: WordTrace[],
 ): WritingAidProposal[] {
   const {cursor, mode, anchor} = request;
   if (mode === 'off') return [];
@@ -103,57 +105,77 @@ function keyProposals(
   const result = aid.predict(text, {mode, surface: 'keys', origin: 'learner', authoredText});
   const proposals: WritingAidProposal[] = [];
   const hintContext: AidRankingContext = {aid: request.aid, mastery: request.mastery, subject: request.subject,
-    step: request.step, mode: 'prose', before, prefix: prefix ?? ''};
+    step: request.step, mode: 'prose', before, prefix: prefix ?? '', acceptedSpans: request.acceptedSpans,
+    anchorStart: anchor?.start, allowPhraseTaps: v2 && !anchor?.continuation};
   const personal = model && v2 ? personalContext(model.adaptation, authoredText.slice(0, rangeStart - start), request.subject) : undefined;
   const aidActive = request.aid && effectiveAidLevel(request.aid.level, request.mastery) !== 'none';
-  const explicit = v2 && aidActive ? [...request.aid?.terms ?? [], ...request.aid?.ranking?.hints?.flatMap(hint =>
-    hint.kind === 'word' ? [hint.entry, ...hint.aliases ?? []] : []) ?? []]
+  const hintWords = request.aid?.ranking?.hints?.flatMap(hint => hint.kind === 'word' && aidScopeSpecificity(hint, hintContext) !== undefined
+    ? [hint.entry, ...hint.aliases ?? []] : []) ?? [];
+  const explicit = v2 && aidActive ? [...new Set([...request.aid?.terms ?? [], ...hintWords])]
     .filter(word => LEXICAL_WORD.test(word) && word.length <= MAX_WORD && (prefix ?
-      word.toLowerCase().startsWith(prefix.toLowerCase()) : tutorHint(hintContext, word).role === 'given')) : [];
+      word.toLowerCase().startsWith(prefix.toLowerCase()) : hintWords.includes(word) || tutorHint(hintContext, word).role === 'given')) : [];
   const language = prepareLanguage(before, {personal, extraLexical: explicit, question: request.question, authored: authoredText.slice(0, rangeStart - start), subject: request.subject});
   observeLanguage?.(language);
   const bank = contextualWording(hintContext);
   const inPhrase = bank.some(entry => entry.progress > 0);
   // The spatial keyboard covers ASCII touch keys. Copy paths also preserve
   // mathematical names and compound terms from the actual question.
-  const copied = v2 && prefix ? language.next.filter(word => /[^a-z]/u.test(word) && LEXICAL_WORD.test(word) &&
+  const copied = v2 && prefix ? (language.matching?.(prefix.toLowerCase()) ?? language.next).filter(word => /[^a-z]/u.test(word) && LEXICAL_WORD.test(word) &&
     word.startsWith(prefix.toLowerCase())).map(word => language.forms.get(word) ?? word) : [];
   const sentenceStart = v2 && !prefix && atSentenceStart(before);
   // At a boundary inside a protected gap (let, take, by, =…) the next thing is the learner's own choice: no words.
   const wordsAllowed = !(v2 && !prefix && protectedGap);
-  for (const {word: candidate, kind, risk, correction, decoded: fromDecoder, score} of wordsAllowed ? decoded(result.keys,
-    cursor.text.slice(0, rangeStart), prefix ?? '', rangeStart, text, authoredText, language, v2)
-    .concat([...explicit, ...copied].map(word => ({word, decoded: true, score: language.score(word.toLowerCase())}))) : []) {
-    const word = sentenceStart ? capitalise(candidate) : candidate;
-    if (v2 && !grammarAllows(before, word)) continue;
-    if (word.length > MAX_WORD || !(v2 ? LEXICAL_WORD : LETTERS).test(word) || kind === 'transcription' || proposals.some(item => item.label === word)) continue;
-    // N221: a decoded correction replaces the typed letters with the word their taps were nearest to. It is only a
-    // choice in the strip, never applied by itself, and never a proof word or a word in a protected gap.
-    if (correction) {
-      if (!prefix || prefix.length < 2 || mode === 'strict' || protectedGap || risk === 'logic' ||
-          RISKY_PERSONAL_WORD.test(word) || word.toLowerCase() === prefix.toLowerCase() || word.length < prefix.length) continue;
-    } else if (v2 ? prefix && (!word.toLowerCase().startsWith(prefix.toLowerCase()) || word === prefix)
-      : prefix ? !(fromDecoder ? word.toLowerCase().startsWith(prefix.toLowerCase()) : word.startsWith(prefix)) ||
-        word === prefix : !FILLERS.has(word.toLowerCase())) continue;
-    // A wider pool must not promote a proof method, property, quantifier, or
-    // polarity from a weak stem merely to fill an alternative slot.
-    if (!v2 && (risk === 'logic' || RISKY_PERSONAL_WORD.test(word) || PROOF_STEERING.test(word)) &&
-        (!prefix || prefix.length < 5 || prefix.length / word.length < .8)) continue;
-    if (protectedGap && prefix && prefix.length / word.length < .6) continue;
-    if (mode === 'strict' && (!prefix || prefix.length < 4)) continue;
-    const insert = word + spacer;
-    if (cursor.text.length - (prefix?.length ?? 0) + insert.length > WRITING_AID_LIMIT) continue;
-    const proposal = writingAidProposal(request, 'word', rangeStart, cursor.end, insert, word);
-    const hint = tutorHint(hintContext, word);
-    const offered: WritingAidProposal = {...proposal, source: fromDecoder ? 'decoder' : undefined,
-      role: hint.role, tutorAdjustment: hint.adjustment, logic: v2 && risk === 'logic',
-      score: v2 ? (score ?? language.score(word.toLowerCase())) + hint.adjustment : undefined};
-    proposals.push(offered);
+  const lexical = wordsAllowed ? decoded(result.keys, before, prefix ?? '', rangeStart, text, authoredText, language, v2) : [];
+  const explicitCandidates = wordsAllowed ? [...explicit, ...copied].map(word =>
+    ({word, decoded: true, score: language.score(word.toLowerCase())})) : [];
+  const seenLabels = new Set<string>();
+  let first64Floor = Infinity, admitted = 0;
+  for (const [batch, candidates] of [lexical, explicitCandidates].entries()) {
+    for (const {word: candidate, kind, risk, correction, decoded: fromDecoder, score} of candidates as readonly KeyCandidate[]) {
+      // All remaining lexical scores are ordered. Even the largest tutor reward cannot reach the first 64
+      // admitted distinct edits, including their maximum possible phrase penalty. Explicit terms have their own pass.
+      if (v2 && !request.exhaustivePool && batch === 0 && admitted >= 64 && score !== undefined &&
+          score + Math.log(2) < first64Floor) break;
+      const word = sentenceStart ? capitalise(candidate) : candidate;
+      const raw = trace && {start: rangeStart, end: cursor.end, insert: word + spacer, caret: rangeStart + word.length + spacer.length, source: 'word' as const, eligible: false};
+      if (raw) trace!.push(raw);
+      if (v2 && !grammarAllows(before, word)) continue;
+      if (word.length > MAX_WORD || !(v2 ? LEXICAL_WORD : LETTERS).test(word) || kind === 'transcription' || seenLabels.has(word)) continue;
+      // N221: a decoded correction replaces the typed letters with the word their taps were nearest to. It is only a
+      // choice in the strip, never applied by itself, and never a proof word or a word in a protected gap.
+      if (correction) {
+        if (!prefix || prefix.length < 2 || mode === 'strict' || protectedGap || risk === 'logic' ||
+            RISKY_PERSONAL_WORD.test(word) || word.toLowerCase() === prefix.toLowerCase() || word.length < prefix.length) continue;
+      } else if (v2 ? prefix && (!word.toLowerCase().startsWith(prefix.toLowerCase()) || word === prefix)
+        : prefix ? !(fromDecoder ? word.toLowerCase().startsWith(prefix.toLowerCase()) : word.startsWith(prefix)) ||
+          word === prefix : !FILLERS.has(word.toLowerCase())) continue;
+      // A wider pool must not promote a proof method, property, quantifier, or
+      // polarity from a weak stem merely to fill an alternative slot.
+      if (!v2 && (risk === 'logic' || RISKY_PERSONAL_WORD.test(word) || PROOF_STEERING.test(word)) &&
+          (!prefix || prefix.length < 5 || prefix.length / word.length < .8)) continue;
+      if (protectedGap && prefix && prefix.length / word.length < .6) continue;
+      if (mode === 'strict' && (!prefix || prefix.length < 4)) continue;
+      const insert = word + spacer;
+      if (cursor.text.length - (prefix?.length ?? 0) + insert.length > WRITING_AID_LIMIT) continue;
+      const proposal = writingAidProposal(request, 'word', rangeStart, cursor.end, insert, word);
+      const hint = tutorHint(hintContext, word);
+      const offered: WritingAidProposal = {...proposal, source: fromDecoder ? 'decoder' : undefined,
+        role: hint.role, tutorAdjustment: hint.adjustment, logic: v2 && risk === 'logic',
+        score: v2 ? (score ?? language.score(word.toLowerCase())) + hint.adjustment : undefined};
+      seenLabels.add(word);
+      if (!proposalEligible(request, offered)) continue;
+      if (raw) raw.eligible = true;
+      if (batch === 0 && admitted < 64 && offered.score !== undefined) {
+        first64Floor = Math.min(first64Floor, offered.score - (inPhrase ? Math.log(2) : 0));
+        admitted++;
+      }
+      proposals.push(offered);
+    }
   }
   for (const {text: word, phrase} of bank) {
     if (cursor.text.length - (prefix?.length ?? 0) + word.length + 1 > WRITING_AID_LIMIT || anchor?.continuation && !prefix) continue;
     const hint = tutorHint(hintContext, word);
-    const lm = language.score(word.toLowerCase().replace(/[.,;:!?]+$/u, ''));
+    const lm = language.score(word.split(/\s+/u)[0].toLowerCase().replace(/[.,;:!?]+$/u, ''));
     const score = (Number.isFinite(lm) ? lm : Math.log(.002)) + Math.log(4) / phrase.trim().split(/\s+/u).length + hint.adjustment;
     const proposal: WritingAidProposal = {...writingAidProposal(request, 'word', rangeStart, cursor.end, word + spacer, word),
       source: 'bank', role: hint.role ?? 'neutral', tutorAdjustment: hint.adjustment, score};
@@ -167,13 +189,18 @@ function keyProposals(
     const ambient = declared.filter(symbol => symbol.symbol === subject && symbol.role === 'set' && symbol.ambient && !symbol.binder).map(symbol => symbol.ambient);
     const matchingAmbient = [...new Set(ambient)];
     if (matchingAmbient.length === 1 && matchingAmbient[0] && !symbols.includes(matchingAmbient[0])) symbols.push(matchingAmbient[0]);
+    for (const item of declared) if (!item.binder && !symbols.includes(item.symbol)) symbols.push(item.symbol);
     const modeled = symbols.map((symbol, index) => {
       const hint = tutorHint(hintContext, symbol);
       const weight = (matchingAmbient.length === 1 && matchingAmbient[0] === symbol ? 4 : 1) / (index + 1);
-      const proposal: WritingAidProposal = {...writingAidProposal(request, 'word', rangeStart, cursor.end, symbol + spacer, symbol),
-        source: 'symbol', role: hint.role};
+      const proposal: WritingAidProposal = {...writingAidProposal(request, 'word', rangeStart, cursor.end, proseSymbol(before, symbol, spacer, request.acceptedSpans), symbol),
+        source: 'symbol', role: hint.role, tutorAdjustment: hint.adjustment};
       return {weight, proposal, adjustment: hint.adjustment};
-    }).filter(({proposal}) => proposalEligible(request, proposal));
+    }).filter(({proposal}) => {
+      const eligible = proposalEligible(request, proposal);
+      if (trace && !eligible) trace.push({...proposalEdit(proposal), source: 'symbol', eligible});
+      return eligible;
+    });
     const total = modeled.reduce((sum, {weight}) => sum + weight, 0);
     for (const {weight, proposal, adjustment} of modeled) {
       proposals.push({...proposal, score: language.mathLog + Math.log(weight / total) + adjustment});
@@ -199,6 +226,10 @@ function keyProposals(
     }
   }
   const eligible = proposals.filter(proposal => proposalEligible(request, proposal));
+  if (trace) {
+    const allowed = new Set(eligible);
+    for (const item of proposals.filter(item => item.source && item.source !== 'decoder')) trace.push({...proposalEdit(item), source: item.source === 'decoder' ? 'word' : item.source ?? 'word', eligible: allowed.has(item)});
+  }
   if (!v2 && !bank.length) return eligible;
   const deduped = new Map<string, WritingAidProposal>();
   for (const candidate of eligible) {
@@ -234,7 +265,7 @@ function decoded(keys: readonly KeyCandidate[], before: string, prefix: string, 
   const own = new Map(keys.filter(key => key.kind !== 'transcription').map(key => [key.word.toLowerCase(), key]));
   // A correctly spelled word (in the larger spelling list too) is completed, never corrected into another word.
   const spelled = writtenWord(prefix.toLowerCase());
-  const ranked = decodeWord(before, prefix, start, [...own.keys()], v2 ? 96 : 12, language).filter(item => !(spelled && item.correction));
+  const ranked = decodeWord(before, prefix, start, [...own.keys()], v2 ? Infinity : 12, language).filter(item => !(spelled && item.correction));
   const seen = new Set<string>();
   const merged: KeyCandidate[] = [];
   for (const item of ranked) {
@@ -245,6 +276,12 @@ function decoded(keys: readonly KeyCandidate[], before: string, prefix: string, 
       : {word: item.word, ...(item.risk ? {risk: item.risk} : {}), correction: item.correction, decoded: true, score: item.score});
   }
   for (const key of keys) if (!seen.has(key.word.toLowerCase())) merged.push(key);
+  if (v2) {
+    for (const [index, item] of merged.entries()) {
+      if (item.score === undefined) merged[index] = {...item, score: language.score(item.word.toLowerCase())};
+    }
+    merged.sort((a, b) => b.score! - a.score!);
+  }
   return merged;
 }
 
@@ -329,8 +366,9 @@ export function predictWritingAidPool(request: WritingAidRequest, model?: Writin
   const authoredText = anchor.text.slice(start, anchor.caret ?? anchor.text.length);
   if (!authoredText.trim()) return EMPTY_POOL;
   const text = cursor.text.slice(start, cursor.end);
+  const trace: WordTrace[] | undefined = request.replayDiagnostics ? [] : undefined;
   return {
-    words: surfaces.words ? keyProposals(request, text, authoredText, start, model, observeLanguage) : [],
+    trace, words: surfaces.words ? keyProposals(request, text, authoredText, start, model, observeLanguage, trace) : [],
     ghost: surfaces.ghost && cursor.end === cursor.text.length && !typeaheadRequested() ? ghostProposals(request, text, authoredText).filter(proposal => proposalEligible(request, proposal)) : [],
     edit: surfaces.replace || surfaces.correction ? editProposals(request, authoredText, start).filter(proposal => proposalEligible(request, proposal)) : [],
   };

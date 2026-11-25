@@ -374,16 +374,15 @@ test('writing assistance shows local weekly evidence and a reset control', async
 test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', async ({page}, info) => {
   const extended = process.env.LEMMA_TYPEAHEAD_PERF_EXTENDED === '1';
   const expectedAsset = process.env.LEMMA_TYPEAHEAD_EXPECTED_ASSET;
-  test.setTimeout(extended ? 300_000 : 90_000);
+  test.setTimeout(extended ? 900_000 : 120_000);
   const answer = await answerField(page, demo);
   const keyboard = page.getByRole('group', {name: 'Answer keyboard', exact: true});
   await expect(keyboard).toHaveAttribute('data-decoder', 'ready', {timeout: 20_000});
-  const key = keyboard.getByRole('button', {name: 'q', exact: true});
   const client = await page.context().newCDPSession(page);
   await client.send('Emulation.setCPUThrottlingRate', {rate: 4});
   type Sample = {frameMs: number; domMs: number; clickDelayMs: number; physicalMs: number; presentationMs?: number;
     worker?: {computeMs: number; elapsedMs: number; assetSha256?: string; requests: number; dropped: number; failures: number; timeouts: number}};
-  const measurement: Record<string, {samples: Sample[]; p95: number; p99: number; max: number; domP95: number; workerP95: number; presentationSamples: number}> = {};
+  const measurement: Record<string, {samples: Sample[]; p95: number; p99: number; max: number; domP95: number; workerP95: number; roundTripP95: number; presentationP95?: number; presentationSamples: number}> = {};
   const quantile = (sorted: number[], value: number) => sorted[Math.ceil(value * sorted.length) - 1] ?? 0;
   const sorted = (values: number[]) => values.sort((a, b) => a - b);
 
@@ -428,27 +427,41 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
 
   function record(name: string, samples: Sample[]) {
     const warm = samples.slice(1);
-    const frame = sorted(warm.map(sample => sample.presentationMs ?? sample.frameMs));
+    const frame = sorted(warm.map(sample => sample.frameMs));
+    const presented = sorted(warm.flatMap(sample => sample.presentationMs === undefined ? [] : [sample.presentationMs]));
     measurement[name] = {samples, p95: quantile(frame, .95), p99: quantile(frame, .99), max: frame.at(-1) ?? 0,
       domP95: quantile(sorted(warm.map(sample => sample.domMs)), .95),
       workerP95: quantile(sorted(warm.flatMap(sample => sample.worker ? [sample.worker.computeMs] : [])), .95),
-      presentationSamples: warm.filter(sample => sample.presentationMs !== undefined).length};
+      roundTripP95: quantile(sorted(warm.flatMap(sample => sample.worker ? [sample.worker.elapsedMs] : [])), .95),
+      presentationP95: presented.length ? quantile(presented,.95) : undefined, presentationSamples: presented.length};
   }
 
-  for (const [name, draft] of [['empty', ''], ['eightEquations', Array.from({length: 8}, (_, at) => '$x_' + at + '=1$').join(' ') + ' ']]) {
+  const equations = Array.from({length: 8}, (_, at) => '$x_' + at + '=1$').join(' ') + ' ';
+  const scenarios = [
+    {name:'empty', draft:'', key:'q', suffix:0, add:'q', remove:0},
+    {name:'eightEquations', draft:equations, key:'q', suffix:0, add:'q', remove:0},
+    {name:'sentenceBoundary', draft:'We finished.', key:'Space', suffix:0, add:' ', remove:0},
+    {name:'deletePrefix', draft:'We use the lengt', key:'Delete', suffix:0, add:'', remove:1},
+    {name:'interiorPrefix', draft:'We use the no here.', key:'t', suffix:6, add:'t', remove:0},
+  ];
+  for (const scenario of scenarios) {
     const samples: Sample[] = [];
-    for (let sample = 0; sample < (extended ? 101 : 20); sample++) {
-      await answer.fill(draft);
+    const key = keyboard.getByRole('button', {name:scenario.key, exact:true});
+    for (let sample = 0; sample < (extended ? 101 : 10); sample++) {
+      await answer.fill(scenario.draft);
       await answer.press('End');
-      const before = await answer.evaluate(node => node.textContent);
-      const timing = await tap(key, '[aria-label="Your answer"]', before + 'q');
+      for (let i=0; i<scenario.suffix; i++) await answer.press('ArrowLeft');
+      const before = await answer.evaluate(node => node.textContent ?? '');
+      const caret = before.length - scenario.suffix;
+      const expected = before.slice(0,caret-scenario.remove) + scenario.add + before.slice(caret);
+      const timing = await tap(key, '[aria-label="Your answer"]', expected);
       const diagnostic = await page.waitForFunction(() => (performance.getEntriesByName('lemma.typeahead.ngram').at(-1) as PerformanceMark | undefined)?.detail,
         undefined, {timeout: sample ? 2500 : 12_000});
       const worker = await diagnostic.jsonValue() as NonNullable<Sample['worker']>;
       if (expectedAsset) expect(worker.assetSha256, 'verified n-gram asset used by timing worker').toBe(expectedAsset);
       samples.push({...timing, worker});
     }
-    record(name, samples);
+    record(scenario.name, samples);
   }
 
   await page.evaluate(() => {
@@ -472,7 +485,7 @@ test('reports tap-to-paint for an empty and eight-equation draft at 4× CPU', as
   const path = info.outputPath('tap-to-paint-4x.json');
   await writeFile(path, JSON.stringify(measurement, null, 2));
   await info.attach('tap-to-paint-4x', {contentType: 'application/json', path});
-  console.log('Typeahead tap-to-paint (4× CPU):', Object.fromEntries(Object.entries(measurement).map(([name, {samples, p95, p99, max, domP95, workerP95, presentationSamples}]) =>
+  console.log('Typeahead tap-to-paint (4× CPU):', Object.fromEntries(Object.entries(measurement).map(([name, {samples, p95, p99, max, domP95, workerP95, roundTripP95, presentationP95, presentationSamples}]) =>
     [name, {warmSamples: samples.length - 1, tapP95Ms: p95, tapP99Ms: p99, tapMaxMs: max, domP95Ms: domP95,
-      workerP95Ms: workerP95, presentationSamples, asset: samples.at(-1)?.worker?.assetSha256}])));
+      workerP95Ms: workerP95, roundTripP95Ms: roundTripP95, presentationP95Ms: presentationP95, presentationSamples, asset: samples.at(-1)?.worker?.assetSha256}])));
 });

@@ -1,3 +1,4 @@
+import {AndroidModelSettings} from './AndroidModelSettings';
 import {isFlagOn} from '../../../flags';
 import {readWritingAidWeek} from './adaptation';
 import {useId} from 'react';
@@ -33,6 +34,7 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
   return <section className="writing-aid-settings" aria-label="Writing aid settings">
     {showTitle && <h2 className="v7-eyebrow">Writing aid</h2>}
     <p>Suggestions are prepared on this device. Your draft changes when you choose a suggestion.</p>
+    {isFlagOn('typeaheadV2') && <AndroidModelSettings/>}
     <fieldset disabled={!available}>
       <legend>Suggestion mode</legend>
       {WRITING_AID_MODES.map(value => {

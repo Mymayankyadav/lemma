@@ -8,6 +8,7 @@ import {proposalEligible, writingAidProposal, writingAidProposalKey, WRITING_AID
 const LEXICAL_WORD = /^[\p{L}\p{M}]+(?:['’\p{Pd}][\p{L}\p{M}]+)*$/u;
 
 export interface WritingAidPool {
+  readonly trace?: readonly import('./menuRanking').WordTrace[];
   readonly words: readonly WritingAidProposal[];
   readonly ghost: readonly WritingAidProposal[];
   readonly edit: readonly WritingAidProposal[];
@@ -92,5 +93,5 @@ export function applyNeuralReply(pool: WritingAidPool, request: WritingAidReques
       source: 'neural', score: reply.continuation.logProbability};
     if (proposalEligible(request, proposal)) ghost = [proposal];
   }
-  return {words: words.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity)).slice(0, 64), ghost, edit: pool.edit};
+  return {...pool, words: words.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity)).slice(0, 64), ghost, edit: pool.edit};
 }

@@ -136,10 +136,10 @@ class Reference:
         return self.unigram[word] * factor
 
 
-def row_bytes(n, histories, edges):
+def row_bytes(n, histories, edges, edge_bits=32):
     def align(size):
         return (size + 3) // 4 * 4
-    return 8 + align(histories * (n - 1) * 2) + 4 * (histories + 1) + 4 * histories + align(edges * 2) + edges * 4
+    return 8 + align(histories * (n - 1) * 2) + 4 * (histories + 1) + 4 * histories + align(edges * 2) + align(edges * (edge_bits // 8))
 
 
 def entropy_cost(prob, lower, backoff, omitted_lower_mass):
@@ -149,11 +149,11 @@ def entropy_cost(prob, lower, backoff, omitted_lower_mass):
                                                            if old_mass else 0.)
 
 
-def high_priority(rows, n, budget):
+def high_priority(rows, n, budget, edge_bits=32):
     """Bound selection memory and account for row overhead instead of charging each edge for a row."""
     # Keep the highest priorities that could possibly fit, assuming no history overhead.
     candidates = []
-    max_edges = budget // 6
+    max_edges = budget // (2 + edge_bits // 8)
     if max_edges == 0:
         for _ in rows:
             pass
@@ -167,13 +167,23 @@ def high_priority(rows, n, budget):
     result = {}
     edge_count = 0
     for _, history, word, probability in sorted(candidates, reverse=True):
-        if row_bytes(n, len(result) + (history not in result), edge_count + 1) <= budget:
+        if row_bytes(n, len(result) + (history not in result), edge_count + 1, edge_bits) <= budget:
             result.setdefault(history, {})[word] = probability
             edge_count += 1
     return result
 
 
-def compile_model(db, vocab, order, limit, pruning, progress=False):
+def log16_code(probability, rounding=round):
+    return min(65535, max(0, rounding(-2048 * math.log2(probability)))) if probability > 0 else 65535
+
+
+def log16_probability(code):
+    return 0. if code == 65535 else f32(2 ** (-code / 2048))
+
+
+def compile_model(db, vocab, order, limit, pruning, progress=False, edge_bits=32):
+    if edge_bits not in (16, 32):
+        raise ValueError('Use 16 or 32 bits per explicit probability')
     rows = dict((from_key(k)[0], count) for k, count in db.execute('SELECT k,n FROM counts1'))
     count = sum(rows.values())
     if count == 0:
@@ -221,14 +231,19 @@ def compile_model(db, vocab, order, limit, pruning, progress=False):
                     yield history_ids, w, probability, priority
                 db.execute(f'INSERT INTO rows{n} VALUES (?,?,?)', (history, b''.join(packed), alpha))
 
-        explicit = high_priority(priorities(), n, row_budgets[n - 2])
+        explicit = high_priority(priorities(), n, row_budgets[n - 2], edge_bits)
         db.commit()
         packed_rows = {}
         for history, values in sorted(explicit.items()):
             packed_edges = {word: f32(prob) for word, prob in values.items()}
+            if edge_bits == 16:
+                packed_edges = {word: log16_probability(log16_code(prob, math.ceil)) for word, prob in values.items()}
+                if len(packed_edges) == len(vocab):
+                    del packed_edges[min(packed_edges, key=packed_edges.get)]
             edge_mass = math.fsum(packed_edges.values())
             if edge_mass >= 1 - 1e-7:
-                packed_edges = {word: f32(prob * (1 - 2e-7) / edge_mass) for word, prob in packed_edges.items()}
+                packed_edges = {word: (log16_probability(log16_code(prob * (1 - 2e-7) / edge_mass, math.ceil)) if edge_bits == 16 else
+                                       f32(prob * (1 - 2e-7) / edge_mass)) for word, prob in packed_edges.items()}
                 edge_mass = math.fsum(packed_edges.values())
             lower_seen = math.fsum(model.probability(history[1:], word) for word in packed_edges)
             if len(packed_edges) == len(vocab):
@@ -257,21 +272,21 @@ def compile_model(db, vocab, order, limit, pruning, progress=False):
         model.rows.append(packed_rows)
         # Leave budget unused by shorter tables available to the highest model order.
         if n < order:
-            row_budgets[-1] += row_budgets[n - 2] - row_bytes(n, len(packed_rows), sum(len(v[0]) for v in packed_rows.values()))
+            row_budgets[-1] += row_budgets[n - 2] - row_bytes(n, len(packed_rows), sum(len(v[0]) for v in packed_rows.values()), edge_bits)
         if progress:
             print('NGRAM PACK ORDER', json.dumps({'order': order, 'tableOrder': n, 'pruning': pruning,
                                                  'seconds': time.monotonic() - started}), flush=True)
     return model, {'maxRowMassError': mass_error, 'discounts': params}, reference
 
 
-def encode(vocab, model):
+def encode(vocab, model, edge_bits=32):
     def padded(data):
         return data + b'\0' * (-len(data) % 4)
     order = len(model.rows)
     rows_count = sum(len(part) for part in model.rows)
     edges_count = sum(len(edges) for part in model.rows for edges, _ in part.values())
     text = '\n'.join(vocab).encode('utf8')
-    out = bytearray(struct.pack('<8s6I', b'LEMMANG2', order, len(vocab), 32, rows_count, edges_count, len(text)))
+    out = bytearray(struct.pack('<8s6I', b'LEMMANG3' if edge_bits == 16 else b'LEMMANG2', order, len(vocab), 32, rows_count, edges_count, len(text)))
     out.extend(padded(text))
     out.extend(struct.pack('<' + 'f' * len(vocab), *model.unigram))
     for part in model.rows[1:]:
@@ -280,7 +295,7 @@ def encode(vocab, model):
             histories.extend(struct.pack('<' + 'H' * len(history), *history))
             for token, prob in sorted(edges.items()):
                 words_.extend(struct.pack('<H', token))
-                probs.extend(struct.pack('<f', prob))
+                probs.extend(struct.pack('<H', log16_code(prob)) if edge_bits == 16 else struct.pack('<f', prob))
             offsets.append(len(words_) // 2)
             alphas.append(alpha)
         out.extend(struct.pack('<II', len(part), offsets[-1]))
@@ -288,7 +303,7 @@ def encode(vocab, model):
         out.extend(struct.pack('<' + 'I' * len(offsets), *offsets))
         out.extend(struct.pack('<' + 'f' * len(alphas), *alphas))
         out.extend(padded(words_))
-        out.extend(probs)
+        out.extend(padded(probs))
     return out
 
 
@@ -385,7 +400,7 @@ def publish_checkpoint(local, published):
     shutil.copytree(local, published)
 
 
-def pack_checkpoint(corpus, checkpoint_dir, outputs, limit, scratch=None):
+def pack_checkpoint(corpus, checkpoint_dir, outputs, limit, scratch=None, edge_bits=32, sqlite_cache_mib=None):
     """Verify input identity and create only the transient probability tables in local scratch."""
     from tempfile import TemporaryDirectory
     metadata = json.loads((checkpoint_dir / 'count-manifest.json').read_text())
@@ -400,6 +415,10 @@ def pack_checkpoint(corpus, checkpoint_dir, outputs, limit, scratch=None):
     cache_kib, memory_limit = scratch_count_cache()
     if memory_limit is None:
         cache_kib = 512 * 1024  # Preserve the two 256 MiB caches when the limit is unknown.
+    if sqlite_cache_mib is not None:
+        if sqlite_cache_mib < 1:
+            raise ValueError("SQLite cache limit must be positive")
+        cache_kib = min(cache_kib, sqlite_cache_mib * 1024)
     rows_cache_kib = max(1, cache_kib // 2)
     counts_cache_kib = max(1, cache_kib - rows_cache_kib)
     with TemporaryDirectory(prefix='lemma-ngram-pack-', dir=scratch) as temp:
@@ -428,7 +447,7 @@ def pack_checkpoint(corpus, checkpoint_dir, outputs, limit, scratch=None):
             for out, order, pruning in outputs:
                 out.mkdir(parents=True, exist_ok=False)
                 progress = metadata['trainTokens'] >= 10_000_000
-                model, stats, reference = compile_model(db, vocab, order, limit, pruning, progress)
+                model, stats, reference = compile_model(db, vocab, order, limit, pruning, progress, edge_bits)
                 started = time.monotonic()
                 stats['validation'] = evaluate(model, reference, lookup, words(corpus, 'validation', kind, subject), order)
                 if progress:
@@ -441,14 +460,14 @@ def pack_checkpoint(corpus, checkpoint_dir, outputs, limit, scratch=None):
                     db.execute(f'DROP TABLE rows{n}')
                 db.commit()
                 asset = out / 'model.bin'
-                asset.write_bytes(encode(vocab, model))
+                asset.write_bytes(encode(vocab, model, edge_bits))
                 if asset.stat().st_size > limit:
                     raise ValueError('Packed asset exceeded its byte budget')
                 (out / 'vocab.json').write_bytes(vocab_file.read_bytes())
                 manifest = {'version': 2, 'kind': kind, 'order': order, 'file': asset.name,
                             'bytes': asset.stat().st_size, 'sha256': file_hash(asset),
                             'vocabSha256': text_hash('\n'.join(vocab)), 'vocabSize': len(vocab),
-                            'subject': subject, 'pruning': pruning, 'metrics': stats,
+                            'subject': subject, 'pruning': pruning, 'edgeBits': edge_bits, 'metrics': stats,
                             'corpusSha256': corpus_hash, 'countsSha256': metadata['countsSha256']}
                 (out / 'manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
                 yield out, manifest
@@ -483,8 +502,18 @@ def main():
     parser.add_argument('--pruning', choices=('count', 'entropy'), required=True)
     parser.add_argument('--subject')
     parser.add_argument('--shared-vocab', type=Path)
+    parser.add_argument('--checkpoint', type=Path, help='Reuse audited counts for a pack-only experiment')
+    parser.add_argument('--sqlite-cache-mib', type=int, help='Combined cache limit for pack-only builds on a shared host')
+    parser.add_argument('--edge-bits', type=int, choices=(16, 32), default=32)
     parser.add_argument('--train-limit', type=int)
     args = parser.parse_args()
+    if args.checkpoint:
+        [(_, manifest)] = pack_checkpoint(args.corpus, args.checkpoint, [(args.out, args.order, args.pruning)],
+                                          args.limit, edge_bits=args.edge_bits, sqlite_cache_mib=args.sqlite_cache_mib)
+        print(json.dumps(manifest, sort_keys=True))
+        return
+    if args.edge_bits != 32:
+        parser.error('--edge-bits 16 requires --checkpoint')
     print(json.dumps(build(args.corpus, args.out, args.order, args.limit, args.vocab_size, args.pruning, args.kind,
                            args.subject, args.shared_vocab, args.train_limit), sort_keys=True))
 

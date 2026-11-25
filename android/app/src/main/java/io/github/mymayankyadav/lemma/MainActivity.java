@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(LemmaNativePlugin.class);
         super.onCreate(savedInstanceState);
+        configureLabDebugging(getIntent());
         applyOrientation(getResources().getConfiguration());
         applyPaper();
         applyTextZoom(getResources().getConfiguration());
@@ -26,7 +27,14 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        configureLabDebugging(intent);
         ShareIntake.capture(this, intent);
+    }
+
+    private void configureLabDebugging(Intent intent) {
+        if (BuildConfig.DEBUG && intent != null && intent.getBooleanExtra("lemmaTypeaheadLab", false)) {
+            android.webkit.WebView.setWebContentsDebuggingEnabled(true);
+        }
     }
 
     @Override

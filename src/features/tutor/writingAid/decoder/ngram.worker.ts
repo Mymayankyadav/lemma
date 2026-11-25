@@ -5,7 +5,7 @@ import {prepareWorkerTypeahead, restoreKeyTouches, type KeyTouchSample, type Lan
 import {usesExpandedNgram} from '../replayArm';
 import {activeSubjectNgram, selectSubjectNgram, typeaheadNgramFingerprint} from './kn';
 
-export type WirePool = Readonly<Record<keyof WritingAidPool, readonly Omit<WritingAidProposal, 'snapshot'>[]>>;
+export type WirePool = Readonly<Record<'words' | 'edit' | 'ghost', readonly Omit<WritingAidProposal, 'snapshot'>[]>> & Pick<WritingAidPool, 'trace'>;
 export type NgramRequest = Readonly<{
   id: number; request: WritingAidRequest; model?: WritingAidModel; touches: readonly KeyTouchSample[];
 }>;
@@ -48,7 +48,7 @@ worker.onmessage = async ({data}) => {
         subject: data.request.subject, assetSha256: typeaheadNgramFingerprint(),
         subjectAssetSha256: activeSubjectNgram(data.request.subject)?.fingerprint};
     } : undefined);
-    worker.postMessage({id: data.id, pool: {words: pool.words.map(withoutSnapshot), edit: pool.edit.map(withoutSnapshot),
+    worker.postMessage({id: data.id, pool: {trace: pool.trace, words: pool.words.map(withoutSnapshot), edit: pool.edit.map(withoutSnapshot),
       ghost: pool.ghost.map(withoutSnapshot)}, computeMs: performance.now() - start, assetSha256: typeaheadNgramFingerprint(),
       subjectAssetSha256: activeSubjectNgram(data.request.subject)?.fingerprint});
   } catch {

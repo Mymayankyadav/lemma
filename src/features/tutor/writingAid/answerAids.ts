@@ -8,6 +8,7 @@
  * The level the tutor sets is a ceiling that fades with the learner's mastery (effectiveAidLevel). Nothing here applies a
  * suggestion: the learner taps, as with every other suggestion.
  */
+import {learnerAuthored, type OriginRange} from './menuEdit';
 import {aidEntryKey, effectiveAidLevel, type AidEntryKind, type AidHint, type AidRole, type TutorAnswerAid} from '../../../../supabase/functions/_shared/tutor-answer-aids';
 
 const BREAK = /[.!?]\s+|\n\s*/gu;
@@ -20,6 +21,9 @@ export interface AidRankingContext {
   readonly mode: 'prose' | 'equation';
   readonly before: string;
   readonly prefix: string;
+  readonly acceptedSpans?: readonly OriginRange[];
+  readonly allowPhraseTaps?: boolean;
+  readonly anchorStart?: number;
 }
 
 const bias = {prefer: 1, neutral: 0, deemphasize: -1} as const;
@@ -154,8 +158,9 @@ function phraseStepWeight(value: string, sentence: string, before: string, inser
   if (matchesPhraseTail(words.join(' '), sentence, before, true)) return 0;
   for (let progress = words.length - 1; progress >= 1; progress--) {
     const prefix = words.slice(0, progress).join(' ');
-    if (matchesPhraseTail(prefix, sentence, before, progress >= 2)) {
-      return normalized(insertion) === words[progress] ? 1 / words.length : 0;
+    if (matchesPhraseTail(prefix, sentence, before, true)) {
+      const count = normalized(insertion).split(' ').length;
+      return normalized(insertion) === words.slice(progress, progress + count).join(' ') ? count / words.length : 0;
     }
   }
   return !sentence && normalized(insertion) === words[0] ? 1 / words.length : 0;
@@ -180,10 +185,17 @@ export function contextualWording(context: AidRankingContext): WordingCandidate[
     for (let progress = words.length - 1; progress >= 0; progress--) {
       const left = normalizedWords.slice(0, progress).join(' ');
       const text = words[progress];
-      const allowed = progress === 0 ? Boolean(prefix) && !sentence : matchesPhraseTail(left, sentence, before, progress >= 2);
+      const allowed = progress === 0 ? Boolean(prefix) && !sentence : matchesPhraseTail(left, sentence, before, progress >= 2 || context.allowPhraseTaps === true);
       if (!allowed || !normalized(text).startsWith(normalized(prefix)) || normalized(text) === normalized(prefix)) continue;
       const key = normalized(text);
       if ((result.get(key)?.progress ?? -1) < progress) result.set(key, {phrase, text, progress});
+      const authoredWords = [...(before + prefix).matchAll(/\S+/gu)];
+      const matched = progress + Number(Boolean(prefix));
+      const earliest = matched ? authoredWords.at(-matched)?.index : undefined;
+      if (context.allowPhraseTaps && earliest !== undefined && earliest >= (context.anchorStart ?? 0) && learnerAuthored(context.acceptedSpans, earliest, before.length + prefix.length)) {
+        const rest = words.slice(progress, progress + 3).join(' ');
+        if (rest !== text) result.set(normalized(rest), {phrase, text: rest, progress});
+      }
       break;
     }
   }

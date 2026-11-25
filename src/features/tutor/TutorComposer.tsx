@@ -1,3 +1,5 @@
+import {menuFeatures, menuScore, type MenuSource, type WordTrace} from './writingAid/menuRanking';
+import {applyMenuEdit, learnerAuthored, type MenuEdit} from './writingAid/menuEdit';
 import {startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type ComponentProps, type KeyboardEvent, type PointerEvent} from 'react';
 import {createPortal} from 'react-dom';
 import {ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, HelpCircle, Keyboard, MoveRight, Paperclip, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
@@ -35,7 +37,7 @@ import {tutorHint} from './writingAid/answerAids';
 import {ACCEPTED_SPAN_LIMIT, addAuthoredSpan, moveAcceptedSpans} from './writingAid/authorship';
 import {insertionEligible} from './writingAid/eligibility';
 import {offerFamilies} from './writingAid/offerFamilies';
-import {canSuggestWritingAid, eligibleGhostContext, writingAidProposalKey} from './writingAid/policy';
+import {canSuggestWritingAid, eligibleGhostContext, proposalEdit, writingAidProposalKey} from './writingAid/policy';
 import {effectiveAidLevel, type AidRole, type TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids';
 import {typedEquationAt} from './input/typedEquation';
 import {useAutoeqReadings} from './input/useAutoeqReadings';
@@ -216,7 +218,7 @@ export function TutorComposer(props: Props) {
     notationKey].join('|');
   const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, aidContextKey, revision.current, cursor]);
   const question = useMemo(() => JSON.parse(notationKey) as string[], [notationKey]);
-  const writingRequest = {cursor, arm, replayDiagnostics, contextKey: aidContextKey, aid, mastery: props.mastery, middleEdits: enhancedMenu,
+  const writingRequest = {cursor, acceptedSpans: acceptedSpans.current.get(cursor), arm, replayDiagnostics, contextKey: aidContextKey, aid, mastery: props.mastery, middleEdits: enhancedMenu,
     subject: props.aidSubject, step: props.aidStep, question, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
     surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown || props.suspended || provenanceFull};
   const writing = useWritingAid(writingRequest);
@@ -263,9 +265,10 @@ export function TutorComposer(props: Props) {
   const {items: latexOptions, assetSha256: latexAssetSha256} = useLatexSuggestions(mathSpan ? {math: mathSpan.math, typed: mathSpan.typed, before: latexBefore,
     after: cursor.text.slice(cursor.end), knownSymbols: decoderSymbols(latexBefore, question)} : undefined, 64,
   {declarations: aidLevel === 'none' ? undefined : aid?.ranking?.declaredSymbols});
-  type MenuEntry = {key: string; slotKey: string; score: number; label: string; title?: string; display?: string; math?: string; word?: WritingAidProposal;
-    next?: PadEdit; replacement?: {start: number; end: number; insert: string; equation: boolean; role?: AidRole}};
+  type MenuEntry = {key: string; slotKey: string; score: number; base: number; features: number[]; label: string; title?: string; display?: string; math?: string; word?: WritingAidProposal;
+    edit: MenuEdit; replacement?: {start: number; end: number; insert: string; equation: boolean; role?: AidRole}};
   const entries: MenuEntry[] = [];
+  const notationTrace: WordTrace[] | undefined = replayDiagnostics ? [] : undefined;
   const offeredTarget = writingRequest.target;
   const liveMenu = useRef<{key: string; target: EditTarget; entries: readonly MenuEntry[]}>({key: '', target: offeredTarget, entries: []});
   const pressedOffer = useRef<{key: string; epoch: string} | null>(null);
@@ -274,7 +277,7 @@ export function TutorComposer(props: Props) {
   const allowed = (replacement: NonNullable<MenuEntry['replacement']>, edit = cursor) =>
     insertionEligible({text: edit.text, start: replacement.start, end: replacement.end, insert: replacement.insert,
       mode: replacement.equation ? 'equation' : mode, notation: true, role: replacement.role, aid,
-      authoredPrefix: edit.text.slice(replacement.start, replacement.end)});
+      authoredPrefix: learnerAuthored(acceptedSpans.current.get(edit), replacement.start, replacement.end) ? edit.text.slice(replacement.start, replacement.end) : ''});
   function addNotation(key: string, score: number, label: string, replacement: NonNullable<MenuEntry['replacement']>, next: PadEdit,
     display?: string, math?: string, title?: string) {
     const tutorContext = {aid, mastery: props.mastery, subject: props.aidSubject, step: props.aidStep,
@@ -283,8 +286,15 @@ export function TutorComposer(props: Props) {
     const explicit = tutorHint(tutorContext, replacement.insert.trim().replace(/^\$|\$$/gu, ''));
     const hint = explicit.role !== undefined || explicit.adjustment !== 0 ? explicit : tutorHint(tutorContext, display ?? math ?? replacement.insert);
     const scoped = {...replacement, role: hint.role};
-    if (scoped.insert.trimEnd().length > 240 || /[\uD800-\uDFFF]/u.test(scoped.insert) || !allowed(scoped)) return;
-    entries.push({key, slotKey: replacement.start + ':' + key, score: score + hint.adjustment, label, display, math, title, next, replacement: scoped});
+    const eligible = scoped.insert.trimEnd().length <= 240 && !/[\uD800-\uDFFF]/u.test(scoped.insert) && allowed(scoped);
+    const edit = {start: scoped.start, end: scoped.end, insert: scoped.insert, caret: next.start, selectionEnd: next.end, direction: next.direction};
+    const source = key.startsWith('equation:') ? 'equation' : 'notation';
+    notationTrace?.push({...edit, source, eligible});
+    if (!eligible) return;
+    const features = menuFeatures(source, score, replacement.end - replacement.start, replacement.insert.length);
+    entries.push({key, slotKey: JSON.stringify([replacement.start, key, next.start, next.end]),
+      base: score, features, score: menuScore(score, hint.adjustment, features, writing.assetHashes.ngram),
+      label, display, math, title, edit, replacement: scoped});
   }
   if (!writingRequest.readOnly && !editingDisabled && aidVisible && writingPrefs.mode !== 'off') {
     if (typedEquation) equationReadings.forEach((reading, index) => {
@@ -308,14 +318,18 @@ export function TutorComposer(props: Props) {
     });
     if (enhancedMenu) rankedWritingWords.forEach(word => {
       const identity = word.source === 'symbol' ? 'symbol:' + word.insert : 'word:' + word.insert.toLowerCase();
-      entries.push({key: 'word:' + writingAidProposalKey(word), slotKey: word.start + ':' + identity,
-        score: word.score ?? -10, label: 'Insert ' + word.label, display: word.label, word});
+      const source: MenuSource = word.source === 'decoder' ? 'word' : word.source ?? 'word';
+      const adjustment = word.tutorAdjustment ?? 0;
+      const base = (word.score ?? -10) - adjustment;
+      const features = menuFeatures(source, base, word.end - word.start, word.insert.length);
+      entries.push({base, features, key: 'word:' + writingAidProposalKey(word), slotKey: word.start + ':' + identity,
+        score: menuScore(base, adjustment, features, writing.assetHashes.ngram), label: 'Insert ' + word.label, display: word.label, word, edit: proposalEdit(word)});
     });
   }
   const dedupedEntries = new Map<string, MenuEntry>();
   for (const entry of entries) {
-    const {start, end, insert} = entry.word ?? entry.replacement!;
-    const key = JSON.stringify([start, end, insert]);
+    const {start, end, insert, caret} = entry.edit;
+    const key = JSON.stringify([start, end, insert, caret, entry.edit.selectionEnd ?? caret]);
     if (!dedupedEntries.has(key) || dedupedEntries.get(key)!.score < entry.score) dedupedEntries.set(key, entry);
   }
   const rankedEntries = [...dedupedEntries.values()].sort((left, right) => right.score - left.score).slice(0, 64);
@@ -346,7 +360,7 @@ export function TutorComposer(props: Props) {
     if (entry.word) return {...entry.word, menuPosition: position};
     const replacement = entry.replacement!;
     return {kind: 'word', start: replacement.start, end: replacement.end,
-      before: cursor.text.slice(replacement.start, replacement.end), insert: replacement.insert,
+      before: cursor.text.slice(replacement.start, replacement.end), insert: replacement.insert, caret: entry.edit.caret,
       label: entry.label, snapshot: writingRequest, score: entry.score,
       source: replacement.equation ? 'equation' : 'notation', menuPosition: position};
   }
@@ -358,6 +372,26 @@ export function TutorComposer(props: Props) {
     liveMenu.current = {key: menuEpoch, target: offeredTarget, entries: enhancedMenu ? menuEntries : entries};
     slotHistory.current = {epoch: stableScope, entries: menuEntries};
   });
+  const traceRef = useRef<() => unknown>(() => null);
+  useLayoutEffect(() => {
+    if (!replayDiagnostics) return;
+    const publishedAt = performance.now();
+    const mark = performance.getEntriesByName('lemma.typeahead.ngram', 'mark').at(-1) as PerformanceMark | undefined;
+    const matched = mark?.detail?.mountId === offeredTarget.mountId && mark?.detail?.editorRevision === offeredTarget.editorRevision &&
+      mark?.detail?.selectionRevision === offeredTarget.selectionRevision;
+    traceRef.current = () => ({revision: offeredTarget.editorRevision, selectionRevision: offeredTarget.selectionRevision, publishedAt, mode,
+      worker: matched ? {at: mark!.startTime, ...mark!.detail} : null,
+      currentCountModel: writing.assetHashes.ngram ?? null, ghost: writingGhost ? proposalEdit(writingGhost) : null,
+      correction: shownEdit ? proposalEdit(shownEdit) : null, raw: [...writing.rawTrace ?? [], ...notationTrace ?? []],
+      eligible: rankedEntries.map(e => ({...e.edit, base: e.base, features: e.features, score: e.score, family: familyOf(e)})),
+      displayed: [menuEntries[1], menuEntries[0], menuEntries[2]].flatMap(e => e ? [e.edit] : [])});
+  });
+  useEffect(() => {
+    if (!replayDiagnostics) return;
+    const get = (event: Event) => (event as CustomEvent<(value: unknown) => void>).detail(traceRef.current());
+    window.addEventListener('lemma-typeahead-read-menu', get);
+    return () => window.removeEventListener('lemma-typeahead-read-menu', get);
+  }, [replayDiagnostics]);
   const equationOptions = equationReadings.filter(reading => entries.some(entry => entry.key === 'equation:' + reading.latex)).slice(0, 3);
   const symbolSlots = symbolOptions.filter(option => entries.some(entry => entry.key === 'symbol:' + option.symbol.id));
   const eligibleLatex = latexOptions.filter(option => entries.some(entry => entry.key === 'latex:' + option.insert)).slice(0, 3);
@@ -438,7 +472,7 @@ export function TutorComposer(props: Props) {
     while (authored < proposal.before.length && proposal.before[authored] === proposal.insert[authored] &&
       proposal.start + authored < (anchor?.text.length ?? 0)) authored++;
     if (!commit(changePadText(before, next), true, true, false, false,
-      edit => addAcceptedSpan(edit, proposal.start + authored, proposal.insert.slice(authored), source))) return;
+      edit => addAcceptedSpan(edit, proposal.start + authored, proposal.insert.slice(authored), source), proposalEdit(proposal))) return;
     authoredAnchor.current = continueWritingAidAnchor(anchor, proposal, next);
     acceptedSuggestion.current = {before, after: next, proposal};
     setHideSuggestionUndo(false);
@@ -451,16 +485,18 @@ export function TutorComposer(props: Props) {
     if (live.key !== menuEpoch || !sameEditTarget(live.target, editTarget()) || !live.entries.includes(entry) ||
         editingDisabled || editMenu || writingRequest.readOnly || composition.current) return;
     if (entry.word) {acceptWriting(entry.word); return;}
-    if (!entry.next || !entry.replacement || !allowed(entry.replacement, edit) || provenanceFull) return;
+    if (!entry.replacement || !allowed(entry.replacement, edit) || provenanceFull) return;
+    const next = applyMenuEdit(edit.text, entry.edit);
+    if (!next) return;
     const replacement = entry.replacement;
     const observed = enhancedMenu
       ? displayedWordMenu.find(item => item.start === replacement.start && item.end === replacement.end && item.insert === replacement.insert)
       : undefined;
     const before = history.current;
-    if (commit(changePadText(before, entry.next), true, true, false, false,
-      edit => addAcceptedSpan(edit, replacement.start, replacement.insert, replacement.equation ? 'equation' : 'symbol'))) {
+    if (commit(changePadText(before, next), true, true, false, false,
+      edit => addAcceptedSpan(edit, replacement.start, replacement.insert, replacement.equation ? 'equation' : 'symbol'), entry.edit)) {
       if (observed) {
-        acceptedSuggestion.current = {before, after: entry.next, proposal: observed};
+        acceptedSuggestion.current = {before, after: next, proposal: observed};
         setHideSuggestionUndo(false);
         writing.feedback('accept', observed);
       }
@@ -592,7 +628,7 @@ export function TutorComposer(props: Props) {
     return referencedImageIds(text).filter(id => availableIds.has(id)).length > TUTOR_ATTACHMENT_COUNT;
   }
   function commit(next: PadTextHistory, focus = false, restore = true, fromAssist = false, manuallyTyped = false,
-    decorate?: (edit: PadEdit) => boolean | void) {
+    decorate?: (edit: PadEdit) => boolean | void, exact?: MenuEdit) {
     const edit = next.present;
     if (readOnly || edit.text.length > MAX_ANSWER_LENGTH) return false;
     if (tooManyImages(edit.text)) {
@@ -602,19 +638,22 @@ export function TutorComposer(props: Props) {
     const previous=history.current.present;
     const changed = edit.text !== previous.text;
     const moved = edit.start!==previous.start||edit.end!==previous.end||edit.direction!==previous.direction;
-    if(changed)revision.current.editorRevision++;
-    if(moved)revision.current.selectionRevision++;
-    if(!fromAssist&&(changed||moved))assist.pause();
-    if (focus && !(document.activeElement instanceof HTMLButtonElement)) fieldElement()?.focus({preventScroll: true});
     const nextAnchor = manuallyTyped ? advanceWritingAidAnchor(previous, edit, authoredAnchor.current, enhancedMenu) : null;
     const provenance = acceptedSpans.current.get(previous);
     if (provenance && !acceptedSpans.current.has(edit)) {
-      acceptedSpans.current.set(edit, moveAcceptedSpans(previous.text, edit.text, provenance, {
+      acceptedSpans.current.set(edit, moveAcceptedSpans(previous.text, edit.text, provenance, exact ? {start: exact.start, end: exact.end, nextEnd: exact.start + exact.insert.length} : {
         start: Math.min(previous.start, edit.start), end: previous.end, nextEnd: edit.end,
       }));
     }
     if (decorate?.(edit) === false) return false;
+    if(changed)revision.current.editorRevision++;
+    if(moved)revision.current.selectionRevision++;
+    if(!fromAssist&&(changed||moved))assist.pause();
+    if (focus && !(document.activeElement instanceof HTMLButtonElement)) fieldElement()?.focus({preventScroll: true});
     history.current = next;
+    if (exact && replayDiagnostics) window.dispatchEvent(new CustomEvent('lemma-typeahead-applied', {
+      detail: {revision: offeredTarget.editorRevision, selectionRevision: offeredTarget.selectionRevision, edit: exact, after: edit.text, selection: [edit.start, edit.end], at: performance.now()},
+    }));
     if (changed || moved) authoredAnchor.current = nextAnchor;
     setCursor(edit);
     if (changed) {
@@ -1410,11 +1449,12 @@ export function TutorComposer(props: Props) {
           {[menuEntries[1], menuEntries[0], menuEntries[2]].map((entry, index) => entry
             ? <button key={entry.slotKey} type="button" className={index === 1 ? 'preferred' : undefined} title={entry.title}
               aria-label={entry.label} disabled={editingDisabled}
-              data-typeahead-insert={entry.word?.insert ?? entry.replacement?.insert}
+              data-typeahead-insert={entry.edit.insert}
               data-typeahead-kind={entry.word?.source === 'symbol' || !entry.word ? 'symbol' : 'word'}
               data-typeahead-family={familyOf(entry)}
-              data-typeahead-start={entry.word?.start ?? entry.replacement?.start}
-              data-typeahead-end={entry.word?.end ?? entry.replacement?.end}
+              data-typeahead-start={entry.edit.start}
+              data-typeahead-end={entry.edit.end}
+              data-typeahead-caret={entry.edit.caret} data-typeahead-selection-end={entry.edit.selectionEnd ?? entry.edit.caret}
               onPointerDown={event => {
                 keepSelection(event);
                 pressedOffer.current = {key: entry.key, epoch: menuEpoch};

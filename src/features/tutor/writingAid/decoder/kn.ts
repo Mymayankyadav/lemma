@@ -76,7 +76,9 @@ function parseExtended(bytes: Uint8Array, view: DataView): NgramModel {
     const [count, edges] = section(Uint32Array, 2);
     const history = section(Uint16Array, count * width), start = section(Uint32Array, count + 1);
     const backoff = section(Float32Array, count), next = section(Uint16Array, edges);
-    const probability = section(Float32Array, edges);
+    const probability = bytes[7] === 51
+      ? Float32Array.from(section(Uint16Array, edges), code => code === 65535 ? 0 : 2 ** (-code / 2048))
+      : section(Float32Array, edges);
     if (start[0] !== 0 || start[count] !== edges ||
         history.some(value => value >= size) || next.some(value => value >= size) ||
         backoff.some(value => !(value >= 0 && Number.isFinite(value))) ||
@@ -122,7 +124,7 @@ function extendedRow(table: ExtendedRow, width: number, history: ArrayLike<numbe
 export function parseNgram(input: Uint8Array): NgramModel {
   const bytes = input.byteOffset === 0 && input.byteLength === input.buffer.byteLength ? input : input.slice();
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  if (bytes.byteLength >= 32 && String.fromCharCode(...bytes.subarray(0, 8)) === 'LEMMANG2') return parseExtended(bytes, view);
+  if (bytes.byteLength >= 32 && /^LEMMANG[23]$/u.test(String.fromCharCode(...bytes.subarray(0, 8)))) return parseExtended(bytes, view);
   if (bytes.byteLength < 32 || String.fromCharCode(...bytes.subarray(0, 4)) !== 'LMN1' || view.getUint32(4, true) !== 1) {
     throw new Error('Invalid typeahead model');
   }
@@ -258,6 +260,51 @@ export function historyNext(model: NgramModel, history: readonly number[]): numb
   }
   for (const word of model.top) result.add(word);
   return [...result];
+}
+
+/** Group successors in their original order so equal scores keep the decoder's order. */
+type SuccessorIndex = {ids: Uint32Array; letters?: {starts: Uint32Array; ids: Uint32Array}};
+const successorCache = new WeakMap<NgramModel, Map<string, SuccessorIndex>>();
+const INDEX_BYTES = 2 * 1024 * 1024;
+
+function initialBucket(word: string) {
+  const letter = word.charCodeAt(0) - 97;
+  return letter >= 0 && letter < 26 ? letter : 26;
+}
+
+function indexBytes(index: SuccessorIndex) {
+  return index.ids.byteLength + (index.letters ? index.letters.ids.byteLength + index.letters.starts.byteLength : 0);
+}
+
+export function historyWords(model: NgramModel, history: readonly number[], prefix: string): string[] {
+  let cache = successorCache.get(model);
+  if (!cache) {cache = new Map(); successorCache.set(model, cache);}
+  const key = history.join(',');
+  const index: SuccessorIndex = cache.get(key) ?? {ids: Uint32Array.from(historyNext(model, history).filter(id => id > EOS))};
+  if (prefix && index.ids.length >= 512 && !index.letters) {
+    const starts = new Uint32Array(28);
+    for (const id of index.ids) starts[initialBucket(model.words[id]) + 1]++;
+    for (let i = 1; i < starts.length; i++) starts[i] += starts[i - 1];
+    const cursor = starts.slice();
+    const ids = new Uint32Array(index.ids.length);
+    for (const id of index.ids) ids[cursor[initialBucket(model.words[id])]++] = id;
+    index.letters = {ids, starts};
+  }
+  cache.delete(key);
+  if (indexBytes(index) <= INDEX_BYTES) cache.set(key, index);
+  let used = 0;
+  for (const value of cache.values()) used += indexBytes(value);
+  while (cache.size > 64 || used > INDEX_BYTES) {
+    const [oldest, value] = cache.entries().next().value!;
+    used -= indexBytes(value);
+    cache.delete(oldest);
+  }
+  if (!prefix) return Array.from(index.ids, id => model.words[id]);
+  const bucket = initialBucket(prefix);
+  const ids = index.letters?.ids.subarray(index.letters.starts[bucket], index.letters.starts[bucket + 1]) ?? index.ids;
+  const matches: string[] = [];
+  for (const id of ids) if (model.words[id].startsWith(prefix)) matches.push(model.words[id]);
+  return matches;
 }
 
 export const historyWidth = (model: NgramModel): number => model.extended?.rows.length ?? 2;

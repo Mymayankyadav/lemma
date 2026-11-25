@@ -1,5 +1,6 @@
+import {ANDROID_TIER, installedAndroidPack} from './androidPack';
 import {neuralManifest, qualifiedNeuralTier} from './neuralManifest';
-import type {NeuralReply, NeuralRequest} from './neural.worker';
+import type {LabCase, LabResult, NeuralReply, NeuralRequest} from './neural.worker';
 
 export interface NeuralClient {
   predict(request: Omit<NeuralRequest, 'id'>): Promise<NeuralReply | undefined>;
@@ -10,7 +11,8 @@ export interface NeuralClient {
 export async function createNeuralClient(trial = false, strictTrial = false): Promise<NeuralClient | undefined> {
   if (typeof Worker === 'undefined') return undefined;
   const [primary, large] = await Promise.all([neuralManifest('neural-v2'), neuralManifest('neural-large-v2')]);
-  if (!qualifiedNeuralTier(primary, 'wasm', trial) && !qualifiedNeuralTier(primary, 'webgpu', trial) && !qualifiedNeuralTier(large, 'webgpu', trial) &&
+  const fp16 = await installedAndroidPack() ? await neuralManifest(ANDROID_TIER) : null;
+  if (!(['wasm', 'webgpu', 'webgpuJspi'] as const).some(device => qualifiedNeuralTier(fp16, device, trial)) && !qualifiedNeuralTier(primary, 'wasm', trial) && !qualifiedNeuralTier(primary, 'webgpu', trial) && !qualifiedNeuralTier(large, 'webgpu', trial) &&
       !qualifiedNeuralTier(primary, 'webgpuJspi', trial) && !qualifiedNeuralTier(large, 'webgpuJspi', trial)) return undefined;
   const worker = new Worker(new URL('./neural.worker.ts', import.meta.url), {type: 'module'});
   let id = 0;
@@ -27,7 +29,15 @@ export async function createNeuralClient(trial = false, strictTrial = false): Pr
     pending = undefined;
     resolve(reply);
   }
-  worker.onmessage = (event: MessageEvent<NeuralReply>) => {
+  const lab = (event: Event) => {
+    if (trial && strictTrial) worker.postMessage((event as CustomEvent<LabCase>).detail);
+  };
+  if (trial && strictTrial) window.addEventListener('lemma-typeahead-lab-case', lab);
+  worker.onmessage = (event: MessageEvent<NeuralReply | LabResult>) => {
+    if ('labId' in event.data) {
+      window.dispatchEvent(new CustomEvent('lemma-typeahead-lab-result', {detail:event.data}));
+      return;
+    }
     const reply = event.data;
     const pendingReply = pending?.id === reply.id ? pending : undefined;
     const arrivedBeforeDeadline = Boolean(pendingReply && Date.now() <= pendingReply.deadline);
@@ -54,6 +64,6 @@ export async function createNeuralClient(trial = false, strictTrial = false): Pr
       });
     },
     reset() {finish(); worker.postMessage({reset: true});},
-    close() {finish(); worker.terminate();},
+    close() {finish(); window.removeEventListener('lemma-typeahead-lab-case', lab); worker.terminate();},
   };
 }

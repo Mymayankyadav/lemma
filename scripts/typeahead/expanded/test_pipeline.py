@@ -81,11 +81,11 @@ class PipelineTests(unittest.TestCase):
                   ['this', 'unknown', 'set', 'in', 'a']]
         with TemporaryDirectory() as temp:
             binary = Path(temp) / 'model.bin'
-            for order, pruning in product((3, 4, 5), ('count', 'entropy')):
-                with self.subTest(order=order, pruning=pruning), sqlite3.connect(':memory:') as db:
+            for order, pruning, edge_bits in product((3, 4, 5), ('count', 'entropy'), (16, 32)):
+                with self.subTest(order=order, pruning=pruning, edge_bits=edge_bits), sqlite3.connect(':memory:') as db:
                     accumulate(db, source, lookup, order)
-                    model, stats, reference = compile_model(db, vocab, order, 800, pruning)
-                    binary.write_bytes(encode(vocab, model))
+                    model, stats, reference = compile_model(db, vocab, order, 800, pruning, edge_bits=edge_bits)
+                    binary.write_bytes(encode(vocab, model, edge_bits))
                     decoded_vocab, decoded, decoded_order = model_file(binary)
                     self.assertEqual(decoded_vocab, vocab)
                     self.assertEqual(decoded_order, order)

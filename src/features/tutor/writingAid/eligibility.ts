@@ -14,15 +14,13 @@ function withheldAcrossInsertion(text: string, start: number, end: number, inser
   // draft. Only compare token sequences whose source span touches the edit.
   const tokens = [...(text.slice(0, start) + insert + text.slice(end)).matchAll(/[\p{L}\p{M}\p{N}]+/gu)];
   const from = start, to = start + insert.length;
-  const first = tokens.findIndex(token => token.index + token[0].length > from);
-  if (first < 0) return false;
-  let last = first - 1;
-  while (last + 1 < tokens.length && tokens[last + 1].index < to) last++;
   return withheld.some(entry => {
     const wanted = aidWords(entry);
     if (!wanted.length) return false;
-    for (let index = Math.max(0, first - wanted.length + 1); index <= last && index + wanted.length <= tokens.length; index++) {
-      if (wanted.every((word, offset) => aidWords(tokens[index + offset][0])[0] === word)) return true;
+    for (let i = 0; i + wanted.length <= tokens.length; i++) {
+      const first = tokens[i], last = tokens[i + wanted.length - 1];
+      if (first.index >= to || last.index + last[0].length <= from) continue;
+      if (wanted.every((word, offset) => aidWords(tokens[i + offset][0])[0] === word)) return true;
     }
     return false;
   });

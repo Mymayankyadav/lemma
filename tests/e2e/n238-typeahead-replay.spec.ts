@@ -10,7 +10,7 @@ type ReplayAnswer = {answerId: string; answer: string; route?: string; question?
 type GoldEvent = {eventId: string; exactInsertion: string; exactGhost?: string; kind: 'word' | 'symbol'};
 type RuntimeAsset = {ngram?: string; subject?: string; subjectPack?: string; latex?: string; neural?: string;
   graphTrial?: string; ghostEligible: boolean; ngramAbsence?: 'empty' | 'ineligible' | 'no-current-model'};
-type Displayed = {text: string; family: string; start: number; end: number};
+type Displayed = {text: string; family: string; start: number; end: number; caret?: number; selectionEnd?: number};
 type ComponentSample = {id: string; subject?: string; probability?: Record<string, number>; assetSha256?: string; subjectAssetSha256?: string};
 type GhostSample = {id: string; modelFingerprint?: string;
   candidates?: {text: string; logProbability: number; context: 'prefix' | 'boundary'; elapsedMs: number}[]};
@@ -42,15 +42,23 @@ async function exactDraft(answer: Locator) {
 
 async function slate(page: Page) {
   const slots = page.getByRole('group', {name: /^(?:Answer|Word|Equation|LaTeX|Symbol) suggestions$/u})
-    .locator('button:enabled[data-typeahead-insert]');
-  const items = await slots.evaluateAll(nodes => nodes.map(node => {
-    const button = node as HTMLButtonElement;
-    const text = button.dataset.typeaheadInsert!;
-    const family = button.dataset.typeaheadFamily ?? text.trim();
-    return {text, family, start: Number(button.dataset.typeaheadStart), end: Number(button.dataset.typeaheadEnd)};
-  }));
+    .locator('button:enabled[data-typeahead-insert]:visible');
+  const {items, diagnostics} = await page.evaluate(() => {
+    const groups = ['Answer', 'Word', 'Equation', 'LaTeX', 'Symbol'].map(name => '[role="group"][aria-label="'+name+' suggestions"]');
+    const nodes = Array.from(document.querySelectorAll<HTMLButtonElement>(groups.map(group => group+' button:enabled[data-typeahead-insert]').join(',')))
+      .filter(button => button.checkVisibility());
+    let diagnostics: unknown;
+    window.dispatchEvent(new CustomEvent('lemma-typeahead-read-menu', {detail: (value: unknown) => {diagnostics = value;}}));
+    return {diagnostics, items: nodes.map(node => {
+      const button = node as HTMLButtonElement;
+      const text = button.dataset.typeaheadInsert!;
+      return {text, family: button.dataset.typeaheadFamily ?? text.trim(), start: Number(button.dataset.typeaheadStart),
+        end: Number(button.dataset.typeaheadEnd), caret: button.dataset.typeaheadCaret === undefined ? undefined : Number(button.dataset.typeaheadCaret),
+        selectionEnd: button.dataset.typeaheadSelectionEnd === undefined ? undefined : Number(button.dataset.typeaheadSelectionEnd)};
+    })};
+  });
   expect(items.length).toBeLessThanOrEqual(3);
-  return {slots, items};
+  return {slots, items, diagnostics};
 }
 
 async function painted(page: Page) {
@@ -62,6 +70,7 @@ function apply(draft: string, offer: Displayed) {
 }
 
 test('replays visible typeahead quality and an actual full-answer typing trajectory', async ({page}, info) => {
+  page.setDefaultTimeout(15_000);
   const eventInput = process.env.LEMMA_TYPEAHEAD_REPLAY_INPUT;
   const answerInput = process.env.LEMMA_TYPEAHEAD_REPLAY_ANSWERS;
   const events = input(eventInput, fixture);
@@ -87,9 +96,18 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   if (strictGraphTrial && (!graphTrial || !expectedNeural)) {
     throw new Error('Strict graph trial requires a pinned candidate bundle fingerprint');
   }
+  await page.addInitScript(() => {
+    window.addEventListener('lemma-typeahead-applied', event => {
+      (window as Window & {lastTypeaheadAcceptance?: unknown}).lastTypeaheadAcceptance = (event as CustomEvent).detail;
+    });
+  });
   const modelAssets = new Set<string>();
   const assetCounts = {ngram: 0, subject: 0, latex: 0, neural: 0, empty: 0, ineligible: 0, 'no-current-model': 0};
   const subjectAssets = new Map<string, Set<string>>();
+  const blind = process.env.LEMMA_TYPEAHEAD_REPLAY_BLIND === '1';
+  if (blind && (!captureOnly || process.env.LEMMA_TYPEAHEAD_REPLAY_GOLD || answers.some(row => 'answer' in row) || events.some(row => 'target' in row || 'exactGhost' in row || 'exactInsertion' in row))) {
+    throw new Error('Blind fixed capture requires question-only contexts and no gold file');
+  }
   const gold = new Map(input<GoldEvent>(process.env.LEMMA_TYPEAHEAD_REPLAY_GOLD, []).map(event => [event.eventId, event]));
   const components = [];
   const ghostCandidates = [];
@@ -107,9 +125,10 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   let active: ReplayAnswer | undefined;
   if (answers.some(sample => sample.question)) {
     const {threadId, payload} = await prepareLiveTutor(page);
-    const turnId = '99999999-9999-4999-8999-999999999999';
     const id = '77777777-7777-4777-8777-777777777777';
     await page.route('**/rest/v1/**', route => {
+      const digest = hash(active?.answerId ?? 'fixture');
+      const turnId = [digest.slice(0,8), digest.slice(8,12), '4'+digest.slice(13,16), '8'+digest.slice(17,20), digest.slice(20,32)].join('-');
       const request = route.request(), endpoint = new URL(request.url()).pathname.split('/rest/v1/')[1];
       if (endpoint === 'rpc/tutor_thread_state') return route.fulfill({json: {
         head: {threadId, pendingTurnId: null, lastSequence: 1},
@@ -213,11 +232,17 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     neuralCoverage.push(...marks);
   }
 
-  async function start(route: string, answerId: string, frozen: boolean) {
+  async function start(route: string, answerId: string, frozen: boolean, retainDraft = false) {
     const open = page.getByRole('button', {name: 'Write a question', exact: true});
+    async function reveal(answer: Locator) {
+      if (await answer.isVisible()) return;
+      try {await open.click({timeout: 2000});}
+      catch (error) {if (!await answer.isVisible()) throw error;}
+    }
     async function resetDraft(answer: Locator) {
+      await reveal(answer);
       if (await exactDraft(answer)) await answer.fill('');
-      if (await open.isVisible()) await open.click();
+      await reveal(answer);
       await expect(answer).toBeVisible({timeout: 5_000});
       await expect.poll(() => exactDraft(answer)).toBe('');
       await answer.focus();
@@ -226,20 +251,21 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     const hasQuestion = Boolean(context?.question);
     const destination = hasQuestion ? '/p/logic/cp/CP1/tutor' : route;
     const key = [destination, hasQuestion ? answerId : '', frozen].join('|');
+    if (retainDraft && editor && key === opened) return editor;
     if (!editor || key !== opened) {
       if (editor) await drainCoverage();
       active = context;
-      const query = '/lemma/?typeahead-replay=1&demo=' + (hasQuestion ? '0' : '1') + '&flags=v7Shell,v6Shell,tutorScratch,' + encodeURIComponent(flags)
+      const query = '/lemma/?typeahead-answer='+encodeURIComponent(answerId)+'&typeahead-replay=1&demo=' + (hasQuestion ? '0' : '1') + '&flags=v7Shell,v6Shell,tutorScratch,' + encodeURIComponent(flags)
         + (arm ? '&typeahead-arm=' + encodeURIComponent(arm) : '') + (frozen ? '&typeahead-frozen-profile=1' : '')
         + (graphTrial ? '&typeahead-graph-trial=1' : '') + (strictGraphTrial ? '&typeahead-strict-trial=1' : '')
         + (ghostCalibration ? '&typeahead-ghost-probe=1' : '');
       await page.goto(query + '#' + destination);
       editor = page.getByRole('textbox', {name: 'Your answer', exact: true});
-      await expect(open.or(editor).first()).toBeVisible({timeout: eventInput || answerInput ? 15000 : 5000});
-      if (await open.isVisible()) await open.click();
+      await expect(open.or(editor).filter({visible: true}).first()).toBeVisible({timeout: eventInput || answerInput ? 15000 : 5000});
+      await reveal(editor);
       await expect(editor).toHaveAttribute('contenteditable', 'true');
       // All arms wait for the same asset-loading conditions, independent of the target.
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       if (expectedNgram) {
         // Verify the configured arm before timing or recording a gold event.
         // This non-answer warm-up completes no learned word or transition.
@@ -254,10 +280,28 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   }
 
   // Freeze eligibility opportunities before applying any gold decisions.
+  let priorPrefix = '', priorId = '';
   for (const event of events) {
-    const answer = await start(event.route ?? defaultRoute, event.answerId, true);
-    await page.keyboard.type(event.prefix);
-    await expect.poll(() => exactDraft(answer)).toBe(event.prefix);
+    const retain = blind && event.answerId === priorId && event.prefix.startsWith(priorPrefix);
+    const answer = await start(event.route ?? defaultRoute, event.answerId, true, retain);
+    const delta = retain ? event.prefix.slice(priorPrefix.length) : event.prefix;
+    // Restore intervening independently typed context, then deliver the measured edit through the native input path.
+    if (blind) {
+      const points = [...delta], last = points.pop();
+      if (points.length) await page.keyboard.insertText(points.join(''));
+      if (last) await page.keyboard.insertText(last);
+      if (await exactDraft(answer) !== event.prefix) {
+        // Re-establish the known cursor if the rich editor remounted or replaced its native selection.
+        // Only the scheduled prefix is available here. No menu or outcome has been observed.
+        const restore = [...event.prefix], final = restore.pop();
+        await answer.fill(restore.join(''));
+        await answer.press('Control+End');
+        if (final) await page.keyboard.insertText(final);
+      }
+    } else await page.keyboard.type(delta);
+    priorId = event.answerId;
+    priorPrefix = event.prefix;
+    expect(await exactDraft(answer), 'Frozen prefix at '+event.eventId).toBe(event.prefix);
     await painted(page);
     const functionalTarget = !eventInput && process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS === undefined ? event.target : undefined;
     if (functionalTarget) {
@@ -267,14 +311,14 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       await expect.poll(async () => (await slate(page)).items.map(item => item.text),
         {message: 'Expected exact offer for the synthetic ' + event.eventId + ' fixture'}).toContain(functionalTarget);
     }
-    const {slots, items} = await slate(page);
+    const {slots, items, diagnostics} = await slate(page);
     const assets = await observeAssets(event.answerId, event.prefix);
     if (!eventInput && event.eventId === 'blocked') {
       expect(items.some(item => /^(?:injective|surjective|bijective)\s*$/iu.test(item.text))).toBe(false);
     }
     const ghostButton = page.locator('[data-writing-aid-ghost][data-typeahead-insert]:visible');
     const ghost = await ghostButton.count() ? await ghostButton.getAttribute('data-typeahead-insert') : undefined;
-    const impression = {eventId: event.eventId, prefixSha256: hash(event.prefix), slate: items.map(({text, family}) => ({text, family})),
+    const impression = {trace: diagnostics, eventId: event.eventId, prefixSha256: hash(event.prefix), slate: items,
       ghostEligible: assets.ghostEligible, assets,
       ...(ghost ? {ghost: {text: ghost, source: assets.neural ? 'neural' : 'visible-ui'}} : {})};
     impressions.push(impression);
@@ -324,6 +368,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     const answer = await start(sample.route ?? defaultRoute, sample.answerId, false);
     let draft = '', assistedKeys = 0;
     const activeAssets = new Set<string>();
+    const actions: {at: number; edit: Displayed}[] = [];
     while (draft.length < sample.answer.length) {
       if (draft) await painted(page);
       const {slots, items} = await slate(page);
@@ -337,7 +382,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
         if (!Number.isInteger(offer.start) || !Number.isInteger(offer.end) || offer.start < 0 ||
             offer.start > offer.end || offer.end > draft.length) continue;
         const candidate = apply(draft, offer);
-        if (candidate.length > next.length && sample.answer.startsWith(candidate)) {best = index; next = candidate;}
+        if ((offer.caret === undefined || offer.caret === candidate.length) && candidate.length > next.length && sample.answer.startsWith(candidate)) {best = index; next = candidate;}
       }
       const ghostButton = page.locator('[data-writing-aid-ghost][data-typeahead-insert]:visible');
       const ghost = await ghostButton.count() ? (await ghostButton.getAttribute('data-typeahead-insert') ?? '') : '';
@@ -346,7 +391,16 @@ test('replays visible typeahead quality and an actual full-answer typing traject
         await ghostButton.click();
         next = ghostNext;
       } else if (best >= 0) {
+        const offered = items[best];
+        actions.push({at: draft.length, edit: offered});
         await slots.nth(best).click();
+        if (offered.caret !== undefined) {
+          const applied = await page.evaluate(() => (window as Window & {lastTypeaheadAcceptance?: {
+            after: string; selection: number[]; edit: {start: number; end: number; insert: string}}}).lastTypeaheadAcceptance);
+          expect(applied?.after).toBe(next);
+          expect(applied?.selection).toEqual([offered.caret, offered.selectionEnd ?? offered.caret]);
+          expect(applied?.edit).toMatchObject({start: offered.start, end: offered.end, insert: offered.text});
+        }
       } else {
         const codePoint = sample.answer.codePointAt(draft.length)!;
         const char = String.fromCodePoint(codePoint);
@@ -357,7 +411,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       await expect.poll(() => exactDraft(answer)).toBe(next);
       draft = next;
     }
-    const counted = {answerId: sample.answerId, manualKeys: [...sample.answer].length, assistedKeys,
+    const counted = {answerId: sample.answerId, actions, manualKeys: [...sample.answer].length, assistedKeys,
       costDefinition: 'full-answer-v1', assetSha256: [...activeAssets].sort()};
     keys.push(counted);
     retainPartial('keys', counted);
