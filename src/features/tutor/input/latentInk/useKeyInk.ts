@@ -17,14 +17,17 @@ import {
 } from './latentInkPolicy';
 
 export const SLOP_PX = 10;
-/** A key tapped while the drawing is still being read waits at most this long for the reading. */
+/** Keys tapped while the drawing is still being read wait, in order, at most this long for the reading. */
 export const DEFERRED_TAP_MS = 800;
 const MAX_STROKES = 12, MAX_POINTS = 96;
 /** Space slides the caret sideways: a stroke starts there only when it first moves more up or down than across. */
 const SLIDING_KEY = 'Space';
 
 export interface KeyInkHandlers {
-  /** Insert at the caret, or (replace) in place of the symbol this layer inserted last. False when refused. */
+  /** A new drawing starts: the host records the answer and selection it belongs to. */
+  onBegin: () => void;
+  /** Insert at the selection recorded by onBegin, or (replace) in place of the symbol this layer inserted last. False
+   *  when refused, for instance because the answer or its selection changed while the drawing was read. */
   onInsert: (symbol: SymbolDefinition, replace: boolean) => boolean;
   /** Take back the symbol this layer inserted last, if nothing has changed since. */
   onRetract: () => boolean;
@@ -62,7 +65,10 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   const [view, setView] = useState<KeyInkView>({kind: 'idle'});
   const held = useRef<Held | null>(null), inserted = useRef<Inserted | null>(null), pointer = useRef<Pointer | null>(null);
   const epoch = useRef(0), suppressClickUntil = useRef(0), replaying = useRef(false);
-  const deferred = useRef<{button: HTMLElement; timer: ReturnType<typeof setTimeout>} | null>(null);
+  /** The Delete key whose press cleared a drawing: its click (after a tap or a long press) is consumed too. */
+  const swallowClick = useRef<HTMLElement | null>(null);
+  /** Keyboard edits made while the drawing is being read, in the order they were made. */
+  const deferred = useRef<{actions: (() => void)[]; timer: ReturnType<typeof setTimeout>} | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const readiness = useRef<InkReadiness>('unloaded');
   const recognizer = useRef<ReturnType<typeof createInkRecognizer> | null>(null);
@@ -105,12 +111,22 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
     writeAutoInsertRecord(typeof localStorage === 'undefined' ? undefined : localStorage, record.current);
   }
 
-  function discard() {
+  /** Drop the drawing without inserting it. Keyboard edits waiting for its reading still happen, in order. */
+  function discard(message?: string) {
     clearTimeout(timer.current);
-    clearTimeout(deferred.current?.timer); deferred.current = null;
     recognizer.current?.cancel();
     held.current = null; pointer.current = null; inserted.current = null;
-    setView({kind: 'idle'}); paint();
+    setView(message ? {kind: 'idle', message} : {kind: 'idle'}); paint();
+    runDeferred();
+  }
+
+  function runDeferred() {
+    const pending = deferred.current;
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    deferred.current = null;
+    replaying.current = true;
+    try {for (const action of pending.actions) action();} finally {replaying.current = false;}
   }
 
   /** Insert the held reading (or leave it out), clear the paper and keep the alternatives for a one-tap replace. */
@@ -194,6 +210,8 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   }
 
   function startStroke(active: Pointer) {
+    // Keys tapped while the previous drawing was read go in before this stroke starts anything new.
+    if (deferred.current) flushDeferred();
     const now = Date.now();
     clearTimeout(timer.current);
     const current = held.current;
@@ -210,17 +228,21 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
         held.current = {epoch: ++epoch.current, strokes: last.strokes, box: last.box, liftAt: last.liftAt};
       } else held.current = {epoch: ++epoch.current, strokes: [], liftAt: now};
       inserted.current = null;
+      latest.current.onBegin();
     }
   }
 
   function onPointerDownCapture(event: PointerEvent<HTMLElement>) {
     if (!enabled || !event.isPrimary || event.button !== 0) return;
     suppressClickUntil.current = 0;
+    swallowClick.current = null;
     const label = keyLabel(event.target);
     if (label === 'Delete') {
-      // Delete clears a held drawing instead of the answer; straight after an automatic insert it is a correction.
+      // Delete clears a held drawing instead of the answer (its own press never runs, so its click is consumed
+      // below); straight after an automatic insert it is a correction.
       if (held.current) {
         event.preventDefault(); event.stopPropagation();
+        swallowClick.current = event.target instanceof Element ? event.target.closest('button') : null;
         discard();
         return;
       }
@@ -283,43 +305,46 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
     paint();
   }
 
+  /** The reading is in (or took too long): the drawing goes in first, or is left out, then the waiting edits. */
   function flushDeferred() {
-    const pending = deferred.current;
-    if (!pending) return;
-    clearTimeout(pending.timer);
-    deferred.current = null;
+    if (!deferred.current) return;
     commit('move');
-    if (inserted.current) setView({kind: 'idle'});
-    inserted.current = null;
-    replaying.current = true;
-    try {pending.button.click();} finally {replaying.current = false;}
+    endInsert();
+    runDeferred();
   }
 
-  /** A key tapped while a drawing is held: the drawing goes in first (or is left out), then the key. */
+  /** The keyboard's edits go through here: the held drawing goes in first (or is left out), then the edit. While
+   *  the drawing is still being read, edits wait in order. This covers taps, long-press alternates, Space's caret
+   *  slide and Delete alike, whatever triggers them. */
+  function beforeKeyEdit(action: () => void) {
+    if (!enabled || replaying.current) {action(); return;}
+    const current = held.current;
+    if (deferred.current || current && !current.decision && readiness.current !== 'unavailable') {
+      if (deferred.current) deferred.current.actions.push(action);
+      else deferred.current = {actions: [action], timer: setTimeout(flushDeferred, DEFERRED_TAP_MS)};
+      return;
+    }
+    if (current) commit('move');
+    endInsert();
+    action();
+  }
+
+  /** The key goes in after the symbol, so the symbol can no longer be replaced in place. */
+  function endInsert() {
+    if (!inserted.current) return;
+    inserted.current = null;
+    setView(current => current.kind === 'inserted' ? {kind: 'idle'} : current);
+  }
+
+  /** The click after a stroke is not a key tap, nor is the click of the Delete press that cleared a drawing. */
   function onClickCapture(event: MouseEvent<HTMLElement>) {
     if (!enabled || replaying.current) return;
-    if (Date.now() < suppressClickUntil.current) {
-      suppressClickUntil.current = 0;
-      event.preventDefault(); event.stopPropagation();
-      return;
-    }
     const button = event.target instanceof Element ? event.target.closest('button') : null;
-    if (!button) return;
-    const current = held.current;
-    if (current && !current.decision && readiness.current !== 'unavailable') {
+    if (Date.now() < suppressClickUntil.current || button && button === swallowClick.current) {
+      suppressClickUntil.current = 0;
+      swallowClick.current = null;
       event.preventDefault(); event.stopPropagation();
-      clearTimeout(deferred.current?.timer);
-      deferred.current = {button, timer: setTimeout(flushDeferred, DEFERRED_TAP_MS)};
-      return;
     }
-    if (current) {
-      commit('move');
-      // The key goes in after the symbol, so the symbol can no longer be replaced in place.
-      if (inserted.current) setView({kind: 'idle'});
-      inserted.current = null;
-      return;
-    }
-    if (inserted.current) {inserted.current = null; setView({kind: 'idle'});}
   }
 
   /** A reading tapped in the strip: insert it, or replace the symbol just inserted with it. */
@@ -342,17 +367,26 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
     setView(current => current.kind === 'inserted' ? {kind: 'idle'} : current);
   }, []);
 
+  /** The answer or its selection changed under a drawing being read or held: it can no longer go in where it began. */
+  function invalidate() {
+    if (held.current) discard('Drawing left out: the answer changed while it was being read.');
+  }
+
   const attach = useCallback((node: HTMLElement | null) => {
     if (area.current && !node) {
       clearTimeout(timer.current);
       held.current = null; pointer.current = null; inserted.current = null;
       setView({kind: 'idle'});
+      // The keys gave way to another surface: the drawing is dropped, but edits made while it was read still happen.
+      runDeferred();
     }
     area.current = node;
   }, []);
 
   return {
-    view, choose, forgetInsert, attach, canvas,
+    view, choose, forgetInsert, invalidate, beforeKeyEdit, attach, canvas,
+    /** A drawing is being read or held (its selection must not change under it). */
+    holding: () => Boolean(held.current),
     bind: enabled ? {onPointerDownCapture, onPointerMoveCapture, onPointerUpCapture, onPointerCancelCapture, onClickCapture} : undefined,
   };
 }

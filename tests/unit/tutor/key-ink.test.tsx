@@ -17,6 +17,7 @@ vi.mock('../../../src/features/tutor/input/inkRecognizer', () => ({
 
 const {TutorComposer} = await import('../../../src/features/tutor/TutorComposer');
 const {SETTLE_MS, IDLE_COMMIT_MS} = await import('../../../src/features/tutor/input/latentInk/latentInkPolicy');
+const {DEFERRED_TAP_MS} = await import('../../../src/features/tutor/input/latentInk/useKeyInk');
 const {setHapticsEnabled} = await import('../../../src/ui/v7/haptics');
 
 let host: HTMLDivElement, root: Root;
@@ -57,6 +58,10 @@ async function mount() {
   await act(async () => root.render(<Harness/>));
   await act(async () => {field().focus();});
   expect(rows()).toBeTruthy();
+}
+/** A real tap's click, as a browser sends it after pointerup (detail 1). */
+function tapClick(target: Element) {
+  target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}));
 }
 function pointer(type: string, target: Element, x: number, y: number) {
   const event = new MouseEvent(type, {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
@@ -154,16 +159,74 @@ test('an unclear reading waits for a choice and goes in only when the learner mo
   expect(field().value).toBe('∀');
 });
 
-test('Delete clears a held drawing without deleting the answer', async () => {
+test('Delete clears a held drawing without deleting the answer, with the whole tap or a long press', async () => {
   vi.useFakeTimers();
   await mount();
   await act(async () => button('a', rows()).click());
+  for (const hold of [0, 600]) {
+    await draw([10, 10], [60, 60]);
+    await read({forall: .6, exists: .4});
+    const remove = button('Delete', rows());
+    await act(async () => pointer('pointerdown', remove, 300, 120));
+    await wait(hold);
+    await act(async () => {pointer('pointerup', remove, 300, 120); tapClick(remove);});
+    expect(field().value).toBe('a');
+    expect(drawn()).toBeNull();
+  }
+  // The next Delete is an ordinary one again.
+  await act(async () => {
+    const remove = button('Delete', rows());
+    pointer('pointerdown', remove, 300, 120); pointer('pointerup', remove, 300, 120); tapClick(remove);
+  });
+  expect(field().value).toBe('');
+});
+
+test('every key tapped while the drawing is read goes in, in order, after the symbol', async () => {
+  vi.useFakeTimers();
+  await mount();
   await draw([10, 10], [60, 60]);
-  await read({forall: .6, exists: .4});
-  await act(async () => pointer('pointerdown', button('Delete', rows()), 300, 120));
-  await act(async () => pointer('pointerup', button('Delete', rows()), 300, 120));
-  expect(field().value).toBe('a');
-  expect(drawn()).toBeNull();
+  await act(async () => button('a', rows()).click());
+  await act(async () => button('b', rows()).click());
+  expect(field().value).toBe('');
+  await read({forall: .95, exists: .05});
+  expect(field().value).toBe('∀ab');
+});
+
+test('keys tapped while the reading never comes still go in, in order', async () => {
+  vi.useFakeTimers();
+  await mount();
+  await draw([10, 10], [60, 60]);
+  await act(async () => button('a', rows()).click());
+  await act(async () => button('b', rows()).click());
+  await wait(DEFERRED_TAP_MS);
+  expect(field().value).toBe('ab');
+});
+
+test('a reading that arrives after the selection changed does not edit the new selection', async () => {
+  vi.useFakeTimers();
+  await mount();
+  for (const letter of 'abc') await act(async () => button(letter, rows()).click());
+  expect(field().value).toBe('abc');
+  await draw([10, 10], [60, 60]);
+  await act(async () => {field().setSelectionRange(0, 3);});
+  await read({forall: .95, exists: .05});
+  await wait(SETTLE_MS);
+  expect(field().value).toBe('abc');
+  expect(host.querySelector('.tutor-key-ink-status')?.textContent).toContain('left out');
+});
+
+test('a long-press digit goes in after the held symbol, not before it', async () => {
+  vi.useFakeTimers();
+  await mount();
+  await draw([10, 10], [60, 60]);
+  await read({'less-than': .95, 'x-other': .05});
+  await wait(SETTLE_MS);
+  expect(field().value).toBe('');
+  const q = button('q', rows());
+  await act(async () => pointer('pointerdown', q, 20, 20));
+  await wait(400);
+  await act(async () => {pointer('pointerup', q, 20, 20); tapClick(q);});
+  expect(field().value).toBe('<1');
 });
 
 test('a sideways slide on Space still moves the caret instead of drawing', async () => {
@@ -184,4 +247,30 @@ test('with the flag off a stroke over the keys is a key press, as before', async
   expect(field().value).toBe('g');
   expect(recognizer.submitted).toHaveLength(0);
   expect(host.querySelector('.tutor-key-ink')).toBeNull();
+});
+
+test('the drawn symbol’s readings have the strip to themselves, above a pending spelling fix', async () => {
+  await mount();
+  await act(async () => {
+    const node = field();
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(node, 'teh');
+    node.setSelectionRange(3, 3);
+    node.dispatchEvent(new InputEvent('input', {bubbles: true, data: 'teh', inputType: 'insertText'}));
+  });
+  await vi.waitFor(async () => {
+    await act(async () => {await new Promise(resolve => setTimeout(resolve, 20));});
+    expect(button('Replace teh with the')).toBeDefined();
+  });
+  await draw([10, 10], [60, 60]);
+  await read({forall: .6, exists: .4});
+  expect(button('Insert ∀ (For all)')).toBeDefined();
+  expect(button('Replace teh with the')).toBeUndefined();
+  expect(host.querySelector('.writing-aid-floating-choice')).toBeNull();
+  await act(async () => button('Insert ∀ (For all)').click());
+  expect(field().value).toBe('teh∀');
+  expect(button('Keep ∀ (For all)')).toBeDefined();
+  // Moving on hands the strip back.
+  await act(async () => button('Space', rows()).click());
+  expect(field().value).toBe('teh∀ ');
+  expect(drawn()).toBeNull();
 });

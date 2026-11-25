@@ -163,15 +163,22 @@ export function TutorComposer(props: Props) {
     }});
   /** N249 (Owner): one symbol drawn over the keys; its readings take the strip's slots (useKeyInk). */
   const inkInsert = useRef<{before: PadEdit; after: PadEdit} | null>(null);
+  /** The answer and selection a drawing began on: its symbol goes in only while they are unchanged. */
+  const inkTarget = useRef<EditTarget | null>(null);
   const keyInk = useKeyInk(isFlagOn('tutorKeyInk') && shown && !props.suspended && !scratch && !equationMode && !assist.drawing && !editingDisabled,
-    {onInsert: insertInkSymbol, onRetract: retractInkSymbol});
+    {onBegin: beginInk, onInsert: insertInkSymbol, onRetract: retractInkSymbol});
   const inkSlots = keyInk.view.kind !== 'idle';
-  const forgetInkInsert = keyInk.forgetInsert;
-  // Any other change to the answer ends the one-tap replace of the symbol drawn last.
+  const forgetInkInsert = keyInk.forgetInsert, invalidateInk = keyInk.invalidate;
+  // Any other change to the answer ends the one-tap replace of the symbol drawn last, and a change to the answer or
+  // its selection under a drawing being read drops that drawing (it cannot go in where it began).
   useEffect(() => {
     const last = inkInsert.current;
-    if (last && (cursor.text !== last.after.text || cursor.start !== last.after.start)) {inkInsert.current = null; forgetInkInsert();}
-  }, [cursor, forgetInkInsert]);
+    if (last && (cursor.text !== last.after.text || cursor.start !== last.after.start || cursor.end !== last.after.end)) {
+      inkInsert.current = null; forgetInkInsert();
+    }
+    if (inkTarget.current && !sameEditTarget(inkTarget.current, editTarget())) {inkTarget.current = null; invalidateInk();}
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- editTarget reads refs; the cursor is what changes with them
+  }, [cursor, forgetInkInsert, invalidateInk]);
 
 
   const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, revision.current, cursor]);
@@ -221,7 +228,8 @@ export function TutorComposer(props: Props) {
 
   useEffect(() => {
     const reportVisibility = () => {
-      const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && document.visibilityState !== 'hidden';
+      const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && slots !== 'ink'
+        && document.visibilityState !== 'hidden';
       writing.shown('words', visible && slots === 'words' ? writingWords : []);
       writing.shown('edit', visible && shownEdit && !suggestionUndoable ? [shownEdit] : []);
       writing.shown('ghost', visible && writingGhost ? [writingGhost] : []);
@@ -308,8 +316,18 @@ export function TutorComposer(props: Props) {
   }
   /** N249: a symbol drawn over the keys goes in as a strip symbol does: its glyph in prose, its command in maths. With
    *  `replace`, it takes the place of the symbol drawn just before, while nothing else has changed. */
+  function beginInk() {
+    remember();
+    inkTarget.current = editTarget();
+  }
   function insertInkSymbol(symbol: SymbolDefinition, replace: boolean) {
     remember();
+    if (!replace) {
+      // A reading that arrives after the answer or its selection changed is not inserted somewhere else.
+      const target = inkTarget.current;
+      inkTarget.current = null;
+      if (!target || !sameEditTarget(target, editTarget())) return false;
+    }
     const present = history.current.present, last = inkInsert.current;
     const base = !replace ? present
       : last && last.after.text === present.text && last.after.start === present.start && last.after.end === present.end ? last.before : null;
@@ -323,7 +341,7 @@ export function TutorComposer(props: Props) {
   function retractInkSymbol() {
     const present = history.current.present, last = inkInsert.current;
     inkInsert.current = null;
-    if (editingDisabled || !last || last.after.text !== present.text || last.after.start !== present.start) return false;
+    if (editingDisabled || !last || last.after.text !== present.text || last.after.start !== present.start || last.after.end !== present.end) return false;
     return commit(changePadText(history.current, last.before), true);
   }
   function undoWriting() {
@@ -1128,18 +1146,20 @@ export function TutorComposer(props: Props) {
         </div>}
         {equationButton}
         {hideButton('sbtn')}
-        {!scratch && <WritingAidBar words={writingWords} edit={shownEdit} ghost={writingGhost}
+        {/* N249: the drawn symbol's readings have the strip to themselves; the correction overlay waits. */}
+        {!scratch && slots !== 'ink' && <WritingAidBar words={writingWords} edit={shownEdit} ghost={writingGhost}
           disabled={editingDisabled} undoable={suggestionUndoable} swipeProgress={swipeProgress} exhausted={aidExhausted}
           onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
           onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
-      <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled} onInsert={insert}
+      <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled}
+        onInsert={(text, typed, touch) => keyInk.beforeKeyEdit(() => insert(text, typed, touch))}
         ink={isFlagOn('tutorKeyInk') ? {bind: keyInk.bind, attach: keyInk.attach, canvas: keyInk.canvas,
           status: keyInk.view.kind === 'idle' ? keyInk.view.message ?? '' : keyInk.view.kind === 'inserted' ? 'Inserted ' + keyInk.view.symbol.name : ''} : undefined}
         wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
         onBrowse={()=>{remember();assist.openPicker();}}
-        onDelete={deleteBackward}
-        onMove={(direction, count) => {
+        onDelete={() => keyInk.beforeKeyEdit(deleteBackward)}
+        onMove={(direction, count) => keyInk.beforeKeyEdit(() => {
           remember();
           let edit = history.current.present;
           const ranges = imageRanges(edit.text);
@@ -1149,7 +1169,7 @@ export function TutorComposer(props: Props) {
             if (image) edit = padEdit(edit.text, direction === 'left' ? image.start : image.end);
           }
           change(edit, true);
-        }}/>{hideButton('sbtn kb-band-hide')}</>}
+        })}/>{hideButton('sbtn kb-band-hide')}</>}
     </div> : null}
     {assist.picker && <TutorSymbolPicker recent={assist.recent} onPick={assist.onPick} onClose={assist.closePicker} error={assist.error}/>}
   </div>;
