@@ -16,9 +16,9 @@
  * went in a moment ago only because it was extendable and the learner paused takes it back and continues its
  * drawing, so a slow `<` can still become `≤`.
  */
-import {SYMBOL_CATALOG, symbolById, type SymbolDefinition} from '../../tutor/input/symbolCatalog';
-import type {PartialMatch} from '../../tutor/input/partialSymbolMatcher';
-import type {InkInferenceResult} from '../../tutor/input/types';
+import {SYMBOL_CATALOG, symbolById, type SymbolDefinition} from '../symbolCatalog';
+import type {PartialMatch} from '../partialSymbolMatcher';
+import type {InkInferenceResult} from '../types';
 import {AUTO_INSERT_THRESHOLD, boundaryFloor, breakEvenConfidence} from './costModel';
 import grids from './symbolGrids.json';
 

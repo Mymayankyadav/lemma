@@ -1,9 +1,9 @@
 import {expect, test} from 'vitest';
-import {AUTO_INSERT_THRESHOLD} from '../../../src/features/pad/latentInk/costModel';
+import {AUTO_INSERT_THRESHOLD} from '../../../src/features/tutor/input/latentInk/costModel';
 import {
   adaptiveThreshold, BOUNDARY_FLOOR, continuesDrawing, IDLE_COMMIT_MS, decideOnPenUp, extensionsOf, insertsOnIdle, insertsOnMove,
   isExtendable, readAutoInsertRecord, readLatentInk, SETTLE_MS, writeAutoInsertRecord,
-} from '../../../src/features/pad/latentInk/latentInkPolicy';
+} from '../../../src/features/tutor/input/latentInk/latentInkPolicy';
 import type {InkInferenceResult} from '../../../src/features/tutor/input/types';
 
 function inference(scores: Record<string, number>, kind: 'probability' | 'logit' = 'probability'): InkInferenceResult {

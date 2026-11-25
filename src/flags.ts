@@ -23,6 +23,10 @@ export const FLAG_DEFAULTS = {
   todayNextStep: false,
   /** N241: exam setup and prep ledger on a Path. */
   examMode: false,
+  /** N249 (Owner): draw one symbol at a time over the tutor's keys; the strip offers its readings and a confident,
+   *  complete one goes in by itself (docs/current/N249.md). On by default at the Owner's request (needs a review);
+   *  `?flags=-tutorKeyInk` turns it off in dev/test/e2e builds. */
+  tutorKeyInk: true,
   /** N223 (Owner): the tutor's rich answer, with equations as rendered chips, the pencil's scratch pad and image
    *  attachments, on by default; `?flags=-tutorScratch` shows the plain text answer in dev/test/e2e builds. */
   tutorScratch: true,
@@ -51,9 +55,6 @@ export const FLAG_DEFAULTS = {
   v7Scratch: true,
   /** N198: full-page Pad in Settings and the device-local offline entry. */
   padLocal: true,
-  /** N248 (Owner): the Pad's math keys double as paper for one drawn symbol at a time; confident complete readings
-   *  go in by themselves (docs/current/N248.md). Build stage, default off. */
-  padLatentInk: false,
   /** N222: explicit Equation Assist and notation slots in the local Pad. */
   equationAssist: false,
   /** N223 (Owner): the tutor keyboard's suggestions are always on, with no settings; the old Writing assistance settings

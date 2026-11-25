@@ -2,11 +2,11 @@ import {describe, expect, test} from 'vitest';
 import {
   AUTO_INSERT_THRESHOLD, autoCost, boundaryFloor, breakEvenConfidence, chooseCost, chooseRobustThreshold, DETEXIFY_PROFILE,
   evaluateThreshold, ROBUSTNESS_SCENARIOS, sampleReadings,
-} from '../../../src/features/pad/latentInk/costModel';
+} from '../../../src/features/tutor/input/latentInk/costModel';
 import {
   cellCount, collisionsAt, extensionTable, gridFromKey, gridKey, isStrictSubGrid, occupancyGrid, smallestInjectiveN,
-} from '../../../src/features/pad/latentInk/symbolGrid';
-import grids from '../../../src/features/pad/latentInk/symbolGrids.json';
+} from '../../../src/features/tutor/input/latentInk/symbolGrid';
+import grids from '../../../src/features/tutor/input/latentInk/symbolGrids.json';
 import {SYMBOL_CATALOG} from '../../../src/features/tutor/input/symbolCatalog';
 
 describe('N248 cost model', () => {

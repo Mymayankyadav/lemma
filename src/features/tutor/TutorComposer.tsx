@@ -18,6 +18,9 @@ import {inkIssueText,tutorInkIssue} from '../../data/tutor/ink-storage';
 import {imageReference, referencedImageIds, tutorAnswerParts} from '../../../supabase/functions/_shared/tutor-answer';
 import {readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection, TutorAnswerEditor} from './TutorAnswerEditor';
 import {TutorKeyboard} from './TutorKeyboard';
+import {KeyInkWords} from './input/latentInk/KeyInkWords';
+import {useKeyInk} from './input/latentInk/useKeyInk';
+import type {SymbolDefinition} from './input/symbolCatalog';
 import {TutorInkPad} from './input/TutorInkPad';
 import {TutorSymbolPicker} from './input/TutorSymbolPicker';
 import {insertTutorSymbol, symbolLatex, tutorMathContext} from './input/symbolEdit';
@@ -158,6 +161,17 @@ export function TutorComposer(props: Props) {
       haptic('snap');
       return true;
     }});
+  /** N249 (Owner): one symbol drawn over the keys; its readings take the strip's slots (useKeyInk). */
+  const inkInsert = useRef<{before: PadEdit; after: PadEdit} | null>(null);
+  const keyInk = useKeyInk(isFlagOn('tutorKeyInk') && shown && !props.suspended && !scratch && !equationMode && !assist.drawing && !editingDisabled,
+    {onInsert: insertInkSymbol, onRetract: retractInkSymbol});
+  const inkSlots = keyInk.view.kind !== 'idle';
+  const forgetInkInsert = keyInk.forgetInsert;
+  // Any other change to the answer ends the one-tap replace of the symbol drawn last.
+  useEffect(() => {
+    const last = inkInsert.current;
+    if (last && (cursor.text !== last.after.text || cursor.start !== last.after.start)) {inkInsert.current = null; forgetInkInsert();}
+  }, [cursor, forgetInkInsert]);
 
 
   const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, revision.current, cursor]);
@@ -199,7 +213,7 @@ export function TutorComposer(props: Props) {
    * them that show the first of: autoeq's readings of a typed equation; the symbols for a LaTeX command, short form or
    * name (\al, ->, eps); the word suggestions; and, with nothing to suggest, ∀ ∈ ⇒.
    */
-  const slots: 'equation' | 'symbols' | 'words' | 'quick' = typedEquation && equationReadings.length ? 'equation'
+  const slots: 'ink' | 'equation' | 'symbols' | 'words' | 'quick' = inkSlots ? 'ink' : typedEquation && equationReadings.length ? 'equation'
     : symbolOptions.length ? 'symbols' : writingWords.length ? 'words' : 'quick';
   const symbolSlots = slots === 'symbols' ? symbolOptions : [];
   /** The strip frames word slots (Gboard's typing strip) rather than spreading its idle icons. */
@@ -291,6 +305,26 @@ export function TutorComposer(props: Props) {
     // Inside $…$ the symbol is its LaTeX command (\alp completes to \alpha); in prose, its glyph.
     const next = insertTutorSymbol(base, option.symbol.id) ?? insertNotation(base, option.symbol.glyph);
     if (commit(changePadText(history.current, next), true)) haptic('snap');
+  }
+  /** N249: a symbol drawn over the keys goes in as a strip symbol does: its glyph in prose, its command in maths. With
+   *  `replace`, it takes the place of the symbol drawn just before, while nothing else has changed. */
+  function insertInkSymbol(symbol: SymbolDefinition, replace: boolean) {
+    remember();
+    const present = history.current.present, last = inkInsert.current;
+    const base = !replace ? present
+      : last && last.after.text === present.text && last.after.start === present.start && last.after.end === present.end ? last.before : null;
+    if (editingDisabled || !base) return false;
+    const next = insertTutorSymbol(base, symbol.id) ?? insertNotation(base, symbol.glyph);
+    if (!commit(changePadText(history.current, next), true)) return false;
+    inkInsert.current = {before: base, after: next};
+    haptic('snap');
+    return true;
+  }
+  function retractInkSymbol() {
+    const present = history.current.present, last = inkInsert.current;
+    inkInsert.current = null;
+    if (editingDisabled || !last || last.after.text !== present.text || last.after.start !== present.start) return false;
+    return commit(changePadText(history.current, last.before), true);
   }
   function undoWriting() {
     const saved = acceptedSuggestion.current;
@@ -1084,6 +1118,7 @@ export function TutorComposer(props: Props) {
               onClick={() => acceptTypedEquation(reading.latex)}><MathText source={'$' + reading.latex + '$'}/></button>
             : <button key={'empty' + index} type="button" disabled aria-label="No suggestion"><span aria-hidden="true" className="writing-aid-empty">·</span></button>)}
         </div>}
+        {slots === 'ink' && <KeyInkWords view={keyInk.view} disabled={editingDisabled} onChoose={keyInk.choose}/>}
         {symbolSlots.length > 0 && <SymbolWords options={symbolSlots} disabled={editingDisabled} onAccept={acceptSymbol}/>}
         <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting} hidden={slots !== 'words'}/>
         {slots === 'quick' && <div className="sugg tutor-quick-math" role="group" aria-label="Quick math symbols">
@@ -1099,6 +1134,8 @@ export function TutorComposer(props: Props) {
           onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
       <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled} onInsert={insert}
+        ink={isFlagOn('tutorKeyInk') ? {bind: keyInk.bind, attach: keyInk.attach, canvas: keyInk.canvas,
+          status: keyInk.view.kind === 'idle' ? keyInk.view.message ?? '' : keyInk.view.kind === 'inserted' ? 'Inserted ' + keyInk.view.symbol.name : ''} : undefined}
         wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
         onBrowse={()=>{remember();assist.openPicker();}}
         onDelete={deleteBackward}
