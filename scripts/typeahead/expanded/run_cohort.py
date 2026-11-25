@@ -38,6 +38,12 @@ def with_tutor(context):
     return {**context, 'aid':aid}
 
 
+def fixture_open_timed_out(log):
+    return 'expect(locator).toBeVisible() failed' in log and 'element(s) not found' in log and any(
+        line.lstrip().startswith('Locator:') and '.or(' in line and 'Write a question' in line and 'Your answer' in line
+        for line in log.splitlines())
+
+
 def run(opts):
     repo = Path(__file__).resolve().parents[3]
     manifest = json.loads((opts.split.parent / 'manifest.json').read_bytes())['splits'][opts.split.name]
@@ -108,10 +114,20 @@ def run(opts):
             'LEMMA_TYPEAHEAD_REPLAY_ARM':opts.arm,'LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NGRAM_SHA':opts.sha,
             'LEMMA_TYPEAHEAD_REPLAY_COMPARE':'1', 'LEMMA_TYPEAHEAD_REPLAY_CAPTURE_ONLY':str(int(capture)),
             'LEMMA_TYPEAHEAD_REPLAY_BLIND':str(int(capture))}
-        with (directory/'browser.log').open('w') as log:
-            subprocess.run([str(repo/'node_modules/.bin/playwright'),'test','-c',str(config),
-                'n238-typeahead-replay.spec.ts','-g','replays visible','--workers=1',
-                '--output',str(directory/'playwright')],env=env,cwd=repo,stdout=log,stderr=subprocess.STDOUT,check=True)
+        command = [str(repo/'node_modules/.bin/playwright'),'test','-c',str(config),
+                   'n238-typeahead-replay.spec.ts','-g','replays visible','--workers=1','--output',str(directory/'playwright')]
+        browser_log = directory/'browser.log'
+        for attempt in range(2):
+            with browser_log.open('w') as log:
+                result = subprocess.run(command,env=env,cwd=repo,stdout=log,stderr=subprocess.STDOUT)
+            if result.returncode == 0:
+                break
+            if attempt or not fixture_open_timed_out(browser_log.read_text()):
+                result.check_returncode()
+            # Retry only failure to open the fixture, independent of the observed suggestions.
+            first_log = directory/'browser-first-open-failure.log'
+            if not first_log.exists():
+                shutil.copyfile(browser_log, first_log)
         observed = list(records(Path(expected)))
         if [r[field] for r in observed] != scheduled:
             raise ValueError('Browser returned the wrong opportunities')

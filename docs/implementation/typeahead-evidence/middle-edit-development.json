@@ -119,5 +119,77 @@
     "gained": 28,
     "lost": 0
   },
-  "interpretation": "The 50 deliberately selected middle-edit cases estimate performance on this scenario. The primary held-out complete-answer study uses its independently frozen trajectory."
+  "interpretation": "The 50 deliberately selected middle-edit cases estimate performance on this scenario. The primary held-out complete-answer study uses its independently frozen trajectory.",
+  "deliveryRepeat": {
+    "scope": "The final word-boundary guard and a new browser run. Fixed public events are identical. Worker arrival can vary between observations.",
+    "invocation": {
+      "arm": "expanded-kn",
+      "config": "d2eacc124fe04cf81cc5c2aa6ca669b7bcb504205cde45ab80bddcf135ced1f9",
+      "fixture": "6918591c69af815ec0e34ec4e3dff28034e615d01ce1be6c5884640df5245cdf",
+      "harness": "a599c179164b6f6eece83d88bbce3e7c95c55ea826187681900fc40ddfb8f0dd",
+      "phase": "capture",
+      "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+      "split": {
+        "answers.jsonl": "25cf12c998db3ded9928cf5de4900ce159a54fd0d6abd086ccf5f1672dca8598",
+        "contexts.jsonl": "733ed42314ab3f58eef926cbb9bb962a07281df0b8240afd7be7b8422e4a5be4",
+        "events.jsonl": "d151a884a1331e383265cb0a1e8f66b2724cc31835993114b4387e6c86baa041",
+        "gold.jsonl": "5dac1684b9fd66032cebb561879111f587f9958fccb7d970b5f10f67d0f80562"
+      },
+      "static": "55e9e83a160e6c8682ba1fc98591ced1a64950be3e33873bcfdc465e589f2506"
+    },
+    "captureSha256": "0bce4fce5fca0002700c69effaa170a8adc65cf7c14f4a6eb1e0e9de30e03b62",
+    "score": {
+      "threads": 50,
+      "totals": {
+        "prefixOpportunities": 50,
+        "prefixHits": 32,
+        "wordOpportunities": 50,
+        "wordHits": 32
+      },
+      "topThreeCi95": {
+        "prefix": [
+          0.5,
+          0.76
+        ],
+        "word": [
+          0.5,
+          0.76
+        ]
+      },
+      "firstLoss": {
+        "outside-visible-three": 6,
+        "policy": 4,
+        "visible": 32,
+        "unobserved-or-unproposed": 7,
+        "eligible-pool-limit": 1
+      },
+      "visibleGhost": {},
+      "neural": {
+        "eligible": 50,
+        "deliveredAtObservation": 0
+      },
+      "pairedTopThree": {
+        "prefix": {
+          "opportunities": 50,
+          "gained": 32,
+          "lost": 0,
+          "delta": 0.64,
+          "ci95": [
+            0.5,
+            0.76
+          ]
+        },
+        "word": {
+          "opportunities": 50,
+          "gained": 32,
+          "lost": 0,
+          "delta": 0.64,
+          "ci95": [
+            0.5,
+            0.76
+          ]
+        }
+      }
+    }
+  }
 }

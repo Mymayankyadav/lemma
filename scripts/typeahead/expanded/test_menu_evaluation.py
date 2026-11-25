@@ -5,7 +5,7 @@ from pathlib import Path
 
 from menu_evaluation import identity, paired, score
 from replay_sample import jsonl
-from run_cohort import with_tutor
+from run_cohort import fixture_open_timed_out, with_tutor
 
 
 class MenuEvaluationTests(unittest.TestCase):
@@ -60,3 +60,9 @@ class MenuEvaluationTests(unittest.TestCase):
                          [('upper bound','prefer'),('upper limit','deemphasize')])
         for question in ('xupper bound','an upper boundary','upper bound and upper limit'):
             self.assertNotIn('aid',with_tutor({**ctx,'question':question}))
+
+    def test_only_the_unopened_editor_fixture_is_retryable(self):
+        failure = 'Error: expect(locator).toBeVisible() failed\nLocator: {}\nError: element(s) not found'
+        opener = "getByRole('button', {name: 'Write a question'}).or(getByRole('textbox', {name: 'Your answer'}))"
+        self.assertTrue(fixture_open_timed_out(failure.format(opener)))
+        self.assertFalse(fixture_open_timed_out(failure.format("getByRole('button', {name: 'Insert notation'})") + '\n' + opener))
