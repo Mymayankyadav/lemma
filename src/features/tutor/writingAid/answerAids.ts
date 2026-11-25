@@ -46,9 +46,40 @@ export function normalizeAidScopePrefix(kind: AidEntryKind, value: string): stri
   return kind === 'symbol' ? value.trim().replace(/\s+/gu, ' ') : normalized(value);
 }
 
-export function aidScopeSpecificity(hint: AidHint, context: AidRankingContext, sentence?: string): number | undefined {
+/** Conditions the neural model on applicable aid text independently of signed priority. */
+export function neuralAidPrompt({aid, subject, step, prefix}: Pick<AidRankingContext, 'aid' | 'subject' | 'step' | 'prefix'>,
+  includeRanking: boolean): string {
+  if (!aid || aid.level === 'none') return '';
+  const entries = new Map<string, string>();
+  function add(kind: AidEntryKind, entry: string) {
+    const key = aidEntryKey(kind, entry.trim());
+    if (!entries.has(key)) entries.set(key, entry);
+  }
+  for (const term of aid.terms ?? []) add(normalized(term).includes(' ') ? 'phrase' : 'word', term);
+  for (const symbol of aid.symbols ?? []) add('symbol', symbol);
+  for (const hint of (includeRanking ? aid.ranking?.hints : undefined) ?? []) {
+    const scope = hint.scope;
+    if ((hint.role !== 'given' && hint.role !== 'neutral') ||
+        (scope?.subject && scope.subject !== subject) || (scope?.step && scope.step !== step) ||
+        (scope?.mode && scope.mode !== 'prose') || scope?.phraseStates?.length) continue;
+    if (scope?.prefixes?.length) {
+      const typed = normalizeAidScopePrefix(hint.kind, prefix);
+      if (!scope.prefixes.some(value => typed.startsWith(normalizeAidScopePrefix(hint.kind, value)))) continue;
+    }
+    add(hint.kind, hint.entry);
+  }
+  return [...entries.values()].join(' ');
+}
+
+type ScopeSpecificity = readonly [axes: number, matchLength: number];
+
+function compareSpecificity(a: ScopeSpecificity, b: ScopeSpecificity): number {
+  return a[0] - b[0] || a[1] - b[1];
+}
+
+export function aidScopeSpecificity(hint: AidHint, context: AidRankingContext, sentence?: string): ScopeSpecificity | undefined {
   const scope = hint.scope;
-  if (!scope) return 0;
+  if (!scope) return [0, 0];
   if (scope.subject !== undefined && scope.subject !== context.subject || scope.step !== undefined && scope.step !== context.step ||
       scope.mode !== undefined && scope.mode !== context.mode) return undefined;
   let prefixMatch = 0;
@@ -72,7 +103,7 @@ export function aidScopeSpecificity(hint: AidHint, context: AidRankingContext, s
   // More matching axes take precedence. With tied axes, a longer match is narrower.
   const axes = Number(scope.subject !== undefined) + Number(scope.step !== undefined) +
     Number(scope.mode !== undefined) + Number(Boolean(prefixMatch)) + Number(Boolean(phraseMatch));
-  return 256 * axes + prefixMatch + phraseMatch;
+  return [axes, prefixMatch + phraseMatch];
 }
 
 export function tutorHint(context: AidRankingContext, insertion: string): {adjustment: number; role?: AidRole} {
@@ -80,7 +111,7 @@ export function tutorHint(context: AidRankingContext, insertion: string): {adjus
   if (!aid?.ranking) return {adjustment: 0};
   const faded = effectiveAidLevel(aid.level, context.mastery) === 'none';
   const sentence = normalized(sentenceTail(before));
-  const entries = new Map<string, {specificity: number; values: Set<number>; role: AidRole; strength: number}>();
+  const entries = new Map<string, {specificity: ScopeSpecificity; values: Set<number>; role: AidRole; strength: number}>();
   let restrictive: AidRole | undefined;
   for (const hint of aid.ranking.hints ?? []) {
     const specificity = aidScopeSpecificity(hint, context, sentence);
@@ -96,9 +127,10 @@ export function tutorHint(context: AidRankingContext, insertion: string): {adjus
     if (hint.kind === 'phrase' && exact && targets.some(value => matchesPhraseTail(normalized(value), sentence, before, true))) continue;
     const key = aidEntryKey(hint.kind, hint.entry);
     const saved = entries.get(key);
-    if (!saved || specificity > saved.specificity) {
+    const order = saved ? compareSpecificity(specificity, saved.specificity) : 1;
+    if (!saved || order > 0) {
       entries.set(key, {specificity, values: new Set([bias[hint.priority]]), role: hint.role, strength});
-    } else if (specificity === saved.specificity) {
+    } else if (order === 0) {
       saved.values.add(bias[hint.priority]);
       if (roleOrder[hint.role] > roleOrder[saved.role]) saved.role = hint.role;
     }
@@ -106,8 +138,9 @@ export function tutorHint(context: AidRankingContext, insertion: string): {adjus
   const matched = [...entries.values()];
   // Nested phrases or coincident aliases share the best applicable evidence.
   // Tied, contradictory hints cancel even when their entry IDs differ.
-  const maximum = Math.max(-Infinity, ...matched.map(entry => entry.specificity));
-  const best = matched.filter(entry => entry.specificity === maximum);
+  const maximum = matched.reduce<ScopeSpecificity>((current, {specificity}) =>
+    compareSpecificity(specificity, current) > 0 ? specificity : current, [0, 0]);
+  const best = matched.filter(entry => compareSpecificity(entry.specificity, maximum) === 0);
   const signed = best.map(entry => [...entry.values].reduce((sum, priority) => sum + priority, 0) * entry.strength);
   const adjustment = Math.log(2) * ((Math.max(0, ...signed) + Math.min(0, ...signed)));
   const role = restrictive ?? best.reduce<AidRole | undefined>((selected, entry) =>

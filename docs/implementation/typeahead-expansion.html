@@ -332,9 +332,9 @@ history rows and 235,002 edges, with a maximum probability-mass error of 2.96 ×
 Combined browser verification of the final general and subject packs is pending.</td></tr>
 <tr><th scope="row">Matched neural data controls</th><td data-label="Observation">Both primary runs processed
 100 million scored training targets. On the same 30,855 training-validation targets, native perplexity was 8.3759
-with the current-size pool and 7.6928 with the development pool. Development weight-only int8 export agreed with the
-float graph in 294 of 300 next-token cases. Partial-word retokenization agreed in 47 of 50 cases and missed the 95%
-gate. The browser development weight contrast is unavailable.</td></tr>
+with the current-size pool and 7.6928 with the development pool. Weight-only int8 exports matched the float graph
+in 291 and 294 of the same 300 next-token cases. Both matched 47 of 50 partial-word retokenizations, below the
+95% gate. These two graphs are unavailable for browser weight comparisons.</td></tr>
 <tr><th scope="row">Matched-size n-gram pilot</th><td data-label="Observation">On an 8.39-million-token training
 slice, the count-pruned orders 3, 4 and 5 measured perplexities of 107.31, 102.43 and 102.20 on the same
 155,670 validation targets and 51,815-token vocabulary. Each artifact stayed within 20 MiB. The fifth-order pilot, two

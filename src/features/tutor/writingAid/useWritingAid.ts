@@ -1,5 +1,5 @@
 import {moveAcceptedSpans} from './authorship';
-import {normalizeAidScopePrefix} from './answerAids';
+import {neuralAidPrompt} from './answerAids';
 import {exposureIdentity, visibleTime} from './visibleTime';
 import {typeaheadFrozenProfile, typeaheadGhostProbe, typeaheadGraphTrial, typeaheadReplayEnabled, typeaheadStrictGraphTrial,
   usesNeural, usesPersonalization, usesTutorBias} from './replayArm';
@@ -505,15 +505,7 @@ export function useWritingAid(request: WritingAidRequest): WritingAidView {
       if (!client || !eligibleNeuralContext(snapshot)) return;
       const draft = snapshot.cursor.text.slice(0, snapshot.cursor.end);
       const prefix = /\p{L}[\p{L}\p{M}'’\p{Pd}]{0,31}$/u.exec(draft)?.[0] ?? '';
-      const aids = snapshot.aid?.level === 'none' ? '' : [...snapshot.aid?.terms ?? [], ...snapshot.aid?.symbols ?? [],
-        ...(usesTutorBias(arm) ? snapshot.aid?.ranking?.hints : undefined)?.filter(hint => hint.role === 'given' || hint.role === 'neutral')
-          .filter(hint => !hint.scope?.subject || hint.scope.subject === subject)
-          .filter(hint => !hint.scope?.step || hint.scope.step === step)
-          .filter(hint => !hint.scope?.mode || hint.scope.mode === 'prose')
-          .filter(hint => !hint.scope?.prefixes?.length || hint.scope.prefixes.some(value =>
-            normalizeAidScopePrefix(hint.kind, prefix).startsWith(normalizeAidScopePrefix(hint.kind, value))))
-          .filter(hint => !hint.scope?.phraseStates?.length && hint.priority !== 'deemphasize')
-          .map(hint => hint.entry) ?? []].join(' ');
+      const aids = neuralAidPrompt({aid: snapshot.aid, subject, step, prefix}, usesTutorBias(arm));
       const ghostAllowed = isFlagOn('proofAssistGhost') && eligibleGhostContext(snapshot);
       const probe = ghostAllowed && typeaheadGhostProbe();
       void client.predict({epoch: neuralEpoch, prompt: {question: question?.filter(Boolean).join('\n') ?? '', aids, draft},

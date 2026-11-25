@@ -4,7 +4,7 @@ import {predictWritingAidPool} from '../../../src/features/tutor/writingAid/engi
 import {neuralFileBytes, neuralFitsColdBudget, selectNeuralBackend, type NeuralManifest} from '../../../src/features/tutor/writingAid/decoder/neuralManifest';
 import {exposureIdentity, visibleTime} from '../../../src/features/tutor/writingAid/visibleTime';
 import {resolveTypeaheadArm, usesExpandedNgram, usesNeural, usesPersonalization, usesTutorBias} from '../../../src/features/tutor/writingAid/replayArm';
-import {tutorHint, contextualWording, type AidRankingContext} from '../../../src/features/tutor/writingAid/answerAids';
+import {tutorHint, contextualWording, neuralAidPrompt, type AidRankingContext} from '../../../src/features/tutor/writingAid/answerAids';
 import {countPersonalTransition, createAdaptation, learnedRank, learnSlateChoice, localCalibrationEstimate, observeLocalCalibration, parseAdaptation, personalContext} from '../../../src/features/tutor/writingAid/adaptation';
 import {addAuthoredSpan, decodeAuthoredDraft, encodeAuthoredDraft, moveAcceptedSpans} from '../../../src/features/tutor/writingAid/authorship';
 import {ghostBreakEven, ghostQualified, parseNeuralCalibration} from '../../../src/features/tutor/writingAid/calibration';
@@ -126,6 +126,67 @@ describe('scoped guidance and exact insertion guard', () => {
     expect(tutorHint({...context, subject: 'linear-algebra'}, 'deformation').adjustment).toBe(0);
     expect(tutorHint({...context, aid: {...aid, ranking: {version: 1, hints: [...hints,
       {...hint, scope: {prefixes: ['def']}}]}}}, 'definition').adjustment).toBe(0);
+  });
+
+  it('prioritizes matching scope axes over Unicode-expanded match lengths', () => {
+    const prefix = 'ﬃ'.repeat(32);
+    const phraseState = 'ﬃ'.repeat(80);
+    const entry = prefix + 'definition';
+    const wider: AidHint = {...hint, entry, priority: 'deemphasize', scope: {
+      prefixes: [prefix], phraseStates: [phraseState],
+    }};
+    const narrower: AidHint = {...hint, entry, scope: {subject: 'topology', step: 'CP4:0', mode: 'prose'}};
+    const context = {...scope, prefix, before: phraseState + ' '};
+    for (const hints of [[wider, narrower], [narrower, wider]]) {
+      const ranking = {version: 1 as const, hints};
+      expect(validAidRanking(ranking)).toBe(true);
+      expect(tutorHint({...context, aid: {...aid, ranking}}, entry).adjustment).toBe(Math.log(2));
+    }
+    const ranking = {version: 1 as const, hints: [wider, {...narrower,
+      scope: {prefixes: [prefix.slice(1)], phraseStates: [phraseState]}}]};
+    expect(validAidRanking(ranking)).toBe(true);
+    expect(tutorHint({...context, aid: {...aid, ranking}}, entry).adjustment).toBe(-Math.log(2));
+  });
+
+  it('conditions neural prompts once per applicable canonical entry independently of priority', () => {
+    const tokenizer = readNeuralTokenizer({version: 1, algorithm: 'utf8-bpe', byteOffset: 6,
+      reserved: {pad: 0, bos: 1, eos: 2, question: 3, aids: 4, draft: 5}, merges: []});
+    const term = 'noncommutativeintersections';
+    const later = 'Pythagorean';
+    const given: AidHint = {...hint, entry: term};
+    const laterHint: AidHint = {...hint, id: 'later', entry: later};
+    const duplicate: AidHint = {...given, entry: term.toUpperCase(), scope: {subject: 'topology', prefixes: ['def']}};
+    function prompt(hints: AidHint[], terms: string[] = []) {
+      const ranking = {version: 1 as const, hints};
+      expect(validAidRanking(ranking)).toBe(true);
+      return neuralAidPrompt({...scope, aid: {...aid, terms, ranking}}, true);
+    }
+    const first = prompt([given, laterHint]);
+    const repeated = prompt([given, ...Array<AidHint>(30).fill(duplicate), laterHint], [term]);
+    const ids = (aids: string) => promptIds(tokenizer, {question: 'What is given?', aids, draft: 'Given '}, 512);
+    expect(repeated).toBe(`${term} ${later}`);
+    expect(ids(repeated)).toEqual(ids(first));
+    const encoded = ids(repeated);
+    expect(encoded.slice(encoded.indexOf(4) + 1, encoded.indexOf(5)).map(id => tokenizer.piece(id)).join('')).toContain(later);
+    for (const priority of ['prefer', 'neutral', 'deemphasize'] as const) {
+      expect(prompt([{...given, priority}, laterHint])).toBe(first);
+    }
+  });
+
+  it('retains case-sensitive neural symbol aids and filters inapplicable structured hints', () => {
+    const symbols = ['X', 'x', '\\Xi', '\\xi'];
+    const ranking = {version: 1 as const, hints: [
+      ...symbols.map((entry, index): AidHint => ({...hint, id: `symbol-${index}`, kind: 'symbol', entry})),
+      {...hint, id: 'outside-mode', entry: 'formula', scope: {mode: 'equation'}},
+      {...hint, id: 'outside-step', entry: 'inverse', scope: {step: 'CP4:1'}},
+      {...hint, id: 'outside-prefix', entry: 'intersection', scope: {prefixes: ['un']}},
+      {...hint, id: 'outside-phrase', entry: 'solution', scope: {phraseStates: ['Use the']}},
+      {...hint, id: 'goal', entry: 'theorem', role: 'goal'},
+    ] satisfies AidHint[]};
+    const context = {...scope, aid: {...aid, symbols: ['X', '\\Xi'], ranking}};
+    expect(validAidRanking(ranking)).toBe(true);
+    expect(neuralAidPrompt(context, true)).toBe('X \\Xi x \\xi');
+    expect(neuralAidPrompt(context, false)).toBe('X \\Xi');
   });
 
   it('continues one punctuation-preserving phrase and retires it after completion', () => {

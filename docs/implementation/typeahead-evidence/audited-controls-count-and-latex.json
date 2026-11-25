@@ -1,4 +1,53 @@
 {
+  "currentSizedInt8Export": {
+    "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+    "casesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c",
+    "checkpointSha256": "1dc331b08ad2f477b3993c130aad4b11d0eaa07d4fc6598af9974e35cee8b924",
+    "contextSplit": "validation",
+    "contexts": 300,
+    "dataSha256": "b0de7f0b340a717845104c468cb0d9b9abdce7f562c9d6d7b0588dedb0a573a7",
+    "downloadBytes": 34586206,
+    "exportParityPassed": false,
+    "floatCachedMaxLogitError": 2.47955322265625e-05,
+    "floatMaxLogitError": 3.0517578125e-05,
+    "floatRetokenizedMaxLogitError": 2.2232532501220703e-05,
+    "floatTopThreeSetMatches": 300.0,
+    "layouts": {
+      "prose": {
+        "cachedContexts": 120,
+        "cachedMatches": 116,
+        "contexts": 150,
+        "matches": 146,
+        "maxInputLength": 512,
+        "minInputLength": 1
+      },
+      "roles": {
+        "cachedContexts": 150,
+        "cachedMatches": 145,
+        "contexts": 150,
+        "matches": 145,
+        "maxInputLength": 512,
+        "minInputLength": 82,
+        "partialMatches": 47,
+        "partialRetokenizationCases": 50,
+        "wholeWordCases": 50,
+        "wholeWordMatches": 49
+      }
+    },
+    "metricsSha256": "951d9eb62604f17c1866302224fba82db5d2ebf5d4fec4a5a810668181170575",
+    "nativeCachedMaxLogitError": 2.288818359375e-05,
+    "nativePerplexity": 27.46431720332641,
+    "partialRetokenizationRequiredAgreement": 0.95,
+    "precision": "int8-weight-only",
+    "quantCachedCases": 270.0,
+    "quantCachedTopThreeSetMatches": 261.0,
+    "quantMeanTotalVariation": 0.0056133845442178955,
+    "quantPerplexity": 27.45738643653318,
+    "quantTopThreeSetMatches": 291.0,
+    "scope": "Same 300 ordered next-token validation cases as development export, separate from native training validation.",
+    "status": "unavailable-native-parity",
+    "verifiedRunReceiptSha256": "0c61e3af2888e78f58c25daea1722bcf80b38266d60b8eacf2c710093a079b99"
+  },
   "developmentInt8Export": {
     "browserWeightGain": "unavailable",
     "caseDataSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
@@ -45,7 +94,21 @@
     "quantMeanTotalVariation": 0.004867056519653453,
     "quantPerplexity": 24.75118330794841,
     "quantTopThreeSetMatches": 294.0,
-    "scope": "300 next-token validation cases distinct from the training validation target stream. Aggregate measurements cannot identify whether the three Q8 partial mismatches also appeared on the same-case quantized prefill.",
+    "sameGraphRetokenizationDiagnostic": {
+      "cases": 50,
+      "diagnosticReportSha256": "3d674f3c2b7577d266882578d09aa81f8c9aa91fc554fcf1013d0ed0199e1fed",
+      "elapsedSeconds": 108.18359793499985,
+      "maxAbsoluteLogitError": 9.5367431640625e-06,
+      "maxProbabilityTotalVariation": 9.869861674760604e-07,
+      "onnxRuntimeVersion": "1.24.2",
+      "peakRssBytes": 684429312,
+      "provider": "CPUExecutionProvider",
+      "sameOrderedTopThree": 50,
+      "sameTopOne": 50,
+      "sameTopThreeSet": 50,
+      "scope": "Same development Q8 graph with full prefill and the original retokenized cache path on the 50 frozen divergent-prefix validation cases. The original native parity gate remains failed."
+    },
+    "scope": "300 next-token validation cases distinct from the training validation target stream.",
     "sourceArchiveSha256": "6dd4299338457b7b715fa38a63242fed1369a558671dcd655dfaf47052d4d49f",
     "sourceCommit": "a663f7631478ccb332d5d7f4567e08579c0d140b",
     "status": "unavailable-native-parity",
@@ -57,7 +120,7 @@
     "parameters": 33870848,
     "trainingControls": {
       "currentSized": {
-        "browserQualification": "unqualified",
+        "browserQualification": "unavailable-native-parity",
         "measuredCompute": {
           "assignedGpus": 2,
           "definition": "Elapsed wall time \u00d7 assigned GPU count. Last provider log is an observed duration, not total billed quota.",
