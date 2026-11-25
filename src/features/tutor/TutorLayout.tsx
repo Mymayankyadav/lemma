@@ -43,11 +43,11 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
   const notify=useToast();
   const checkpoint = path + '/cp/' + encodeURIComponent(detail.view.code);
   const goBack=useDetailBack(page.exam?path+'?tab=exam&examSitting='+encodeURIComponent(page.exam.id):checkpoint);
-  const studyUi = useStudyUi(), focus = useActiveFocus(), now = useNow();
+  const studyUi = useStudyUi(), focus = useActiveFocus();
+  const now = useNow(panel==='timer'&&focus.entry&&focus.entry.status!=='paused'?1000:null);
   const clock = focus.entry ? focusClock(focus.entry, now).label : '0:00';
   const timerState = focus.entry ? focusWord(focus.entry) : null;
   const step = currentStudyStep(detail.view);
-  const presence=tutorPresence(now,listenerSeenAt,claimExpiresAt,offline);
   const checking = detail.view.dueCards > 0 && sequence === 0;
   useSubjectColours();
   const subject = kitSubject(project.subject.name).toLowerCase().replaceAll(' ', '-');
@@ -72,7 +72,7 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
   return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label={page.exam?'Exam tutor':'Checkpoint tutor'} data-subject={subject} data-header-hidden={headerHidden || undefined}>
     <header className="tutor-header" inert={headerHidden}>
       <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
-      <div className="tutor-header-title">{page.exam?<TutorExamHeader sitting={page.exam} open={examView==='ledger'} onOpen={()=>startExamPanel('ledger')}/>:<strong>{detail.view.title}</strong>}<TutorPresence presence={presence}/></div>
+      <div className="tutor-header-title">{page.exam?<TutorExamHeader sitting={page.exam} open={examView==='ledger'} onOpen={()=>startExamPanel('ledger')}/>:<strong>{detail.view.title}</strong>}<TutorPresence seenAt={listenerSeenAt} expiresAt={claimExpiresAt} offline={offline}/></div>
       <IconButton label="Session actions" onClick={() => setActionsOpen(true)} aria-haspopup="dialog" aria-expanded={actionsOpen} data-tutor-session-actions="" data-v7-search-opener=""><Ellipsis aria-hidden="true"/></IconButton>
     </header>
     {!overview&&!page.exam&&<div className="tutor-session-progress" aria-label="Session parts" inert={headerHidden}>
@@ -147,8 +147,11 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
   </main>;
 }
 
-function TutorPresence({presence}:{presence:string}) {
+function TutorPresence({seenAt,expiresAt,offline}:{seenAt?:string|null;expiresAt?:string;offline?:boolean}) {
   const [open,setOpen]=useState(false),id=useId();
+  const active=tutorPresence(Date.now(),seenAt,expiresAt,offline)!=='Not listening';
+  const now=useNow(active?1000:null);
+  const presence=tutorPresence(now,seenAt,expiresAt,offline);
   return <span className="tutor-presence-control" onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
     <button type="button" className="v7-icon-button tutor-presence-light" data-presence={presence}
       aria-label={'Tutor status: '+presence} aria-describedby={open?id:undefined}

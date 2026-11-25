@@ -2,12 +2,12 @@ import {lazy,Suspense,useState,type ReactNode} from 'react';
 import {useLocation} from 'react-router';
 import {useProjects} from '../../data/hooks';
 import {Skeleton} from '../../ui/v7/components';
+import {PathScreen as Path} from './routeScreens';
 import {useMinWidth} from './useMinWidth';
 import './library-split.css';
 
 const Paths=lazy(()=>import('../../features/projects/v7/PathsV7'));
 const Cards=lazy(()=>import('../../features/cards/v7/CardsV7'));
-const Path=lazy(()=>import('../../features/project/v7/V7Path'));
 const Card=lazy(()=>import('../../features/card/v7/CardV7'));
 export function libraryKind(path:string):'paths'|'cards'|null{
  if(/^\/projects(?:\/new)?$/.test(path)||/^\/p\/[^/]+$/.test(path))return 'paths';

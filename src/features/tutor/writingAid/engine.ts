@@ -182,7 +182,7 @@ function keyProposals(
       source: 'bank', role: hint.role ?? 'neutral', tutorAdjustment: hint.adjustment, score};
     proposals.push(proposal);
   }
-  if (v2 && !prefix && !OPERAND_GAP.test(before)) {
+  if (v2 && !prefix && !sentenceStart && !OPERAND_GAP.test(before)) {
     const freshWitness = /\blet\s*$/iu.test(before) && /\b(?:choose|find|exhibit|witness)\b/iu.test(request.question?.[0] ?? '');
     const symbols = freshWitness ? [] : decoderSymbols(before, [...request.question ?? [], ...aidActive ? request.aid?.symbols ?? [] : []]).slice(0, 8);
     const declared = aidActive ? request.aid?.ranking?.declaredSymbols ?? [] : [];

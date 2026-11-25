@@ -1,3 +1,4 @@
+import {warmV7Screen} from './routeScreens';
 import {Children,isValidElement,Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type MouseEvent,type ReactNode,type RefObject} from 'react';
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {useDeviceCommands} from '../../platform/useDeviceCommands';
@@ -7,9 +8,11 @@ import {CalendarDays,ChartColumn,House,Pause,Play,Plus,Route,Search,Inbox,Settin
 import {MEANING_ICON} from '../../ui/v7/meanings';
 import {useHome} from '../../data/hooks';
 import {getStudyApi} from '../../data/study';
+import type {StudyEntryRecord} from '../../data/study/contract';
 import {SubjectMark,subjectClass} from '../../ui/v7/Subject';
 import {kitSubject} from '../../features/atlas/v7/model';
-import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
+import {announceFocusChange,focusClock,focusWord,useActiveFocus,useFocusChangeListener,useNow} from './focus';
+import {useRoutePresentation} from './useRoutePresentation';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {Dock} from '../../ui/v7/Dock';
 import OfflineBanner from '../OfflineBanner';
@@ -47,10 +50,9 @@ export const tabs=[
  {to:'/insights',label:'Progress',Icon:ChartColumn,match:(path:string)=>path.startsWith('/insights')||path.startsWith('/log')},
 ] as const;
 
-function SessionRow(){
- const {entry,refresh}=useActiveFocus(),home=useHome(),now=useNow(),navigate=useNavigate();
+function SessionRow({entry}:{entry:StudyEntryRecord}){
+ const home=useHome(),now=useNow(entry.status==='paused'?null:1000),navigate=useNavigate();
  const [busy,setBusy]=useState(false);
- if(!entry)return null;
  const word=focusWord(entry),clock=focusClock(entry,now);
  const project=home.data?.projects.find(item=>item.id===entry.projectId);
  const subject=kitSubject(project?.subject.name??'');
@@ -59,7 +61,7 @@ function SessionRow(){
   try{
    const study=getStudyApi(),fresh=await study.activeStudyEntry();
    if(fresh?.id===entry.id){if(fresh.status==='paused')await study.resumeStudyEntry(fresh.id,fresh.version);else await study.pauseStudyEntry(fresh.id,fresh.version);}
-  }finally{setBusy(false);refresh();announceFocusChange();}
+  }finally{setBusy(false);announceFocusChange();}
  };
  return <div className="v7-session-row" data-word={word}>
   <button type="button" className="v7-session-open" onClick={()=>navigate('/focus')} aria-label={'Open focus: '+entry.intent+', '+word+', '+clock.label+(clock.mode==='remaining'?' left':' focused')}>
@@ -137,6 +139,9 @@ function useTabLabelsFit(ref:RefObject<HTMLElement|null>,wide:boolean,enabled:bo
 /** Wraps every v7 route except the kit. Immersive screens provide their own navigation and actions. */
 export default function V7Shell({children,immersive=false,capture=true}:{children:ReactNode;immersive?:boolean;capture?:boolean}){
  const location=useLocation(),navigate=useNavigate(),navigation=useNavigationType(),home=useHome(),{entry}=useActiveFocus();
+ useFocusChangeListener();
+ const shell=useRef<HTMLDivElement>(null);
+ useRoutePresentation(shell,location.pathname,location.key,navigation);
  const [searching,setSearching]=useState<SearchVisit|null>(null),[shortcuts,setShortcuts]=useState(false);
  const key=location.pathname+location.search+'\n'+location.key;
  const searchBack=useRef(new Map<string,SearchVisit>()),previousKey=useRef(key);
@@ -152,13 +157,19 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   if(/^\/p\/[^/]+(?:\/cp\/[^/]+)?\/tutor$/.test(path))return;
   const group=path.startsWith('/p/')?(path.includes('/cp/')?'Checkpoints':'Paths'):path.startsWith('/cards/')?'Cards':path.startsWith('/s/')?'Sessions':null;
   if(!group)return;
+  const root=shell.current;
+  if(!root)return;
+  let lastTitle='';
   const record=()=>{
-   const main=document.querySelector('main'),title=main?.querySelector('h1')?.textContent?.trim();
+   const main=root.querySelector('main'),title=main?.querySelector('h1')?.textContent?.trim();
    if(!title||['Path','Card','Checkpoint','Loading…'].includes(title))return;
    const project=home.data?.projects.find(item=>path==='/p/'+item.slug);
-   rememberRoomItem({id:to,group,title:project?.title??title,to});
+   const next=project?.title??title;
+   if(next===lastTitle)return;
+   lastTitle=next;
+   rememberRoomItem({id:to,group,title:next,to});
   };
-  record();const observer=new MutationObserver(record);observer.observe(document.body,{childList:true,subtree:true});
+  record();const observer=new MutationObserver(record);observer.observe(root,{childList:true,subtree:true});
   return()=>observer.disconnect();
  },[location.pathname,location.search,home.data]);
  // A1: Reduce effects follows the account (set on another device) once settings load; the device copy applied at start.
@@ -220,7 +231,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   };
   window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
  },[wide,immersive,capture,navigate,entry]);
- return <div className="v7-shell" data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
+ return <div ref={shell} className="v7-shell" data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
   <OfflineBanner/>
   <Fragment key={colours}>{children}</Fragment>
   <Suspense fallback={null}>{searching?.key===key&&<SearchSheet key={key} open onClose={dismissSearch} onPick={pickSearchItem} initial={searching.initial}/>}</Suspense>
@@ -234,13 +245,13 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
      <span className="v7-tab-label">{label}</span>
     </Link>)}
    </nav>
-   <SessionRow/>
+   {entry&&<SessionRow entry={entry}/>}
    {capture&&<Capture/>}
    </div>
    <nav className="v7-rail-library" aria-label="Library"><p className="v7-eyebrow">Library</p>
     {[['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']].map(([to,label])=><Link key={to} to={to} aria-current={location.pathname===to||location.pathname.startsWith(to+'/')?'page':undefined}>{label}</Link>)}
    </nav>
-   <Link className="v7-rail-settings" to="/settings"><Settings aria-hidden="true"/><span>Settings</span></Link>
+   <Link className="v7-rail-settings" to="/settings" onPointerDown={()=>warmV7Screen('settings')} onFocus={()=>warmV7Screen('settings')} onMouseEnter={()=>warmV7Screen('settings')}><Settings aria-hidden="true"/><span>Settings</span></Link>
   </Dock>}
   <Sheet open={shortcuts} onClose={()=>setShortcuts(false)} title="Keyboard shortcuts" footer={<Button variant="primary" onClick={()=>setShortcuts(false)}>Done</Button>}>
    <dl className="v7-shortcuts">{[['⌘ / Ctrl K','Search'],['N','Capture'],['1–5','Switch destinations'],['F','Start or return to focus'],['Space','Pause focus / reveal answer'],['1–4','Grade an answer'],['U','Undo last answer'],['Esc','Close the top layer'],['?','Show shortcuts']].map(([key,label])=><div key={key}><dt><kbd>{key}</kbd></dt><dd>{label}</dd></div>)}</dl>
@@ -277,7 +288,7 @@ export function HubHeader({title,date,settings=false,display=false,control,title
  const actions=<nav aria-label="Page actions" className="v7-page-actions">
     <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
-    {settings&&<Link to="/settings" aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
+    {settings&&<Link to="/settings" onPointerDown={()=>warmV7Screen('settings')} onFocus={()=>warmV7Screen('settings')} onMouseEnter={()=>warmV7Screen('settings')} aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
     {extraAction}
    </nav>;
  if(!display)return <>

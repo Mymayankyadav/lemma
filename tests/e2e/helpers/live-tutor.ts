@@ -25,7 +25,14 @@ export async function prepareLiveTutor(page:Page,released=true){
 
 export function liveTutorFixtureResponse(payload:Record<string,unknown>,path:string,accept?:string) {
  let result=payload[path]??[]
- if(accept?.includes('vnd.pgrst.object')&&Array.isArray(result))result=result[0]??null
+ if(accept?.includes('vnd.pgrst.object')&&Array.isArray(result)){
+  result=result[0]??null
+  if(path==='checkpoints'&&result){
+   const checkpoint=result as Record<string,unknown>
+   const source=(payload.sources as {id:string;short:string}[]|undefined)?.find(row=>row.id===checkpoint.source_id)
+   result={...checkpoint,source:source?{short:source.short}:null}
+  }
+ }
  return result
 }
 

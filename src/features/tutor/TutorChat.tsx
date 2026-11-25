@@ -37,6 +37,7 @@ type Props = {
   hasContext: boolean;
   status: ReactNode;
   pendingStatus: ReactNode;
+  sendingText?: string;
   listenerSeenAt?: string | null;
   resumePrompt: string;
   ink?: TutorInkState;
@@ -58,7 +59,7 @@ function questionPreview(body: string) {
 }
 
 export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, canSend, readOnly, pending, offline,
-  status, pendingStatus, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage, onDeleteMessages, answerAid, mastery, timedLabel}: Props) {
+  status, pendingStatus, sendingText, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage, onDeleteMessages, answerAid, mastery, timedLabel}: Props) {
   const [examPanel,setExamPanel]=useState<TutorExamPanel>();
   const [view, setView] = useState<'overview' | 'chat'>();
   const [panel, setPanel] = useState<'context' | 'connection' | 'close' | 'question'>();
@@ -105,7 +106,7 @@ export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, 
     previousHeight.current = element.scrollHeight;
     previousFirst.current = first;
     previousReply.current = latestReply?.id;
-  }, [first, last?.id, last?.version, latestReply?.id, overview]);
+  }, [first, last?.id, last?.version, latestReply?.id, overview,sendingText]);
   useLayoutEffect(() => {
     const element = chat.current;
     if (!element || overview || typeof ResizeObserver === 'undefined') return;
@@ -203,10 +204,13 @@ export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, 
         onWrite={!first && !readOnly ? () => setView('chat') : undefined}
         onBegin={() => send('Let’s study ' + page.detail.view.title + '. Start with one short question to check what I understand.', {includeObjective:true, keepDraft:true})}/>
         : <>
-          {!first && !readOnly && <div className="turn"><div className="msg a">
+          {!first && !readOnly && !sendingText && <div className="turn"><div className="msg a">
             <div className="bd"><MathText source={step || page.detail.view.title}/></div>
           </div></div>}
           <TutorSelection.Provider value={{selected, select}}>{transcript}</TutorSelection.Provider>
+          {sendingText&&<div className="ans" aria-label="Outgoing message">
+            <div className="msg u"><div className="bd">{sendingText}</div></div><span className="ctag">Sending…</span>
+          </div>}
           {pending && <div className="tutor-message-status" role="status">
             {pendingStatus}
           </div>}

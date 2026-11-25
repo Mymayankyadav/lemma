@@ -1,5 +1,7 @@
 import {lazy,Suspense} from "react";
 import RouteError, {RouteFallback} from "./RouteError";
+import {isFlagOn} from "../flags";
+import {TodayScreen,PathScreen,CheckpointScreen,SettingsScreen} from "./v7/routeScreens";
 // N150 (bug #1375): keeps an E pressed on the Inbox before its code has loaded (a few hundred bytes, no dependencies).
 import "../features/proposals/v7/inboxEarlyKeys";
 import Page0 from '../features/home/Page'
@@ -20,13 +22,14 @@ const Page14=lazy(()=>import('../features/insights/Page'))
 const Page15=lazy(()=>import('../features/settings/Page'))
 const Page16=lazy(()=>import('../features/sign-in/Page'))
 const Page17=lazy(()=>import('../features/kit/Page'))
+const v7=isFlagOn('v7Shell');
 /** The canonical route inventory from design.md §6. */
 export const screenRoutes = [
- {path: '/', element: <Suspense fallback={<RouteFallback/>}><Page0 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/', element: <Suspense fallback={<RouteFallback/>}>{v7?<TodayScreen />:<Page0 />}</Suspense>, errorElement: <RouteError/> },
  {path: '/projects', element: <Suspense fallback={<RouteFallback/>}><Page1 /></Suspense>, errorElement: <RouteError/> },
  {path: '/projects/new', element: <Suspense fallback={<RouteFallback/>}><Page2 /></Suspense>, errorElement: <RouteError/> },
- {path: '/p/:slug', element: <Suspense fallback={<RouteFallback/>}><Page3 /></Suspense>, errorElement: <RouteError/> },
- {path: '/p/:slug/cp/:code', element: <Suspense fallback={<RouteFallback/>}><Page4 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/p/:slug', element: <Suspense fallback={<RouteFallback/>}>{v7?<PathScreen />:<Page3 />}</Suspense>, errorElement: <RouteError/> },
+ {path: '/p/:slug/cp/:code', element: <Suspense fallback={<RouteFallback/>}>{v7?<CheckpointScreen />:<Page4 />}</Suspense>, errorElement: <RouteError/> },
  {path: '/s/:slug/:n', element: <Suspense fallback={<RouteFallback/>}><Page5 /></Suspense>, errorElement: <RouteError/> },
  {path: '/proposals', element: <Suspense fallback={<RouteFallback/>}><Page6 /></Suspense>, errorElement: <RouteError/> },
  {path: '/proposals/:id', element: <Suspense fallback={<RouteFallback/>}><Page7 /></Suspense>, errorElement: <RouteError/> },
@@ -37,7 +40,7 @@ export const screenRoutes = [
  {path: '/cards/:no', element: <Suspense fallback={<RouteFallback/>}><Page12 /></Suspense>, errorElement: <RouteError/> },
  {path: '/atlas', element: <Suspense fallback={<RouteFallback/>}><Page13 /></Suspense>, errorElement: <RouteError/> },
  {path: '/insights', element: <Suspense fallback={<RouteFallback/>}><Page14 /></Suspense>, errorElement: <RouteError/> },
- {path: '/settings', element: <Suspense fallback={<RouteFallback/>}><Page15 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/settings', element: <Suspense fallback={<RouteFallback/>}>{v7?<SettingsScreen />:<Page15 />}</Suspense>, errorElement: <RouteError/> },
  {path: '/sign-in', element: <Suspense fallback={<RouteFallback/>}><Page16 /></Suspense>, errorElement: <RouteError/> },
  {path: '/kit', element: <Suspense fallback={<RouteFallback/>}><Page17 /></Suspense>, errorElement: <RouteError/> },
 ]

@@ -15,9 +15,11 @@ export const shots:Shot[]=[
  {name:"today",hash:"/",frames:3,wide:true},
  {name:"focus",hash:"/",prepare:async page=>{
    const start=page.getByRole("button",{name:/^(Start now|Start focus)$/}),back=page.getByRole("link",{name:"Return to focus"});
-   if(await start.count()){await start.first().click();await page.waitForURL(/#\/focus/).catch(()=>{});}
-   else if(await back.count())await back.click();
-   else await page.goto(at("/focus"));
+   // The shell can finish loading before Today's schedule supplies its focus action.
+   await expect(start.or(back).first()).toBeVisible();
+   if(await start.first().isVisible())await start.first().click();
+   else await back.click();
+   await page.waitForURL(/#\/focus/);
   }},
  {name:"today-quick-focus",hash:"/",prepare:async page=>{
    // PA3: Quick focus is offered in every hero state; Search's "Quick focus" action opens the same sheet (/?quick=1).

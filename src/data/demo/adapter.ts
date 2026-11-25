@@ -407,8 +407,11 @@ export class DemoAdapter implements LemmaApi {
       this.firstUse?'lemma.demo.first-use.authored.v1':undefined);
     this.examProposalStorage=isFlagOn('examMode')?options.authoredCardStorage:undefined;
     try{
-      const drafts=JSON.parse(this.examProposalStorage?.getItem(this.examProposalKey())??'[]') as DemoProposal[];
-      this.store.proposals.push(...drafts.filter(row=>row.examDraft));
+      const savedDrafts=this.examProposalStorage?.getItem(this.examProposalKey());
+      if(savedDrafts){
+        const drafts=JSON.parse(savedDrafts) as DemoProposal[];
+        this.store.proposals.push(...drafts.filter(row=>row.examDraft));
+      }
     }catch{/* The fixture remains available. */}
     // Snapshot before installing either lazy getter: spreading an accessor
     // from its own materialization path would recursively invoke itself.
@@ -1527,6 +1530,7 @@ export class DemoAdapter implements LemmaApi {
         .map(cp=>({
           ...this.cpView(cp,[],cp.proposed?'proposed':uiById?.get(cp.id)),
           dueCards:dueByCode.get(cp.code)??0,
+          currentStepText:cp.steps[Math.max(0,cp.currentStep)]??null,
         })),
       done,
       total,

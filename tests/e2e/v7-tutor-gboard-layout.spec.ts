@@ -81,7 +81,7 @@ test('in a browser the caps keep Gboard\'s shape and layout with shorter rows an
 });
 
 // N223 (Owner: the pencil at the left edge; "the symbols suggested should live inside the suggestion strip"): the strip
-// keeps Gboard's frame in every state, so the idle ∀ ∈ ⇒ are slots between the edge icons, like the words.
+// keeps Gboard's frame in every state, including the quick symbols in the explicitly selected maths view.
 test('the strip keeps Gboard\'s frame, an icon at each edge and three equal slots, idle and while typing', async ({page}) => {
   await page.setViewportSize({width: 393, height: 873});
   const {keyboard, decoderReady} = await openKeyboard(page, true);
@@ -94,12 +94,16 @@ test('the strip keeps Gboard\'s frame, an icon at each edge and three equal slot
   expect(draw!.width).toBeCloseTo(equation!.width, 0);
   expect(draw!.x - stripBox.x).toBeLessThan(10);
   expect(stripBox.x + stripBox.width - (equation!.x + equation!.width)).toBeLessThan(10);
-  const quick = await keyboard.getByRole('group', {name: 'Quick math symbols'}).getByRole('button')
+  const quickGroup = keyboard.getByRole('group', {name: 'Quick math symbols'});
+  await expect(quickGroup).toHaveCount(0);
+  await keyboard.getByRole('button', {name: 'Maths symbols', exact: true}).click();
+  const quick = await quickGroup.getByRole('button')
     .evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().toJSON()));
   expect(quick).toHaveLength(3);
   for (const box of quick) expect(box.width).toBeCloseTo(quick[0].width, 0);
   expect(quick[0].x).toBeGreaterThanOrEqual(draw!.x + draw!.width - 1);
   expect(quick[2].x + quick[2].width).toBeLessThanOrEqual(equation!.x + 1);
+  await keyboard.getByRole('button', {name: 'ABC', exact: true}).click();
   // In the app, Hide keyboard sits in the band under the keys, where Gboard draws its chevron.
   const hide = keyboard.getByRole('button', {name: 'Hide keyboard', exact: true});
   await expect(hide).toHaveCount(1);

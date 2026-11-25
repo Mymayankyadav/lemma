@@ -520,6 +520,7 @@ test('the writing switches and full Off setting persist while manual typing and 
   await answer.press('Tab');
   await expect(page.getByRole('button', {name: 'Keep keyboard open', exact: true})).toBeFocused();
   await page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: 'Space', exact: true}).click();
+  await page.getByRole('button', {name: 'Maths symbols', exact: true}).click();
   await page.getByRole('group', {name: 'Quick math symbols'}).getByRole('button', {name: '∈', exact: true}).click();
   await expect(answer).toHaveJSProperty('textContent', 'Let eps ∈');
 

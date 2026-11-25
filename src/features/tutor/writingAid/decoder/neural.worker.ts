@@ -1,4 +1,4 @@
-import {ANDROID_TIER, androidFp16Weights, installedAndroidPack, readInstalledFile} from './androidPack';
+import {ANDROID_TIER, androidFp16Weights, installedAndroidPack, readInstalledFile, webModelInstall} from './androidPack';
 import {ghostQualified, neuralCalibrationFingerprint} from '../calibration';
 import type {InferenceSession, Tensor} from 'onnxruntime-web/wasm';
 import {loadTutorModelWasm} from '../../input/modelAssets';
@@ -116,7 +116,10 @@ async function load(tier: NeuralTier, manifest: NeuralManifest, device: NeuralBa
 async function available(trial = false, strictTrial = false, installedExperiment = false): Promise<ActiveModel | undefined> {
   const installed = await installedAndroidPack();
   if (installedExperiment && !installed) return;
-  const gpu = (navigator as Navigator & {gpu?: {requestAdapter: () => Promise<{features?: {has(name: string): boolean}; info?: {isFallbackAdapter?: boolean}} | null>}}).gpu;
+  // The installed web experiment saves its verified WASM runtime with the model. Use it on every
+  // launch so going offline never replaces a working install with a fresh GPU download.
+  const useOfflineWasm = installedExperiment && webModelInstall;
+  const gpu = useOfflineWasm ? undefined : (navigator as Navigator & {gpu?: {requestAdapter: () => Promise<{features?: {has(name: string): boolean}; info?: {isFallbackAdapter?: boolean}} | null>}}).gpu;
   const adapter = await Promise.race([gpu?.requestAdapter().catch(() => null), new Promise<null>(resolve => setTimeout(() => resolve(null), 300))]);
   const gpuAvailable = Boolean(adapter && (trial && !strictTrial || adapter.info?.isFallbackAdapter !== true));
   const jspi = typeof WebAssembly !== 'undefined' && 'Suspending' in WebAssembly && 'promising' in WebAssembly;

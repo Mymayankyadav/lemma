@@ -20,7 +20,9 @@ for (const [width, height, textSize] of [[320, 640, 100], [320, 640, 160], [390,
     await expect(keyboard.getByRole('button',{name:'Use device keyboard',exact:true})).toHaveCount(0);
     await correction.click();
     await expect(answer).toHaveJSProperty("textContent", 'the ');
+    await keyboard.getByRole('button',{name:'Maths symbols',exact:true}).click();
     await keyboard.getByRole('group',{name:'Quick math symbols'}).getByRole('button',{name:'∈',exact:true}).click();
+    await keyboard.getByRole('button',{name:'ABC',exact:true}).click();
     await expect(answer).toHaveJSProperty("textContent", 'the ∈');
 
     const q = keyboard.getByRole('button',{name:'q',exact:true});

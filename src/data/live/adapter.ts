@@ -3,7 +3,7 @@ import type { LemmaApi } from '../api'
 import {isAuthSessionMissingError} from '@supabase/supabase-js'
 import { textKind } from '../../pdf/text-source'
 import { liveClient } from './client'
-import {authGeneration, authOwner} from '../authBoundary'
+import {authGeneration, authOwner, authSignedOut} from '../authBoundary'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
 import { projectProgress, conceptStatus } from '../../lib/derive'
 import {buildAtlasEnvelope,runAtlasMutation,runAtlasPreview} from './atlas-command'
@@ -69,6 +69,98 @@ async function evidenceEvents(db:ReturnType<typeof liveClient>,uid:string,events
    checkpointCode:checkpointCode(event),createdAt:event.occurred_at??event.created_at,
    ...(mode==='exam'||mode==='study'?{mode}:{}),assistance,sessionNumber:sessionNumber?.(event)}
  })
+}
+
+type LiveDb=ReturnType<typeof liveClient>
+// Share overlapping Route and Tutor reads. Discard both successes and failures
+// on settlement so a later refresh always reads the current owner data.
+const pendingPathReads=new WeakMap<LiveDb,Map<string,Promise<unknown>>>()
+function sharePathRead<T>(db:LiveDb,parts:(string|number)[],read:()=>Promise<T>):Promise<T>{
+ let pending=pendingPathReads.get(db)
+ if(!pending){pending=new Map();pendingPathReads.set(db,pending)}
+ const key=JSON.stringify(parts),existing=pending.get(key)
+ if(existing)return existing as Promise<T>
+ const result=read()
+ pending.set(key,result)
+ const finish=()=>{pending.delete(key)}
+ void result.then(finish,finish)
+ return result
+}
+function readPathOwner(db:LiveDb){
+ return sharePathRead(db,['owner',authGeneration()],()=>owner(db))
+}
+async function scopedRows(db:LiveDb,table:string,uid:string,filters:Record<string,string>,{
+ fields='*',orderBy=['id'],nullFields=[],
+}:{fields?:string;orderBy?:string[];nullFields?:string[]}={}):Promise<Row[]> {
+ const data:Row[]=[]
+ const pageSize=1000
+ for(let offset=0;;offset+=pageSize){
+  let query=db.from(table).select(fields).eq('user_id',uid)
+  for(const [column,value] of Object.entries(filters))query=query.eq(column,value)
+  for(const column of nullFields)query=query.is(column,null)
+  for(const column of orderBy)query=query.order(column)
+  const batch=checked(await query.range(offset,offset+pageSize-1) as {data:Row[]|null;error:unknown})
+  data.push(...batch)
+  if(batch.length<pageSize)return data
+ }
+}
+function pathGraph(db:LiveDb,uid:string,generation:number,projectId:string){
+ return sharePathRead(db,['graph',generation,uid,projectId],async()=>{
+  const [checkpoints,prereqs]=await Promise.all([
+   scopedRows(db,'checkpoints',uid,{project_id:projectId},{fields:'id,code,title,position,plan_state,deferred_reason,deferred_at,step_meta,status,needs_revisit,recheck_due,current_step,steps'}),
+   scopedRows(db,'checkpoint_prereqs',uid,{'child.project_id':projectId},{
+    fields:'checkpoint_id,prereq_id,child:checkpoints!checkpoint_prereqs_user_id_checkpoint_id_fkey!inner(project_id),parent:checkpoints!checkpoint_prereqs_user_id_prereq_id_fkey(code)',
+    orderBy:['checkpoint_id','prereq_id'],
+   }),
+  ])
+  return {checkpoints,prereqs}
+ })
+}
+async function pathSchedule(db:LiveDb,uid:string,generation:number){
+ const row=await sharePathRead(db,['settings',generation,uid],async()=>
+  checked(await db.from('settings').select('time_zone,rollover_hour').eq('user_id',uid).single() as {data:Row|null;error:unknown}))
+ return studyDay(Date.now(),row.time_zone,row.rollover_hour)
+}
+function pathSessions(db:LiveDb,uid:string,generation:number,projectId:string){
+ return sharePathRead(db,['sessions',generation,uid,projectId],()=>scopedRows(db,'sessions',uid,{project_id:projectId},{fields:'*,checkpoint:checkpoints(code)'}))
+}
+function pathReviewItems(db:LiveDb,uid:string,generation:number){
+ return sharePathRead(db,['review',generation,uid],()=>readReviewItems(db,{decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false}))
+}
+function assertPathOwner(uid:string,generation:number){
+ if(authGeneration()!==generation||authSignedOut()||(authOwner()!==null&&authOwner()!==uid))
+  throw new LemmaError('auth','The account changed. Reopen the path.')
+}
+function pathViews(checkpoints:Row[],prereqs:Row[],day:string):CheckpointView[]{
+ const parentsById=new Map<string,string[]>()
+ for(const edge of prereqs){
+  const parents=parentsById.get(edge.checkpoint_id)??[]
+  parents.push(edge.prereq_id);parentsById.set(edge.checkpoint_id,parents)
+ }
+ const byId=new Map(checkpoints.map(row=>[row.id,row])),cache=new Map<string,CheckpointView>(),visiting=new Set<string>()
+ function view(row:Row):CheckpointView{
+  const cached=cache.get(row.id)
+  if(cached)return cached
+  if(visiting.has(row.id))throw new LemmaError('invalid','Checkpoint prerequisite cycle')
+  visiting.add(row.id)
+  const parents=(parentsById.get(row.id)??[]).flatMap(id=>{const parent=byId.get(id);return parent?[view(parent)]:[]})
+  const result=checkpointRow(row,parents,day)
+  cache.set(row.id,result);visiting.delete(row.id)
+  return result
+ }
+ return checkpoints.map(view)
+}
+async function readReviewItems(db:LiveDb,filter:Parameters<LemmaApi['getReviewItems']>[0]):Promise<ReviewItem[]>{
+ return checked(await db.rpc('review_items',{
+  p_decks:filter.decks,p_session_id:filter.sessionId,p_concept_slug:filter.conceptSlug,
+  p_include_new:filter.includeNew,p_new_only:filter.newOnly,
+ })) as ReviewItem[]
+}
+function pathDueByCode(due:ReviewItem[],slug:string){
+ const counts=new Map<string,number>()
+ for(const item of due)if(item.projectSlug===slug&&item.checkpointCode)
+  counts.set(item.checkpointCode,(counts.get(item.checkpointCode)??0)+1)
+ return counts
 }
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
@@ -357,24 +449,29 @@ export class LiveAdapter implements LemmaApi {
   return checked(await db.rpc('project_summaries')) as ProjectSummary[]
  }
  async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
-  const [slug]=args,db=liveClient(),uid=await owner(db)
-  const project=checked(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).neq('status','archived').eq('system',false).single()) as Row
-  const [subjects,cps,prereqs,proposalRows,sources,sessionList,settings,due]=await Promise.all([
-    rows(db,'subjects',uid),rows(db,'checkpoints',uid),rows(db,'checkpoint_prereqs',uid),
-    rows(db,'proposals',uid),rows(db,'sources',uid),this.listSessions(slug),this.getSettings(),
-    this.getReviewItems({decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false})
+  const [slug]=args,db=liveClient(),uid=await readPathOwner(db),generation=authGeneration()
+  assertPathOwner(uid,generation)
+  const project=checked<Row>(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).neq('status','archived').eq('system',false).single())
+  assertPathOwner(uid,generation)
+  const [settings,due,subject,{checkpoints,prereqs},proposalRows,sources,sessions]=await Promise.all([
+   pathSchedule(db,uid,generation),
+   pathReviewItems(db,uid,generation),
+   project.subject_id?db.from('subjects').select('*').eq('user_id',uid).eq('id',project.subject_id).maybeSingle().then(result=>result.error?fail(result.error):result.data):null,
+   pathGraph(db,uid,generation,project.id),
+   scopedRows(db,'proposals',uid,{project_id:project.id,status:'pending'},{nullFields:['withdrawn_at']}),
+   scopedRows(db,'sources',uid,{project_id:project.id}),
+   pathSessions(db,uid,generation,project.id),
   ])
-  const today=studyDay(Date.now(),settings.timeZone,settings.rolloverHour),forProject=cps.filter(c=>c.project_id===project.id)
-  const byId=new Map(forProject.map(c=>[c.id,c])),cached=new Map<string,CheckpointView>(),visiting=new Set<string>()
-  const view=(cp:Row): CheckpointView=>{
-    if(cached.has(cp.id))return cached.get(cp.id)!
-    if(visiting.has(cp.id)) throw new LemmaError('invalid','Checkpoint prerequisite cycle')
-    visiting.add(cp.id)
-    const parents=prereqs.filter(p=>p.checkpoint_id===cp.id).map(p=>byId.get(p.prereq_id)).filter(Boolean) as Row[]
-    const v=checkpointRow(cp,parents.map(view),today);cached.set(cp.id,v);visiting.delete(cp.id);return v
+  assertPathOwner(uid,generation)
+  const views=pathViews(checkpoints,prereqs,settings)
+  const dueByCode=pathDueByCode(due,slug)
+  const byId=new Map(checkpoints.map(row=>[row.id,row]))
+  for(const view of views){
+   view.dueCards=dueByCode.get(view.code)??0
+   view.currentStepText=byId.get(view.id)?.steps[Math.max(0,view.currentStep)]??null
   }
-  const views:CheckpointView[]=forProject.map(view)
-  for(const v of views) v.dueCards=due.filter(c=>c.projectSlug===slug&&c.checkpointCode===v.code).length
+  const sessionList=sessions.map(session=>sessionRow(session,slug,session.checkpoint?.code??byId.get(session.checkpoint_id)?.code??null))
+   .sort((a,b)=>b.startedAt.localeCompare(a.startedAt))
   const pending=proposalRows.filter(p=>p.project_id===project.id&&p.status==='pending'&&p.withdrawn_at==null)
   for (const proposal of pending.filter(p=>p.kind==='plan_change')){
     for(const op of (proposal.payload?.ops??[]) as Row[]){
@@ -391,9 +488,9 @@ export class LiveAdapter implements LemmaApi {
   }
   views.sort((a,b)=>a.position-b.position)
   const progress=projectProgress(views)
-  return {project:projectRow(project),subject:subjectRow(subjects.find(s=>s.id===project.subject_id)??{id:'',name:'Unassigned',glyph:'∫',hue:'slate',position:-1}),
+  return {project:projectRow(project),subject:subjectRow(subject??{id:'',name:'Unassigned',glyph:'∫',hue:'slate',position:-1}),
     checkpoints:views,done:progress.done,total:progress.total,
-    sources:sources.filter(s=>s.project_id===project.id).map(sourceRow),
+    sources:sources.map(sourceRow),
     sessions:sessionList,pendingProposals:pending.length}
  }
  async createProject(...args: Parameters<LemmaApi['createProject']>): ReturnType<LemmaApi['createProject']> {
@@ -415,30 +512,38 @@ export class LiveAdapter implements LemmaApi {
   return projectRow(checked(await db.from('projects').update(toDb(patch)).eq('id',id).eq('user_id',uid).select('*').single()) as Row)
  }
  async getCheckpoint(...args: Parameters<LemmaApi['getCheckpoint']>): ReturnType<LemmaApi['getCheckpoint']> {
-  const [slug,code]=args,db=liveClient(),uid=await owner(db)
-  const generation=authGeneration()
-  const project=await this.getProject(slug)
-  const row=checked(await db.from('checkpoints').select('*').eq('project_id',project.project.id).eq('code',code).eq('user_id',uid).single()) as Row
-  const [prereqs,cpConcepts,concepts,sources,events,notes,sessions]=await Promise.all([
-    rows(db,'checkpoint_prereqs',uid),rows(db,'checkpoint_concepts',uid),rows(db,'concepts',uid),
-    rows(db,'sources',uid),rows(db,'session_events',uid),rows(db,'notes',uid),this.listSessions(slug)
+  const [slug,code]=args,db=liveClient(),uid=await readPathOwner(db),generation=authGeneration()
+  assertPathOwner(uid,generation)
+  const row=checked<Row>(await db.from('checkpoints').select('*,path:projects!inner(id),source:sources(short)')
+   .eq('user_id',uid).eq('path.user_id',uid).eq('path.slug',slug).neq('path.status','archived').eq('path.system',false).eq('code',code).single())
+  assertPathOwner(uid,generation)
+  const sessionsRead=pathSessions(db,uid,generation,row.project_id)
+  const events=scopedRows(db,'session_events',uid,{checkpoint_id:row.id},{nullFields:['voided_at','superseded_by']}).then(events=>events
+   .sort((a,b)=>Date.parse(b.occurred_at??b.created_at)-Date.parse(a.occurred_at??a.created_at)||b.id-a.id).slice(0,20))
+  const evidenceRead=Promise.all([events,sessionsRead]).then(([rows,sessions])=>{
+   const numberBySession=new Map(sessions.map(session=>[session.id,session.number]))
+   return evidenceEvents(db,uid,rows,()=>code,event=>numberBySession.get(event.session_id))
+  })
+  const [settings,due,{checkpoints,prereqs},conceptLinks,cardsCount,sessions,evidence]=await Promise.all([
+   pathSchedule(db,uid,generation),
+   pathReviewItems(db,uid,generation),
+   pathGraph(db,uid,generation,row.project_id),
+   scopedRows(db,'checkpoint_concepts',uid,{checkpoint_id:row.id},{fields:'concept:concepts(slug,name)',orderBy:['concept_id']}),
+   Promise.resolve(db.from('notes').select('id',{count:'exact',head:true}).eq('user_id',uid)
+    .eq('checkpoint_id',row.id).eq('status','active')).then(result=>result.error?fail(result.error):result.count??0),
+   sessionsRead,evidenceRead,
   ])
-  const cpRows=await rows(db,'checkpoints',uid)
-  const numberBySession=new Map(sessions.map(session=>[session.id,session.number]))
-  const evidence=await evidenceEvents(db,uid,liveSessionEvents(events).filter(x=>x.checkpoint_id===row.id)
-    .sort((a,b)=>Date.parse(b.occurred_at??b.created_at)-Date.parse(a.occurred_at??a.created_at)||b.id-a.id)
-    .slice(0,20),()=>code,event=>numberBySession.get(event.session_id))
-  const linked=cpConcepts.filter(x=>x.checkpoint_id===row.id).map(x=>concepts.find(c=>c.id===x.concept_id)).filter(Boolean) as Row[]
-  const cpById=new Map(cpRows.map(c=>[c.id,c]))
-  if(authGeneration()!==generation || (authOwner()!==null && authOwner()!==uid))
-   throw new LemmaError('auth','The account changed. Reopen the checkpoint.')
+  assertPathOwner(uid,generation)
+  const view=pathViews(checkpoints,prereqs,settings).find(item=>item.id===row.id)
+  if(!view)throw new LemmaError('not_found','The requested checkpoint was not found')
+  view.dueCards=pathDueByCode(due,slug).get(code)??0
   const authScope=authOwner()===uid?{ownerId:uid,generation,checkpointId:row.id as string}:undefined
-  return {authScope,view:project.checkpoints.find(x=>x.id===row.id)!,objective:row.objective,criterion:row.criterion,
-    steps:row.steps??[],pages:row.pages,sourceShort:sources.find(x=>x.id===row.source_id)?.short??null,
-    prereqs:prereqs.filter(x=>x.checkpoint_id===row.id).map(x=>cpById.get(x.prereq_id)?.code).filter(Boolean) as string[],
-    concepts:linked.map(x=>({slug:x.slug,name:x.name})),recheckPrompt:row.recheck_prompt,
-    events:evidence,cardsCount:notes.filter(x=>x.checkpoint_id===row.id&&x.status==='active').length,
-    sessions:sessions.filter(s=>s.checkpointCode===code)}
+  return {authScope,view,objective:row.objective,criterion:row.criterion,
+   steps:row.steps??[],pages:row.pages,sourceShort:row.source?.short??null,
+   prereqs:prereqs.filter(edge=>edge.checkpoint_id===row.id).flatMap(edge=>edge.parent?.code?[edge.parent.code]:[]),
+   concepts:conceptLinks.flatMap(link=>link.concept?[link.concept]:[]),recheckPrompt:row.recheck_prompt,
+   events:evidence,cardsCount,sessions:sessions.filter(session=>session.checkpoint?.code===code||session.checkpoint_id===row.id)
+    .map(session=>sessionRow(session,slug,code)).sort((a,b)=>b.startedAt.localeCompare(a.startedAt))}
  }
  async addSource(...args: Parameters<LemmaApi['addSource']>): ReturnType<LemmaApi['addSource']> {
   const [projectId,file,onProgress]=args,db=liveClient(),uid=await owner(db)
@@ -671,11 +776,7 @@ export class LiveAdapter implements LemmaApi {
   // Daily quotas, sibling deduplication and filters run in PostgreSQL before
   // returning card bodies. A 30,000-card library must not trigger whole-table
   // downloads of cards, notes, reviews, sources or session histories.
-  return checked(await db.rpc('review_items',{
-   p_decks:filter.decks,p_session_id:filter.sessionId,
-   p_concept_slug:filter.conceptSlug,p_include_new:filter.includeNew,
-   p_new_only:filter.newOnly,
-  })) as ReviewItem[]
+  return readReviewItems(db,filter)
  }
  async recordReview(...args: Parameters<LemmaApi['recordReview']>): ReturnType<LemmaApi['recordReview']> {
   const [input]=args,db=liveClient()

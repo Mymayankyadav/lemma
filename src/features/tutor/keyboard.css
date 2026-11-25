@@ -363,7 +363,7 @@
 
 /* N223 (Owner: "integrate all this in one hood"; the pencil at the left edge; "the symbols suggested should live inside
    the suggestion strip"): the strip always has Gboard's frame, an icon at each end and three equal slots between them.
-   The idle ∀ ∈ ⇒ and autoeq's readings of a typed equation are slots like the words, with the same thin dividers. */
+   Quick symbols in the math layouts and readings of a typed equation use the same slots as word suggestions. */
 .lemma-tutor .kb .strip > .tutor-quick-math, .lemma-tutor .kb .strip[data-words] > .tutor-quick-math {
   flex: 1 1 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; border: 0;
 }

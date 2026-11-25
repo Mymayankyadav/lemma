@@ -96,10 +96,14 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   const readiness = useRef<InkReadiness>('unloaded');
   const recognizer = useRef<ReturnType<typeof createInkRecognizer> | null>(null);
   const lastSnapshot = useRef<InkSnapshot | null>(null);
-  const record = useRef(readAutoInsertRecord(typeof localStorage === 'undefined' ? undefined : localStorage));
+  const [initialRecord] = useState(() => readAutoInsertRecord(typeof localStorage === 'undefined' ? undefined : localStorage));
+  const record = useRef(initialRecord);
+  const paintFrame = useRef<number | undefined>(undefined);
 
   useEffect(() => () => {
     clearTimeout(timer.current); clearTimeout(deferred.current?.timer);
+    if (paintFrame.current !== undefined) cancelAnimationFrame(paintFrame.current);
+    paintFrame.current = undefined;
     recognizer.current?.dispose(); recognizer.current = null;
   }, []);
   // The answer can no longer be edited here (read-only, composing, another surface): the drawing and any edits that
@@ -125,6 +129,14 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
   }, [enabled]);
 
   function paint() {
+    if (paintFrame.current !== undefined) return;
+    paintFrame.current = requestAnimationFrame(() => {
+      paintFrame.current = undefined;
+      paintCanvas();
+    });
+  }
+
+  function paintCanvas() {
     const node = canvas.current, host = area.current;
     if (!node || !host) return;
     const ratio = Math.min(3, globalThis.devicePixelRatio || 1);

@@ -48,6 +48,8 @@ export type TutorThreadView={
 }
 export type ManualTutor={
  close:()=>void
+ /** The last confirmed page for this account and checkpoint, for display while resume runs. */
+ readSaved?:()=>TutorThreadView|undefined
  resume:(before?:number,reconcile?:boolean,connectorUrl?:string)=>Promise<TutorThreadView>
  submit:(id:string,draft:TutorComposerDraft,sequence:number)=>Promise<{kind:string}>
  submitToConnector?:(id:string,draft:TutorComposerDraft,sequence:number,connectorUrl:string)=>Promise<ConnectorSubmission>

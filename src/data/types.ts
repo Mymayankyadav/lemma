@@ -131,6 +131,8 @@ export interface CheckpointView {
  dueOn?: IsoDate | null; demonstratedAt?: IsoDate | null
  stage?: string | null
  id: string; code: string; title: string; position: number; ui: CheckpointUi; currentStep: number; stepsTotal: number
+ /** Current step from the path read. Existing saved snapshots can omit it. */
+ currentStepText?: string | null;
  recheckDue: IsoDate | null; dueCards: number
 }
 export interface ProjectDetail {

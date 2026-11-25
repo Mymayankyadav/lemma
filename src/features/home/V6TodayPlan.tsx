@@ -3,6 +3,7 @@ import {Link} from 'react-router';
 import {CalendarDays,ChevronRight,Folder,Layers,Moon} from 'lucide-react';
 import {useReviewEstimate} from '../review/v6/estimate';
 import {getDayPlanApi} from '../../data/day-plans';
+import {readDayPlan} from './readDayPlan';
 import type {DayPlanRecord,DayPlanItem} from '../../data/day-plans/contract';
 import {getStudyApi} from '../../data/study';
 import type {CalendarBlockRecord} from '../../data/study/contract';
@@ -41,22 +42,7 @@ export function nextCalendarBlock(blocks:CalendarBlockRecord[],now:string):Calen
 export async function readTodayPlan(date:string,zone:string):Promise<{
  plan:DayPlanRecord|null;items:DayPlanItem[];blocks:CalendarBlockRecord[];
 }>{
- const api=getDayPlanApi();const plans:DayPlanRecord[]=[];const cursors=new Set<string>();
- let cursor:string|null=null;let total:number|null=null;
- for(let i=0;i<100;i++){
-  const page=await api.listPlans({from:date,through:date,limit:50,cursor});
-  if(page.items.length>50||!Number.isSafeInteger(page.total)||page.total<0)
-   throw Error('Invalid day-plan page');
-  if(total!==null&&page.total!==total)throw Error('Day-plan total changed');
-  total=page.total;plans.push(...page.items);
-  if(!page.nextCursor)break;
-  if(cursors.has(page.nextCursor))throw Error('Repeated day-plan cursor');
-  cursors.add(page.nextCursor);cursor=page.nextCursor;
-  if(i===99)throw Error('Day-plan pagination safety bound');
- }
- if(plans.length!==total||plans.some(p=>p.planDate!==date)||plans.length>1)
-  throw Error('Inconsistent owner day-plan date');
- const plan=plans[0]??null,items:DayPlanItem[]=[];
+ const api=getDayPlanApi(),plan=await readDayPlan(date),items:DayPlanItem[]=[];
  if(plan){
   let itemCursor:string|null=null,itemTotal:number|null=null;
   const seen=new Set<string>();

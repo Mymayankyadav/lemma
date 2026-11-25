@@ -1,3 +1,4 @@
+import {useReadingIntent} from '../../../app/v7/readingIntent';
 import {CourseContinuation,coursePastDeadline} from '../../exam/CourseContinuation';
 import {useExamIdeas} from '../../../data/exam/queries';
 import {IdeasList} from '../../exam/IdeasList';
@@ -68,11 +69,11 @@ function NodeMark({state}:{state:NodeState}){
  </svg>;
 }
 function Row({slug,cps,index,step,reached}:{slug:string;cps:CheckpointView[];index:number;step:string|null;reached:boolean}){
- const settings=useSettings();
+ const settings=useSettings(),readingIntent=useReadingIntent();
  const cp=cps[index],text=nodeText(cps,index,step),current=text.state==='current'&&!inactiveCheckpoint(cp,settings.data?.flags);
  return <li className="v7-path-row" data-adaptive-state={inactiveCheckpoint(cp,settings.data?.flags)?cp.planState:undefined} data-checkpoint-code={cp.code} data-state={text.state} data-reached={reached?'true':'false'}>
   <NodeMark state={text.state}/>
-  <Link className="v7-path-body" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}>
+  <Link className="v7-path-body" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)} {...readingIntent(slug,cp.code)}>
    <strong>{cp.title}</strong>
    {text.state!=='up_next'&&text.state!=='proposed'&&<small>{checkpointLabel(cp,settings.data?.flags,text.detail.replace(/^Step (\d+) of (\d+):/,'$1/$2 ·'))}</small>}<PlanDisposition view={cp}/>
   </Link>
@@ -123,7 +124,7 @@ function ProgressRing({done,total}:{done:number;total:number}){
   <circle cx="10" cy="10" r={r} fill="none" strokeWidth="2.5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-share)} transform="rotate(-90 10 10)" className="v7-progress-ring-fill"/></svg>;
 }
 export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
- const studyRepair=useStudyUi();
+ const studyRepair=useStudyUi(),readingIntent=useReadingIntent();
  const room=isFlagOn('v7Room');
  const {slug:raw}=useParams(),slug=selectedSlug??raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
@@ -140,8 +141,9 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const online=useOnline(),data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
  const estimates=usePathEstimates(cps);
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;
- const detail=useCheckpoint(slug,current?.code??'');
- const step=current?(detail.data?.steps??[])[currentStudyStep(current).index]??null:null;
+ const needsDetail=!!current&&(hasExam||current.currentStepText===undefined);
+ const detail=useCheckpoint(slug,needsDetail?current.code:'');
+ const step=current?(current.currentStepText??detail.data?.steps[currentStudyStep(current).index]??null):null;
  useEffect(()=>{
   if(!room||!data||tab!=='Plan'||!current||window.innerWidth<700)return;
   const frame=requestAnimationFrame(()=>{
@@ -284,8 +286,10 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
       const index=stage.start+offset;
       return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end}/>;
      })}</ol>;
-     return <li key={stage.key} className="v7-path-stage">
-      {active?<><h2 className="v7-eyebrow">{title}</h2>{rows}</>:<Disclosure label={title}>{rows}</Disclosure>}
+     const outlineKey=['path-stage-open',project.id,stage.key];
+     return <li key={project.id+':'+stage.key} className="v7-path-stage">
+      {active?<><h2 className="v7-eyebrow">{title}</h2>{rows}</>:<Disclosure label={title} mountWhenOpen
+       defaultOpen={queryClient.getQueryData<boolean>(outlineKey)} onOpen={open=>queryClient.setQueryData(outlineKey,open)}>{rows}</Disclosure>}
      </li>;
     })}
    </ol>:<EmptyMoment title="No plan yet." action={{label:'Plan with your tutor',to:tutorHref(slug)}}/>)}
@@ -317,7 +321,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
     if(draft)navigate(examTutorHref(data,id,'draft'));else setTab('Exam',id);
    }}/>}
   {cps.length>0&&tab!=='Exam'&&<Dock className="v7-path-bar" role="group" aria-label="Path actions">
-   <Button variant="primary" onClick={()=>navigate(sitting?.status==='active'?examTutorHref(data,sitting.id,'next'):tutorHref(slug,current?.code))}>
+   <Button variant="primary" {...readingIntent(slug,sitting?.status==='active'?undefined:current?.code,'tutor')} onClick={()=>navigate(sitting?.status==='active'?examTutorHref(data,sitting.id,'next'):tutorHref(slug,current?.code))}>
     {sitting?.status==='active'?'Continue exam prep':'Continue with tutor'}
    </Button>
    {due>0&&<Link className="v7-button v7-secondary" to={studyRepair?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(slug)}>Review {due}</Link>}

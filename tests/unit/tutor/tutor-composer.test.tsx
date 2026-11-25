@@ -507,8 +507,8 @@ test('previews a correction with a strike-through and keeps the original without
   await act(async () => field().focus());
   await input('teh');
   await awaitAid('Replace teh with the');
-  // The three slots stay in place under the fix (N223: ∀ ∈ ⇒ when there are no words).
-  expect(host.querySelector('.kb .strip .sugg')!.querySelectorAll('button')).toHaveLength(3);
+  expect(host.querySelector('.kb .strip .sugg')).toBeTruthy();
+  expect(host.querySelector('[aria-label="Quick math symbols"]')).toBeNull();
   expect(host.querySelector('[data-writing-aid-edit] del')?.textContent).toBe('teh');
   expect(host.querySelector('[data-writing-aid-source]')?.textContent).toBe('teh');
   await click('Dismiss suggestion');
@@ -531,16 +531,29 @@ test.each(['Teh', 'Cacuhy', 'x=teh', 'f(teh', 'f( teh', 'f.teh', '$teh', 'Let te
   },
 );
 
-test('quick math keys insert at the caret without changing the alphabet layout', async () => {
+test('quick math keys insert at the caret after explicitly opening maths', async () => {
   await act(async () => root.render(<Harness initial="x y"/>));
   await act(async () => {field().focus(); field().setSelectionRange(1, 2);});
-  // N220 (Owner report): the one-tap symbols moved from the bottom row to the suggestion strip (Gboard's wide space bar).
-  expect(keyboard().querySelector('[aria-label="Quick math symbols"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Quick math symbols"]')).toBeNull();
+  await click('Maths symbols', keyboard());
   await click('∈', host.querySelector<HTMLElement>('[role="group"][aria-label="Quick math symbols"]')!);
   expect(field().value).toBe('x∈y');
+  await click('ABC', keyboard());
   expect(button('q', keyboard())).toBeDefined();
   expect([field().selectionStart, field().selectionEnd]).toEqual([2, 2]);
 });
+
+test.each(['', 'I see. ', 'I see! ', 'I see? ', 'I see\n'])(
+  'keeps alphabet keys and removes idle math symbols after %j', async text => {
+    await act(async () => root.render(<Harness/>));
+    await act(async () => field().focus());
+    await input(text + 'x');
+    await click('Delete', keyboard());
+    expect(field().value).toBe(text);
+    expect(host.querySelector('[aria-label="Quick math symbols"]')).toBeNull();
+    expect(button('q', keyboard())).toBeDefined();
+  },
+);
 
 test('does not use restored draft names as newly authored completion evidence', async () => {
   await act(async () => root.render(<Harness initial="Čech says Če"/>));
