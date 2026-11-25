@@ -408,3 +408,7 @@
   color: var(--v7-role-text-secondary); box-shadow: var(--v7-shadow-1);
 }
 .lemma-tutor .tutor-paper-rotate svg {inline-size: 20px; block-size: 20px;}
+/* N249: one symbol drawn over the keys. The ink lies on a canvas over the rows; nothing moves. */
+.lemma-tutor .kb .rows[data-key-ink] {touch-action: none;}
+.lemma-tutor .kb .rows .tutor-key-ink {position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3;}
+.lemma-tutor .kb .rows .tutor-key-ink-status {position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;}

@@ -16,9 +16,9 @@
  * went in a moment ago only because it was extendable and the learner paused takes it back and continues its
  * drawing, so a slow `<` can still become `≤`.
  */
-import {SYMBOL_CATALOG, symbolById, type SymbolDefinition} from '../../tutor/input/symbolCatalog';
-import type {PartialMatch} from '../../tutor/input/partialSymbolMatcher';
-import type {InkInferenceResult} from '../../tutor/input/types';
+import {SYMBOL_CATALOG, symbolById, type SymbolDefinition} from '../symbolCatalog';
+import type {PartialMatch} from '../partialSymbolMatcher';
+import type {InkInferenceResult} from '../types';
 import {AUTO_INSERT_THRESHOLD, boundaryFloor, breakEvenConfidence} from './costModel';
 import grids from './symbolGrids.json';
 
@@ -120,13 +120,15 @@ export function boxOf(points: readonly Readonly<{x: number; y: number}>[]): Box 
 
 /** Does a stroke starting at `point` continue the drawing in `box`? Within SETTLE_MS of the last lift it always
  *  does (a hand moving to its next stroke). Later it must start on or near the drawing, and the drawing must still
- *  look unfinished: extendable, or unclear and lifted less than IDLE_COMMIT_MS ago. Learners write one symbol after
+ *  look unfinished: not yet read, extendable, or unclear and lifted less than IDLE_COMMIT_MS ago. Learners write one symbol after
  *  another in the same small spot over the keys, so a finished-looking symbol is never continued. */
 export function continuesDrawing(box: Box | undefined, point: Readonly<{x: number; y: number}>, sinceLiftMs: number,
   decision?: HoldDecision, minimumSize = 24) {
   if (!box) return false;
   if (sinceLiftMs < SETTLE_MS) return true;
-  const unfinished = decision === 'insert-on-move' || ((decision === 'choose' || decision === 'none') && sinceLiftMs < IDLE_COMMIT_MS);
+  // A drawing whose reading has not come back yet is not finished: segmentation must not depend on inference latency.
+  const unfinished = decision === undefined || decision === 'insert-on-move'
+    || ((decision === 'choose' || decision === 'none') && sinceLiftMs < IDLE_COMMIT_MS);
   if (!unfinished) return false;
   const margin = NEARBY_MARGIN * Math.max(box.right - box.left, box.bottom - box.top, minimumSize);
   return point.x >= box.left - margin && point.x <= box.right + margin && point.y >= box.top - margin && point.y <= box.bottom + margin;

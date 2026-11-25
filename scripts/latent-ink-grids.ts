@@ -1,5 +1,5 @@
 /**
- * N248 · Generates src/features/pad/latentInk/symbolGrids.json: every catalogue symbol as an n × n occupancy grid,
+ * N248 · Generates src/features/tutor/input/latentInk/symbolGrids.json: every catalogue symbol as an n × n occupancy grid,
  * the smallest n at which different-looking glyphs never share a grid, and which symbols can be extended into which.
  *
  *   npx tsx scripts/latent-ink-grids.ts
@@ -13,7 +13,7 @@ import {fileURLToPath} from 'node:url';
 import {SYMBOL_CATALOG, TUTOR_SYMBOL_CATALOG_VERSION} from '../src/features/tutor/input/symbolCatalog';
 import {
   aliasGroups, collisionsAt, extensionTable, MINIMUM_PART_SHARE, gridKey, occupancyGrid, smallestInjectiveN, type GlyphBitmap, type Grid,
-} from '../src/features/pad/latentInk/symbolGrid';
+} from '../src/features/tutor/input/latentInk/symbolGrid';
 
 const require = createRequire(import.meta.url);
 const {chromium} = require('playwright') as typeof import('playwright');
@@ -69,7 +69,7 @@ try {
     minimumPartShare: MINIMUM_PART_SHARE,
     extends: extensionTable(grids),
   };
-  writeFileSync(new URL('../src/features/pad/latentInk/symbolGrids.json', import.meta.url), JSON.stringify(output, null, 1) + '\n');
+  writeFileSync(new URL('../src/features/tutor/input/latentInk/symbolGrids.json', import.meta.url), JSON.stringify(output, null, 1) + '\n');
   console.log(`n = ${n}; ${drawn.length} glyphs, ${blank.length} blank; ${Object.keys(output.extends).length} extendable`);
 } finally {
   await browser.close();
