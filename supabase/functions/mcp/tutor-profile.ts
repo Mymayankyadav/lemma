@@ -13,7 +13,7 @@ const suggestion=z.union([
  z.object({kind:z.literal('change'),objective:z.string().min(1).max(400),version:z.number().int().positive(),summary:z.string().min(1).max(300)}).strict(),
 ])
 export const tutorInputSchemas={
- get:z.object({turnId:uuid}).strict(),
+ get:z.object({turnId:uuid,cursor:z.string().min(1).max(77).optional()}).strict(),
  claim:z.object({...base,expectedVersion:z.number().int().positive()}).strict(),
  renew:z.object(leased).strict(),
  reply:z.object({...leased,expectedVersion:z.number().int().positive(),messageId:uuid,

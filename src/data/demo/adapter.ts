@@ -4,6 +4,7 @@ import {authGeneration,authOwner} from '../authBoundary';
 import {firstUseStore,type FirstCardInput,type FirstCardReceipt} from './first-card';
 import {pathForecast} from '../path-review-forecast';
 import {demoConversionProposal} from '../adaptive/demo-conversion';
+import {examIdeaKey} from '../exam/contract';
 import type {
   LemmaApi,
   SettingsPatch,
@@ -1748,7 +1749,8 @@ export class DemoAdapter implements LemmaApi {
   async makeExamIdeaProposal(projectId:string,front:string,back:string,reason:string|null) {
     const project=this.store.projects.find(row=>row.id===projectId)
     if(!project)throw new Error('Path unavailable.')
-    const existing=this.store.proposals.find(row=>row.status==='pending'&&row.projectSlug===project.slug&&row.card?.front.trim()===front.trim())
+    const key=examIdeaKey(front)
+    const existing=this.store.proposals.find(row=>row.status==='pending'&&row.projectSlug===project.slug&&row.card&&examIdeaKey(row.card.front)===key)
     if(existing)return existing.id
     const id=crypto.randomUUID()
     this.store.proposals.push({id,kind:'card',projectSlug:project.slug,projectGlyph:'Σ',sessionNumber:null,

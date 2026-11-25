@@ -245,8 +245,19 @@ end
 $$;
 
 create function public.lemma_exam_normalize(v text) returns text
-language sql immutable strict set search_path='' as $$
-  select btrim(regexp_replace(translate(lower(v),'$'||chr(92),''),U&'[[:space:]\00A0\1680\2000-\200A\2028\2029\202F\205F\3000\FEFF]+',' ','g'))
+language plpgsql immutable strict set search_path='' as $$
+declare
+  spaces constant text:=U&'[[:space:]\00A0\1680\2000-\200A\2028\2029\202F\205F\3000\FEFF]';
+  trimmed text:=regexp_replace(v,'^'||spaces||'+|'||spaces||'+$','','g');
+  words text:=regexp_replace(trimmed,spaces||'+',' ','g');
+begin
+  -- Fold ordinary prose in sentence case or capitals. Keep TeX, operators,
+  -- Unicode symbols, single-letter variables and mixed-case identifiers literal.
+  if words collate "C" ~ '^([A-Za-z][a-z]+( (a )?[a-z]{2,})+|[A-Z]{2,}( (A )?[A-Z]{2,})+)[?]?$' then
+    return lower(words collate "C");
+  end if;
+  return trimmed;
+end
 $$;
 
 create function public.lemma_exam_blueprint(p jsonb) returns jsonb

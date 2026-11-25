@@ -15,8 +15,8 @@ afterEach(() => vi.useRealTimers());
 const turnId='33333333-3333-4333-8333-333333333333';
 const handoff=turnId+'.44444444-4444-4444-8444-444444444444';
 const turn={turnId,status:'pending',version:1,snapshot:{question:'Which eigenvectors span the space?'}};
-function fixture({failure,paused=false,finished=false,foreign=false,denied=false,examStatus}:{
-  failure?:string;paused?:boolean;finished?:boolean;foreign?:boolean;denied?:boolean;examStatus?:'paused'|'finished';
+function fixture({failure,paused=false,finished=false,foreign=false,denied=false,examStatus,examQuestionnaireCursor}:{
+  failure?:string;paused?:boolean;finished?:boolean;foreign?:boolean;denied?:boolean;examStatus?:'paused'|'finished';examQuestionnaireCursor?:string;
 } = {}) {
   const setup=examFixture({
     exam_sittings:[sitting({status:examStatus??(paused?'paused':'active')})],
@@ -28,7 +28,8 @@ function fixture({failure,paused=false,finished=false,foreign=false,denied=false
       : denied ? {data:null,error:{message:'Grant is invalid'}}
       : {data:{...turn,status:finished?'completed':'pending',
         ...(examStatus?{examSittingId:'sitting',examProjectId:'linear',sittingStatus:examStatus,
-          examQuestionnaireAnswers:[{questionId:'q1',answer:'2',deliveryRef:'questionnaire-id:q1'}]}:{})},error:null},
+          examQuestionnaireAnswers:[{questionId:'q1',answer:'2',deliveryRef:'questionnaire-id:q1'}]}:{}),
+        examQuestionnaireCursor},error:null},
   });
   return {...setup,tutor:tutorConnector(setup.context,'a'.repeat(48))};
 }
@@ -78,6 +79,17 @@ describe('pending tutor exam handoff', () => {
     expect(result.instructions).toMatch(notice);
     expect(result.examQuestionnaireAnswers).toEqual([{questionId:'q1',answer:'2',deliveryRef:'questionnaire-id:q1'}]);
     expect(reads.some(read=>read.table==='tutor_turns')).toBe(false);
+  });
+
+  it('forwards the backlog cursor through the same grant and explains the next page', async () => {
+    const cursor='55555555-5555-4555-8555-555555555555:q1';
+    const {tutor,rpcCalls}=fixture({examStatus:'paused',examQuestionnaireCursor:cursor});
+    const [content]=await tutor.content(handoff,cursor);
+    if(content.type!=='text') throw Error('Expected a text handoff');
+    expect(JSON.parse(content.text)).toMatchObject({examQuestionnaireCursor:cursor,
+      instructions:expect.stringContaining('cursor=<examQuestionnaireCursor>')});
+    expect(rpcCalls[0]).toMatchObject(['tutor_connector_command',{p_owner:owner,
+      p_grant_operation_id:handoff.split('.')[1],p_command:{operation:'get',turnId,cursor}}]);
   });
 
   it('skips lookup on completed turns and denied grants', async () => {

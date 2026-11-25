@@ -103,15 +103,17 @@ try {
  assert.equal(attached.status,'created');
  assert.deepEqual(await attach(questionnaire),attached);
  const closedQuestionnaireId=randomUUID();
- await attach({...questionnaire,questionnaireId:closedQuestionnaireId,title:'One more rank check'});
+ const otherQuestions=Array.from({length:10},(_,i)=>({...questionnaire.questions[0],id:'q'+(i+1)}));
+ await attach({...questionnaire,questionnaireId:closedQuestionnaireId,title:'One more rank check',questions:otherQuestions,
+  examRows:otherQuestions.map(question=>({...questionnaire.examRows[0],questionId:question.id}))});
  await as('authenticated',owner);
  const state=await result("select public.exam_tutor_questionnaire_state($1,'exam-path',null,$2) result",[owner,sitting.id]);
  assert.equal(state[0].questions[0].prompt,'What is the rank?');
  assert.doesNotMatch(JSON.stringify(state),/scoringKey|rubricSteps|rowKey|Two pivots/);
  const exportId=await result('select public.begin_owner_export() result');
  const exported=await result("select public.owner_export_page($1,'tutor_questionnaire_rows') result",[exportId]);
- assert.equal(exported.rows[0].questionnaire_id,questionnaireId);
- assert.equal(exported.rows[0].sitting_id,sitting.id);
+ const exportedBinding=exported.rows.find(row=>row.questionnaire_id===questionnaireId);
+ assert.equal(exportedBinding.sitting_id,sitting.id);
  assert.doesNotMatch(JSON.stringify(exported),/scoring_key|rubric_steps|row_key|Two pivots|Count pivots/);
  for(const table of ['exam_tutor_grants','command_receipts','exam_tutor_questionnaires','exam_tutor_turns']){
   const visible=await result("select public.owner_export_page($1,$2) result",[exportId,table]);
@@ -120,7 +122,15 @@ try {
  await q('select public.end_owner_export($1)',[exportId]);
  await assert.rejects(q('select * from public.tutor_questionnaire_rows'),/permission denied/i);
  assert.equal((await threadState(sitting.id)).turns[0].finalReply.timedSeconds,120);
- const next=await ownerCommand(sitting.id,command('start',{question:'Rank 2.',expectedVersion:1,answerMeta:{seconds:190,overtime:true}}));
+ // The questionnaire from turn 1 arrives after five intervening turns.
+ for(let sequence=2;sequence<=6;sequence++){
+  const intervening=await ownerCommand(sitting.id,command('start',{question:'Another practice question.',expectedVersion:sequence-1}));
+  assert.equal(intervening.sequence,sequence);
+  assert.equal((await ownerCommand(sitting.id,command('manual',{turnId:intervening.turnId,expectedVersion:intervening.version,
+   messageId:randomUUID(),body:'Imported practice feedback.'}))).status,'completed');
+ }
+ const next=await ownerCommand(sitting.id,command('start',{question:'Rank 2.',expectedVersion:6,answerMeta:{seconds:190,overtime:true}}));
+ assert.equal(next.sequence,7);
  const nextGrantId=randomUUID();
  await as(null);
  const nextVerifier=await result('select public.tutor_connector_verifier($1,$2,$3) result',[secret,next.turnId,nextGrantId]);
@@ -130,11 +140,11 @@ try {
  const paused=await mcp(registered('exam_sittings','pause',{},sitting));
  assert.equal(paused.sittingStatus,'paused');
  await as('authenticated',owner);
- const submit=async (id,text)=>result("select public.tutor_questionnaire_save($1,$2,0,$3,true) result",[owner,id,{q1:text}]);
- const lateAnswer=await submit(questionnaireId,'2');
+ const submit=(id,answers)=>result("select public.tutor_questionnaire_save($1,$2,0,$3,true) result",[owner,id,answers]);
+ const lateAnswer=await submit(questionnaireId,{q1:'2'});
  assert.equal(lateAnswer.status,'submitted');
  assert.deepEqual(lateAnswer.questionnaire.answers,{q1:'2'});
- assert.deepEqual(await submit(questionnaireId,'different retry'),lateAnswer);
+ assert.deepEqual(await submit(questionnaireId,{q1:'different retry'}),lateAnswer);
  assert.equal((await threadState(sitting.id)).canSubmit,false);
  assert.deepEqual(await q('select id from public.exam_attempts where sitting_id=$1',[sitting.id]),[]);
  await as('service_role');
@@ -152,16 +162,30 @@ try {
  const finished=await mcp(registered('exam_sittings','finish',{happened:true},{id:sitting.id,version:paused.version}));
  assert.equal(finished.sittingStatus,'finished');
  await as('authenticated',owner);
- assert.equal((await submit(closedQuestionnaireId,'kept for later')).status,'submitted');
+ assert.equal((await submit(closedQuestionnaireId,Object.fromEntries(otherQuestions.map(question=>[question.id,'kept for later'])))).status,'submitted');
  assert.deepEqual(await q('select outcome,delivery_ref from public.exam_attempts where sitting_id=$1',[sitting.id]),
   [{outcome:'correct',delivery_ref:questionnaireId+':q1'}]);
  await as('service_role');
  const closedHandoff=await connector(nextGrantId,{operation:'get',turnId:next.turnId});
  assert.equal(closedHandoff.sittingStatus,'finished');
- assert.equal(closedHandoff.examQuestionnaireAnswers.find(response=>response.questionnaireId===closedQuestionnaireId).answer,'kept for later');
+ assert.equal(closedHandoff.examQuestionnaireAnswers.length,10);
+ assert.ok(closedHandoff.examQuestionnaireAnswers.every(response=>response.questionnaireId===closedQuestionnaireId&&response.answer==='kept for later'));
+ assert.equal(closedHandoff.examQuestionnaireCursor,undefined);
  await assert.rejects(mcp(registered('exam_attempts','record',{...scoredLate,delivery_ref:closedQuestionnaireId+':q1'})),/reopen it/);
  const reopened=await mcp(registered('exam_sittings','reopen',{}, {id:sitting.id,version:finished.version}));
  await mcp(registered('exam_sittings','activate',{}, {id:sitting.id,version:reopened.version}));
+ await mcp(registered('exam_attempts','void',{reason:'Review the original rubric again'},lateAttempt));
+ const gradedPage=await connector(nextGrantId,{operation:'get',turnId:next.turnId});
+ assert.equal(gradedPage.examQuestionnaireAnswers.length,10);
+ assert.ok(gradedPage.examQuestionnaireCursor);
+ await assert.rejects(connector(nextGrantId,{operation:'get',turnId:next.turnId,cursor:'bad cursor'}),/Invalid exam questionnaire cursor/);
+ await assert.rejects(connector(operationId,{operation:'get',turnId:next.turnId,cursor:gradedPage.examQuestionnaireCursor}),/unavailable/i);
+ const finalPage=await connector(nextGrantId,{operation:'get',turnId:next.turnId,cursor:gradedPage.examQuestionnaireCursor});
+ assert.equal(finalPage.examQuestionnaireAnswers.length,1);
+ assert.equal(finalPage.examQuestionnaireCursor,undefined);
+ const deliveries=[...gradedPage.examQuestionnaireAnswers,...finalPage.examQuestionnaireAnswers].map(response=>response.deliveryRef);
+ assert.equal(new Set(deliveries).size,11);
+ assert.ok(deliveries.includes(questionnaireId+':q1'),'voided attempt must expose the original rubric for regrading');
  await as('authenticated',other);
  await assert.rejects(threadState(sitting.id),/unavailable/i);
  await as('authenticated',owner);
@@ -173,7 +197,7 @@ try {
  await q("insert into storage.objects(bucket_id,name,owner_id,metadata) values('tutor-ink',$1,$2,$3)",[
   owner+'/'+attachmentId,owner,{mimetype:'image/png',size:128}]);
  await as('authenticated',owner);
- const inkStart=command('start',{question:'Here is the pivot diagram.',expectedVersion:2});
+ const inkStart=command('start',{question:'Here is the pivot diagram.',expectedVersion:7});
  const ink=()=>result("select public.exam_tutor_owner_ink_command($1,'exam-path',null,$2,$3::jsonb,$4) result",
   [owner,inkStart,JSON.stringify([{id:attachmentId,kind:'drawing',mimeType:'image/png'}]),sitting.id]);
  const inkResult=await ink();

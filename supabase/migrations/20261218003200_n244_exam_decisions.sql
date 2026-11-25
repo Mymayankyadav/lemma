@@ -43,11 +43,19 @@ grant execute on function public.log_exam_decision(uuid,uuid,timestamptz,jsonb) 
 
 create function public.exam_decision_immutable() returns trigger language plpgsql set search_path='' as $$
 begin
-  if tg_op='UPDATE' or (tg_op='DELETE' and pg_trigger_depth()<=1 and exists
-      (select from public.exam_sittings s where s.id=old.sitting_id)) then
-    raise exception 'Exam decisions are append-only';
+  if tg_op='DELETE' then
+    if pg_trigger_depth()>1 or not exists(select from public.exam_sittings s where s.id=old.sitting_id) then
+      return old;
+    end if;
+    -- Only the owner purge holds this marker in the same backend and transaction.
+    if current_setting('role',true)='service_role' and exists (
+      select from public.account_deletion_requests d where d.user_id=old.user_id
+        and d.cleanup_pid=pg_backend_pid() and d.cleanup_txid=txid_current()
+    ) then
+      return old;
+    end if;
   end if;
-  return old;
+  raise exception 'Exam decisions are append-only';
 end $$;
 revoke all on function public.exam_decision_immutable() from public,anon,authenticated,service_role;
 create trigger immutable_exam_decision before update or delete on public.exam_decisions for each row execute function public.exam_decision_immutable();

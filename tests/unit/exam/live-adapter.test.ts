@@ -62,28 +62,98 @@ describe('live exam adapter',()=>{
   expect(attempts.limit).toHaveBeenCalledWith(500)
   expect(fake.rpc).toHaveBeenCalledWith('exam_row_evidence',{p_owner:'owner',p_sitting:sitting.id,p_as_of:asOf})
  })
- it('resumes a committed sitting after reloading without losing its deadline operation ID',async()=>{
+ it.each([
+  {timing:'before delivery',move:false},
+  {timing:'before delivery',move:true},
+  {timing:'after commit',move:true},
+  {timing:'after commit',move:false,rename:true},
+  {timing:'in flight',move:true},
+  {timing:'deleted',move:true},
+ ])('recovers a deadline $timing (date moved: $move)',async ({timing,move,rename})=>{
   let sittingId=''
-  fake.from.mockImplementation((table:string)=>query(table==='deadlines'?null:{...sitting,id:sittingId}))
-  fake.rpc.mockImplementation((name,{p}:{p:Envelope})=>{
+  let current=sitting
+  let deadline:{id:string;title:string;due_at:string;version:number}|null=null
+  let original:Envelope|undefined
+  let committed:Envelope|undefined
+  let available=false
+  const applied:Envelope[]=[]
+  function apply(p:Envelope){
+   const {title,due_at}=p.patch as {title:string;due_at:string}
+   deadline={id:sittingId,title,due_at,version:(p.expectedVersion??0)+1}
+   applied.push(p)
+  }
+  fake.from.mockImplementation((table:string)=>query(table==='deadlines'?deadline:{...current,id:sittingId}))
+  fake.rpc.mockImplementation(async (name,{p}:{p:Envelope})=>{
    if(name==='exam_sitting_command'){
     sittingId=p.target!.id
-    return Promise.resolve(receipt(p))
+    return receipt(p)
    }
-   if(fake.rpc.mock.calls.length<=3)return Promise.reject(new Error('offline'))
-   return Promise.resolve(receipt(p))
+   if(p.operation==='create'){
+    original??=p
+    if(!available){
+     expect(p).toEqual(original)
+     if(!committed&&(timing==='after commit'||timing==='deleted')){
+      apply(p)
+      committed=p
+     }
+     if(timing==='deleted')return receipt(p)
+     throw new Error('connection lost')
+    }
+    if(timing==='in flight'&&!committed){
+     expect(p.operationId).toBe(original.operationId)
+     apply(original)
+     committed=original
+    }
+    if(committed?.operationId===p.operationId){
+     return receipt(p,JSON.stringify(committed)===JSON.stringify(p)?'ok':'conflict')
+    }
+    apply(p)
+    committed=p
+    return receipt(p)
+   }
+   expect(p.operation).toBe('update')
+   expect(p.operationId).not.toBe(original?.operationId)
+   expect(p.expectedVersion).toBe(deadline?.version)
+   apply(p)
+   return receipt(p)
   })
   const setup:ExamSetup={
    project_id:'path',title:'Exam',starts_at:sitting.starts_at!,time_zone:'UTC',
    duration_minutes:120,study_minutes:60,total_marks:60,objective:'expected_marks',
    sources:[],blueprint:[],card_mode:'later',activate:true,
   }
-  await expect(createLiveExamApi().setup(setup)).rejects.toThrow('link its calendar deadline')
+  if(timing==='deleted'){
+   const created = await createLiveExamApi().setup(setup)
+   expect(created).toBe(sittingId)
+   // Old persisted setup progress can reference a confirmed create whose row has since been deleted.
+   const originalId=original!.operationId
+   sessionStorage.setItem('lemma.exam-setup:owner:path',JSON.stringify({
+    sittingId,operationId:'original-sitting-op',deadlineOperationId:originalId,input:setup,committed:true,deadlineCommitted:true,
+   }))
+   deadline=null
+  }else await expect(createLiveExamApi().setup(setup)).rejects.toThrow('link its calendar deadline')
+  const callsBeforeRetry=fake.rpc.mock.calls.length
+  if(move||rename)current={...current,title:'Renamed exam',starts_at:move?'2026-12-10T16:00:00.000Z':sitting.starts_at,version:2}
+  available=true
   await expect(createLiveExamApi().resumeSetup('path')).resolves.toBe(sittingId)
-  expect(fake.rpc.mock.calls.map(([name])=>name)).toEqual([
-   'exam_sitting_command','deadlines_command','deadlines_command','deadlines_command',
-  ])
-  expect(fake.rpc.mock.calls[3]).toEqual(fake.rpc.mock.calls[1])
-  expect(fake.rpc.mock.calls[3][1].p.target.id).toBe(sittingId)
+  const retryCalls:Envelope[]=fake.rpc.mock.calls.slice(callsBeforeRetry).map(([,request])=>request.p)
+  const finalPatch={title:current.title,due_kind:'instant',due_at:current.starts_at}
+  if(timing==='before delivery'){
+   expect(retryCalls).toHaveLength(1)
+   expect(retryCalls[0]).toMatchObject({operation:'create',operationId:original?.operationId,patch:finalPatch})
+   if(!move)expect(retryCalls[0]).toEqual(original)
+   expect(applied).toEqual(retryCalls)
+  }else if(timing==='after commit'){
+   expect(retryCalls).toHaveLength(1)
+   expect(retryCalls[0]).toMatchObject({operation:'update',patch:finalPatch})
+   expect(applied).toEqual([original,...retryCalls])
+  }else{
+   expect(retryCalls).toHaveLength(2)
+   expect(retryCalls[0]).toMatchObject({operation:'create',operationId:original?.operationId,patch:finalPatch})
+   expect(retryCalls[1]).toMatchObject({operation:timing==='in flight'?'update':'create',patch:finalPatch})
+   expect(applied).toEqual([original,retryCalls[1]])
+  }
+  expect(deadline).toMatchObject({id:sittingId,title:current.title,due_at:current.starts_at})
+  await expect(createLiveExamApi().resumeSetup('path')).rejects.toMatchObject({code:'not_found'})
  })
 })

@@ -70,20 +70,25 @@ export function createLiveExamApi():ExamApi {
   return checked(await db.from('exam_sittings').select(sittingFields).eq('user_id',owner)
    .eq('id',id).maybeSingle()) as SittingRecord|null
  }
- async function syncDeadline(sitting:SittingRecord, create:boolean, operationId?:string){
-  if(!sitting.starts_at)return
+ async function readDeadline(sitting:SittingRecord){
   const {db,owner}=await ownerClient()
-  const existing=checked(await db.from('deadlines').select('id,due_at,version').eq('user_id',owner)
+  return checked(await db.from('deadlines').select('id,title,due_at,version').eq('user_id',owner)
    .eq('id',sitting.id).eq('kind','exam').eq('project_id',sitting.project_id).maybeSingle())
-  if(existing?.due_at&&Date.parse(existing.due_at)===Date.parse(sitting.starts_at))return
-  if(!existing&&!create)return
-  successful(await run({
-   resource:'deadlines',operation:existing?'update':'create',target:{id:sitting.id},
-   ...(existing?{expectedVersion:existing.version}:{}),
-   patch:existing?{due_kind:'instant',due_at:sitting.starts_at}:{
-    kind:'exam',title:sitting.title,project_id:sitting.project_id,due_kind:'instant',due_at:sitting.starts_at,
-   },
-  },operationId))
+ }
+ function matchesDeadline(sitting:SittingRecord,deadline:{title:string;due_at:string|null}){
+  return deadline.title===sitting.title&&deadline.due_at!==null&&
+   Date.parse(deadline.due_at)===Date.parse(sitting.starts_at??'')
+ }
+ async function updateDeadline(sitting:SittingRecord,expectedVersion:number){
+  return run({
+   resource:'deadlines',operation:'update',target:{id:sitting.id},expectedVersion,
+   patch:{title:sitting.title,due_kind:'instant',due_at:sitting.starts_at},
+  })
+ }
+ async function syncDeadline(sitting:SittingRecord){
+  if(!sitting.starts_at)return
+  const existing=await readDeadline(sitting)
+  if(existing&&!matchesDeadline(sitting,existing))successful(await updateDeadline(sitting,existing.version))
  }
  async function changeAtVersion(sitting:SittingRecord,change:SittingChange){
   return run({resource:'exam_sittings',...change,target:{id:sitting.id},expectedVersion:sitting.version})
@@ -142,12 +147,39 @@ export function createLiveExamApi():ExamApi {
     }
    }
    if(generation!==authGeneration())throw new LemmaError('auth','The signed-in account changed.')
-   const sitting=await readSitting(setup.sittingId)
-   if(!sitting)throw new LemmaError('server','Exam was saved. Retry to link its calendar deadline.')
-   try{await syncDeadline({...sitting,title:setup.input.title,starts_at:setup.input.starts_at},true,setup.deadlineOperationId)}
-   catch{throw new LemmaError('server','Exam was saved. Retry to link its calendar deadline.')}
-   pendingSetup.set(owner,projectId)
-   return setup.sittingId
+   try{
+    let reconcileCreate=false
+    for(let attempt=0;attempt<4;attempt++){
+     const sitting=await readSitting(setup.sittingId)
+     if(!sitting?.starts_at||sitting.project_id!==projectId||generation!==authGeneration())
+      throw new LemmaError('not_found','This sitting or its exam date is no longer available.')
+     const deadline=await readDeadline(sitting)
+     if(generation!==authGeneration())throw new LemmaError('auth','The signed-in account changed.')
+     if(deadline&&matchesDeadline(sitting,deadline)){
+      pendingSetup.set(owner,projectId)
+      return setup.sittingId
+     }
+     if(attempt===3)break
+     if(deadline){
+      await updateDeadline(sitting,deadline.version)
+     }else{
+      if(reconcileCreate){
+       // The earlier operation resolved but its target is absent. Give the
+       // replacement create a fresh receipt ID and keep the same linked row ID.
+       setup.deadlineOperationId=crypto.randomUUID()
+       pendingSetup.set(owner,projectId,setup)
+      }
+      // Keep the original receipt ID on the first retry. The database lock
+      // serializes an in-flight create, even if the current payload differs.
+      await run({
+       resource:'deadlines',operation:'create',target:{id:sitting.id},
+       patch:{kind:'exam',title:sitting.title,project_id:projectId,due_kind:'instant',due_at:sitting.starts_at},
+      },setup.deadlineOperationId)
+      reconcileCreate=true
+     }
+    }
+   }catch{/* Keep setup recoverable if a read or write fails. */}
+   throw new LemmaError('server','Exam was saved. Retry to link its calendar deadline.')
   },
   async resumeSetup(projectId){
    const {owner}=await ownerClient()
@@ -162,7 +194,7 @@ export function createLiveExamApi():ExamApi {
    const fresh=await readSitting(sittingId)
    if(generation!==authGeneration()||!fresh||fresh.project_id!==projectId)
     throw new LemmaError('not_found','This sitting is no longer available.')
-   await syncDeadline(fresh,false)
+   await syncDeadline(fresh)
    pendingCalendar.set(owner,projectId)
   },
   async change(sitting,change){

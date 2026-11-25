@@ -289,6 +289,7 @@ language plpgsql set search_path='' as $$
 declare
  target_turn uuid:=public.lemma_exam_uuid(p,'turnId'); operation text:=p->>'operation';
  opid uuid; req jsonb; result jsonb; bound jsonb; prior_reply jsonb; snapshot jsonb;
+ after_ref text; after_questionnaire uuid; after_question text; next_cursor text;
  h public.exam_tutor_threads; t public.exam_tutor_turns; g public.exam_tutor_grants; s public.exam_sittings;
  lease timestamptz; stamp timestamptz:=clock_timestamp(); expected int;
  body text; question text; msg uuid; seconds int; reported text;
@@ -319,19 +320,40 @@ begin
   select * into strict s from public.exam_sittings where id=h.sitting_id and user_id=p_owner;
   select x.reply into prior_reply from public.exam_tutor_turns x where x.user_id=p_owner and x.thread_id=h.id
    and x.sequence<t.sequence and x.reply is not null order by x.sequence desc limit 1;
-  select jsonb_agg(jsonb_build_object('questionnaireId',x.id,'questionId',b.question_id,'rowKey',b.row_key,
-    'blueprintVersion',b.blueprint_version,'scoringKey',b.scoring_key,'rubricSteps',b.rubric_steps,'answer',x.answers->b.question_id,
-    'deliveryRef',x.id::text||':'||b.question_id)
-    order by x.submitted_at,x.id,b.question_id) into bound
-  from public.tutor_questionnaire_rows b join public.exam_tutor_questionnaires x on x.user_id=b.user_id and x.id=b.questionnaire_id
-  join public.exam_tutor_turns prior on prior.user_id=x.user_id and prior.id=x.turn_id
-  where b.user_id=p_owner and b.sitting_id=h.sitting_id and prior.thread_id=h.id and prior.sequence between greatest(1,t.sequence-5) and t.sequence-1
-   and x.submitted_at is not null and x.answers?b.question_id;
+  after_ref:=public.lemma_exam_text(p,'cursor',0,77);
+  if after_ref is not null then
+   if after_ref !~ '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}:[a-zA-Z0-9_-]{1,40}$' then
+    raise exception 'Invalid exam questionnaire cursor' using errcode='22023';
+   end if;
+   after_questionnaire:=split_part(after_ref,':',1)::uuid;
+   after_question:=split_part(after_ref,':',2);
+  end if;
+  -- Page submitted bindings across the entire authorized sitting thread.
+  -- The live attempt is the grading record; corrections use it directly, and
+  -- a voided attempt leaves the original answer available for regrading.
+  select jsonb_agg(item order by questionnaire_id,question_id) into bound from (
+   select x.id questionnaire_id,b.question_id,jsonb_build_object(
+     'questionnaireId',x.id,'questionId',b.question_id,'rowKey',b.row_key,'blueprintVersion',b.blueprint_version,
+     'scoringKey',b.scoring_key,'rubricSteps',b.rubric_steps,'answer',x.answers->b.question_id,
+     'deliveryRef',x.id::text||':'||b.question_id) item
+   from public.tutor_questionnaire_rows b join public.exam_tutor_questionnaires x on x.user_id=b.user_id and x.id=b.questionnaire_id
+   join public.exam_tutor_turns prior on prior.user_id=x.user_id and prior.id=x.turn_id
+   where b.user_id=p_owner and b.sitting_id=h.sitting_id and prior.thread_id=h.id and prior.sequence<t.sequence
+    and x.submitted_at is not null and x.answers?b.question_id
+    and (after_questionnaire is null or (x.id,b.question_id)>(after_questionnaire,after_question))
+    and not exists(select 1 from public.exam_attempts a where a.user_id=p_owner and a.sitting_id=h.sitting_id
+      and a.delivery_ref=x.id::text||':'||b.question_id and a.voided_at is null)
+   order by x.id,b.question_id limit 11
+  ) page;
+  if jsonb_array_length(bound)>10 then
+   next_cursor:=bound->9->>'deliveryRef';
+   bound:=bound-10;
+  end if;
   snapshot:=t.snapshot;
   if t.attachments<>'[]' then snapshot:=snapshot||jsonb_build_object('attachments',t.attachments); end if;
   return result||jsonb_strip_nulls(jsonb_build_object('generation',t.generation,'snapshot',snapshot,'examSittingId',h.sitting_id,
    'examProjectId',h.project_id,'sittingStatus',s.status,'previousTutorQuestion',prior_reply->>'nextQuestion',
-   'previousTimedSeconds',prior_reply->'timedSeconds','examQuestionnaireAnswers',bound,'hasAttachments',t.attachments<>'[]',
+   'previousTimedSeconds',prior_reply->'timedSeconds','examQuestionnaireAnswers',bound,'examQuestionnaireCursor',next_cursor,'hasAttachments',t.attachments<>'[]',
    'examAttachmentOwner',case when token is not null and t.attachments<>'[]' then p_owner end));
  end if;
 

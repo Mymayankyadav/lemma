@@ -4,6 +4,7 @@ import {getApi} from '../index'
 import type {DemoAdapter} from '../demo/adapter'
 import {getDeadlineApi} from '../deadlines'
 import {requireOnline} from './commands'
+import {examIdeaKey} from './contract'
 import type {BlueprintRow, CardIdea, ExamApi, ExamAttempt, ExamSetup, SittingChange, SittingRecord} from './contract'
 
 const projects = [
@@ -172,8 +173,8 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
     const patch=command.patch as Partial<CardIdea>&{card?:string}
     const op=command.operation
     const target=(patch?.target??'').trim()
-    const normalized=(text:string)=>text.toLowerCase().replace(/[$\\]/g,'').replace(/\s+/g,' ').trim()
-    const old=op==='save'?ideas.find(idea=>idea.project_id===patch.project_id&&normalized(idea.target)===normalized(target)&&idea.status==='saved')
+    const old=op==='save'?ideas.find(idea=>idea.project_id===patch.project_id&&examIdeaKey(idea.target)===examIdeaKey(target)&&
+     (idea.status==='saved'||idea.status==='drafted'))
      :ideas.find(idea=>idea.id===command.target?.id)
     if(op!=='save'&&(!old||old.version!==command.expectedVersion))return {status:'conflict',operationId}
     if(op==='save'&&(!patch.project_id||target.length<3))throw new LemmaError('invalid','Enter a retrieval target.')

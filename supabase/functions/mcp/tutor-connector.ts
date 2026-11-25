@@ -94,7 +94,7 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     return data as {followups: {id: string; body: string; createdAt: string}[]; unseen: number}
   }
 
-  async function followupFields(id: unknown, turn:{examSittingId?:string;examProjectId?:string;sittingStatus?:string}) {
+  async function followupFields(id: unknown, turn:{examSittingId?:string;examProjectId?:string;sittingStatus?:string;examQuestionnaireCursor?:string}) {
     const [extra, exam] = await Promise.all([readFollowups(id).catch(()=>null), handoffExam(c, tutorHandoffIds(id).turnId, undefined, turn.examSittingId).catch(()=>null)])
     const instructions = extra ? studyInstructions : studyInstructions+' The follow-ups could not be loaded. Retry get(what=tutor_followups, id=<handoff ID>) before replying.'
     const examStatus=exam&&'status' in exam?exam.status:turn.sittingStatus
@@ -109,17 +109,19 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     return {
       ...(exam ? {exam} : {}),
       ...tutorFollowupFields(extra?.followups),
-      instructions:instructions+examInstructions,
+      instructions:instructions+examInstructions+(turn.examQuestionnaireCursor
+        ? ' More unscored questionnaire answers are available. Read the next page with get(what=tutor_turn, id=<this handoff ID>, cursor=<examQuestionnaireCursor>).'
+        : ''),
     }
   }
 
   return {
-    async content(id:unknown) {
+    async content(id:unknown, cursor?:string) {
       if(id===undefined) {
         const pending=await request(null,null)
         return [{type:'text' as const,text:JSON.stringify({pending,instructions:'Read the pending handoff with get(what=tutor_turn, id=<returned id>).'})}]
       }
-      const turn=await execute(id,'get')
+      const turn=await execute(id,'get',cursor===undefined?{}:{cursor})
       const rows=turn?.status==='pending'&&turn.hasAttachments===true
         ?turn.examProjectId ? examTutorImageRows(turn,c.userId) : await tutorImageRows(c.db,{turnId:tutorHandoffIds(id).turnId,ownerId:c.userId}):[]
       return tutorTurnContent(c.db,turn,rows,attachmentId=>String(id)+'.'+attachmentId,

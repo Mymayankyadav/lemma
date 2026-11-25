@@ -154,6 +154,28 @@ try {
   assert.equal(known.existingCard,'N'+noteNo);
   await assert.rejects(write('card_ideas','draft',{},known.id,1),/link/i);
   await write('card_ideas','link',{card:'N'+noteNo},known.id,1);
+  const upper='Define $\\Gamma$', lower='Define $\\gamma$';
+  const saveIdea=(target,front,back)=>write('card_ideas','save',{project_id:project,target,front,back});
+  const gamma=await saveIdea(upper,upper,'The gamma function.');
+  const euler=await saveIdea(lower,lower,'The Euler–Mascheroni constant.');
+  assert.notEqual(gamma.id,euler.id);
+  assert.equal((await saveIdea(lower,lower,'The Euler–Mascheroni constant.')).id,euler.id);
+  assert.deepEqual(await query('select back,sightings from public.card_ideas where id in ($1,$2) order by sightings',[gamma.id,euler.id]),[
+    {back:'The gamma function.',sightings:1},{back:'The Euler–Mascheroni constant.',sightings:2},
+  ]);
+  const upperDraft=await write('card_ideas','draft',{},gamma.id,1);
+  const lowerDraft=await write('card_ideas','draft',{},euler.id,2);
+  assert.notEqual(upperDraft.proposalNo,lowerDraft.proposalNo);
+  const repeated=await saveIdea('Recall the gamma function',upper,'The gamma function.');
+  const reused=await write('card_ideas','draft',{},repeated.id,1);
+  assert.deepEqual([reused.proposalNo,reused.reusedProposal],[upperDraft.proposalNo,true]);
+  await query("select public.approve_proposal(id) from public.proposals where user_id=$1 and no=$2",[owner,upperDraft.proposalNo]);
+  assert.ok((await saveIdea('Identify the upper symbol',upper,'Gamma function.')).existingCard);
+  assert.equal((await saveIdea('Identify the lower symbol',lower,'Euler constant.')).existingCard,undefined);
+  for(const [a,b] of [['Define Γ','Define γ'],['Define X','Define x'],['Define $x$','Define x'],
+    ['Define \\sin','Define sin'],['Define $\\text{a  b}$','Define $\\text{a b}$']]){
+    assert.equal(await one('select public.lemma_exam_normalize($1) <> public.lemma_exam_normalize($2) value',[a,b]),true);
+  }
   for (const [table,id,op] of [[tables[0],sitting,'pause'],[tables[1],scored.id,'void'],[tables[2],again.id,'dismiss']]) {
     await assert.rejects(mcp(command(table,op,{reason:'Other'},id,1),other),/not found/i);
   }

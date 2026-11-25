@@ -40,6 +40,16 @@ describe('app exam commands',()=>{
   await expect(demo.change(sitting,{operation:'pause'})).rejects.toThrow('Reconnect')
   expect(selectSitting(await demo.read('project-linear','linear-algebra'))?.status).toBe('active')
  })
+ it('keeps distinct mathematical targets while merging repeated prose in the demo',async()=>{
+  const api=createDemoExamApi()
+  const save=(target:string)=>api.command({resource:'card_ideas',operation:'save',patch:{project_id:'project-linear',target}})
+  const gamma=await save('Define $\\Gamma$')
+  const euler=await save('Define $\\gamma$')
+  expect(euler.id).not.toBe(gamma.id)
+  expect((await save('Define $\\Gamma$')).id).toBe(gamma.id)
+  const prose=await save('Find a basis')
+  expect((await save('FIND  A  BASIS')).id).toBe(prose.id)
+ })
  it('derives the demo ledger from current evidence and keeps evidence separate from disposition and mode',async()=>{
   const now=new Date('2026-11-25T12:00:00.000Z')
   const demo=createDemoExamApi(now.getTime())

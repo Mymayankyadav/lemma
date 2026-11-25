@@ -119,6 +119,14 @@ export interface ExamApi {
  undo(actionNo:number):Promise<void>
 }
 
+/** Mirrors lemma_exam_normalize for saved targets and card fronts. */
+export function examIdeaKey(text:string):string {
+ const trimmed=text.trim()
+ const words=trimmed.replace(/\s+/g,' ')
+ const plainProse=/^([A-Za-z][a-z]+( (a )?[a-z]{2,})+|[A-Z]{2,}( (A )?[A-Z]{2,})+)[?]?$/
+ return plainProse.test(words)?words.toLowerCase():trimmed
+}
+
 export function selectSitting(snapshot:ExamSnapshot|undefined,preferredId?:string|null):SittingRecord|undefined {
  const rows=snapshot?.sittings
  const explicit=preferredId?rows?.find(row=>row.id===preferredId):undefined
