@@ -6,7 +6,8 @@ values point to frozen directories. Assets maps runtime set names to the
 packaged directories (ngram-v2, latex-v2, subject-*, neural-v2, neural-large-v2).
 For the final comparison, optional mixture and neuralCalibration values name
 reviewed fitted JSON files. Use --phase capture first, then --phase final.
-Use --phase final-kn for the interim two-arm comparison when no graph qualifies.
+Use --phase final-kn for the two-arm count comparison or --phase final-fallback
+for the four non-neural arms after a pinned pre-test neural fallback decision.
 """
 
 import argparse
@@ -24,8 +25,11 @@ import time
 import urllib.error
 import urllib.request
 
+from select_primary_precision import ORDER as PRIMARY_PRECISIONS
+
 
 ARMS = ('corrected-v1', 'expanded-kn', 'neural', 'tutor', 'personal')
+FALLBACK_ARMS = tuple(arm for arm in ARMS if arm != 'neural')
 CONTROL_SPECS = {
     'main-100m': ('prepared', 'primary', 'tokens-100000000.pt'),
     'main-500m': ('prepared', 'primary', 'tokens-500000000.pt'),
@@ -195,6 +199,81 @@ def neural_fingerprint(manifest):
     return ':'.join(files[k]['sha256'] if k in files else '-' for k in ('prefill', 'incremental', 'tokenizer', 'weights'))
 
 
+def checked_fallback(config):
+    if any(name.startswith('neural-') for name in config['assets']) or config.get('neuralCalibration'):
+        raise ValueError('A fallback replay cannot install neural artifacts or calibration')
+
+    def checked(record):
+        path = Path(record['path'])
+        if not SHA.fullmatch(record['sha256']) or hash_file(path) != record['sha256']:
+            raise ValueError('Pinned pre-test neural fallback evidence changed')
+        return json_file(path), record['sha256']
+
+    selection, selection_sha = checked(config['neuralFallbackSelection'])
+    procedure = Path(__file__).with_name('primary-precision-selection.md')
+    if (selection['version'] != 1 or selection['procedureSha256'] != hash_file(procedure) or
+            selection['validationCases'] != 300 or selection['finalReplayStatus'] != 'unqualified'):
+        raise ValueError('Neural selection does not match the frozen pre-test procedure')
+    identities = {'checkpointSha256': 'checkpointSha256', 'trainingDataSha256': 'preparedManifestSha256',
+                  'dataSha256': 'preparedManifestSha256', 'caseDataSha256': 'sharedHeldoutManifestSha256',
+                  'casesSha256': 'validationCasesSha256'}
+    fields = ('checkpointSha256', 'trainingLedgerSha256', 'preparedManifestSha256',
+              'sharedHeldoutManifestSha256', 'tokenizerSha256', 'validationCasesSha256')
+    provenance = {key: selection[key] for key in fields}
+    if any(not SHA.fullmatch(value) for value in provenance.values()):
+        raise ValueError('Missing pinned precision selection provenance')
+    variants = selection['variants']
+    if ([row['precision'] for row in variants] != list(PRIMARY_PRECISIONS) or
+            any(row['contextSplit'] != 'validation' or type(row['eligible']) is not bool or
+                any(row[key] != provenance[identity] for key, identity in identities.items()) for row in variants)):
+        raise ValueError('Expected all frozen precision validation decisions')
+    eligible = [row for row in variants if row['eligible']]
+    if selection['selected'] is None:
+        if (eligible or any(not row['rejectionReasons'] for row in variants) or
+                selection['status'] != 'fallback-no-native-and-byte-qualified-candidate' or
+                selection['validationBrowser'] != 'unavailable' or config.get('neuralFallbackValidation')):
+            raise ValueError('Invalid pre-test no-candidate decision')
+        reason = selection['status']
+        proof = {'variantRejections': {row['precision']: row['rejectionReasons'] for row in variants}}
+    else:
+        validation, validation_sha = checked(config['neuralFallbackValidation'])
+        candidate = selection['selected']
+        fingerprint = candidate['modelFingerprint'].split(':')
+        if (len(fingerprint) != 4 or any(not SHA.fullmatch(sha) for sha in fingerprint) or
+                selection['status'] != 'selected-for-validation-browser' or
+                not any(row['precision'] == candidate['precision'] and
+                        row['modelFingerprint'] == candidate['modelFingerprint'] for row in eligible) or
+                validation['version'] != 1 or validation['contextSplit'] != 'validation' or
+                validation['selectionSha256'] != selection_sha or
+                validation['modelFingerprint'] != selection['selected']['modelFingerprint'] or
+                validation['status'] not in ('failed', 'unavailable') or
+                not SHA.fullmatch(validation['evidenceSha256'])):
+            raise ValueError('Browser fallback decision does not match the selected validation bundle')
+        evidence = config['neuralFallbackValidation']['evidence']
+        if hash_file(Path(evidence)) != validation['evidenceSha256']:
+            raise ValueError('Pinned browser validation evidence changed')
+        reason = 'validation-browser-' + validation['status']
+        proof = {'validationSha256': validation_sha, 'validationEvidenceSha256': validation['evidenceSha256'],
+                 'selectedFingerprint': validation['modelFingerprint']}
+    return {'status': 'unavailable', 'reason': reason, 'selectionSha256': selection_sha,
+            'weightContrasts': 'unavailable', 'ghost': 'disabled', 'selectionProvenance': provenance, **proof}
+
+
+def assert_fallback_observations(output):
+    audit = json_file(Path(str(output) + '.assets.json'))
+    activity = audit['neuralResults']
+    impressions = rows(Path(str(output) + '.impressions.jsonl'))
+    coverage = rows(Path(str(output) + '.neural-coverage.jsonl'))
+    if (audit['graphTrial'] or audit['strictGraphTrial'] or audit['ghostCalibration'] or
+            audit['assetCounts']['neural'] or activity['observedFingerprints'] or activity['admissions'] or
+            activity['deliveredOnTimeScoredReplies'] or activity['deliveredOnTimeContinuationReplies'] or
+            activity['lateReplies'] or
+            any(row.get('provider') or row.get('attempted') or row.get('scored') or
+                row.get('assetSha256') or row.get('modelFingerprint') for row in coverage) or
+            any(row.get('ghost') or row['ghostEligible'] or row['assets'].get('neural') for row in impressions)):
+        raise ValueError('Fallback replay unexpectedly observed neural or ghost output')
+
+
 def run(command, cwd, env, log):
     with log.open('wb') as output:
         subprocess.run(command, cwd=cwd, env=env, stdout=output, stderr=subprocess.STDOUT, check=True)
@@ -225,6 +304,8 @@ def run_replay(source, output, env, arm, dataset, assets, phase, ghost=False, lo
                'INPUT': str(path / 'events.jsonl'), 'ANSWERS': str(dataset.get('answer_overlay', path / 'answers.jsonl')),
                'GOLD': str(path / 'gold.jsonl'),
                'OUTPUT': str(output), 'CAPTURE_ONLY': str(int(phase == 'capture'))}
+    if phase == 'final-fallback':
+        options['FLAGS'] = 'typeaheadV2,tutorAnswerAids,-proofAssistGhost'
     if any(item.get('mathOpportunity') == 'equation-command' for item in rows(path / 'gold.jsonl')):
         options['EXPECTED_LATEX_SHA'] = latex
     if ghost:
@@ -409,7 +490,8 @@ def main():
     args.add_argument('config', type=Path)
     args.add_argument('out', type=Path)
     args.add_argument('--repo', type=Path, default=Path.cwd())
-    args.add_argument('--phase', choices=('capture', 'final-kn', 'final', 'neural-controls', 'neural-control'), required=True)
+    args.add_argument('--phase', required=True,
+                      choices=('capture', 'final-kn', 'final', 'final-fallback', 'neural-controls', 'neural-control'))
     args.add_argument('--ghost-probe', action='store_true')
     args.add_argument('--locked-neural-trial', action='store_true',
                       help='Evaluate a frozen parity-checked candidate in the full matrix before release qualification')
@@ -418,6 +500,11 @@ def main():
     config, output = json_file(options.config), options.out.resolve()
     if options.phase == 'neural-controls':
         return run_controls(options, config, output)
+    fallback = None
+    if options.phase == 'final-fallback':
+        if not options.question_aids or options.ghost_probe or options.locked_neural_trial:
+            raise ValueError('Fallback requires frozen question aids, with ghost and graph trials disabled')
+        fallback = checked_fallback(config)
     splits = ('calibration', 'validation') if options.phase == 'capture' else ('calibration', 'validation', 'test')
     datasets = {phase: checked_schedule(Path(config[phase]).resolve(), phase) for phase in splits}
     expected_schedules = config.get('scheduleManifestSha256')
@@ -440,6 +527,8 @@ def main():
             'STRICT_GRAPH_TRIAL' not in (source/'tests/e2e/n238-typeahead-replay.spec.ts').read_text()):
         raise ValueError('Pinned source does not support cold-budget-enforced graph trials')
     model_root = source / 'public/models/typeahead'
+    if fallback and any(model_root.glob('neural-*')):
+        raise ValueError('Pinned fallback source already includes neural artifacts')
     assets = install_assets(model_root, config['assets'])
     require_full = options.phase != 'capture'
     audit_link = checked_shared_audit(config, datasets[splits[0]]['data_sha'], assets['ngram-v2']['corpusSha256'], require_full)
@@ -507,6 +596,8 @@ export default {{...config, testDir:'./tests/e2e', outputDir:'./replay-output', 
                  'corpusAudit': audit_link, 'questionAids': aid_link,
                  'modelManifests': {name: hash_file(model_root / name / 'manifest.json') for name in assets},
                  'buildIndexSha256': hash_file(source / 'dist/index.html')}
+    if fallback:
+        inventory['neuralFallback'] = fallback
     (output / 'inventory.json').write_text(json.dumps(inventory, indent=2) + '\n')
     with (output / 'preview.log').open('wb') as server_log:
         server = subprocess.Popen(['node_modules/.bin/vite', 'preview', '--host', '127.0.0.1', '--port', str(port), '--strictPort'],
@@ -543,10 +634,12 @@ export default {{...config, testDir:'./tests/e2e', outputDir:'./replay-output', 
                 if options.question_aids and config['control'] in ('main-best', 'tutor-best'):
                     run_replay(source, output / 'tutor', env, 'tutor', datasets['test'], assets, options.phase, locked_trial=True)
             else:
-                arms = ARMS if options.phase == 'final' else ARMS[:2]
+                arms = {'final': ARMS, 'final-fallback': FALLBACK_ARMS, 'final-kn': ARMS[:2]}[options.phase]
                 metric_inputs = []
                 for arm in arms:
                     run_replay(source, output / arm, env, arm, datasets['test'], assets, options.phase, locked_trial=options.locked_neural_trial)
+                    if fallback:
+                        assert_fallback_observations(output / arm)
                     metric_inputs.extend(('--run', arm, str(output / (arm + '.impressions.jsonl')), str(output / (arm + '.keys.jsonl'))))
                 run([sys.executable, 'scripts/typeahead/expanded/replay_metrics.py',
                      '--gold', str(datasets['test']['path'] / 'gold.jsonl'), '--baseline', 'corrected-v1',

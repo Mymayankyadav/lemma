@@ -131,12 +131,22 @@ with Vite and Playwright installed. The runner archives the exact `commit` from 
 Use absolute paths for inputs, and optionally set `chromiumExecutable` to a local browser. The preview uses a
 local Tutor fixture and a synthetic sign-in. The capture phase leaves the final test schedule unopened.
 
-For `--phase final-kn` or `--phase final`, include the frozen `test` directory, `scheduleManifestSha256`,
+For `--phase final-kn`, `--phase final-fallback` or `--phase final`, include the frozen `test` directory, `scheduleManifestSha256`,
 `groupAudit` and its SHA-256, both corpus manifests, and `auditedAssetManifestSha256` for the selected packs.
 If using a validated `mixture` or `neuralCalibration`, provide the corresponding capture inventory, its
 SHA-256, and both hashed calibration inputs in `mixtureCapture` or `neuralCalibrationCapture`. The runner
 checks these against the files that the earlier capture produced. `--locked-neural-trial` keeps the
 backend byte cap and edit deadline in force and labels the candidate unqualified.
+
+Use `--phase final-fallback --question-aids` when no neural candidate meets the frozen validation
+procedure. Supply `neuralFallbackSelection: {path, sha256}` from the precision selector before opening
+the test schedules. If the selector produced a candidate but browser validation failed or was unavailable,
+also supply `neuralFallbackValidation: {path, sha256, evidence}`. Its report uses `version: 1`,
+`contextSplit: "validation"`, `selectionSha256`, `modelFingerprint`, `status: "failed" | "unavailable"`
+and `evidenceSha256`. The runner pins the underlying evidence file. No neural assets or neural calibration
+are installed. The four measured arms are the corrected trigram, expanded counts, Tutor priorities and
+prospective local personalization. The report identifies neural and weight comparisons as unavailable.
+All other frozen-schedule, corpus and fit checks apply.
 
 `--phase neural-controls` uses the full prepared-data audit, three audited prepared manifests, the shared
 held-out manifest, and the seven named `neuralControls` records with pinned validation metrics, ledgers and
