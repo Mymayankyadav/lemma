@@ -313,6 +313,20 @@ def evaluate(model, reference, word_ids, source, order):
 
 
 
+def scratch_count_cache():
+    """Cap count cache at one fourth of the detected memory limit, with a conservative fallback."""
+    limits = (Path('/sys/fs/cgroup/memory.max'),
+              Path('/sys/fs/cgroup/memory/memory.limit_in_bytes'))
+    for path in limits:
+        try:
+            limit = int(path.read_text().strip())
+        except (OSError, ValueError):
+            continue
+        if 0 < limit < 1 << 60:
+            return max(1, min(8 * 1024 * 1024, limit // (4 * 1024))), limit
+    return 256 * 1024, None
+
+
 def count_checkpoint(corpus, out, max_order, size, kind, subject=None, shared_vocab=None, train_limit=None,
                      compress=False):
     """Persist the exact raw and continuation counts so packing can run in a separate session."""
@@ -329,15 +343,28 @@ def count_checkpoint(corpus, out, max_order, size, kind, subject=None, shared_vo
     vocab_file = out / 'vocab.json'
     vocab_file.write_text(json.dumps(vocab, ensure_ascii=False) + '\n')
     binary = out / 'counts.sqlite'
+    cache_kib, memory_limit = scratch_count_cache()
     with closing(sqlite3.connect(binary)) as db:
+        # This database is disposable until a checked checkpoint is published.
         db.execute('PRAGMA temp_store=FILE')
-        db.execute('PRAGMA cache_size=-262144')
+        if db.execute('PRAGMA journal_mode=OFF').fetchone() != ('off',):
+            raise ValueError('Could not set the disposable count-store journal mode')
+        db.execute('PRAGMA synchronous=OFF')
+        db.execute(f'PRAGMA cache_size=-{cache_kib}')
+        scratch_settings = {'journalMode': db.execute('PRAGMA journal_mode').fetchone()[0],
+                            'synchronous': db.execute('PRAGMA synchronous').fetchone()[0],
+                            'cacheKiB': -db.execute('PRAGMA cache_size').fetchone()[0],
+                            'observedCgroupLimitBytes': memory_limit}
+        print('NGRAM SCRATCH', json.dumps(scratch_settings, sort_keys=True), flush=True)
         training_tokens = accumulate(db, source(), {word: i for i, word in enumerate(vocab)}, max_order)
+        if db.execute('PRAGMA integrity_check').fetchall() != [('ok',)]:
+            raise ValueError('Cannot publish an invalid n-gram count database')
+        scratch_settings['integrityChecked'] = True
     checkpoint = {'version': 1, 'kind': kind, 'subject': subject, 'maxOrder': max_order,
                   'trainTokens': training_tokens, 'targetTrainTokens': train_limit,
                   'corpusSha256': file_hash(corpus / 'manifest.json'),
                   'vocabSha256': file_hash(vocab_file), 'countsSha256': file_hash(binary),
-                  'countsBytes': binary.stat().st_size}
+                  'countsBytes': binary.stat().st_size, 'scratchSqlite': scratch_settings}
     if compress:
         compressed = out / (binary.name + '.gz')
         with binary.open('rb') as source, compressed.open('wb') as output:

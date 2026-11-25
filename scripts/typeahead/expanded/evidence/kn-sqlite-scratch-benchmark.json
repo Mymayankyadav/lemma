@@ -1,0 +1,163 @@
+{
+  "interpretation": "Optimized 20M ran second on the same local host. The raw DB fits all tested enlarged caches. Timing does not predict Kaggle runtime or guarantee full-pool capacity.",
+  "optimized80M": {
+    "actualTokens": 80000050,
+    "corpusSha256": "cf2e81d637fb54af5ea092b796dcd98d506c6bd16c5d8d7f57e7724e07fcc099",
+    "countSeconds": 477.25581927500025,
+    "databaseBytes": 1943699456,
+    "integritySeconds": 11.742413962998398,
+    "peakRssBytes": 2677633024,
+    "progress": [
+      {
+        "databaseBytesAtMilestone": 131825664,
+        "event": "NGRAM COUNTS",
+        "order": 5,
+        "peakRssBytes": 188579840,
+        "seconds": 34.36615165299736,
+        "trainTokens": 10025106
+      },
+      {
+        "databaseBytesAtMilestone": 253046784,
+        "event": "NGRAM COUNTS",
+        "order": 5,
+        "peakRssBytes": 322535424,
+        "seconds": 77.03798725099841,
+        "trainTokens": 20017658
+      },
+      {
+        "databaseBytesAtMilestone": 369393664,
+        "event": "NGRAM COUNTS",
+        "order": 5,
+        "peakRssBytes": 448626688,
+        "seconds": 122.6211214899995,
+        "trainTokens": 30113012
+      },
+      {
+        "databaseBytesAtMilestone": 481615872,
+        "event": "NGRAM COUNTS",
+        "order": 5,
+        "peakRssBytes": 571834368,
+        "seconds": 171.7253878369993,
+        "trainTokens": 40075865
+      },
+      {
+        "databaseBytesAtMilestone": 595439616,
+        "event": "NGRAM COUNTS",
+        "order": 5,
+        "peakRssBytes": 695271424,
+        "seconds": 222.0658413050005,
+        "trainTokens": 50168911
+      },
+      {
+        "databaseBytesAtMilestone": 702836736,
+        "event": "NGRAM COUNTS",
+        "order": 5,
+        "peakRssBytes": 813506560,
+        "seconds": 272.37603917399974,
+        "trainTokens": 60160698
+      },
+      {
+        "databaseBytesAtMilestone": 807931904,
+        "event": "NGRAM COUNTS",
+        "order": 5,
+        "peakRssBytes": 927539200,
+        "seconds": 328.8754255169988,
+        "trainTokens": 70056699
+      },
+      {
+        "databaseBytesAtMilestone": 913018880,
+        "event": "NGRAM CONTINUATIONS",
+        "order": 4,
+        "peakRssBytes": 1041178624,
+        "seconds": 385.59598199299944,
+        "trainTokens": 80000050
+      },
+      {
+        "databaseBytesAtMilestone": 1560023040,
+        "event": "NGRAM CONTINUATIONS",
+        "order": 3,
+        "peakRssBytes": 2267488256,
+        "seconds": 429.2805814179992,
+        "trainTokens": 80000050
+      },
+      {
+        "databaseBytesAtMilestone": 1875083264,
+        "event": "NGRAM CONTINUATIONS",
+        "order": 2,
+        "peakRssBytes": 2604761088,
+        "seconds": 460.30281025599834,
+        "trainTokens": 80000050
+      },
+      {
+        "databaseBytesAtMilestone": 1942925312,
+        "event": "NGRAM CONTINUATIONS",
+        "order": 1,
+        "peakRssBytes": 2677633024,
+        "seconds": 474.04459287899954,
+        "trainTokens": 80000050
+      }
+    ],
+    "purpose": "Optimized scratch growth benchmark, not a Kaggle runtime projection",
+    "raw5Rows": 47684544,
+    "raw5TransitionMass": 84135874,
+    "requestedTokens": 80000000,
+    "scratchSqlite": {
+      "cacheKiB": 4194304,
+      "journalMode": "off",
+      "observedCgroupLimitBytes": 17179869184,
+      "synchronous": 0
+    },
+    "sentences": 4135824,
+    "tableBytes": {
+      "counts1": 774144,
+      "counts2": 67842048,
+      "counts3": 315060224,
+      "counts4": 647000064,
+      "counts5": 913014784,
+      "sqlite_schema": 4096
+    },
+    "vocabSha256": "01fddfc6c4659d21fe22e2cb890289c4a93d728f6b1da8a7e1d142c3d9fef6e2"
+  },
+  "paired20M": {
+    "allCountRowsExactlyEqual": true,
+    "corpusSha256": "cf2e81d637fb54af5ea092b796dcd98d506c6bd16c5d8d7f57e7724e07fcc099",
+    "environment": "local audited shared data, no remote job or GPU",
+    "optimized": {
+      "actualTokens": 20000002,
+      "countSeconds": 104.42751920000228,
+      "integrityCheckSeconds": 3.2603533280016563,
+      "rawBytes": 574926848,
+      "targetTokens": 20000000
+    },
+    "original": {
+      "actualTokens": 20000002,
+      "countSeconds": 143.46763380300035,
+      "integrityCheckSeconds": 4.076861292000103,
+      "rawBytes": 574926848,
+      "targetTokens": 20000000
+    },
+    "rows": {
+      "1": {
+        "logicalSha256": "42ffbf1004175c682b9255be58456e4fa5a48bbc9d84714b0aea11a580ff3248",
+        "rows": 51136
+      },
+      "2": {
+        "logicalSha256": "bcc6e16eb1cbccb2c2f54abe3b17dc0ac9be1f2f046f75722dbae35f4c4e261c",
+        "rows": 2030885
+      },
+      "3": {
+        "logicalSha256": "0dc96fd330d05445510da0b12018ac72d20f8a1618194e7f9cf00ea36730d77d",
+        "rows": 6749224
+      },
+      "4": {
+        "logicalSha256": "0fdc0cf8574814b1dc454461276198b8553d3273e2e266266081d2f49cd2d9fd",
+        "rows": 10886738
+      },
+      "5": {
+        "logicalSha256": "8908cf69ef4bde0bf35a849231696fe8fe463ea8d6b34d05c37f7cc8398a0f0b",
+        "rows": 13219485
+      }
+    },
+    "vocabSha256": "01fddfc6c4659d21fe22e2cb890289c4a93d728f6b1da8a7e1d142c3d9fef6e2"
+  }
+}
