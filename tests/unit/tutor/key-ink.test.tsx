@@ -40,12 +40,15 @@ afterEach(async () => {
   vi.useRealTimers(); vi.restoreAllMocks(); setHapticsEnabled(true);
 });
 
+let setReadOnly: (readOnly: boolean) => void = () => {};
 function Harness() {
   const [value, setValue] = useState('');
+  const [readOnly, changeReadOnly] = useState(false);
+  setReadOnly = changeReadOnly;
   const [answerActions, setAnswerActions] = useState<HTMLDivElement | null>(null);
   return <>
     <dialog><div ref={setAnswerActions}/></dialog>
-    <TutorComposer value={value} onChange={setValue} onSend={() => {}} onAsk={() => {}} canSend readOnly={false} pending={false}
+    <TutorComposer value={value} onChange={setValue} onSend={() => {}} onAsk={() => {}} canSend readOnly={readOnly} pending={false}
       hasContext={false} onContext={() => {}} sessionActionsOpen={false} onCloseActions={() => {}} answerActions={answerActions}/>
   </>;
 }
@@ -227,6 +230,69 @@ test('a long-press digit goes in after the held symbol, not before it', async ()
   await wait(400);
   await act(async () => {pointer('pointerup', q, 20, 20); tapClick(q);});
   expect(field().value).toBe('<1');
+});
+
+test('a key queued behind a drawing never edits a selection made after it was tapped', async () => {
+  vi.useFakeTimers();
+  await mount();
+  for (const letter of 'abc') await act(async () => button(letter, rows()).click());
+  await draw([10, 10], [60, 60]);
+  await act(async () => button('x', rows()).click());
+  expect(field().value).toBe('abc');
+  // The learner selects the existing text while the drawing is still being read.
+  await act(async () => {field().setSelectionRange(0, 3); field().click();});
+  expect(field().value).toBe('abc');
+  await read({forall: .95, exists: .05});
+  await wait(DEFERRED_TAP_MS + SETTLE_MS);
+  expect(field().value).toBe('abc');
+  expect(host.querySelector('.tutor-key-ink-status')?.textContent).toContain('1 key tapped meanwhile left out');
+});
+
+test('a key queued behind a drawing is not applied once the answer becomes read-only', async () => {
+  vi.useFakeTimers();
+  await mount();
+  for (const letter of 'abc') await act(async () => button(letter, rows()).click());
+  await draw([10, 10], [60, 60]);
+  await act(async () => button('x', rows()).click());
+  await act(async () => setReadOnly(true));
+  await wait(DEFERRED_TAP_MS * 2);
+  expect(field().value).toBe('abc');
+});
+
+test('switching the keys’ layout keeps a held symbol, which goes in before the next key', async () => {
+  vi.useFakeTimers();
+  await mount();
+  await draw([10, 10], [60, 60]);
+  await read({'less-than': .95, 'x-other': .05});
+  await wait(SETTLE_MS);
+  await act(async () => button('?123', rows()).click());
+  await act(async () => button('1', rows()).click());
+  expect(field().value).toBe('<1');
+});
+
+test('keys queued behind a drawing being read survive a layout switch, in order', async () => {
+  vi.useFakeTimers();
+  await mount();
+  await draw([10, 10], [60, 60]);
+  await act(async () => button('a', rows()).click());
+  await act(async () => button('?123', rows()).click());
+  await act(async () => button('1', rows()).click());
+  expect(field().value).toBe('');
+  await read({forall: .95, exists: .05});
+  expect(field().value).toBe('∀a1');
+});
+
+test('leaving the keys for equation mode settles a pending drawing and its queued keys first', async () => {
+  vi.useFakeTimers();
+  await mount();
+  await draw([10, 10], [60, 60]);
+  await read({'less-than': .95, 'x-other': .05});
+  await act(async () => button('a', rows()).click());
+  expect(field().value).toBe('<a');
+  await draw([200, 10], [250, 60]);
+  await act(async () => button('b', rows()).click());
+  await act(async () => button('Equation mode').click());
+  expect(field().value).toBe('<ab');
 });
 
 test('a sideways slide on Space still moves the caret instead of drawing', async () => {

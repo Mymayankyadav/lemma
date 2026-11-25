@@ -19,7 +19,7 @@ import {imageReference, referencedImageIds, tutorAnswerParts} from '../../../sup
 import {readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection, TutorAnswerEditor} from './TutorAnswerEditor';
 import {TutorKeyboard} from './TutorKeyboard';
 import {KeyInkWords} from './input/latentInk/KeyInkWords';
-import {useKeyInk} from './input/latentInk/useKeyInk';
+import {useKeyInk, type FlushResult, type KeyEdit} from './input/latentInk/useKeyInk';
 import type {SymbolDefinition} from './input/symbolCatalog';
 import {TutorInkPad} from './input/TutorInkPad';
 import {TutorSymbolPicker} from './input/TutorSymbolPicker';
@@ -166,7 +166,7 @@ export function TutorComposer(props: Props) {
   /** The answer and selection a drawing began on: its symbol goes in only while they are unchanged. */
   const inkTarget = useRef<EditTarget | null>(null);
   const keyInk = useKeyInk(isFlagOn('tutorKeyInk') && shown && !props.suspended && !scratch && !equationMode && !assist.drawing && !editingDisabled,
-    {onBegin: beginInk, onInsert: insertInkSymbol, onRetract: retractInkSymbol});
+    {onBegin: beginInk, onFlush: flushInk, onKeyEdit: applyKeyEdit, onReplace: replaceInkSymbol, onRetract: retractInkSymbol});
   const inkSlots = keyInk.view.kind !== 'idle';
   const forgetInkInsert = keyInk.forgetInsert, invalidateInk = keyInk.invalidate;
   // Any other change to the answer ends the one-tap replace of the symbol drawn last, and a change to the answer or
@@ -176,7 +176,7 @@ export function TutorComposer(props: Props) {
     if (last && (cursor.text !== last.after.text || cursor.start !== last.after.start || cursor.end !== last.after.end)) {
       inkInsert.current = null; forgetInkInsert();
     }
-    if (inkTarget.current && !sameEditTarget(inkTarget.current, editTarget())) {inkTarget.current = null; invalidateInk();}
+    if (inkTarget.current && !sameInkTarget(inkTarget.current, editTarget())) {inkTarget.current = null; invalidateInk();}
   // eslint-disable-next-line react-hooks/exhaustive-deps -- editTarget reads refs; the cursor is what changes with them
   }, [cursor, forgetInkInsert, invalidateInk]);
 
@@ -320,21 +320,59 @@ export function TutorComposer(props: Props) {
     remember();
     inkTarget.current = editTarget();
   }
-  function insertInkSymbol(symbol: SymbolDefinition, replace: boolean) {
+  /** A drawing's answer and selection are unchanged: switching the keys' layout (?123, ABC, a maths category) is not
+   *  a change to either, so only the editor and selection revisions count. */
+  function sameInkTarget(left: EditTarget, right: EditTarget) {
+    return left.scopeKey === right.scopeKey && left.mountId === right.mountId
+      && left.editorRevision === right.editorRevision && left.selectionRevision === right.selectionRevision;
+  }
+  /**
+   * N249: in one step, where the drawing began, its symbol (as a strip symbol goes in: glyph in prose, command in
+   * maths) and then the keyboard edits made while it was read. If the answer or its selection changed since, or it
+   * can no longer be edited, nothing is applied: a queued key never edits a selection it was not tapped for.
+   */
+  function flushInk(symbol: SymbolDefinition | null, edits: readonly KeyEdit[]): FlushResult {
     remember();
-    if (!replace) {
-      // A reading that arrives after the answer or its selection changed is not inserted somewhere else.
-      const target = inkTarget.current;
-      inkTarget.current = null;
-      if (!target || !sameEditTarget(target, editTarget())) return false;
+    const target = inkTarget.current;
+    inkTarget.current = null;
+    if (editingDisabled || !target || !sameInkTarget(target, editTarget())) return 'refused';
+    let inserted = false;
+    if (symbol) {
+      const base = history.current.present;
+      const next = insertTutorSymbol(base, symbol.id) ?? insertNotation(base, symbol.glyph);
+      if (commit(changePadText(history.current, next), true)) {
+        inkInsert.current = {before: base, after: next};
+        inserted = true;
+        haptic('snap');
+      }
     }
+    for (const edit of edits) applyKeyEdit(edit);
+    return inserted ? 'inserted' : 'skipped';
+  }
+  function applyKeyEdit(edit: KeyEdit) {
+    if (edit.kind === 'insert') insert(edit.text, edit.typed, edit.touch);
+    else if (edit.kind === 'delete') deleteBackward();
+    else moveCaret(edit.direction, edit.count);
+  }
+  function moveCaret(direction: 'left' | 'right', count: number) {
+    remember();
+    let edit = history.current.present;
+    const ranges = imageRanges(edit.text);
+    for (let step = 0; step < count; step++) {
+      edit = movePadCaret(edit, direction);
+      const image = ranges.find(item => item.start < edit.start && edit.start < item.end);
+      if (image) edit = padEdit(edit.text, direction === 'left' ? image.start : image.end);
+    }
+    change(edit, true);
+  }
+  /** Replace the symbol drawn just before with another reading, while nothing else has changed. */
+  function replaceInkSymbol(symbol: SymbolDefinition) {
+    remember();
     const present = history.current.present, last = inkInsert.current;
-    const base = !replace ? present
-      : last && last.after.text === present.text && last.after.start === present.start && last.after.end === present.end ? last.before : null;
-    if (editingDisabled || !base) return false;
-    const next = insertTutorSymbol(base, symbol.id) ?? insertNotation(base, symbol.glyph);
+    if (editingDisabled || !last || last.after.text !== present.text || last.after.start !== present.start || last.after.end !== present.end) return false;
+    const next = insertTutorSymbol(last.before, symbol.id) ?? insertNotation(last.before, symbol.glyph);
     if (!commit(changePadText(history.current, next), true)) return false;
-    inkInsert.current = {before: base, after: next};
+    inkInsert.current = {before: last.before, after: next};
     haptic('snap');
     return true;
   }
@@ -622,6 +660,8 @@ export function TutorComposer(props: Props) {
    */
   function selectSurface(next: Surface) {
     if (editingDisabled && next !== 'keys') return;
+    // N249: a drawing over the keys is settled (with the keys tapped meanwhile) before the keys give way.
+    keyInk.settle();
     if (next !== 'equation') {setEquationMode(false); setWriteReplace(null);}
     if (next !== 'symbol' && assist.drawing) assist.stop();
     if (next === 'scratch') {openDrawing(); return;}
@@ -956,7 +996,7 @@ export function TutorComposer(props: Props) {
   }
   // N221: in the Android app Hide keyboard sits in the band under the keys, where Gboard's ⌄ is; browsers keep it in the strip.
   const hideButton = (className: string) => <button className={className} type="button" aria-label="Hide keyboard"
-    onPointerDown={keepSelection} onClick={() => {haptic('snap'); setPinned(false); setShown(false);}}><ChevronDown aria-hidden="true"/></button>;
+    onPointerDown={keepSelection} onClick={() => {haptic('snap'); keyInk.settle(); setPinned(false); setShown(false);}}><ChevronDown aria-hidden="true"/></button>;
   const scratchButton = props.ink && <button className="sbtn" type="button" aria-label="Scratch" aria-pressed={scratch}
     disabled={editingDisabled || props.ink.draft.queuedText !== undefined} onPointerDown={keepSelection} onClick={pencil}><PenLine aria-hidden="true"/></button>;
   const nextSlotButton = <button type="button" className="sbtn" aria-label="Next □" disabled={editingDisabled} onPointerDown={keepSelection}
@@ -1153,23 +1193,13 @@ export function TutorComposer(props: Props) {
           onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
       <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled}
-        onInsert={(text, typed, touch) => keyInk.beforeKeyEdit(() => insert(text, typed, touch))}
+        onInsert={(text, typed, touch) => keyInk.beforeKeyEdit({kind: 'insert', text, typed, touch})}
         ink={isFlagOn('tutorKeyInk') ? {bind: keyInk.bind, attach: keyInk.attach, canvas: keyInk.canvas,
           status: keyInk.view.kind === 'idle' ? keyInk.view.message ?? '' : keyInk.view.kind === 'inserted' ? 'Inserted ' + keyInk.view.symbol.name : ''} : undefined}
         wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
         onBrowse={()=>{remember();assist.openPicker();}}
-        onDelete={() => keyInk.beforeKeyEdit(deleteBackward)}
-        onMove={(direction, count) => keyInk.beforeKeyEdit(() => {
-          remember();
-          let edit = history.current.present;
-          const ranges = imageRanges(edit.text);
-          for (let step = 0; step < count; step++) {
-            edit = movePadCaret(edit, direction);
-            const image = ranges.find(item => item.start < edit.start && edit.start < item.end);
-            if (image) edit = padEdit(edit.text, direction === 'left' ? image.start : image.end);
-          }
-          change(edit, true);
-        })}/>{hideButton('sbtn kb-band-hide')}</>}
+        onDelete={() => keyInk.beforeKeyEdit({kind: 'delete'})}
+        onMove={(direction, count) => keyInk.beforeKeyEdit({kind: 'move', direction, count})}/>{hideButton('sbtn kb-band-hide')}</>}
     </div> : null}
     {assist.picker && <TutorSymbolPicker recent={assist.recent} onPick={assist.onPick} onClose={assist.closePicker} error={assist.error}/>}
   </div>;
