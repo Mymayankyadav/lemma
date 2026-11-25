@@ -9,10 +9,10 @@ test('the web suggestion model uses an explicit HTTPS download and can retry aft
       headers: {'access-control-allow-origin': '*'}});
   });
   await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/settings?section=tutor');
-  const model = page.getByRole('group', {name: 'Suggestion model'});
-  await expect(model).toContainText('Turn on Try faster typing');
+  await expect(page.getByRole('group', {name: 'Suggestion model'})).toContainText('Turn on Try faster typing');
   expect(requests).toBe(0);
   await page.getByRole('switch', {name: 'Try faster typing'}).click();
+  const model = page.getByRole('group', {name: 'Optional FP16 model'});
   const field = model.getByRole('textbox', {name: 'Custom model download link'});
   await field.fill('http://models.example/unverified.pack');
   await model.getByRole('button', {name: 'Download from link'}).click();

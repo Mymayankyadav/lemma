@@ -65,7 +65,8 @@ export function AndroidModelSettings({canInstall}: {canInstall: boolean}) {
     : canInstall ? 'Download the 68 MB model package. A first offline setup also saves up to 36 MB of support files.'
     : 'Turn on Try faster typing to install and use the suggestion model.';
   return <fieldset className={'writing-aid-package' + (webModelInstall ? ' writing-aid-package-web' : '')}>
-    <legend>{webModelInstall ? 'Suggestion model' : 'Optional FP16 model'}</legend>
+    <legend>{!webModelInstall || canInstall || installed ? 'Optional FP16 model' : 'Suggestion model'}</legend>
+    {webModelInstall && (canInstall || installed) && <p>512-token context · {androidBytes.toLocaleString()} bytes.</p>}
     {webModelInstall ? <p role="status">{status}{installed && !canInstall ? ' Turn on Try faster typing to use it.' : ''}</p>
       : <p>512-token context · {androidBytes.toLocaleString()} bytes. {canInstall
         ? 'The typing experiment can use this model when installed and fall back to the count model.'
