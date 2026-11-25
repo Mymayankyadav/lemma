@@ -6,6 +6,15 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N239 Resolve critical known data and privacy issues
+
+Owner task: "Start working on resolving known issues of the lemma repo and fix all the critical in one run."
+Stage: Harden · Status: open · Needs: — · Assigned: chat-582901#q8n7
+Done = All open P1 reports are reproduced or verified already protected, remaining defects receive tested fixes, and directly related silent data-loss and mathematical-identity regressions are covered in one reviewable PR. Record precise results and remaining release gates.
+Tests: focused unit regressions, full migrated SQL owner/isolation/undo/retry cases, typecheck, repository lint, build and affected browser checks where supported.
+Scope: src app/data/features/platform; supabase/functions; additive supabase/migrations; tests/unit; tests/mcp; relevant capability documentation; docs/current/N239.md; NEXT.md.
+Not: modifying protected CI or existing migrations, production data curation, merging held PRs, or unreviewed production deployment.
+
 ## N231 Restore Lemma promptly on offline launch
 
 Owner task: "Ok few issues to fix is offline usauablity of the lemma, first it opens it delays main screen by saying signing in and other like why sign-in doesn't persist."
