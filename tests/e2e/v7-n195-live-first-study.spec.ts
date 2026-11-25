@@ -67,6 +67,7 @@ test('signed-in first card and grade recover both lost acknowledgements through 
  await page.getByRole('button',{name:/Show answer/}).click();await expect(page.getByText(back,{exact:true})).toBeVisible();
  await page.getByRole('button',{name:/^Good/}).click();
  await expect(page.getByRole('button',{name:'Retry grade confirmation'})).toBeVisible();
+ expect(graded).toHaveLength(1);
  await page.reload();
  await expect.poll(()=>graded.length).toBe(2);
  await expect(page.getByText(/Round saved. 1 graded/)).toBeVisible();
@@ -238,6 +239,34 @@ test('one signed-in due card starts from Review, grades once and stays complete 
  await page.reload();await expect(page.getByRole('heading',{name:'Round complete'})).toBeVisible();
  expect(fixture.startRequests).toHaveLength(1);expect(fixture.gradeRequests).toHaveLength(1);expect(fixture.reviewCount()).toBe(1);
  expect(fixture.runs[0]).toMatchObject({position:1,status:'exhausted'});expect(fixture.records[0].card.reps).toBe(4);
+});
+
+test('reloading before the first grade request reaches the server saves the selected grade once',async({page})=>{
+ const fixture=await reviewFixture(page,{count:1});
+ await page.clock.setFixedTime(NOW);
+ await page.goto(live('/review/run?target=path&id='+fixture.pathId));
+ await page.getByRole('button',{name:/Show answer/}).click();
+
+ // Hold the account check that precedes the grade RPC until the original document unloads.
+ const ownerUrl='**/auth/v1/user';
+ let releaseOwnerCheck!:()=>void;
+ const ownerCheck=new Promise<void>(resolve=>{releaseOwnerCheck=resolve;});
+ await page.route(ownerUrl,async route=>{await ownerCheck;await route.fallback();},{times:1});
+ const checkingOwner=page.waitForRequest(ownerUrl);
+ try{
+  await page.getByRole('button',{name:/^Good/}).click();
+  await checkingOwner;
+  await expect(page.getByRole('button',{name:'Retry grade confirmation'})).toHaveCount(0);
+  await expect(page.getByText('Confirming your grade…',{exact:true})).toBeVisible();
+  expect(fixture.gradeRequests).toHaveLength(0);
+  await page.reload({waitUntil:'commit'});
+ }finally{releaseOwnerCheck();}
+
+ await expect(page.getByText('Round saved. 1 graded; 0 skipped.',{exact:true})).toBeVisible();
+ expect(fixture.gradeRequests).toHaveLength(1);
+ expect(fixture.gradeRequests[0]).toMatchObject({p_rating:3,p_item:fixture.runs[0].items[0].id});
+ expect(fixture.reviewCount()).toBe(1);
+ expect(fixture.records[0].card.reps).toBe(4);
 });
 
 test('a signed-in paused 23-card round resumes at the second item and retains progress through reload',async({page})=>{
