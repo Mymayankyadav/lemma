@@ -115,3 +115,33 @@ test('a `[` queued in front of a drawing does not stop that drawing from opening
   await act(async () => button('Update drawing').click());
   expect(current).toBe('[' + imageReference(updated));
 });
+
+test('a queued Delete after the first of two identical drawings removes that one: it does not open, its twin does', async () => {
+  for (const [chip, opens] of [[0, false], [1, true]] as const) {
+    const reference = imageReference(imageId), initial = reference + reference;
+    current = initial;
+    await act(async () => root.render(<Harness initial={initial}/>));
+    const field = host.querySelector<HTMLElement>('.tutor-answer-editor')!;
+    await act(async () => field.focus());
+    await act(async () => {setTutorAnswerSelection(field, padEdit(initial, reference.length)); field.click();});
+    await act(async () => {
+      const start = [...rows().querySelectorAll('button')].find(node => node.getAttribute('aria-label') === 'g')!;
+      pointer('pointerdown', start, 10, 10); pointer('pointermove', start, 35, 35);
+      pointer('pointermove', rows(), 60, 60); pointer('pointerup', rows(), 60, 60);
+    });
+    // Delete activated from the keyboard or an assistive tool (no pointer): it waits behind the drawing.
+    await act(async () => [...rows().querySelectorAll('button')].find(node => node.getAttribute('aria-label') === 'Delete')!.click());
+    expect(current).toBe(initial);
+    const edits = [...host.querySelectorAll<HTMLButtonElement>('button')].filter(node => node.getAttribute('aria-label') === 'Edit drawing');
+    expect(edits).toHaveLength(2);
+    await act(async () => edits[chip].click());
+    expect(current).toBe(reference);
+    expect(Boolean(button('Update drawing'))).toBe(opens);
+    if (opens) {
+      await act(async () => button('Update drawing').click());
+      expect(current).toBe(imageReference(updated));
+    }
+    await act(async () => root.unmount());
+    root = createRoot(host);
+  }
+});

@@ -340,10 +340,18 @@ export function TutorComposer(props: Props) {
     inkTarget.current = null;
     if (editingDisabled || !target || !sameInkTarget(target, editTarget())) return 'refused';
     // The range each step replaces is kept, so a chip opened behind them can be followed through the edits.
-    const record = (step: () => void) => {
+    const record = (step: () => void, removes?: () => {start: number; end: number} | null) => {
       const before = history.current.present;
+      // Delete says which range it removes (backward from a caret, or a whole image reference): text comparison
+      // cannot tell which of two identical occurrences went.
+      const range = removes?.();
       step();
-      const applied = editBetween(before, history.current.present);
+      const after = history.current.present;
+      if (range && after.text.length - before.text.length === range.start - range.end) {
+        flushedEdits.current.push({start: range.start, end: range.end, delta: range.start - range.end});
+        return;
+      }
+      const applied = editBetween(before, after);
       if (applied) flushedEdits.current.push(applied);
     };
     let inserted = false;
@@ -356,7 +364,7 @@ export function TutorComposer(props: Props) {
         haptic('snap');
       }
     });
-    for (const edit of edits) record(() => applyKeyEdit(edit));
+    for (const edit of edits) record(() => applyKeyEdit(edit), edit.kind === 'delete' ? () => {remember(); return deletionRange(history.current.present);} : undefined);
     return inserted ? 'inserted' : 'skipped';
   }
   /** Settle a drawing over the keys, then follow a span of the answer through what went in; null if it went. */
@@ -847,6 +855,13 @@ export function TutorComposer(props: Props) {
     const edit = history.current.present;
     const image = imageDeletion(edit, true);
     change(image ? insertNotation(image, '') : deletePadBackward(edit), true);
+  }
+  /** The range deleteBackward removes from `edit`: a whole image reference before the caret, or the graphemes it takes. */
+  function deletionRange(edit: PadEdit) {
+    const image = imageDeletion(edit, true);
+    if (image) return {start: image.start, end: image.end};
+    const after = deletePadBackward(edit);
+    return {start: after.start, end: after.start + edit.text.length - after.text.length};
   }
   function imageDeletion(edit: PadEdit, backward: boolean) {
     if (edit.start !== edit.end) return;
