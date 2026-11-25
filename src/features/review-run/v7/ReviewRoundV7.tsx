@@ -257,8 +257,12 @@ export default function ReviewRoundV7(){
    ...(card.sourceShort?[{title:'Source',body:<p>{card.sourceShort}{card.pageLabel?', p. '+card.pageLabel:''}</p>}]:[]),
   ]} sheet={false}/>}
   {run.status==='paused'&&<Button onClick={()=>{setBusy(true);void unpauseRun(run).then(setRun).catch(error=>setMessage(String(error))).finally(()=>setBusy(false));}}>Resume this round</Button>}
-  {frozen?<section className="v7-review-state"><p role="status">Your grade selection is saved on this device.</p>
-   <Button disabled={busy||!atomic} onClick={()=>{void retryGrade();}}>Retry grade confirmation</Button></section>
+  {frozen?<section className="v7-review-state">
+   {busy?<Loader label="Confirming your grade…"/>:<>
+    <p role="status">Your grade selection is saved on this device.</p>
+    <Button disabled={!atomic} onClick={()=>{void retryGrade();}}>Retry grade confirmation</Button>
+   </>}
+  </section>
   :run.progress.done?<section className="v7-review-state"><p role="status">Round saved. {run.progress.graded} graded; {run.progress.skipped} skipped.</p>
    <Button variant="primary" onClick={()=>navigate('/review/done?run='+encodeURIComponent(run.id))}>See results</Button></section>
   :item&&run.status==='running'?<>
