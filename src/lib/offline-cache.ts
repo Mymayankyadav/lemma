@@ -51,10 +51,11 @@ export function projectOfflineSettings(settings:Settings):OfflineSettings {
   mixDecks:settings.mixDecks,newPerDay:settings.newPerDay
  }
 }
-export function isOfflineKey(key:readonly unknown[]):key is OfflineKey {
+export function isOfflineKey(key:readonly unknown[],owner?:string):key is OfflineKey {
  if(!key.every(part=>typeof part==='string'))return false
  if(key.length===1)return ['home','projects','decks','styles','settings'].includes(key[0] as string)
  if(key.length===2)return key[0]==='project'&&typeof key[1]==='string'&&!!key[1]
+ if(owner&&(key[0]==='exam'||key[0]==='exam-attempts')&&key[1]!==owner)return false
  if(key.length===4&&key[0]==='exam')return key.slice(1).every(Boolean)
  if(key.length===5&&key[0]==='exam-attempts')return key.slice(1).every(Boolean)&&/^\d+$/.test(String(key[4]))
  if(key.length===3)return key[0]==='checkpoint'&&typeof key[1]==='string'&&!!key[1]&&typeof key[2]==='string'&&!!key[2]
@@ -94,8 +95,8 @@ function projectSlug(entry:OfflineEntry):string|null {
  return entry.key[0]==='project'||entry.key[0]==='checkpoint'?entry.key[1]??null:null
 }
 /** Oldest project/checkpoint entries go first; keep at most five project slugs. */
-export function boundOfflineEntries(entries:OfflineEntry[],now=Date.now(),maxBytes=OFFLINE_MAX_BYTES):OfflineEntry[]{
- const valid=entries.filter(e=>e&&Array.isArray(e.key)&&isOfflineKey(e.key)&&Number.isFinite(e.savedAt)&&e.savedAt<=now&&now-e.savedAt<=OFFLINE_MAX_AGE_MS)
+export function boundOfflineEntries(entries:OfflineEntry[],now=Date.now(),maxBytes=OFFLINE_MAX_BYTES,owner?:string):OfflineEntry[]{
+ const valid=entries.filter(e=>e&&Array.isArray(e.key)&&isOfflineKey(e.key,owner)&&Number.isFinite(e.savedAt)&&e.savedAt<=now&&now-e.savedAt<=OFFLINE_MAX_AGE_MS)
   // Validate before redaction too: a tampered projection with a secret field
   // must be rejected, not silently normalized into an apparently valid record.
   .filter(e=>e.key[0]!=='settings'||isOfflineSettings(e.data))
@@ -118,10 +119,10 @@ export function boundOfflineEntries(entries:OfflineEntry[],now=Date.now(),maxByt
  }
  return result
 }
-export function snapshotFromClient(client:QueryClient,now=Date.now()):OfflineSnapshot {
+export function snapshotFromClient(client:QueryClient,now=Date.now(),owner?:string):OfflineSnapshot {
  const entries:OfflineEntry[]=[]
  for(const query of client.getQueryCache().findAll()){
-  if(query.state.status!=='success'||!isOfflineKey(query.queryKey))continue
+  if(query.state.status!=='success'||!isOfflineKey(query.queryKey,owner))continue
   const data=query.queryKey[0]==='settings'
    ?projectOfflineSettings(query.state.data as Settings):query.state.data
   entries.push({key:[...query.queryKey],data,savedAt:query.state.dataUpdatedAt||now})
@@ -147,7 +148,7 @@ function handoffRecord(userId:string,now:number,storage?:Storage):{snapshot:Offl
   const value=JSON.parse(raw) as Partial<OfflineSnapshot>
   if(value.v!==1||!Number.isFinite(value.savedAt)||typeof value.savedAt!=='number'||
    value.savedAt>now||now-value.savedAt>OFFLINE_MAX_AGE_MS||!Array.isArray(value.entries))return null
-  return {snapshot:{v:1,savedAt:value.savedAt,entries:boundOfflineEntries(value.entries,now)},raw}
+  return {snapshot:{v:1,savedAt:value.savedAt,entries:boundOfflineEntries(value.entries,now,OFFLINE_MAX_BYTES,userId)},raw}
  }catch{return null}
 }
 export function readOfflineHandoff(userId:string,now=Date.now(),storage?:Storage):OfflineSnapshot|null{
@@ -161,7 +162,7 @@ export function clearOfflineHandoff(userId:string,storage?:Storage):void{
 export function stageOfflineHandoff(userId:string,key:readonly unknown[],data:unknown,savedAt=Date.now(),
  now=Date.now(),storage?:Storage):void{
  const name=handoffKey(userId),store=handoffStorage(storage)
- if(!name||!store||!isOfflineKey(key)||!Number.isFinite(savedAt)||savedAt>now||now-savedAt>OFFLINE_MAX_AGE_MS)return
+ if(!name||!store||!isOfflineKey(key,userId)||!Number.isFinite(savedAt)||savedAt>now||now-savedAt>OFFLINE_MAX_AGE_MS)return
  try{
   const prior=handoffRecord(userId,now,store)?.snapshot??null
   const serializedKey=JSON.stringify(key)
@@ -195,17 +196,17 @@ function openDb(userId:string):Promise<IDBDatabase>{
 /** Keep earlier successfully viewed routes when a navigation creates a new
  * React Query client. A full page reload must not replace the last five
  * offline projects with only the final route's query cache. */
-export function mergeOfflineSnapshots(previous:unknown,current:OfflineSnapshot,now=Date.now()):OfflineSnapshot{
+export function mergeOfflineSnapshots(previous:unknown,current:OfflineSnapshot,now=Date.now(),owner?:string):OfflineSnapshot{
  const old=previous&&typeof previous==='object'?previous as Partial<OfflineSnapshot>:null;
  const prior=old?.v===1&&Number.isFinite(old.savedAt)&&typeof old.savedAt==='number'&&
   old.savedAt<=now&&now-old.savedAt<=OFFLINE_MAX_AGE_MS&&Array.isArray(old.entries)?old.entries:[];
- return {v:1,savedAt:now,entries:boundOfflineEntries([...prior,...current.entries],now)};
+ return {v:1,savedAt:now,entries:boundOfflineEntries([...prior,...current.entries],now,OFFLINE_MAX_BYTES,owner)};
 }
 export async function saveOfflineSnapshot(userId:string,client:QueryClient,now=Date.now(),canWrite:()=>boolean=()=>true):Promise<void>{
  if(!canWrite())return;
  // Capture before the async open: account B must never be written under A.
  const handoff=handoffRecord(userId,now);
- const snapshot=mergeOfflineSnapshots(handoff?.snapshot??null,snapshotFromClient(client,now),now);
+ const snapshot=mergeOfflineSnapshots(handoff?.snapshot??null,snapshotFromClient(client,now,userId),now,userId);
  const db=await openDb(userId);
  try{
   if(!canWrite())return;
@@ -216,7 +217,7 @@ export async function saveOfflineSnapshot(userId:string,client:QueryClient,now=D
    const req=store.get(SLOT);
    req.onsuccess=()=>{
     if(!canWrite()){tx.abort();return}
-    store.put(mergeOfflineSnapshots(req.result,snapshot,now),SLOT);
+    store.put(mergeOfflineSnapshots(req.result,snapshot,now,userId),SLOT);
    };
    req.onerror=()=>tx.abort();
    tx.oncomplete=()=>resolve();
@@ -238,7 +239,7 @@ export async function readOfflineSnapshot(userId:string,now=Date.now()):Promise<
   const snapshot=value as Partial<OfflineSnapshot>
   if(snapshot.v!==1||!Number.isFinite(snapshot.savedAt)||!snapshot.savedAt||
    snapshot.savedAt>now||now-snapshot.savedAt>OFFLINE_MAX_AGE_MS||!Array.isArray(snapshot.entries))return readOfflineHandoff(userId,now)
-  const saved={v:1 as const,savedAt:snapshot.savedAt,entries:boundOfflineEntries(snapshot.entries,now)}
+  const saved={v:1 as const,savedAt:snapshot.savedAt,entries:boundOfflineEntries(snapshot.entries,now,OFFLINE_MAX_BYTES,userId)}
   const handoff=readOfflineHandoff(userId,now)
   return handoff?mergeOfflineSnapshots(saved,handoff,now):saved
  }finally{db.close()}

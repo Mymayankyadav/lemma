@@ -22,7 +22,7 @@ export function createDemoExamApi(now=Date.now()):ExamApi {
   starts_at:iso(project.days),finished_at:project.status==='finished'?iso(-2):null,time_zone:'UTC',study_minutes:project.status==='active'?1:120,total_marks:60,
   version:1,blueprint_version:1,blueprint:project.id==='project-linear'?linearRows:[],ledger:{},
  }))
- const attempts:Array<ExamAttempt&{sitting_id:string;id:string;delivery_ref?:string;seconds?:number}>=[{
+ const attempts:Array<ExamAttempt&{sitting_id:string;id:string;delivery_ref?:string}>=[{
   sitting_id:'demo-exam-project-linear',id:'demo-exam-attempt',
   row_key:'change-of-basis',outcome:'correct',
   marks_awarded:12,marks_possible:12,independence:'independent',hint_level:0,novelty:'novel',

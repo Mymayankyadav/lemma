@@ -1,4 +1,6 @@
 import {expect,test,type Page} from '@playwright/test'
+import {copyFile,mkdir} from 'node:fs/promises'
+import {join} from 'node:path'
 
 const url=(path:string)=>'/lemma/?demo=1&flags=v7Shell,v6Shell,examMode#'+path
 const viewports=[{width:320,height:640},{width:390,height:844},{width:844,height:390}]
@@ -100,6 +102,11 @@ for(const theme of ['light','dark'] as const){
   const photo=testInfo.outputPath('exam-ledger-'+theme+'.png')
   await page.screenshot({path:photo,fullPage:true})
   await testInfo.attach('Exam ledger · '+theme,{path:photo,contentType:'image/png'})
+  if(process.env.CI_JUNIT_DIR){
+   const artifacts=join(process.env.CI_JUNIT_DIR,'exam-captures')
+   await mkdir(artifacts,{recursive:true})
+   await copyFile(photo,join(artifacts,'exam-ledger-'+theme+'.png'))
+  }
  })
 }
 

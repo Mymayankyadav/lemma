@@ -238,6 +238,19 @@
             "restore",
             "delete"
           ]
+        },
+        {
+          "resource": "exam_sittings",
+          "operations": [
+            "create",
+            "update",
+            "set_disposition",
+            "activate",
+            "pause",
+            "finish",
+            "reopen",
+            "cancel"
+          ]
         }
       ]
     },
@@ -414,7 +427,9 @@
         "delete",
         "propose_cards",
         "propose_card_edits",
-        "undo"
+        "undo",
+        "study",
+        "get"
       ],
       "covers": [
         {
@@ -422,6 +437,17 @@
           "operations": [
             "reschedule",
             "reset"
+          ]
+        },
+        {
+          "resource": "card_ideas",
+          "operations": [
+            "save",
+            "update",
+            "draft",
+            "link",
+            "dismiss",
+            "restore"
           ]
         }
       ],
@@ -490,6 +516,15 @@
           "operations": [
             "create",
             "revoke"
+          ]
+        },
+        {
+          "resource": "exam_attempts",
+          "operations": [
+            "record",
+            "correct",
+            "void",
+            "restore"
           ]
         }
       ]
