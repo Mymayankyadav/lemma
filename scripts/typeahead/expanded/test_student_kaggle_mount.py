@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import lzma
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -29,35 +30,58 @@ class MountTest(unittest.TestCase):
                      'compressedBytes': len(self.zipped), 'compressedSha256': signature(self.zipped)['sha256']}
 
     def test_exact_round_trip(self):
-        mount.unpack_packet(self.teacher.parent, self.out, self.info, base64.b85encode(self.zipped))
-        self.assertEqual({p.name: p.read_bytes() for p in self.out.iterdir()}, dict(self.parts, **{'teacher.pt': self.checkpoint}))
+        mount.unpack_members(self.out, self.info, base64.b85encode(self.zipped))
+        self.assertEqual({p.name: p.read_bytes() for p in self.out.iterdir()}, self.parts)
+        self.assertNotIn('data.jsonl', mount.PACKED_FILES)
 
     def test_size_and_digest_are_both_checked_for_teacher(self):
         decoy = self.teacher.parent / 'other'
         decoy.mkdir()
         (decoy / 'best.pt').write_bytes(b'q' * len(self.checkpoint))
-        self.assertEqual(mount.locate_teacher(self.teacher.parent, self.info['teacher']), self.teacher / 'best.pt')
+        sig = self.info['teacher']
+        locate = lambda: mount.locate_attachment(self.teacher.parent, mount.TEACHER_KERNEL, 'best.pt', sig['sha256'], sig['bytes'])
+        self.assertEqual(locate(), self.teacher / 'best.pt')
+        (decoy / 'best.pt').unlink()
+        os.link(self.teacher / 'best.pt', decoy / 'best.pt')
+        self.assertTrue(locate().samefile(self.teacher / 'best.pt'))
+        (decoy / 'best.pt').unlink()
         (decoy / 'best.pt').write_bytes(self.checkpoint)
         with self.assertRaisesRegex(ValueError, 'found 2'):
-            mount.locate_teacher(self.teacher.parent, self.info['teacher'])
+            locate()
 
     def test_rejects_changed_envelope(self):
         with self.assertRaisesRegex(ValueError, 'compressed training packet changed'):
-            mount.unpack_packet(self.teacher.parent, self.out, self.info, base64.b85encode(self.zipped + b'x'))
+            mount.unpack_members(self.out, self.info, base64.b85encode(self.zipped + b'x'))
         self.assertEqual(list(self.out.iterdir()), [])
 
     def test_resume_mount_requires_explicit_request_pin_and_distinct_kernels(self):
         fresh = {'kernelId': 'owner/next', 'resumeKernel': None, 'resumeReceiptSha256': None}
         resumed = dict(fresh, resumeKernel='owner/previous', resumeReceiptSha256='a' * 64)
-        self.assertEqual(mount.mounted_kernels(fresh, False), [mount.TEACHER_KERNEL])
-        self.assertEqual(mount.mounted_kernels(resumed, True), [mount.TEACHER_KERNEL, 'owner/previous'])
+        self.assertEqual(mount.mounted_kernels(fresh, False), [mount.TEACHER_KERNEL, mount.CORPUS_KERNEL])
+        self.assertEqual(mount.mounted_kernels(resumed, True), [mount.TEACHER_KERNEL, mount.CORPUS_KERNEL, 'owner/previous'])
         with self.assertRaisesRegex(ValueError, 'explicit --resume'):
             mount.mounted_kernels(resumed, False)
-        for prior in (mount.TEACHER_KERNEL, 'OWNER/next'):
+        for prior in (mount.TEACHER_KERNEL, mount.CORPUS_KERNEL, 'OWNER/next'):
             with self.subTest(prior=prior), self.assertRaisesRegex(ValueError, 'must be distinct'):
                 mount.mounted_kernels(dict(resumed, resumeKernel=prior), True)
         with self.assertRaisesRegex(ValueError, 'exact receipt SHA-256'):
             mount.mounted_kernels(dict(resumed, resumeReceiptSha256='bad'), True)
+        with self.assertRaisesRegex(ValueError, 'new kernel must be distinct'):
+            mount.mounted_kernels(dict(fresh, kernelId=mount.CORPUS_KERNEL), False)
+
+    def test_source_limit_counts_utf8_bytes_and_is_strict(self):
+        mount.check_source_size('a' * (mount.SCRIPT_MAX_BYTES - 1))
+        with self.assertRaisesRegex(ValueError, 'reaching the 1000000-byte limit'):
+            mount.check_source_size('π' * (mount.SCRIPT_MAX_BYTES // 2))
+
+    def test_uses_scoped_provider_mount(self):
+        inputs = self.out
+        replica = inputs / 'notebooks' / mount.CORPUS_KERNEL
+        replica.mkdir(parents=True)
+        self.assertEqual(mount.mounted_output(inputs, mount.CORPUS_KERNEL), replica)
+        alias = inputs / mount.CORPUS_KERNEL.split('/')[-1]
+        alias.symlink_to(replica, target_is_directory=True)
+        self.assertEqual(mount.mounted_output(inputs, mount.CORPUS_KERNEL), replica)
 
 
 if __name__ == '__main__':

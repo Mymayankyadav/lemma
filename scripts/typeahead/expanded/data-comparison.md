@@ -51,3 +51,12 @@ python scripts/typeahead/expanded/student_training_data.py \
   --corpus /path/to/pinned-full-corpus --model public/models/typeahead/ngram-v2 \
   --out-dir /path/to/new-scratch-input --groups 5000 --max-docs 60000
 ```
+
+`student_source_refs.py` packs the frozen student-training JSONL into a reference recipe for an environment that can attach the exact archived training corpus. The recipe stores train-document ordinals, two word offsets and prefix sizes per group, and a deduplicated candidate-word vocabulary with ranked candidate IDs. It contains no source passages, questions, drafts or count weights. The exact pinned 20,000-row input produced a 366,228-byte XZ recipe (457,785 bytes in base85); the full local reconstruction from the pinned train shards reproduced the original JSONL byte-for-byte. `evidence/student-source-refs.json` records the hashes and sizes. The decoder checks the corpus manifest, verifies each read training shard through the existing corpus reader, reconstructs only referenced train records, and refuses to publish a file unless the final JSONL SHA-256 matches the frozen input. It does not read validation or test shards.
+
+```sh
+python scripts/typeahead/expanded/student_source_refs.py encode \
+  --data /path/to/frozen/data.jsonl --corpus /path/to/pinned-full-corpus --out /path/to/recipe.xz
+python scripts/typeahead/expanded/student_source_refs.py reconstruct \
+  --recipe /path/to/recipe.xz --corpus /path/to/pinned-full-corpus --out /path/to/new-data.jsonl
+```
