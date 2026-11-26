@@ -62,8 +62,10 @@ describe('Notebook app mark', () => {
     const {ELL_MARK_PATH} = await import('../../../src/ui/v7/marks');
     const {ellPathData} = await import('../../../scripts/brand/lemma-mark.mjs');
     expect(ELL_MARK_PATH).toBe(ellPathData('simple', 1024));
-    const shell = (await import('node:fs')).readFileSync('src/app/v7/V7Shell.tsx', 'utf8');
-    expect(shell).toContain('<span className="v7-hub-mark" aria-hidden="true"><EllMark');
-    expect(shell).not.toMatch(/v7-hub-mark" aria-hidden="true">ℓ/);
+    const {readFileSync} = await import('node:fs');
+    const headers = readFileSync('src/app/v7/PageHeaders.tsx', 'utf8');
+    expect(headers).toContain('<span className="v7-hub-mark" aria-hidden="true"><EllMark');
+    expect(headers).not.toMatch(/v7-hub-mark" aria-hidden="true">ℓ/);
+    expect(readFileSync('src/app/v7/V7Shell.tsx', 'utf8')).toContain('aria-label="Lemma home"><EllMark');
   });
 });

@@ -9,7 +9,7 @@ import {Link} from 'react-router';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getPracticeTopicApi} from '../../../data/practice-topics';
 import type {PracticeCadence,PracticeEventRecord,PracticeRating,PracticeTopicRecord} from '../../../data/practice-topics/contract';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {StatusBadge} from '../../../ui/v7/Status';
 import {Tag} from '../../../ui/v7/KitPrimitives';
 import {kitSubject} from '../../atlas/v7/model';

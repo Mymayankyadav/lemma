@@ -11,7 +11,7 @@ const api=vi.hoisted(()=>({listCalendarBlocks:vi.fn(),updateCalendarBlock:vi.fn(
 vi.mock('../../../src/data/study',()=>({getStudyApi:()=>({mode:'demo',listStudyEntries:async()=>[],...api})}));
 vi.mock('../../../src/data/hooks',()=>({useHome:()=>({data:{projects:[]}}),useSettings:()=>({data:{timeZone:'UTC'}})}));
 vi.mock('../../../src/data/adaptive/atlas-api',()=>({useAtlasModel:()=>({data:null})}));
-vi.mock('../../../src/app/v7/V7Shell',()=>({HubHeader:()=>null}));
+vi.mock('../../../src/app/v7/PageHeaders',()=>({HubHeader:()=>null}));
 vi.mock('../../../src/features/calendar/v7/overdue',()=>({useOverdueSummary:()=>({total:0})}));
 vi.mock('../../../src/features/calendar/deadlines/load',()=>({loadCalendarDues:async()=>({deadlines:[],topics:[]})}));
 vi.mock('../../../src/features/calendar/block-sheet/BlockSheetActions',()=>({default:()=>null}));

@@ -97,8 +97,10 @@ test.describe('on an iPad', () => {
   test('C5 · small links have a 44 pt hit area and the Path\'s rows are 44 pt tall', async ({page}) => {
     await asIPad(page);
     await open(page, '#/');
-    const link = page.locator('.v7-card-heading > a').first();
+    const link = page.getByRole('region', {name: 'Today', exact: true}).getByRole('link', {name: /planned.*done/});
     await expect(link).toBeVisible();
+    await link.scrollIntoViewIfNeeded();
+    await expect(link).toBeInViewport();
     const hit = await link.evaluate(node => {
       const rect = node.getBoundingClientRect(), x = rect.left + rect.width / 2;
       return [rect.top + rect.height / 2 - 20, rect.top + rect.height / 2 + 20].map(y => node.contains(document.elementFromPoint(x, y)));

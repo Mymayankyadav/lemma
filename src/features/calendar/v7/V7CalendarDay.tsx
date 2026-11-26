@@ -17,7 +17,7 @@ import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getStudyApi} from '../../../data/study';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
 import {Button,DatePicker,IconButton,Segmented,Sheet} from '../../../ui/v7/components';
 import {SubjectGlyph,subjectClass} from '../../../ui/v7/Subject';

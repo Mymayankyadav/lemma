@@ -12,7 +12,7 @@ import {getThoughtApi,type ParkedThought} from '../../../data/parked-thoughts';
 import {getStudyApi,type StudyEntryRecord} from '../../../data/study';
 import type {CalendarBlockRecord} from '../../../data/study/contract';
 import {getTaskApi,type TaskRecord} from '../../../data/tasks';
-import {ImmersiveHeader} from '../../../app/v7/V7Shell';
+import {ImmersiveHeader} from '../../../app/v7/PageHeaders';
 import {Button,Meter as MeterRow,Picker} from '../../../ui/v7/components';
 import {loadSuggestions} from '../../calendar/v7/suggestions';
 import {DEFAULT_PLANNING} from '../../planner/model';

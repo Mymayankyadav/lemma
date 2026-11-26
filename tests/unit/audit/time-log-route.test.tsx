@@ -16,7 +16,7 @@ const fake=vi.hoisted(()=>({api:{
 vi.mock('../../../src/data/study',()=>({getStudyApi:()=>fake.api}));
 vi.mock('../../../src/data/hooks',()=>({useSettings:()=>({data:{timeZone:'UTC'}}),useProjects:()=>({data:[]})}));
 vi.mock('../../../src/ui/Toast',()=>({useToast:()=>()=>{}}));
-vi.mock('../../../src/app/v7/V7Shell',()=>({HubHeader:({children}:any)=><header>{children}</header>}));
+vi.mock('../../../src/app/v7/PageHeaders',()=>({HubHeader:({children}:any)=><header>{children}</header>}));
 
 const start='2026-10-06T09:00:00.000Z',end='2026-10-06T09:30:00.000Z';
 const original:StudyEntryRecord={

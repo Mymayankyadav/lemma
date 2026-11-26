@@ -8,7 +8,7 @@ import {useMemo,useRef,useState} from 'react';
 import {useNavigate,useParams,Link} from 'react-router';
 import {MoreHorizontal,Pause,Play,Trash2,BookOpen} from 'lucide-react';
 import {useAddComment,useCard,useDismissComment,useProjects,useSetNoteStatus,useSettings,useUpdateNote} from '../../../data/hooks';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {isFlagOn} from '../../../flags';
 import {plainMath} from '../../../lib/plain-math';
 import {Margin} from '../../../app/v7/Margin';

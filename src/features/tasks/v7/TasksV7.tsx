@@ -10,7 +10,7 @@ import {useStudyUi} from '../../../data/StudyUiRelease';
 import {createIntentRead} from '../../../app/v7/intentRead';
 import {getTaskApi,onTaskChange} from '../../../data/tasks';
 import type {TaskPatch,TaskRecord} from '../../../data/tasks/contract';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {Button,Chip,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
 import {StatusBadge} from '../../../ui/v7/Status';
 import {RowMenu} from '../../../ui/v7/RowMenu';

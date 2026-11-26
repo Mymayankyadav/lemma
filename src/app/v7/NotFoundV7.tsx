@@ -1,6 +1,6 @@
 import {Link,useLocation} from 'react-router';
 import {Search} from 'lucide-react';
-import {HubHeader} from './V7Shell';
+import {HubHeader} from './PageHeaders';
 import '../../ui/v7/empty-moment.css';
 
 /**

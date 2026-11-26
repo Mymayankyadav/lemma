@@ -24,7 +24,7 @@ vi.mock('../../../src/features/project/Page',()=>({default:()=>null}));
 vi.mock('../../../src/features/project/useProjectInsight',()=>({useProjectInsight:()=>({data:{checkpointEvents:[]}})}));
 vi.mock('../../../src/ui/Sheet',()=>({Sheet:({children}:{children:ReactNode})=><section>{children}</section>}));
 vi.mock('../../../src/ui/Toast',()=>({useToast:()=>vi.fn()}));
-vi.mock('../../../src/app/v7/V7Shell',()=>({DetailHeader:({title}:{title:string})=><header>{title}</header>}));
+vi.mock('../../../src/app/v7/PageHeaders',()=>({DetailHeader:({title}:{title:string})=><header>{title}</header>}));
 vi.mock('../../../src/app/v7/Margin',()=>({Margin:()=>null}));
 vi.mock('../../../src/features/project/SourcesPanel',()=>({SourcesPanel:()=>null}));
 vi.mock('../../../src/features/project/ProjectSwitcher',()=>({ProjectSwitcher:()=>null,default:()=>null}));

@@ -16,7 +16,7 @@ import {useStartRound} from '../../review/v7/useStartRound';
 import '../../review/v7/review-hub.css';
 import {Loader} from '../../../ui/v7/Loader';
 import {ProofEnd} from '../../../ui/v7/ProofEnd';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {haptic} from '../../../ui/v7/haptics';
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};

@@ -12,7 +12,7 @@ import {useQuery} from '@tanstack/react-query';
 import {getApi} from '../../../data';
 import {useDeckTree,useHome,useInsightData,useReviewItems,useSettings} from '../../../data/hooks';
 import type {DeckNode,QueueFilter} from '../../../data/types';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {Button,Sheet,Switch} from '../../../ui/v7/components';
 import {Chart} from '../../../ui/v7/Chart';
 import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';

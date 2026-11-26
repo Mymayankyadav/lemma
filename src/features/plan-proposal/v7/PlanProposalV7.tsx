@@ -6,7 +6,7 @@ import {useNavigate,useParams} from 'react-router';
 import {Link as LinkIcon,Minus,MoveRight,Pencil,Plus,Unlink} from 'lucide-react';
 import {useApproveProposal,useProject,useProjects,useProposal,useRejectProposal} from '../../../data/hooks';
 import type {CheckpointView} from '../../../data/types';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {useReadingIntent} from '../../../app/v7/readingIntent';
 import {useSurfaceBeta} from '../../../app/surfaceBeta';
 import {Button,Skeleton} from '../../../ui/v7/components';

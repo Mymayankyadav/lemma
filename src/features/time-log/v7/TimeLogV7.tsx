@@ -6,7 +6,7 @@ import {ChevronLeft,ChevronRight,Download,Pencil,Scissors,Ban,RotateCcw} from 'l
 import {getStudyApi} from '../../../data/study';
 import type {StudyEntryRecord,StudyRange} from '../../../data/study/contract';
 import {useProjects,useSettings} from '../../../data/hooks';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {isFlagOn} from '../../../flags';
 import {Button,DatePicker,Field,IconButton,Sheet,Skeleton} from '../../../ui/v7/components';
 import {TimeRange} from '../../../ui/v7/KitPrimitives';

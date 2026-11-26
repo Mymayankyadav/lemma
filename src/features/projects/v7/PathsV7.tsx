@@ -6,7 +6,7 @@ import {Link,useLocation,useNavigate} from 'react-router';
 import {Archive,Pause,Pin,PinOff,Play,Plus,RotateCcw,CircleCheck} from 'lucide-react';
 import {useDeckTree,useProjects,useUpdateProject} from '../../../data/hooks';
 import type {ProjectStatus,ProjectSummary} from '../../../data/types';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {createLazyModule} from '../../../app/lazyModule';
 import LazyOverlay from '../../../app/v7/LazyOverlay';
 import {Button,Skeleton} from '../../../ui/v7/components';

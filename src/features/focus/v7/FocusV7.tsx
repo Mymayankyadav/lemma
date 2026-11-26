@@ -18,7 +18,7 @@ import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {formatDuration} from '../../../lib/format';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
-import {ImmersiveHeader} from '../../../app/v7/V7Shell';
+import {ImmersiveHeader} from '../../../app/v7/PageHeaders';
 import {DriftCard} from './DriftCard';
 import {timedPhase} from '../../../data/study/phase';
 import {announceFocusChange,focusClock,focusEyebrow,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';

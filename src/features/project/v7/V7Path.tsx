@@ -25,7 +25,7 @@ import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useCheckpoint,useHome,useProject,useSearchCards,useSettings} from '../../../data/hooks';
 import {MathText} from '../../../ui/MathText';
 import type {CheckpointView,SessionSummary,Settings} from '../../../data/types';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {Margin} from '../../../app/v7/Margin';
 import {Button,Chip,Segmented,Skeleton} from '../../../ui/v7/components';
 import {useOnline} from '../../../ui/v7/savedCopy';

@@ -17,7 +17,7 @@ import type {StudyEntryRecord,StudyRange} from '../../../data/study/contract';
 import {insightQuery,useInsightData,useSettings,useSubjects} from '../../../data/hooks';
 import {buildInsights} from '../../../lib/insights';
 import {formatDuration,formatShortDate,ownerZone} from '../../../lib/format';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {Button,Meter,Segmented,Sheet,Skeleton,StatTile,Stepper} from '../../../ui/v7/components';
 import {Chart,Heatmap,HorizontalBars} from '../../../ui/v7/Chart';
 import {StatusBadge} from '../../../ui/v7/Status';

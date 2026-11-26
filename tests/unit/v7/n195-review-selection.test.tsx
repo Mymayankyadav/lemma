@@ -33,7 +33,7 @@ vi.mock('../../../src/features/review/v6/estimate',()=>({useReviewEstimate:()=>1
 vi.mock('../../../src/ui/v7/savedCopy',()=>({useSavedCopyAt:()=>null}));
 vi.mock('../../../src/ui/v7/useAnimatedNumber',()=>({useAnimatedNumber:(value:number)=>value}));
 vi.mock('../../../src/features/cards/v7/FirstCardPanel',()=>({default:()=>null}));
-vi.mock('../../../src/app/v7/V7Shell',()=>({HubHeader:({children}:{children:ReactNode})=><header>{children}</header>}));
+vi.mock('../../../src/app/v7/PageHeaders',()=>({HubHeader:({children}:{children:ReactNode})=><header>{children}</header>}));
 vi.mock('../../../src/ui/v7/components',()=>({
  Button:({children,onClick,disabled,'aria-label':label}:{children:ReactNode;onClick:()=>void;disabled?:boolean;'aria-label'?:string})=><button aria-label={label} disabled={disabled} onClick={onClick}>{children}</button>,
  Switch:({label,checked,onChange}:{label:string;checked:boolean;onChange:(value:boolean)=>void})=><label><input type="checkbox" aria-label={label} checked={checked} onChange={event=>onChange(event.target.checked)}/>{label}</label>,

@@ -26,7 +26,7 @@ import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';
 import {openCalendarAfterSheet} from '../../../app/v7/calendarHandoff';
 import BlockSheet from '../../calendar/block-sheet/BlockSheet';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {useReadingIntent} from '../../../app/v7/readingIntent';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';

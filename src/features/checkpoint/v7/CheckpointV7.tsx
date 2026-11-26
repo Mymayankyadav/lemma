@@ -16,7 +16,7 @@ import {CalendarClock,Check,ChevronRight,CircleCheck,Copy,MoreHorizontal,BookOpe
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {useCheckpoint,useProject,useSettings} from '../../../data/hooks';
 import type {CheckpointView} from '../../../data/types';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {Margin} from '../../../app/v7/Margin';
 import {Button,IconButton,Skeleton} from '../../../ui/v7/components';
 import {useOnline} from '../../../ui/v7/savedCopy';

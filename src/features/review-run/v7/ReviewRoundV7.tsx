@@ -27,7 +27,7 @@ import {MathText} from '../../../ui/MathText';
 import {Button} from '../../../ui/v7/components';
 import {isFlagOn} from '../../../flags';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
-import {ImmersiveHeader} from '../../../app/v7/V7Shell';
+import {ImmersiveHeader} from '../../../app/v7/PageHeaders';
 import {Margin} from '../../../app/v7/Margin';
 import {ScratchPad} from './ScratchPad';
 import {kitSubject} from '../../atlas/v7/model';

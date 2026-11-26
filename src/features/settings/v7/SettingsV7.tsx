@@ -16,7 +16,7 @@ import {getMode} from '../../../data/mode';
 import {usePlanRelease} from '../../../data/usePlanRelease';
 import {applyAppearance,readAppearance} from '../../../styles/appearance';
 import {setSurfaceBeta,useSurfaceBeta} from '../../../app/surfaceBeta';
-import {DetailHeader,HubHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader,HubHeader} from '../../../app/v7/PageHeaders';
 import {chooseForSession,chosenColours,effectiveColours} from '../../../app/v7/subjectColours';
 import {Button,Field,Sheet,Skeleton,Switch} from '../../../ui/v7/components';
 import {SubjectMark,subjectClass,subjects as kitSubjects,type Subject} from '../../../ui/v7/Subject';

@@ -35,7 +35,7 @@ describe('S2–S4 · S6 · S14 · S16 · S15', () => {
   it('the ∎ replaces the tick only under the flag, and is indigo', () => {
     const css = readFileSync('src/ui/v7/qed.css', 'utf8');
     expect(css).toContain(':where(html[data-v7][data-v7-qed]) .v7-tk-check[aria-checked="true"] > span {width:14px;height:14px;border-radius:0;background:var(--v7-role-selection-fg);');
-    expect(readFileSync('src/app/v7/V7Shell.tsx', 'utf8')).toContain("isFlagOn('v7Qed'))document.documentElement.setAttribute('data-v7-qed','')");
+    expect(readFileSync('src/app/v7/shellAppearance.ts', 'utf8')).toContain("isFlagOn('v7Qed'))document.documentElement.setAttribute('data-v7-qed','')");
   });
   it('scratch paper sits in the round under its flag and stores nothing', () => {
     const round = readFileSync('src/features/review-run/v7/ReviewRoundV7.tsx', 'utf8'), pad = readFileSync('src/features/review-run/v7/ScratchPad.tsx', 'utf8');

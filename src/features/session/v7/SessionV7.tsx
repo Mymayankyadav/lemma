@@ -6,7 +6,7 @@ import {ChevronRight,Copy,ExternalLink} from 'lucide-react';
 import {MoreActions} from '../../../ui/v7/ActionSheet';
 import {tutorHref} from '../../tutor/tutorHref';
 import {useProject,useResolveMisconception,useSession,useSettings} from '../../../data/hooks';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {isFlagOn} from '../../../flags';
 import {plainMath} from '../../../lib/plain-math';
 import {Margin} from '../../../app/v7/Margin';

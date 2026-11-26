@@ -8,7 +8,7 @@ import type {StudyEntryRecord} from '../../../data/study/contract';
 import {useInsightData, useSettings} from '../../../data/hooks';
 import {buildInsights} from '../../../lib/insights';
 import {formatDuration, formatShortDate, ownerZone} from '../../../lib/format';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {Button, Skeleton, StatTile} from '../../../ui/v7/components';
 import {effortSummary} from '../../progress-v6/model';
 import {currentPeriod} from '../../insights/v7/progressModel';

@@ -1,5 +1,5 @@
 import {Button} from '../../ui/v7/components';
-import {DetailHeader} from '../../app/v7/V7Shell';
+import {DetailHeader} from '../../app/v7/PageHeaders';
 import {Picker} from '../../ui/v7/components';
 import {useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore} from 'react';
 import {useQuery} from '@tanstack/react-query';

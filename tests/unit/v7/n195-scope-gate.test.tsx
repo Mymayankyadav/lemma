@@ -19,7 +19,7 @@ vi.mock('../../../src/features/review-run/v7/scopedRound',()=>({openStudyTarget:
  targetFromLink:fixture.targetFromLink,skipChangedStudyItem:vi.fn()}));
 vi.mock('../../../src/features/review-run/v6/adapter',()=>({getRun:fixture.getRun,resumeRun:fixture.resumeRun,
  advanceGrade:vi.fn(),advanceSkip:vi.fn(),cardVersion:vi.fn(),lastGraded:()=>null,pauseRun:vi.fn(),undoLast:vi.fn(),unpauseRun:vi.fn()}));
-vi.mock('../../../src/app/v7/V7Shell',()=>({ImmersiveHeader:()=>null}));
+vi.mock('../../../src/app/v7/PageHeaders',()=>({ImmersiveHeader:()=>null}));
 vi.mock('../../../src/ui/v7/components',()=>({Button:({children,onClick}:{children:React.ReactNode;onClick:()=>void})=><button onClick={onClick}>{children}</button>}));
 
 let root:Root,host:HTMLDivElement;

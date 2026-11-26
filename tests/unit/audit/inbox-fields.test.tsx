@@ -13,7 +13,7 @@ vi.mock('../../../src/data/hooks',()=>({
  useProjects:()=>({data:[]}),useSettings:()=>({data:{macros:'',ui:{haptics:false}}}),useProject:()=>({data:null}),
 }));
 vi.mock('../../../src/features/proposals/v7/useInboxDecisions',()=>({useInboxDecisions:()=>({held:fixture.held,decide:fixture.decide})}));
-vi.mock('../../../src/app/v7/V7Shell',()=>({DetailHeader:()=>null}));
+vi.mock('../../../src/app/v7/PageHeaders',()=>({DetailHeader:()=>null}));
 vi.mock('../../../src/ui/MathText',()=>({MathText:({source}:any)=><span>{source}</span>}));
 vi.mock('../../../src/ui/v7/LottieMoment',()=>({LottieMoment:()=>null,warmMoment:()=>{}}));
 vi.mock('../../../src/app/v7/useMinWidth',()=>({useMinWidth:()=>false}));

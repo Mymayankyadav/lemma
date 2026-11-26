@@ -38,7 +38,7 @@ describe('AN3 · the header ℓ is the sync light', () => {
     expect(syncState(true, 2, 0)).toBe('syncing');
     expect(syncState(true, 0, 1)).toBe('syncing');
     expect(syncState(false, 3, 1)).toBe('offline');
-    expect(source('src/app/v7/V7Shell.tsx')).toContain('<SyncMark><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span></SyncMark>');
+    expect(source('src/app/v7/PageHeaders.tsx')).toContain('<SyncMark><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span></SyncMark>');
     const css = source('src/app/v7/shell.css');
     expect(css).toContain('.v7-sync-mark[data-sync="syncing"]::after {opacity:1;transition-delay:var(--motion-skeleton-delay);}');
     expect(source('src/ui/v7/motion.css')).toContain('--motion-skeleton-delay: 300ms;');
@@ -82,7 +82,7 @@ describe('AW3 · one quiet check a day for a newer APK', () => {
   });
   it('runs from the app\'s start, puts a dot on Settings, names the version, and the privacy page says so', () => {
     expect(source('src/platform/start.ts')).toContain('void App.getInfo().then(info => checkForUpdate(info.version)).catch(() => undefined);');
-    expect(source('src/app/v7/V7Shell.tsx')).toContain('{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}');
+    expect(source('src/app/v7/PageHeaders.tsx')).toContain('{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}');
     expect(source('src/features/settings/v7/PhoneSettings.tsx')).toContain("hint={update?'Lemma 2.0.'+update+' is available':'Opens the newest release'}");
     expect(source('public/privacy.html')).toContain('Once a day the app asks GitHub’s public releases feed');
   });

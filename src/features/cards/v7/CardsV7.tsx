@@ -6,7 +6,7 @@ import {Pause} from 'lucide-react';
 import {getApi} from '../../../data';
 import {useCreateNote,useHome,useProject,useProjects,useSettings} from '../../../data/hooks';
 import type {CardRow,ProjectSummary} from '../../../data/types';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {isFlagOn} from '../../../flags';
 import {Button,Sheet,Skeleton} from '../../../ui/v7/components';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
