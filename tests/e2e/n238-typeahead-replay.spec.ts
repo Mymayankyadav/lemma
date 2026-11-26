@@ -40,6 +40,20 @@ async function exactDraft(answer: Locator) {
   });
 }
 
+async function editorSelection(answer: Locator) {
+  return answer.evaluate(root => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount || !root.contains(selection.anchorNode) || !root.contains(selection.focusNode)) return null;
+    const offset = (node: Node, position: number) => {
+      const range = document.createRange();
+      range.selectNodeContents(root);
+      range.setEnd(node, position);
+      return range.toString().length;
+    };
+    return [offset(selection.anchorNode!, selection.anchorOffset), offset(selection.focusNode!, selection.focusOffset)];
+  });
+}
+
 async function slate(page: Page, trace = true) {
   const slots = page.getByRole('group', {name: /^(?:Answer|Word|Equation|LaTeX|Symbol) suggestions$/u})
     .locator('button:enabled[data-typeahead-insert]:visible');
@@ -90,6 +104,17 @@ test('replays visible typeahead quality and an actual full-answer typing traject
   }
   const flags = process.env.LEMMA_TYPEAHEAD_REPLAY_FLAGS ?? 'typeaheadV2,tutorAnswerAids,proofAssistGhost';
   const arm = process.env.LEMMA_TYPEAHEAD_REPLAY_ARM;
+  const menuTrial = process.env.LEMMA_TYPEAHEAD_REPLAY_MENU_TRIAL;
+  const phraseGhost = process.env.LEMMA_TYPEAHEAD_REPLAY_PHRASE_GHOST;
+  const fasterTyping = process.env.LEMMA_TYPEAHEAD_REPLAY_FASTER_TYPING === '1';
+  const punctuationPairs = process.env.LEMMA_TYPEAHEAD_REPLAY_PUNCTUATION_PAIRS === '1';
+  if (menuTrial && !['m1', 'm1-neutral', 'm2', 'm2-tutor', 'm2-right'].includes(menuTrial)) throw new Error('Invalid menu trial');
+  if (phraseGhost && !['shadow', 'lab'].includes(phraseGhost)) throw new Error('Invalid phrase ghost mode');
+  if (phraseGhost && !fasterTyping) throw new Error('Phrase ghost evaluation requires the faster-typing opt-in');
+  if (fasterTyping) await page.addInitScript(() => {
+    localStorage.setItem('lemma.demo-tutor.writing-aid.v1:default', 'balanced:15:experiment');
+    localStorage.setItem('lemma.tutor.draft:' + JSON.stringify(['11111111-1111-4111-8111-111111111111', 'input', 'preferences']) + ':writing-aid', 'balanced:15:experiment');
+  });
   const graphTrial = process.env.LEMMA_TYPEAHEAD_REPLAY_GRAPH_TRIAL === '1';
   const strictGraphTrial = process.env.LEMMA_TYPEAHEAD_REPLAY_STRICT_GRAPH_TRIAL === '1';
   const expectedNeural = process.env.LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NEURAL_FINGERPRINT;
@@ -278,6 +303,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       const query = '/lemma/?typeahead-answer='+encodeURIComponent(answerId)+'&typeahead-replay=1&demo=' + (hasQuestion ? '0' : '1') + '&flags=v7Shell,v6Shell,tutorScratch,' + encodeURIComponent(flags)
         + (arm ? '&typeahead-arm=' + encodeURIComponent(arm) : '') + (frozen ? '&typeahead-frozen-profile=1' : '')
         + (captureOnly ? '' : '&typeahead-trace=0') + (graphTrial ? '&typeahead-graph-trial=1' : '') + (strictGraphTrial ? '&typeahead-strict-trial=1' : '')
+        + (menuTrial ? '&typeahead-menu=' + encodeURIComponent(menuTrial) : '') + (phraseGhost ? '&typeahead-phrase-ghost=' + encodeURIComponent(phraseGhost) : '')
         + (ghostCalibration ? '&typeahead-ghost-probe=1' : '');
       await page.goto(query + '#' + destination);
       editor = page.getByRole('textbox', {name: 'Your answer', exact: true});
@@ -354,9 +380,15 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     }
     const ghostButton = page.locator('[data-writing-aid-ghost][data-typeahead-insert]:visible');
     const ghost = await ghostButton.count() ? await ghostButton.getAttribute('data-typeahead-insert') : undefined;
+    const phrase = phraseGhost ? await page.evaluate(() => {
+      let observation: unknown;
+      window.dispatchEvent(new CustomEvent('lemma-typeahead-read-phrase-ghost', {detail: (value: unknown) => {observation = value;}}));
+      return observation;
+    }) : undefined;
     const impression = {trace: diagnostics, eventId: event.eventId, prefixSha256: hash(event.prefix),
       ...(event.draft === undefined ? {} : {draftSha256: hash(event.draft)}), slate: items,
       ghostEligible: assets.ghostEligible, neuralEligible: assets.neuralEligible, assets,
+      ...(phraseGhost ? {phrase} : {}),
       ...(ghost ? {ghost: {text: ghost, source: assets.neural ? 'neural' : 'visible-ui'}} : {})};
     impressions.push(impression);
     retainPartial('impressions', impression);
@@ -405,7 +437,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     const answer = await start(sample.route ?? defaultRoute, sample.answerId, false);
     let draft = '', assistedKeys = 0;
     const activeAssets = new Set<string>();
-    const actions: {at: number; edit: Displayed}[] = [];
+    const actions: {at: number; edit: Displayed; punctuation?: string}[] = [];
     while (draft.length < sample.answer.length) {
       if (draft) await painted(page);
       const {slots, items} = await slate(page, false);
@@ -414,12 +446,26 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       if (assets.subjectPack) activeAssets.add(assets.subjectPack);
       if (assets.latex) activeAssets.add(assets.latex);
       if (assets.neural) activeAssets.add(assets.neural);
-      let best = -1, next = draft;
+      let best = -1, next = draft, punctuation = '';
       for (const [index, offer] of items.entries()) {
         if (!Number.isInteger(offer.start) || !Number.isInteger(offer.end) || offer.start < 0 ||
             offer.start > offer.end || offer.end > draft.length) continue;
         const candidate = apply(draft, offer);
-        if ((offer.caret === undefined || offer.caret === candidate.length) && candidate.length > next.length && sample.answer.startsWith(candidate)) {best = index; next = candidate;}
+        if ((offer.caret === undefined || offer.caret === candidate.length) && (offer.selectionEnd === undefined || offer.selectionEnd === candidate.length) && candidate.length > next.length && sample.answer.startsWith(candidate)) {best = index; next = candidate; punctuation = '';}
+        // This is a different trajectory: the real keyboard replaces only a
+        // suggestion-generated trailing space with the following punctuation.
+        if (punctuationPairs && candidate.endsWith(' ') && offer.text.endsWith(' ') &&
+            (offer.caret === undefined || offer.caret === candidate.length) &&
+            (offer.selectionEnd === undefined || offer.selectionEnd === candidate.length)) {
+          const withoutSpace = candidate.slice(0, -1);
+          const mark = sample.answer.slice(withoutSpace.length, withoutSpace.length + 1);
+          const paired = withoutSpace + mark;
+          const key = page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: mark, exact: true});
+          if (/^[.,;:!?]$/u.test(mark) && sample.answer.startsWith(paired) && paired.length > next.length &&
+              [...paired.slice(draft.length)].length > 2 && await key.isVisible() && await key.isEnabled()) {
+            best = index; next = paired; punctuation = mark;
+          }
+        }
       }
       const ghostButton = page.locator('[data-writing-aid-ghost][data-typeahead-insert]:visible');
       const ghost = await ghostButton.count() ? (await ghostButton.getAttribute('data-typeahead-insert') ?? '') : '';
@@ -429,14 +475,22 @@ test('replays visible typeahead quality and an actual full-answer typing traject
         next = ghostNext;
       } else if (best >= 0) {
         const offered = items[best];
-        actions.push({at: draft.length, edit: offered});
+        actions.push({at: draft.length, edit: offered, ...(punctuation ? {punctuation} : {})});
         await slots.nth(best).click();
+        const accepted = punctuation ? apply(draft, offered) : next;
+        await expect.poll(() => exactDraft(answer)).toBe(accepted);
         if (offered.caret !== undefined) {
           const applied = await page.evaluate(() => (window as Window & {lastTypeaheadAcceptance?: {
             after: string; selection: number[]; edit: {start: number; end: number; insert: string}}}).lastTypeaheadAcceptance);
-          expect(applied?.after).toBe(next);
+          expect(applied?.after).toBe(accepted);
           expect(applied?.selection).toEqual([offered.caret, offered.selectionEnd ?? offered.caret]);
           expect(applied?.edit).toMatchObject({start: offered.start, end: offered.end, insert: offered.text});
+        }
+        if (punctuation) {
+          await page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: punctuation, exact: true}).click();
+          await expect.poll(() => exactDraft(answer)).toBe(next);
+          await expect.poll(() => editorSelection(answer)).toEqual([next.length, next.length]);
+          assistedKeys++;
         }
       } else {
         const codePoint = sample.answer.codePointAt(draft.length)!;
@@ -449,7 +503,7 @@ test('replays visible typeahead quality and an actual full-answer typing traject
       draft = next;
     }
     const counted = {answerId: sample.answerId, actions, manualKeys: [...sample.answer].length, assistedKeys,
-      costDefinition: 'full-answer-v1', assetSha256: [...activeAssets].sort()};
+      costDefinition: punctuationPairs ? 'full-answer-punctuation-pairs-v1' : 'full-answer-v1', assetSha256: [...activeAssets].sort()};
     keys.push(counted);
     retainPartial('keys', counted);
   }
@@ -498,6 +552,45 @@ test('replays visible typeahead quality and an actual full-answer typing traject
     writeFileSync(output + '.impressions.jsonl', lines(impressions));
     writeFileSync(output + '.keys.jsonl', lines(keys));
   }
+});
+
+test('legacy word metadata matches real acceptance at plain and Unicode carets', async ({page}) => {
+  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch,-typeaheadV2,-tutorAnswerAids,-proofAssistGhost&typeahead-replay=1#' + defaultRoute);
+  await page.getByRole('button', {name: 'Write a question', exact: true}).click();
+  const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+  for (const prefix of ['Could you clarify the nota', '😀 Could you clarify the nota']) {
+    await answer.fill('');
+    await answer.focus();
+    await page.keyboard.type(prefix);
+    const button = page.getByRole('group', {name: 'Word suggestions', exact: true}).getByRole('button', {name: 'Insert notation', exact: true});
+    await expect(button).toBeVisible();
+    const edit = await button.evaluate(node => ({start: Number(node.dataset.typeaheadStart), end: Number(node.dataset.typeaheadEnd),
+      text: node.dataset.typeaheadInsert!, caret: Number(node.dataset.typeaheadCaret), selectionEnd: Number(node.dataset.typeaheadSelectionEnd)}));
+    const expected = apply(prefix, edit);
+    await button.click();
+    await expect.poll(() => exactDraft(answer)).toBe(expected);
+    await expect.poll(() => editorSelection(answer)).toEqual([edit.caret, edit.selectionEnd]);
+    expect(edit.caret).toBe(expected.length);
+  }
+});
+
+test('real punctuation key replaces the accepted space and undo restores it', async ({page}) => {
+  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch,typeaheadV2,tutorAnswerAids#' + defaultRoute);
+  await page.getByRole('button', {name: 'Write a question', exact: true}).click();
+  const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+  await answer.focus();
+  await page.keyboard.type('Could you clarify the nota');
+  await page.getByRole('button', {name: 'Insert notation', exact: true}).click();
+  await expect.poll(() => exactDraft(answer)).toBe('Could you clarify the notation ');
+  await expect.poll(() => editorSelection(answer)).toEqual([31, 31]);
+  await page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: '.', exact: true}).click();
+  await expect.poll(() => exactDraft(answer)).toBe('Could you clarify the notation.');
+  await expect.poll(() => editorSelection(answer)).toEqual([31, 31]);
+  await page.getByRole('button', {name: 'Session actions', exact: true}).click();
+  await page.getByRole('button', {name: 'Undo typing', exact: true}).click();
+  await expect.poll(() => exactDraft(answer)).toBe('Could you clarify the notation ');
+  await answer.focus();
+  await expect.poll(() => editorSelection(answer)).toEqual([31, 31]);
 });
 
 test('reloads an accepted span with the draft and preserves a full provenance record', async ({page}) => {

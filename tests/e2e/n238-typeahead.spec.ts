@@ -87,6 +87,30 @@ const strip = (page: Page) => page.getByRole('group', {name: 'Answer suggestions
 const best = (page: Page) => strip(page).locator('button.preferred');
 const refresh = (page: Page) => page.evaluate(() => window.dispatchEvent(new Event('focus')));
 
+test('the M1 strip keeps exact supplied punctuation, caret and undo in the same three slots', async ({page}) => {
+  const setup = await fixture(page);
+  setup.changeAid({wording: ['On the other  hand,']});
+  const answer = await answerField(page, route.replace('#', '&typeahead-replay=1&typeahead-menu=m1#'));
+  await expect.poll(setup.aidReads).toBeGreaterThan(0);
+  await write(page, answer, 'On the oth');
+  const offer = strip(page).locator('button[data-typeahead-insert="other  hand,"]');
+  await expect(offer).toBeVisible();
+  await expect(offer).toHaveAttribute('data-typeahead-start', '7');
+  await expect(offer).toHaveAttribute('data-typeahead-end', '10');
+  await expect(offer).toHaveAttribute('data-typeahead-caret', '19');
+  expect(await strip(page).locator('button[data-typeahead-insert]').count()).toBeLessThanOrEqual(3);
+  const caret = () => answer.evaluate(field => {
+    const selection = getSelection();
+    return selection?.isCollapsed && field.contains(selection.focusNode) ? selection.focusOffset : null;
+  });
+  await offer.click();
+  await expect(answer).toHaveJSProperty('textContent', 'On the other  hand,');
+  await expect.poll(caret).toBe(19);
+  await answer.press('Control+z');
+  await expect(answer).toHaveJSProperty('textContent', 'On the oth');
+  await expect.poll(caret).toBe(10);
+});
+
 test('the Equation sheet completes a nested root argument, supports Undo, and preserves the caret', async ({page}, info) => {
   const answer = await answerField(page, demo);
   await page.keyboard.type('Given $x=1$.');
@@ -528,8 +552,11 @@ test('opts into the expanded predictor from Tutor settings and returns to the us
 test('reports tap-to-paint for empty, eight-equation, boundary and interior edits at 4× CPU', async ({page}, info) => {
   const extended = process.env.LEMMA_TYPEAHEAD_PERF_EXTENDED === '1';
   const expectedAsset = process.env.LEMMA_TYPEAHEAD_EXPECTED_ASSET;
+  if (process.env.LEMMA_TYPEAHEAD_PERF_FASTER_TYPING === '1') {
+    await page.addInitScript(() => localStorage.setItem('lemma.demo-tutor.writing-aid.v1:default', 'balanced:15:experiment'));
+  }
   test.setTimeout(extended ? 900_000 : 120_000);
-  const answer = await answerField(page, demo);
+  const answer = await answerField(page, process.env.LEMMA_TYPEAHEAD_PERF_URL ?? demo);
   const keyboard = page.getByRole('group', {name: 'Answer keyboard', exact: true});
   await expect(keyboard).toHaveAttribute('data-decoder', 'ready', {timeout: 20_000});
   const client = await page.context().newCDPSession(page);

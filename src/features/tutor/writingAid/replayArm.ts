@@ -1,3 +1,6 @@
+import {isFlagOn} from '../../../flags';
+import {phraseGhostQualified, type PhraseGhostMode} from './phraseGhostConfig';
+
 const ARMS = ['corrected-v1', 'expanded-kn', 'neural', 'tutor', 'personal'] as const;
 export type TypeaheadArm = typeof ARMS[number];
 
@@ -48,4 +51,13 @@ export function typeaheadFrozenProfile(): boolean {
 export function typeaheadGhostProbe(): boolean {
   return typeaheadReplayEnabled() && typeaheadGraphTrial() &&
     new URLSearchParams(window.location.search).get('typeahead-ghost-probe') === '1';
+}
+
+export function typeaheadPhraseGhostMode(): PhraseGhostMode | undefined {
+  if (typeof window === 'undefined') return;
+  if (overridesAllowed()) {
+    const trial = new URLSearchParams(window.location.search).get('typeahead-phrase-ghost');
+    if (trial === 'shadow' || trial === 'lab') return trial;
+  }
+  if (isFlagOn('typeaheadPhraseGhost') && phraseGhostQualified()) return 'qualified';
 }

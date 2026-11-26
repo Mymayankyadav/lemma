@@ -1,6 +1,7 @@
 import {useRef, type PointerEvent, type Ref} from 'react';
 import {ArrowRight, RefreshCw, Undo2, X} from 'lucide-react';
 import type {WritingAidProposal} from './writingAid';
+import {proposalEdit} from './writingAid/policy';
 import type {SymbolOption} from './input/latexShortcuts';
 import {SYMBOL_CATALOG} from './input/symbolCatalog';
 import type {LatexSuggestion} from './writingAid/latexGrammar';
@@ -21,7 +22,7 @@ export interface WritingAidBarProps {
   onRefresh: (surface: 'edit' | 'ghost', displayed: readonly WritingAidProposal[]) => void;
 }
 
-export function WritingAidWords({words, disabled, onAccept, hidden}: Pick<WritingAidBarProps, 'words' | 'disabled' | 'onAccept'> & {hidden?: boolean}) {
+export function WritingAidWords({words, disabled, onAccept, hidden, replayDiagnostics}: Pick<WritingAidBarProps, 'words' | 'disabled' | 'onAccept'> & {hidden?: boolean; replayDiagnostics?: boolean}) {
   const pressed = useRef<WritingAidProposal | null>(null);
   const slots = [words[1], words[0], words[2]];
   // N223: when another kind of suggestion has the slots, the words are not there at all (nor counted as shown).
@@ -30,6 +31,8 @@ export function WritingAidWords({words, disabled, onAccept, hidden}: Pick<Writin
     {slots.map((proposal, index) => <button type="button" key={index} data-writing-aid-word={index}
       disabled={disabled || !proposal} data-typeahead-insert={proposal?.insert}
       data-typeahead-kind={proposal ? 'word' : undefined} data-typeahead-start={proposal?.start} data-typeahead-end={proposal?.end} aria-label={proposal ? 'Insert ' + proposal.label : 'No suggestion'}
+      data-typeahead-caret={replayDiagnostics && proposal ? proposalEdit(proposal).caret : undefined}
+      data-typeahead-selection-end={replayDiagnostics && proposal ? proposalEdit(proposal).selectionEnd ?? proposalEdit(proposal).caret : undefined}
       onPointerDown={event => {holdCaret(event); pressed.current = proposal ?? null;}}
       onPointerCancel={() => {pressed.current = null;}}
       onClick={event => {const chosen = event.detail ? pressed.current : proposal; pressed.current = null; if (chosen) onAccept(chosen);}}

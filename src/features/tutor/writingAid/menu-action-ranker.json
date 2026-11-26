@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "qualifiedMenuTrial": null,
+  "ngramSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+  "coefficients": [
+    -0.21883641336525697,
+    0.9359388607986837,
+    0.9528725658691563,
+    0.29059247970939517,
+    0.0,
+    0.0,
+    -0.17634923713195394,
+    -0.02945193660697659,
+    -0.08482275537587167,
+    0.0,
+    -0.35197165092101335,
+    -0.19631060291930078,
+    0.0,
+    0.0,
+    0.9335781342811744,
+    -0.7152002718089037,
+    -0.14125358388363757,
+    0.09513990201527217,
+    0.25832846769253853,
+    -0.09316387036900704,
+    0.0,
+    -0.017335181058914448,
+    -0.13593195146435363
+  ],
+  "outsideIntercept": 0.19593379347525325,
+  "rightWeight": 0.41158109816156674,
+  "tutorWeights": {},
+  "evidence": {
+    "controlNll": 1.7754610414089647,
+    "learnedNll": 1.6698953130404848,
+    "controlFamilyTop3Proxy": 114,
+    "learnedFamilyTop3Proxy": 115,
+    "rightFitThreads": 20,
+    "training": {
+      "opportunities": 1263,
+      "supported": 639,
+      "severalValid": 0,
+      "withoutCandidates": 271
+    },
+    "development": {
+      "opportunities": 350,
+      "supported": 183,
+      "severalValid": 0,
+      "withoutCandidates": 78
+    },
+    "fitCaptureSha256": "5506fe15b58d512e5617ddfd96f1c3c3ef7428668469c393d1a555db70e8770a",
+    "devCaptureSha256": "74fc822048601628b611206bf01a4ae30bf49fbd771532ed1a0bc7150d456060"
+  }
+}

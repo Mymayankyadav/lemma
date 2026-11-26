@@ -140,6 +140,7 @@ def visible_exact(target, observation):
 
 def score(gold, captured, selected=None, baseline=None):
     counts, reasons, ghosts, neural = Counter(), Counter(), Counter(), Counter()
+    detailed = Counter()
     groups = defaultdict(Counter)
     prior = None if baseline is None else {
         outcome['eventId']: visible_exact(identity(outcome['edit']), row) for outcome, row in joined(gold, baseline, selected)}
@@ -149,13 +150,36 @@ def score(gold, captured, selected=None, baseline=None):
         trace = row.get('trace') or {}
         raw = [item for item in trace.get('raw', []) if identity(item) == target]
         visible = visible_exact(target, row)
+        ambiguous = not visible and any(identity(item) is None and item.get('text', item.get('insert')) == target[2] and
+                                        item.get('start') == target[0] and item.get('end') == target[1]
+                                        for item in row['slate'])
         finalist = any(identity(r) == target for r in trace.get('displayed', []))
         stage = ('visible' if visible else 'finalist-not-visible' if finalist else 'outside-visible-three' if any(identity(r) == target for r in trace.get('eligible', []))
                  else 'eligible-pool-limit' if any(r['eligible'] for r in raw) else 'policy' if raw else 'unobserved-or-unproposed')
         reasons[stage] += 1
+        # Attribute only what the captured record proves. A missing literal may
+        # reflect a late response or a retrieval miss; it cannot be separated
+        # unless the worker supplies a corresponding observation.
+        if not row.get('trace'):
+            detail = 'trace-unavailable'
+        elif stage != 'unobserved-or-unproposed':
+            detail = stage
+        elif row.get('assets', {}).get('ngramAbsence') in ('empty', 'no-current-model'):
+            detail = 'no-current-model-at-observation'
+        else:
+            candidates = trace.get('raw', [])
+            literal = target[2]
+            same_text = [item for item in candidates if item.get('insert', item.get('text')) == literal]
+            spacing = [item for item in candidates if isinstance(item.get('insert', item.get('text')), str) and
+                       item.get('insert', item.get('text')).rstrip(' ') == literal.rstrip(' ') and
+                       item.get('insert', item.get('text')) != literal]
+            detail = ('range-or-caret-mismatch' if same_text else 'trailing-space-mismatch' if spacing
+                      else 'literal-unobserved-retrieval-or-late')
+        detailed[detail] += 1
         kind = 'boundary' if outcome['boundary'] else 'prefix'
         counts[kind+'Opportunities'] += 1
         counts[kind+'Hits'] += int(visible)
+        counts[kind+'Indeterminate'] += int(ambiguous)
         counts[outcome['kind']+'Opportunities'] += 1
         counts[outcome['kind']+'Hits'] += int(visible)
         for lane in (kind,outcome['kind']):
@@ -192,7 +216,7 @@ def score(gold, captured, selected=None, baseline=None):
                     paired_top_three[lane] = dict(opportunities=denominator, gained=int(gains.sum()), lost=int(losses.sum()),
                         delta=float((gains-losses).sum()/denominator),
                         ci95=np.quantile(delta[valid]/exposure[valid],[.025,.975]).tolist())
-    report = dict(threads=len(groups), totals=dict(counts), topThreeCi95=intervals, firstLoss=dict(reasons),
+    report = dict(threads=len(groups), totals=dict(counts), topThreeCi95=intervals, firstLoss=dict(reasons), firstLossDetailed=dict(detailed),
                   visibleGhost=dict(ghosts), neural=dict(neural))
     if prior is not None:
         report['pairedTopThree'] = paired_top_three

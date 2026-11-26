@@ -139,9 +139,9 @@ def freeze(source, exclusion, out, fit, validation, final):
 
 
 def middle_diagnostic(split, out):
-    """One deterministic interior word repair per eligible public development excerpt."""
-    if split.name != 'validation':
-        raise ValueError('Use the development split for the interior-edit diagnostic')
+    """One deterministic interior word repair per eligible fitting or development excerpt."""
+    if split.name not in ('fit', 'validation'):
+        raise ValueError('Use only fitting or development for the interior-edit diagnostic')
     parent = json.loads((split.parent/'manifest.json').read_bytes())
     locked = parent['splits'][split.name]['files']
     if file_hash(split/'answers.jsonl') != locked['answers.jsonl']:

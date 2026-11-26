@@ -1,4 +1,5 @@
-import {menuFeatures, menuScore, type MenuSource, type WordTrace} from './writingAid/menuRanking';
+import {actionFeatures, actionMenuScore, menuFeatures, menuScore, type MenuSource, type WordTrace} from './writingAid/menuRanking';
+import {currentMenuTrial} from './writingAid/menuTrial';
 import {applyMenuEdit, learnerAuthored, type MenuEdit} from './writingAid/menuEdit';
 import {startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type ComponentProps, type KeyboardEvent, type PointerEvent} from 'react';
 import {createPortal} from 'react-dom';
@@ -36,7 +37,7 @@ import {useWritingAid, useWritingAidPreferences, WritingAidSettings, advanceWrit
 import {LatexWords, SymbolWords, WritingAidBar, WritingAidWords} from './WritingAidBar';
 import {unfinishedMath} from './writingAid/latexGrammar';
 import {useLatexSuggestions} from './writingAid/useLatexSuggestions';
-import {currentTypeaheadArm, typeaheadGraphTrial, typeaheadReplayEnabled, usesTutorBias} from './writingAid/replayArm';
+import {currentTypeaheadArm, typeaheadGraphTrial, typeaheadPhraseGhostMode, typeaheadReplayEnabled, usesTutorBias} from './writingAid/replayArm';
 import {tutorHint} from './writingAid/answerAids';
 import {ACCEPTED_SPAN_LIMIT, addAuthoredSpan, moveAcceptedSpans} from './writingAid/authorship';
 import {insertionEligible} from './writingAid/eligibility';
@@ -142,6 +143,8 @@ export function TutorComposer(props: Props) {
   const lastProp = useRef(props.value);
   const [mountId] = useState(()=>crypto.randomUUID());
   const revision = useRef({editorRevision:0,selectionRevision:0,modeRevision:0});
+  const phraseEdit = useRef<{at: number; editor: number; selection: number; mode: number} | undefined>(undefined);
+  const pressedPhrase = useRef<WritingAidProposal | null>(null);
   const pendingSelection = useRef<PadEdit | null>(history.current.present);
   const authoredAnchor = useRef<WritingAidAnchor | null>(null);
   const acceptedSuggestion = useRef<{before: PadTextHistory; after: PadEdit; proposal: WritingAidProposal} | null>(null);
@@ -170,6 +173,7 @@ export function TutorComposer(props: Props) {
   const [dismissedAid, setDismissedAid] = useState<string | null>(null);
   const rejectedEdits = useRef(new Set<string>());
   const writingPrefs = useWritingAidPreferences();
+  const [phraseGhostTrial] = useState(typeaheadPhraseGhostMode);
   const incomplete = value.includes('□');
   const images = props.ink?.draft.photos;
   const availableIds = useMemo(() => new Set(images?.map(image => image.id.toLowerCase())), [images]);
@@ -232,6 +236,7 @@ export function TutorComposer(props: Props) {
 
 
   const enhancedMenu = isFlagOn('typeaheadV2') || writingPrefs.fasterTyping;
+  const menuTrial = currentMenuTrial(enhancedMenu, writingPrefs.fasterTyping);
   const arm = currentTypeaheadArm();
   const replayDiagnostics = typeaheadReplayEnabled();
   const tracePool = replayDiagnostics && new URLSearchParams(window.location.search).get('typeahead-trace') !== '0';
@@ -242,13 +247,21 @@ export function TutorComposer(props: Props) {
   const aidLevel = aid ? effectiveAidLevel(aid.level, props.mastery) : undefined;
   const notationKey = useMemo(() => JSON.stringify(props.notationContext ?? []), [props.notationContext]);
   const aidContextKey = [props.aidTurnId, aid?.turnId, aid?.id, aid?.version, aid?.grantId, aidLevel, props.aidSubject, props.aidStep, arm,
-    enhancedMenu, writingPrefs.fasterTyping, notationKey].join('|');
+    enhancedMenu, writingPrefs.fasterTyping, notationKey, ...(menuTrial ? [menuTrial] : [])].join('|');
   const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, aidContextKey, revision.current, cursor]);
   const question = useMemo(() => JSON.parse(notationKey) as string[], [notationKey]);
+  const phraseGhost = writingPrefs.phraseGhostAllowed ? phraseGhostTrial : undefined;
+  const editClock = phraseEdit.current;
+  const phraseGhostStartedAt = phraseGhost && editClock?.editor === revision.current.editorRevision &&
+    editClock.selection === revision.current.selectionRevision && editClock.mode === revision.current.modeRevision ? editClock.at : undefined;
+  const phraseUncovered = !inkSlots && !editMenu && !equationMode && !equationEdit && !assist.picker && view === 'abc' && dismissedAid !== aidSignature;
   const writingRequest = {cursor, acceptedSpans: acceptedSpans.current.get(cursor), arm, replayDiagnostics, tracePool, contextKey: aidContextKey, aid, mastery: props.mastery,
+    phraseGhost, phraseGhostStartedAt,
+    menuTrial,
     expanded: enhancedMenu, fasterTyping: writingPrefs.fasterTyping, middleEdits: enhancedMenu,
     subject: props.aidSubject, step: props.aidStep, question, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
-    surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown || props.suspended || provenanceFull};
+    surfaces: phraseGhost ? {...writingPrefs.surfaces, ghost: phraseUncovered} : writingPrefs.surfaces,
+    composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown || props.suspended || provenanceFull};
   const writing = useWritingAid(writingRequest);
   const aidVisible = dismissedAid !== aidSignature && !editingDisabled && !inkSlots;
   const writingWords = aidVisible ? writing.words : EMPTY_WRITING_WORDS;
@@ -256,6 +269,8 @@ export function TutorComposer(props: Props) {
   const rejectionKey = (proposal: WritingAidProposal) => JSON.stringify([proposal.start, proposal.end, proposal.before, proposal.insert]);
   const writingEdit = aidVisible && writing.edit && !rejectedEdits.current.has(rejectionKey(writing.edit)) ? writing.edit : null;
   const writingGhost = aidVisible ? writing.ghost : null;
+  const phrasePreview = writingGhost?.source === 'phrase' ? writingGhost : null;
+  const stripGhost = phrasePreview ? null : writingGhost;
   const ghostSuffix = writingGhost?.insert;
   const suggestionUndoable = !hideSuggestionUndo && Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
   const refreshable = writingWords.length > 0 || Boolean(writingEdit || writingGhost);
@@ -268,7 +283,7 @@ export function TutorComposer(props: Props) {
   // tapped, dismissed with ✕, or when the text no longer has it. Undo is a small key at the strip's left edge.
   const aidExhausted = aidVisible && (writing.exhausted.edit || writing.exhausted.ghost);
   const shownEdit = writingEdit && (writingEdit.end === cursor.end || !wordInProgress) ? writingEdit : null;
-  const reviewChoice = Boolean(shownEdit || writingGhost || aidExhausted) && !suggestionUndoable;
+  const reviewChoice = Boolean(shownEdit || stripGhost || aidExhausted) && !suggestionUndoable;
   const review = reviewChoice || suggestionUndoable;
   const mathContext = useMemo(() => tutorMathContext(cursor), [cursor]);
   const mathKeys = view !== 'abc' || mathContext === 'tex';
@@ -292,6 +307,7 @@ export function TutorComposer(props: Props) {
     after: cursor.text.slice(mathSpan.end), knownSymbols: decoderSymbols(latexBefore, question)} : undefined, 64,
   {declarations: aidLevel === 'none' ? undefined : aid?.ranking?.declaredSymbols});
   type MenuEntry = {key: string; slotKey: string; score: number; base: number; features: number[]; label: string; title?: string; display?: string; math?: string; word?: WritingAidProposal;
+    trialFeatures?: number[]; neutralScore?: number; tutorAdjustment?: number;
     edit: MenuEdit; replacement?: {start: number; end: number; insert: string; equation: boolean; role?: AidRole}};
   const entries: MenuEntry[] = [];
   const notationTrace: WordTrace[] | undefined = tracePool ? [] : undefined;
@@ -300,6 +316,20 @@ export function TutorComposer(props: Props) {
   const pressedOffer = useRef<{key: string; epoch: string} | null>(null);
   const slotHistory = useRef<{epoch: string; entries: readonly MenuEntry[]}>({epoch: '', entries: []});
   const mode = mathContext === 'prose' ? 'prose' : 'equation';
+  const stableScope = [scopeKey, mountId, aidContextKey, writingPrefs.mode, shown, editingDisabled].join('|');
+  const prior = slotHistory.current.epoch === stableScope ? slotHistory.current.entries : [];
+  const priorKeys = menuTrial ? new Set(prior.map(entry => entry.slotKey)) : undefined;
+  const tutorGroup = menuTrial ? JSON.stringify([props.aidSubject ?? '', props.aidStep ?? '', mode]) : '';
+  function scoring(source: MenuSource, base: number, adjustment: number, edit: MenuEdit, slotKey: string,
+    word?: WritingAidProposal) {
+    const features = menuFeatures(source, base, edit.end - edit.start, edit.insert.length);
+    if (!menuTrial) return {base, features, score: menuScore(base, adjustment, features, writing.assetHashes.ngram)};
+    const trialFeatures = actionFeatures({source, base, edit, previous: priorKeys?.has(slotKey) ?? false,
+      draft: cursor.text, recurrence: word?.contextRecurrence, rightGain: word?.rightContextGain, mode});
+    const neutralScore = menuScore(base, 0, features, writing.assetHashes.ngram);
+    return {base, features, trialFeatures, neutralScore, tutorAdjustment: adjustment,
+      score: actionMenuScore(neutralScore, adjustment, trialFeatures, menuTrial, writing.assetHashes.ngram, tutorGroup)};
+  }
   const allowed = (replacement: NonNullable<MenuEntry['replacement']>, edit = cursor) =>
     insertionEligible({text: edit.text, start: replacement.start, end: replacement.end, insert: replacement.insert,
       mode: replacement.equation ? 'equation' : mode, notation: true, role: replacement.role, aid,
@@ -317,9 +347,8 @@ export function TutorComposer(props: Props) {
     const source = key.startsWith('equation:') ? 'equation' : 'notation';
     notationTrace?.push({...edit, source, eligible});
     if (!eligible) return;
-    const features = menuFeatures(source, score, replacement.end - replacement.start, replacement.insert.length);
-    entries.push({key, slotKey: JSON.stringify([replacement.start, key, next.start, next.end]),
-      base: score, features, score: menuScore(score, hint.adjustment, features, writing.assetHashes.ngram),
+    const slotKey = JSON.stringify([replacement.start, key, next.start, next.end]);
+    entries.push({key, slotKey, ...scoring(source, score, hint.adjustment, edit, slotKey),
       label, display, math, title, edit, replacement: scoped});
   }
   if (!writingRequest.readOnly && !editingDisabled && aidVisible && writingPrefs.mode !== 'off') {
@@ -344,25 +373,28 @@ export function TutorComposer(props: Props) {
         {start: span.start, end: span.end, insert, equation: true}, next, option.label);
     });
     if (enhancedMenu) rankedWritingWords.forEach(word => {
-      const identity = word.source === 'symbol' ? 'symbol:' + word.insert : 'word:' + word.insert.toLowerCase();
+      const identity = word.source === 'symbol' || word.source === 'declared' ? 'symbol:' + word.insert : 'word:' + word.insert.toLowerCase();
       const source: MenuSource = word.source === 'decoder' ? 'word' : word.source ?? 'word';
       const adjustment = word.tutorAdjustment ?? 0;
-      const base = (word.score ?? -10) - adjustment;
-      const features = menuFeatures(source, base, word.end - word.start, word.insert.length);
-      entries.push({base, features, key: 'word:' + writingAidProposalKey(word), slotKey: word.start + ':' + identity,
-        score: menuScore(base, adjustment, features, writing.assetHashes.ngram), label: 'Insert ' + word.label, display: word.label, word, edit: proposalEdit(word)});
+      const base = word.menuBase ?? (word.score ?? -10) - adjustment;
+      const slotKey = word.start + ':' + identity;
+      const edit = proposalEdit(word);
+      entries.push({...scoring(source, base, adjustment, edit, slotKey, word), key: 'word:' + writingAidProposalKey(word), slotKey,
+        label: 'Insert ' + word.label, display: word.label, word, edit});
     });
   }
   const dedupedEntries = new Map<string, MenuEntry>();
+  const oldScore = (entry: MenuEntry) => entry.neutralScore ?? entry.score;
   for (const entry of entries) {
     const {start, end, insert, caret} = entry.edit;
     const key = JSON.stringify([start, end, insert, caret, entry.edit.selectionEnd ?? caret]);
-    if (!dedupedEntries.has(key) || dedupedEntries.get(key)!.score < entry.score) dedupedEntries.set(key, entry);
+    const previous = dedupedEntries.get(key);
+    if (!previous || oldScore(previous) < oldScore(entry)) dedupedEntries.set(key, entry);
   }
-  const rankedEntries = [...dedupedEntries.values()].sort((left, right) => right.score - left.score).slice(0, 64);
+  const shortlist = [...dedupedEntries.values()].sort((left, right) => oldScore(right) - oldScore(left)).slice(0, 64);
+  const rankedEntries = menuTrial === undefined ? shortlist :
+    shortlist.sort((left, right) => right.score - left.score);
   const menuEpoch = aidSignature + '|' + offeredTarget.mountId + '|' + offeredTarget.scopeKey;
-  const stableScope = [scopeKey, mountId, aidContextKey, writingPrefs.mode, shown, editingDisabled].join('|');
-  const prior = slotHistory.current.epoch === stableScope ? slotHistory.current.entries : [];
   const eligibleByKey = new Map(rankedEntries.map(entry => [entry.slotKey, entry]));
   const wordFamily = useMemo(() => offerFamilies(rankedWritingWords), [rankedWritingWords]);
   const familyOf = (entry: MenuEntry) => entry.word ? wordFamily(entry.word) : entry.slotKey;
@@ -408,10 +440,12 @@ export function TutorComposer(props: Props) {
     const matched = mark?.detail?.mountId === offeredTarget.mountId && mark?.detail?.editorRevision === offeredTarget.editorRevision &&
       mark?.detail?.selectionRevision === offeredTarget.selectionRevision;
     traceRef.current = () => ({revision: offeredTarget.editorRevision, selectionRevision: offeredTarget.selectionRevision, publishedAt, mode,
+      menuTrial, tutorGroup: menuTrial ? tutorGroup : undefined,
       worker: matched ? {at: mark!.startTime, ...mark!.detail} : null,
       currentCountModel: writing.assetHashes.ngram ?? null, ghost: writingGhost ? proposalEdit(writingGhost) : null,
       correction: shownEdit ? proposalEdit(shownEdit) : null, raw: [...writing.rawTrace ?? [], ...notationTrace ?? []],
-      eligible: rankedEntries.map(e => ({...e.edit, base: e.base, features: e.features, score: e.score, family: familyOf(e)})),
+      eligible: rankedEntries.map(e => ({...e.edit, base: e.base, features: e.features, score: e.score, family: familyOf(e),
+        trialFeatures: e.trialFeatures, neutralScore: e.neutralScore, tutorAdjustment: e.tutorAdjustment})),
       displayed: [menuEntries[1], menuEntries[0], menuEntries[2]].flatMap(e => e ? [e.edit] : [])});
   });
   useEffect(() => {
@@ -496,8 +530,10 @@ export function TutorComposer(props: Props) {
     const next = applyWritingAidProposal({...writingRequest, cursor: before.present, anchor, target: editTarget(),
       composing: composition.current, readOnly: readOnly || scratch || assist.drawing || editMenu || aidSettings || !shown}, proposal);
     if (!next) return;
-    const source = proposal.source === 'decoder' ? 'ngram' : proposal.source === 'bank' ? 'tutor' :
-      proposal.source === 'notation' ? 'symbol' : proposal.source ?? (proposal.kind === 'ghost' ? 'phrase' : 'word');
+    const source = proposal.source === 'decoder' ? 'ngram' : proposal.source === 'bank' || proposal.source === 'literal' ? 'tutor' :
+      proposal.source === 'notation' || proposal.source === 'declared' ? 'symbol' :
+        proposal.source === 'question' || proposal.source === 'paragraph' ? 'word' :
+          proposal.source ?? (proposal.kind === 'ghost' ? 'phrase' : 'word');
     let authored = 0;
     while (authored < proposal.before.length && proposal.before[authored] === proposal.insert[authored] &&
       proposal.start + authored < (anchor?.text.length ?? 0)) authored++;
@@ -750,6 +786,7 @@ export function TutorComposer(props: Props) {
   }
   function commit(next: PadTextHistory, focus = false, restore = true, fromAssist = false, manuallyTyped = false,
     decorate?: (edit: PadEdit) => boolean | void, exact?: MenuEdit) {
+    const phraseAt = phraseGhost && manuallyTyped && !composing && !composition.current ? performance.timeOrigin + performance.now() : undefined;
     const edit = next.present;
     if (readOnly || edit.text.length > MAX_ANSWER_LENGTH) return false;
     if (tooManyImages(edit.text)) {
@@ -769,6 +806,9 @@ export function TutorComposer(props: Props) {
     if (decorate?.(edit) === false) return false;
     if(changed)revision.current.editorRevision++;
     if(moved)revision.current.selectionRevision++;
+    if (changed && phraseGhost) phraseEdit.current = phraseAt === undefined ? undefined : {
+      at: phraseAt, editor: revision.current.editorRevision, selection: revision.current.selectionRevision, mode: revision.current.modeRevision,
+    };
     if(!fromAssist&&(changed||moved))assist.pause();
     if (focus && !(document.activeElement instanceof HTMLButtonElement)) fieldElement()?.focus({preventScroll: true});
     history.current = next;
@@ -1076,7 +1116,8 @@ export function TutorComposer(props: Props) {
     }
     remember();
     const edit = history.current.present;
-    if (!modified && !event.altKey && !event.shiftKey && event.key === 'Tab' && writingGhost) {
+    if (!modified && !event.altKey && !event.shiftKey && event.key === 'Tab' && writingGhost &&
+        (writingGhost.source !== 'phrase' || writing.isCurrent(writingGhost) && sameEditTarget(writingGhost.snapshot.target, editTarget()))) {
       event.preventDefault(); acceptWriting(writingGhost); return;
     }
     if (!modified && !event.altKey && event.key === 'Tab' && edit.text.slice(edit.start, edit.end) === '□') {
@@ -1546,6 +1587,15 @@ export function TutorComposer(props: Props) {
             aria-pressed={props.headerHidden} onPointerDown={keepSelection} onClick={props.onToggleHeader}>
             {props.headerHidden?<EyeOff aria-hidden="true"/>:<Eye aria-hidden="true"/>}
           </IconButton>}
+          {phrasePreview && <IconButton label={'Accept continuation ' + phrasePreview.label} data-writing-aid-ghost=""
+            data-typeahead-insert={phrasePreview.insert} data-typeahead-start={phrasePreview.start} data-typeahead-end={phrasePreview.end}
+            data-typeahead-caret={proposalEdit(phrasePreview).caret} disabled={editingDisabled}
+            onPointerDown={event => {keepSelection(event); pressedPhrase.current = phrasePreview;}}
+            onPointerCancel={() => {pressedPhrase.current = null;}} onClick={event => {
+              const chosen = event.detail ? pressedPhrase.current : phrasePreview;
+              pressedPhrase.current = null;
+              if (chosen) acceptWriting(chosen);
+            }}><MoveRight aria-hidden="true"/></IconButton>}
           <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !value.trim()&&!hasImage}
             onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
         </div>
@@ -1663,7 +1713,7 @@ export function TutorComposer(props: Props) {
         {slots === 'symbols' && <SymbolWords options={symbolSlots} disabled={editingDisabled}
           onAccept={option => acceptLegacyNotation('symbol:' + option.symbol.id)}/>}
         {slots === 'latex' && <LatexWords options={eligibleLatex} disabled={editingDisabled} onAccept={option => acceptLegacyNotation('latex:' + option.insert)}/>}
-        <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting} hidden={slots !== 'words'}/>
+        <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting} hidden={slots !== 'words'} replayDiagnostics={replayDiagnostics}/>
         {slots === 'quick' && <div className="sugg tutor-quick-math" role="group" aria-label="Quick math symbols">
           {['∀', '∈', ...(props.ink && incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="qsym" aria-label={symbol}
             disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
@@ -1673,7 +1723,7 @@ export function TutorComposer(props: Props) {
         {equationButton}
         {hideButton('sbtn')}
         {/* N249: the drawn symbol's readings have the strip to themselves; the correction overlay waits. */}
-        {!scratch && slots !== 'ink' && <WritingAidBar words={writingWords} edit={shownEdit} ghost={writingGhost}
+        {!scratch && slots !== 'ink' && <WritingAidBar words={writingWords} edit={shownEdit} ghost={stripGhost}
           disabled={editingDisabled} undoable={suggestionUndoable} reviewRef={writingReview} exhausted={aidExhausted}
           onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
           onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}

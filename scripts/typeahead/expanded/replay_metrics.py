@@ -152,7 +152,7 @@ def summarize(gold, impressions, costs, seed):
     for answer in sorted(observed):
         cost = costs[answer]
         manual, assisted = cost['manualKeys'], cost['assistedKeys']
-        if cost.get('costDefinition') != 'full-answer-v1':
+        if cost.get('costDefinition') not in ('full-answer-v1', 'full-answer-punctuation-pairs-v1'):
             raise ValueError('KSR requires a complete answer trajectory')
         if (type(manual) is not int or type(assisted) is not int or manual <= 0 or assisted <= 0):
             raise ValueError('Full answer costs must be positive integer key counts')
@@ -213,18 +213,25 @@ def main():
               'baseline': args.baseline, 'runs': {}}
     vectors = {}
     manual = {}
+    definitions = {}
     for name, impression_path, keys_path in args.run:
         impression_path, keys_path = Path(impression_path), Path(keys_path)
         impressions = unique(impression_path, 'eventId')
         validate_keys(impressions, gold, 'Impression schedule')
         if name in vectors:
             raise ValueError(f'Repeated run name: {name}')
-        outcome, vectors[name], manual[name] = summarize(gold, impressions, unique(keys_path, 'answerId'), args.seed)
+        costs = unique(keys_path, 'answerId')
+        definitions[name] = {row.get('costDefinition') for row in costs.values()}
+        if len(definitions[name]) != 1:
+            raise ValueError('A run must use one complete trajectory definition')
+        outcome, vectors[name], manual[name] = summarize(gold, impressions, costs, args.seed)
         output['runs'][name] = {'impressionsSha256': file_hash(impression_path), 'keysSha256': file_hash(keys_path), **outcome}
     if args.baseline not in vectors:
         raise ValueError('Named baseline is missing')
     for name, vector in vectors.items():
         if name != args.baseline:
+            if definitions[name] != definitions[args.baseline]:
+                raise ValueError('Cannot compare strict and punctuation-pair trajectories')
             if manual[name] != manual[args.baseline]:
                 raise ValueError(f'Manual answer key costs differ in {name} and baseline')
             output['runs'][name]['versusBaseline'] = paired(vectors[args.baseline], vector, args.seed)

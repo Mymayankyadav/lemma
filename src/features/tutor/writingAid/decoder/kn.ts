@@ -338,6 +338,32 @@ export function historyIds(model: NgramModel, before: string, maximum = historyW
   return Array<number>(Math.max(0, maximum - ids.length)).fill(BOS).concat(ids);
 }
 
+/** Score only suffix text already in the editor. After one model history the two distributions coincide. */
+export function prepareRightContext(model: NgramModel, before: string, suffix: string): ((insert: string) => number) | undefined {
+  if (!suffix || /^(?:\s*\n[ \t]*\n|\s*[.!?](?:\s|$))/u.test(suffix)) return;
+  const following = suffix.slice(0, 512).replace(IMAGE, ' ').replace(MATH_SPAN, ' zzmathzz ');
+  const firstSentence = following.split(BREAK, 1)[0];
+  const ids = (firstSentence.toLowerCase().match(TOKEN) ?? []).slice(0, 32)
+    .map(token => model.id.get(tokenOf(token)) ?? UNK);
+  if (!ids.length) return;
+  const width = historyWidth(model);
+  function logProbability(history: number[]) {
+    let sum = 0;
+    for (const id of ids.slice(0, width)) {
+      sum += historyLog(model, id, history);
+      history.shift();
+      history.push(id);
+    }
+    return sum;
+  }
+  const baseline = logProbability(historyIds(model, before));
+  return insert => {
+    const withEdit = logProbability(historyIds(model, before + insert + (following.match(/^\s+/u)?.[0] ?? '')));
+    const gain = (withEdit - baseline) / ids.length;
+    return Number.isFinite(gain) ? gain : 0;
+  };
+}
+
 /** Legacy two-ID helper retained for callers working with the original trigram. */
 export function contextIds(model: NgramModel, before: string): [number, number] {
   const [u, v] = historyIds(model, before, 2);
