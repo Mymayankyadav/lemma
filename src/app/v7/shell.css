@@ -1,19 +1,25 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 /* PLAN §6.1: the v7 shell. Role tokens only. */
 @layer v7-components {
- /* An incoming page is readable and interactive from its first frame. Only the title moves, so
-    sticky headers, fixed action bars and the tutor's keyboard stay anchored to the viewport. */
- @media (prefers-reduced-motion:no-preference) {
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-shell[data-travel] > :is(.v7-page,.v7-library-split) {
-   animation:v7-route-in var(--v7-m-quick,160ms) ease-out;
-  }
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-shell[data-travel] :is(.v7-hub-title,.v7-detail-title,.tutor-header-title) {
-   animation:v7-route-title var(--v7-m-quick,160ms) var(--v7-ease-standard);
-  }
-  .v7-shell[data-travel="back"] {--v7-title-offset:-6px;}
+ /* Keep navigation chrome and fixed page actions anchored as incoming content settles. */
+ :where(html[data-v7]:not([data-motion="reduced"])) .v7-shell[data-route-motion] > :is(.v7-page,.v7-library-split) {
+  animation:v7-route-in var(--motion-quick) var(--ease-enter);
  }
+ :where(html[data-v7]:not([data-motion="reduced"])) .v7-shell[data-route-motion="immersive"] > :is(.v7-page,.v7-library-split) {
+  animation-duration:var(--motion-base);
+ }
+ :where(html[data-v7]:not([data-motion="reduced"])) .v7-shell:is([data-route-motion="push"],[data-route-motion="pop"]) :is(.v7-hub-title,.v7-detail-title,.tutor-header-title) {
+  animation:v7-route-title var(--motion-layout) var(--ease-enter);
+ }
+ .v7-shell[data-route-motion="pop"] {--v7-title-offset:calc(-1 * var(--rise-small));}
  @keyframes v7-route-in {from {opacity:.82;} to {opacity:1;}}
- @keyframes v7-route-title {from {translate:var(--v7-title-offset,6px) 0;} to {translate:0 0;}}
+ @keyframes v7-route-title {from {translate:var(--v7-title-offset,var(--rise-small)) 0;} to {translate:0 0;}}
+ :where(html[data-v7]) .lemma-route-progress {position:fixed;z-index:21;inset:0 0 auto var(--v7-rail-width,0px);height:2px;background:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .lemma-route-preview {
+  position:fixed;z-index:9;inset:0 0 var(--v7-dock-height) var(--v7-rail-width,0px);padding:clamp(24px,5vw,56px);
+  background:var(--v7-role-surface-page);pointer-events:none;
+ }
+ :where(html[data-v7]) .lemma-route-preview .lemma-route-skeleton {max-width:calc(var(--v7-space-20) * 8);margin-inline:auto;}
  :where(html[data-v7]) .v7-shell {--v7-dock-height:calc(64px + var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));min-height:100dvh;background:transparent;color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
  :where(html[data-v7]) .v7-shell[data-session="true"] {--v7-dock-height:calc(112px + var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));}
  :where(html[data-v7]) .v7-shell[data-immersive="true"] {--v7-dock-height:0px;}
@@ -46,7 +52,8 @@
  :where(html[data-v7]) .v7-session-title {flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-session-word {color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-session-time {font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);font-variant-numeric:tabular-nums;}
- :where(html[data-v7]) .v7-session-toggle {width:var(--v7-touch);height:var(--v7-touch);display:grid;place-items:center;border:0;border-radius:var(--v7-round);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-session-toggle {width:var(--v7-touch);height:var(--v7-touch);display:grid;place-items:center;border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-round);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-session-toggle:hover {background:var(--v7-role-state-hover);}
  :where(html[data-v7]) .v7-session-toggle svg {width:18px;height:18px;}
 
  /* F. Capture: overlay surface, never accent-filled, so a screen's primary stays the only filled action. */
@@ -68,20 +75,22 @@
   background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);box-shadow:0 0 0 2px var(--v7-role-surface-page);font:600 var(--v7-type-caption)/1 var(--v7-sans);}
 :where(html[data-v7]) .v7-hub-header {display:grid;gap:var(--v7-space-2);padding-top:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-2));}
 :where(html[data-v7]) .v7-hub-row {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);min-height:56px;}
- :where(html[data-v7]) .v7-hub-bar {position:sticky;top:0;z-index:8;margin-inline:calc(var(--v7-page-margin) * -1);padding:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-1)) var(--v7-page-margin) 0;background:var(--v7-role-surface-page);}
+ :where(html[data-v7]) .v7-hub-bar {position:sticky;top:0;z-index:8;margin-inline:calc(var(--v7-page-margin) * -1);padding:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-1)) var(--v7-page-margin) 0;background:var(--v7-role-surface-page);border-bottom:var(--v7-hairline) solid transparent;}
  :where(html[data-v7]) .v7-hub-bar .v7-hub-row {min-height:48px;}
- :where(html[data-v7]) .v7-hub-bar[data-collapsed="true"] {border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);}
- :where(html[data-v7]) .v7-hub-bar[data-collapsed="true"] .v7-hub-title {font-size:var(--v7-type-subhead);}
+ :where(html[data-v7]) .v7-hub-bar[data-collapsed="true"] {border-bottom-color:var(--v7-role-border-subtle);}
+ :where(html[data-v7]) .v7-hub-bar .v7-hub-title > span {display:inline-block;transform-origin:left center;transition:scale var(--motion-layout) var(--ease-standard);}
+ :where(html[data-v7]) .v7-hub-bar[data-collapsed="true"] .v7-hub-title > span {scale:.625;}
+ :where(html[data-v7][data-motion="reduced"]) .v7-hub-bar .v7-hub-title > span {transition:none;}
  :where(html[data-v7]) .v7-hub-extra {display:grid;gap:var(--v7-space-2);margin-top:calc(-1 * var(--v7-gap,var(--v7-space-4)) + var(--v7-space-1));}
  :where(html[data-v7]) .v7-hub-date {display:flex;align-items:center;gap:var(--v7-space-2);min-width:0;color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-hub-date > span:last-child {min-width:0;overflow-wrap:anywhere;}
-:where(html[data-v7]) .v7-hub-mark {display:grid;place-items:center;width:28px;height:28px;border-radius:var(--v7-radius-1);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);}
+:where(html[data-v7]) .v7-hub-mark {display:grid;place-items:center;width:28px;height:28px;border-radius:var(--v7-radius-1);background:var(--v7-role-surface-track);color:var(--v7-role-text-primary);}
 :where(html[data-v7]) .v7-hub-mark svg,:where(html[data-v7]) .v7-rail-brand svg {display:block;flex:none;}
 /* N157 · AN3: the header ℓ as the sync light. A ring while fetching or saving (shown only after 300 ms, so a quick
    refresh does not flicker), a hollow ℓ when offline. */
 :where(html[data-v7]) .v7-sync-mark {position:relative;display:inline-grid;}
-:where(html[data-v7]) .v7-sync-mark::after {content:"";position:absolute;inset:-3px;border-radius:calc(var(--v7-radius-1) + 3px);border:var(--v7-ring) solid var(--v7-role-selection-fg);opacity:0;transition:opacity var(--v7-m-quick,.16s) linear;pointer-events:none;}
-:where(html[data-v7]) .v7-sync-mark[data-sync="syncing"]::after {opacity:1;transition-delay:300ms;}
+:where(html[data-v7]) .v7-sync-mark::after {content:"";position:absolute;inset:-3px;border-radius:calc(var(--v7-radius-1) + 3px);border:var(--v7-ring) solid var(--v7-role-selection-fg);opacity:0;transition:opacity var(--motion-quick) linear;pointer-events:none;}
+:where(html[data-v7]) .v7-sync-mark[data-sync="syncing"]::after {opacity:1;transition-delay:var(--motion-skeleton-delay);}
 :where(html[data-v7]) .v7-sync-mark[data-sync="offline"] .v7-hub-mark {background:transparent;box-shadow:inset 0 0 0 var(--v7-hairline) var(--v7-role-border-default);}
 :where(html[data-v7]) .v7-sync-mark[data-sync="offline"] svg path {fill:none;stroke:currentColor;stroke-width:1.5px;vector-effect:non-scaling-stroke;}
 :where(html[data-v7]) .v7-hub-title {min-width:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;}
@@ -102,7 +111,6 @@
  :where(html[data-v7]) .v7-alert::before {content:"";flex:none;width:20px;height:20px;background:var(--v7-role-status-danger);
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v4M12 16h.01'/%3E%3C/svg%3E") center/contain no-repeat;}
  :where(html[data-v7]) .v7-notice {display:flex;align-items:center;gap:var(--v7-space-2);color:var(--v7-role-status-success);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
- @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) :is(.v7-tab-pill,.v7-capture) {transition:none;}}
 
  /* Capture sheet: one large field, tokens, then type chips. */
 :where(html[data-v7]) .v7-capture-field {width:100%;min-height:96px;resize:none;padding:var(--v7-space-3) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);
@@ -145,7 +153,7 @@
  :where(html[data-v7]) .v7-shell-time {font-size:var(--v7-numeric-lg);}
  :where(html[data-v7]) .v7-shell-timer-icon {display:none;}
  :where(html[data-v7]) .v7-shell-grades {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--v7-space-2);}
- :where(html[data-v7]) .v7-shell-grades > span {min-height:64px;display:grid;justify-items:center;align-content:center;gap:2px;border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ :where(html[data-v7]) .v7-shell-grades > span {min-height:64px;display:grid;justify-items:center;align-content:center;gap:2px;border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-track);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-shell-grades small {color:var(--v7-role-text-secondary);font-weight:500;font-size:var(--v7-type-caption);}
  :where(html[data-v7]) .v7-shell-stars {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-shell-stars li {display:flex;align-items:center;gap:var(--v7-space-3);}
@@ -271,4 +279,38 @@
    whether the learning screens' styles happen to have loaded (a direct Settings visit showed it as body-size serif). */
 @layer v7-components {
  :where(html[data-v7]) .v7-learn-title {margin:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;overflow-wrap:anywhere;}
+}
+
+
+@layer v7-components {
+ :where(html[data-v7]) .v7-capture-flow {position:relative;}
+ :where(html[data-v7]) .v7-capture-step {display:grid;gap:var(--v7-space-4);}
+ :where(html[data-v7]) .v7-capture-step-exit {position:absolute;inset:0 0 auto;pointer-events:none;background:var(--v7-role-surface-overlay);}
+ :where(html[data-v7]:not([data-motion="reduced"])) .v7-capture-step {
+  animation:v7-capture-step var(--motion-quick) var(--ease-enter) both;
+ }
+ :where(html[data-v7]) .v7-capture-flow .v7-capture-step-exit {animation:none;}
+ :where(html[data-v7]) .v7-capture-step[data-direction="back"] {--step-shift:-8px;}
+ @keyframes v7-capture-step {from {opacity:0;translate:var(--step-shift,8px) 0;}to {opacity:1;translate:0 0;}}
+ :where(html[data-v7]) .v7-overlay-pending {min-height:9rem;}
+ :where(html[data-v7]) .v7-search-dialog > .v7-sheet-body {display:block;}
+ :where(html[data-v7]) .v7-search-dialog .v7-search-entry {
+  position:sticky;top:0;z-index:2;background:var(--v7-role-surface-overlay);
+  padding-block:var(--v7-space-1) var(--v7-space-2);
+ }
+ @media(min-width:700px) {
+  :where(html[data-v7]) .v7-sheet.v7-search-dialog {
+   inset:max(calc(var(--v7-safe-top) + 1rem),8dvh) 0 auto;margin-inline:auto;
+   max-height:70dvh;height:fit-content;width:min(calc(100% - 2rem),560px);
+  }
+ }
+ :where(html[data-v7]) .v7-switch-path-list {display:grid;gap:var(--v7-space-1);padding:0;list-style:none;}
+ :where(html[data-v7]) .v7-switch-path-list a {
+  display:flex;align-items:center;justify-content:space-between;min-height:var(--v7-touch);
+  gap:var(--v7-space-2);padding-inline:var(--v7-space-3);border-radius:var(--v7-radius-2);
+  border:var(--v7-hairline) solid var(--v7-role-border-subtle);color:var(--v7-role-text-primary);
+ }
+ :where(html[data-v7]) .v7-switch-path-list a[aria-current="page"] {background:var(--v7-role-selection-subtle);}
+ :where(html[data-v7]:not([data-motion="reduced"])) .v7-plan-move[data-v7-expand] {animation:v7-inline-expand var(--motion-layout) var(--ease-standard);}
+ @keyframes v7-inline-expand {from {opacity:0;clip-path:inset(0 0 100%);}to {opacity:1;clip-path:inset(0);}}
 }

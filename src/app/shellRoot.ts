@@ -6,6 +6,15 @@ export function setShellRoot(shell:EffectiveShell, root:Element=document.documen
   root.removeAttribute('data-v7');
   if (shell === 'v6') root.setAttribute('data-v6', '');
   if (shell === 'v7') root.setAttribute('data-v7', '');
+  if (shell === 'v7') {
+    if (root.hasAttribute('data-legacy-default-calm')) {
+      root.removeAttribute('data-effects');
+      root.removeAttribute('data-legacy-default-calm');
+    }
+  } else if (!root.hasAttribute('data-effects')) {
+    root.setAttribute('data-effects', 'calm');
+    root.setAttribute('data-legacy-default-calm', '');
+  }
   if (root === document.documentElement) syncThemeColour(root);
 }
 

@@ -155,7 +155,7 @@ describe('V20 · drag a bottom sheet down to dismiss (dismissSheet)',()=>{
 describe('V20 · in use',()=>{
  it('the app installs the sheet drag, the Review hub animates its count, and transitionPresets is gone',()=>{
   expect(readFileSync('src/main.tsx','utf8')).toContain('installSheetDrag()');
-  expect(readFileSync('src/ui/v7/sheetDrag.ts','utf8')).toContain("import {dismissSheet} from './motion';");
+  expect(readFileSync('src/ui/v7/sheetDrag.ts','utf8')).toContain("import {dismissSheet, durations} from './motion';");
   expect(readFileSync('src/ui/v7/useAnimatedNumber.ts','utf8')).toContain("import {interpolateNumber,motionV1} from './motion';");
   const hub=readFileSync('src/features/review/v7/ReviewHubV7.tsx','utf8');
   expect(hub).toContain('const shownCount=useAnimatedNumber(count,!loading&&!failed);');

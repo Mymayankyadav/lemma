@@ -1,6 +1,6 @@
 import {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import {UNSAFE_DataRouterContext, useBlocker, type BlockerFunction} from 'react-router';
-import {Sheet} from '../../ui/v7/components';
+import {Button,Sheet} from '../../ui/v7/components';
 import type {createPadDraftSession} from './padDraftSession';
 
 interface Props {
@@ -91,15 +91,14 @@ function RoutedPadGuard({session, dirty, onSaved}: Props) {
     }
   }
 
-  if (!blocked) return null;
   const canSave = !saving && ['unsaved', 'recovered', 'save-failed'].includes(status);
-  return <Sheet open onClose={keepEditing} title="Save your Pad before leaving?" eyebrow="Unsaved local work"
+  return <Sheet open={blocked} surfaceRole="S5" onClose={keepEditing} title="Save your Pad before leaving?" eyebrow="Unsaved local work"
     footer={<div className="local-pad-controls">
-      <button type="button" data-v7-autofocus="true" disabled={saving} onClick={keepEditing}>Keep editing</button>
-      <button type="button" disabled={saving} onClick={leave}>Discard and leave</button>
-      <button type="button" disabled={!canSave} onClick={() => void saveAndLeave()}>
+      <Button data-v7-autofocus="true" disabled={saving} onClick={keepEditing}>Keep editing</Button>
+      <Button destructive disabled={saving} onClick={leave}>Discard and leave</Button>
+      <Button variant="primary" disabled={!canSave} onClick={() => void saveAndLeave()}>
         {saving ? 'Saving Pad…' : 'Save and leave'}
-      </button>
+      </Button>
     </div>}>
     <p>Your notes and ink have changes that are not saved on this device.</p>
     {(status === 'conflict' || status === 'load-failed') && <p role="status">

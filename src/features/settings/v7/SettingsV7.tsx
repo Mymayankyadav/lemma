@@ -184,7 +184,7 @@ function Tutor({settings,released}:{settings:Settings;released:boolean}){
     <Button small loading={rotate.isPending} onClick={()=>{void rotate.mutateAsync().then(()=>notify('New address created; reconnect your tutor',{tone:'success'})).catch(()=>notify('Could not rotate the address',{tone:'danger'}));}}><RefreshCw aria-hidden="true"/>New address</Button>
    </div>
   </div>
-  <Legacy><StudyDefaults settings={settings} part="tutor"/></Legacy>
+  <Legacy><StudyDefaults v7 settings={settings} part="tutor"/></Legacy>
  </div>;
 }
 /** The existing section forms, on v7 surfaces, until each is rebuilt with v7 fields. */
@@ -221,7 +221,7 @@ export default function SettingsV7(){
   {section==='subjects'&&<Subjects settings={data}/>}
   {section==='tutor'&&<Tutor settings={data} released={tutorReleased}/>}
   {section==='study'&&(params.get('advanced')==='1'
-   ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
+   ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults v7 settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
    :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
   {section==='planning'&&<><PlanningLists settings={data} capacityRequested={params.get('capacity')==='1'} onCapacityOpen={()=>{
    const next=new URLSearchParams(params);

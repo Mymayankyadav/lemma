@@ -7,7 +7,7 @@ import {GradeGlyph,type GradeKey} from '../../../ui/v7/grades';
 import {fromEdge} from '../../../ui/v7/edges';
 import {haptic} from '../../../ui/v7/haptics';
 import {useToast} from '../../../ui/Toast';
-import {useEffect,useMemo,useRef,useState,useSyncExternalStore,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState,useSyncExternalStore,type PointerEvent as ReactPointerEvent} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Undo2,X} from 'lucide-react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -17,7 +17,7 @@ import {getMode} from '../../../data/mode';
 import {openStudyTarget,skipChangedStudyItem,targetFromLink} from './scopedRound';
 import {saveGrade,savedGrade,confirmGrade,type GradeIntent} from './gradeIntent';
 import {useHome,useRecordReview,useReviewItems,useSettings} from '../../../data/hooks';
-import type {Confidence,QueueFilter,Rating} from '../../../data/types';
+import type {Confidence,QueueFilter,Rating,ReviewItem} from '../../../data/types';
 import {preview,scheduleConfig} from '../../../lib/fsrs';
 import {formatInterval} from '../../../lib/format';
 import {noteKindText} from '../../../lib/labels';
@@ -34,6 +34,8 @@ import {clearPendingGrade,pendingGrade,writePendingGrade,type PendingGrade} from
 import './review.css';
 import {Loader} from '../../../ui/v7/Loader';
 import {playSound,soundsOn} from '../../../ui/v7/sounds';
+import {useMotionReduced} from '../../../ui/v7/effects';
+import {distances,durations,easings} from '../../../ui/v7/motion';
 
 const filter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 export const gradeNames=['Again','Hard','Good','Easy'] as const;
@@ -44,6 +46,19 @@ export function swipeGrade(dx:number,dy:number,threshold=96):Rating|null{
  if(dx<-threshold)return 1;
  return null;
 }
+type SwipeOffset={dx:number;dy:number};
+type CommittedSwipe=SwipeOffset&{speed:number};
+export function gradeDirection(rating:Rating):SwipeOffset{
+ return rating===1?{dx:-1,dy:0}:rating===2?{dx:0,dy:1}:rating===3?{dx:1,dy:0}:{dx:0,dy:-1};
+}
+function dragTransform({dx,dy}:SwipeOffset){
+ return `translate(${dx}px,${Math.min(0,dy)}px) rotate(${Math.max(-6,Math.min(6,dx/24))}deg)`;
+}
+export function swipeExit(offset:SwipeOffset,rating:Rating,extent:number):SwipeOffset{
+ const direction=gradeDirection(rating);
+ return {dx:offset.dx+direction.dx*extent,dy:Math.min(0,offset.dy)+direction.dy*extent};
+}
+const shifted=(direction:SwipeOffset,distance:number)=>`translate(${direction.dx*distance}px,${direction.dy*distance}px)`;
 const gradesKey=(runId:string)=>'lemma.v7.review-grades.'+runId;
 function readGrades(runId:string):Record<string,Rating>{try{return JSON.parse(sessionStorage.getItem(gradesKey(runId))??'{}') as Record<string,Rating>;}catch{return {};}}
 function writeGrades(runId:string,grades:Record<string,Rating>){try{sessionStorage.setItem(gradesKey(runId),JSON.stringify(grades));}catch{/* colour memory only */}}
@@ -58,8 +73,15 @@ export default function ReviewRoundV7(){
  const [startTime,setStartTime]=useState(Date.now()),[pending,setPending]=useState<PendingGrade|null>(null);
  const [grades,setGrades]=useState<Record<string,Rating>>({});
  const [redo,setRedo]=useState<{runId:string;version:number;itemId:string;rating:Rating}|null>(null);
- const [drag,setDrag]=useState<{dx:number;dy:number}|null>(null);
- const dragStart=useRef<{x:number;y:number}|null>(null);
+ const [drag,setDrag]=useState<SwipeOffset|null>(null),[tracking,setTracking]=useState(false);
+ const dragStart=useRef<{x:number;y:number;id:number;lastX:number;lastY:number;at:number;velocity:SwipeOffset}|null>(null);
+ const gradeLock=useRef(false),cardNode=useRef<HTMLElement>(null),question=useRef<HTMLDivElement>(null);
+ const incoming=useRef<{itemId:string;from?:SwipeOffset}|null>(null);
+ const reduced=useMotionReduced();
+ const pendingRef=useRef<{itemId:string;rating:Rating;swipe?:CommittedSwipe}|null>(null);
+ const pendingCard=useRef<{itemId:string;card:ReviewItem}|null>(null);
+ const alive=useRef(true);
+ useEffect(()=>{alive.current=true;return ()=>{alive.current=false;};},[]);
  const runId=search.get('run'),link=search.toString(),repair=studyRepair;
  const signedIn=useSyncExternalStore(onAccountChange,authOwner,authOwner);
  const atomic=studyRepair&&getMode()==='live';
@@ -76,12 +98,13 @@ export default function ReviewRoundV7(){
    }
    return await getApi().getExactReviewCard?.(exactId!)??null;
   }});
- const card=exactId?(exact.data?.cardId===item?.cardId?exact.data:null):cards.data?.find(x=>x.cardId===item?.cardId);
+ const lookedUp=exactId?(exact.data?.cardId===item?.cardId?exact.data:null):cards.data?.find(x=>x.cardId===item?.cardId);
+ const card=pendingCard.current?.itemId===item?.id?pendingCard.current?.card??lookedUp:lookedUp;
  const lookup=exactId?exact:cards;
  const faces=card?.type==='reverse'&&card.ord===2?{front:card.back,back:card.front}:{front:card?.front??'',back:card?.back??''};
  const choices=useMemo(()=>{if(!settings.data||!card)return null;try{return preview(card.state,Date.now(),scheduleConfig(settings.data));}catch{return null;}},[settings.data,card]);
  useEffect(()=>{
-  let cancelled=false;setLoading(true);setRun(null);setFrozen(null);setPending(null);setMessage(null);
+  let cancelled=false;pendingCard.current=null;setLoading(true);setRun(null);setFrozen(null);setPending(null);setMessage(null);
   void (async()=>{
    const parameters=new URLSearchParams(link);
    // A scoped URL must never fall through to a different active round while its
@@ -125,7 +148,43 @@ export default function ReviewRoundV7(){
   return ()=>{cancelled=true;};
  },[runId,link,repair,atomic,signedIn,queries,navigate]);
  useEffect(()=>{setRevealed(false);setConfidence(null);setStartTime(Date.now());setDrag(null);},[run?.id,run?.position]);
- const done=(result:DurableRun)=>{setRun(result);if(result.progress.done)navigate('/review/done?run='+encodeURIComponent(result.id));};
+ useLayoutEffect(()=>{
+  const next=incoming.current,node=cardNode.current;
+  if(!node||!next||next.itemId!==item?.id||!card)return;
+  incoming.current=null;
+  question.current?.focus({preventScroll:true});
+  if(typeof node.animate!=='function')return;
+  const entry=reduced?undefined:next.from?shifted(next.from,distances.rise):`translateY(${distances.riseSmall}px)`;
+  node.animate([{opacity:0,transform:entry},{opacity:1,transform:reduced?undefined:'none'}],{
+   duration:1000*(reduced?durations.reduced:durations.quick),easing:`cubic-bezier(${easings.enter.join(',')})`,
+  });
+ },[item?.id,card,reduced]);
+ const showRun=(result:DurableRun,from?:SwipeOffset)=>{
+  if(!alive.current)return;
+  const next=result.items[result.position];
+  if(next&&next.id!==item?.id){
+   incoming.current={itemId:next.id,from};
+   setRevealed(false);setConfidence(null);setStartTime(Date.now());
+  }
+  pendingCard.current=null;setDrag(null);setRun(result);
+  if(result.progress.done)navigate('/review/done?run='+encodeURIComponent(result.id));
+ };
+ async function done(result:DurableRun){
+  const motion=pendingRef.current,node=cardNode.current;
+  if(motion&&motion.itemId===item?.id&&node&&typeof node.animate==='function'){
+   const extent=Math.max(node.offsetWidth,node.offsetHeight)+24;
+   const from=motion.swipe?dragTransform(motion.swipe):'none';
+   const to=motion.swipe?dragTransform(swipeExit(motion.swipe,motion.rating,extent)):shifted(gradeDirection(motion.rating),distances.rise);
+   const duration=1000*(reduced?durations.reduced:motion.swipe?durations.baseExit:durations.quickExit);
+   const initialSlope=motion.swipe?Math.max(.35,Math.min(3,motion.swipe.speed*duration/extent)):0;
+   const curve=motion.swipe&&!reduced?[.2,.2*initialSlope,.38,1]:easings.exit;
+   const animation=node.animate([
+    {opacity:1,transform:reduced?undefined:from},{opacity:0,transform:reduced?undefined:to},
+   ],{duration,easing:`cubic-bezier(${curve.join(',')})`,fill:'forwards'});
+   await animation.finished.catch(()=>undefined);
+  }
+  showRun(result);
+ }
  async function recover(intent:GradeIntent){
   const saved=await confirmGrade(intent);
   if(authOwner()!==intent.ownerId)return;
@@ -135,17 +194,20 @@ export default function ReviewRoundV7(){
    setGrades(nextGrades);writeGrades(intent.runId,nextGrades);
    void queries.invalidateQueries();
   }else{setChangedItem(intent.itemId);setMessage('The round changed. Your saved selection did not add a grade.');}
-  done(saved.run);
+  await done(saved.run);
  }
  async function retryGrade(){
-  if(!frozen||busy||!atomic)return;
-  setBusy(true);setMessage(null);
+  if(!frozen||gradeLock.current||busy||!atomic)return;
+  gradeLock.current=true;setBusy(true);setMessage(null);
+  pendingRef.current={itemId:frozen.itemId,rating:frozen.rating};
   try{await recover(frozen);}
   catch{if(authOwner()===frozen.ownerId)setMessage('The grade could not be confirmed. Retry to recover this answer.');}
-  finally{setBusy(false);}
+  finally{gradeLock.current=false;pendingRef.current=null;setBusy(false);}
  }
- async function grade(rating:Rating){
-  if(!run||!item||!card||!choices||!settings.data||busy||pending||frozen)return;
+ async function grade(rating:Rating,swipe?:CommittedSwipe){
+  if(!run||!item||!card||!choices||!settings.data||busy||gradeLock.current||pending||frozen)return;
+  gradeLock.current=true;pendingRef.current={itemId:item.id,rating,swipe};pendingCard.current={itemId:item.id,card};
+  if(swipe)setDrag(swipe);
   setBusy(true);setMessage(null);
   // N131 · A5: the pencil tick, when Sounds is on (it plays on the tap, before saving, so it is felt as the mark).
   void playSound('tick',soundsOn(settings.data.ui));
@@ -165,38 +227,39 @@ export default function ReviewRoundV7(){
     return;
    }
    const currentVersion=await cardVersion(item.cardId);
-   if(currentVersion!==null&&currentVersion!==item.expectedCardVersion){done(await advanceSkip(run,item.id,'Card changed after run started'));setMessage('Changed card skipped; no duplicate grade recorded.');return;}
+   if(currentVersion!==null&&currentVersion!==item.expectedCardVersion){await done(await advanceSkip(run,item.id,'Card changed after run started'));setMessage('Changed card skipped; no duplicate grade recorded.');return;}
    const reviewed=await record.mutateAsync({cardId:item.cardId,expectedVersion:item.expectedCardVersion,rating,confidence,durationMs:Math.min(600000,Math.max(0,Date.now()-startTime)),next:choices[rating].card});
    const receipt={runId:run.id,itemId:item.id,reviewId:reviewed.reviewId};
    setPending(receipt);writePendingGrade(receipt);
    const nextGrades={...grades,[item.id]:rating};setGrades(nextGrades);writeGrades(run.id,nextGrades);
    const advanced=await advanceGrade(run,item.id,reviewed.reviewId);
-   clearPendingGrade();setPending(null);done(advanced);
+   clearPendingGrade();setPending(null);await done(advanced);
   }catch(error){setMessage(error instanceof Error?error.message:'Review could not be saved');}
-  finally{setBusy(false);}
+  finally{gradeLock.current=false;pendingRef.current=null;setDrag(null);setBusy(false);}
  }
  async function retryAdvance(){
-  if(!run||!item||!pending||busy)return;setBusy(true);setMessage(null);
-  try{const result=await advanceGrade(run,item.id,pending.reviewId);clearPendingGrade();setPending(null);done(result);}
+  if(!run||!item||!pending||busy||gradeLock.current)return;gradeLock.current=true;setBusy(true);setMessage(null);
+  const rating=grades[item.id];if(rating)pendingRef.current={itemId:item.id,rating};
+  try{const result=await advanceGrade(run,item.id,pending.reviewId);clearPendingGrade();setPending(null);await done(result);}
   catch(error){setMessage(error instanceof Error?error.message:'Could not advance saved grade');}
-  finally{setBusy(false);}
+  finally{gradeLock.current=false;pendingRef.current=null;setBusy(false);}
  }
  async function undo(){
-  if(!run||busy||pending||frozen||!lastGraded(run))return;setBusy(true);setMessage(null);
+  if(!run||busy||gradeLock.current||pending||frozen||!lastGraded(run))return;gradeLock.current=true;setBusy(true);setMessage(null);
   try{
    const graded=lastGraded(run),result=await undoLast(run);
    const rating=graded?grades[graded.id]:undefined;
    if(graded){const nextGrades={...grades};delete nextGrades[graded.id];setGrades(nextGrades);writeGrades(run.id,nextGrades);}
-   setRun(result);await queries.invalidateQueries();
+   showRun(result,rating?gradeDirection(rating):undefined);await queries.invalidateQueries();
    notify('Answer undone',{action:graded&&rating?{label:'Redo',onClick:()=>setRedo({
     runId:result.id,version:result.version,itemId:graded.id,rating,
    })}:undefined});
   }catch(error){setMessage(error instanceof Error?error.message:'Could not undo the last answer');}
-  finally{setBusy(false);}
+  finally{gradeLock.current=false;setBusy(false);}
  }
  async function skip(){
   if(!run||!item||busy||pending||frozen)return;setBusy(true);setMessage(null);
-  try{done(atomic?await skipChangedStudyItem(run,item.id):await advanceSkip(run,item.id,'Card missing or changed since run snapshot'));setMessage('Stale card skipped.');}
+  try{await done(atomic?await skipChangedStudyItem(run,item.id):await advanceSkip(run,item.id,'Card missing or changed since run snapshot'));setMessage('Stale card skipped.');}
   catch(error){setMessage(error instanceof Error?error.message:'Could not skip stale card');}
   finally{setBusy(false);}
  }
@@ -221,7 +284,7 @@ export default function ReviewRoundV7(){
  useEffect(()=>{
   const handler=(event:KeyboardEvent)=>{
    const target=event.target as HTMLElement|null;
-   if(event.metaKey||event.ctrlKey||event.altKey||target?.closest('input,textarea,select,[contenteditable],dialog'))return;
+   if(event.repeat||event.metaKey||event.ctrlKey||event.altKey||target?.closest('input,textarea,select,[contenteditable],dialog'))return;
    if(event.key===' '&&!keys.current.revealed){event.preventDefault();keys.current.reveal();}
    else if(/^[1-4]$/.test(event.key)&&keys.current.revealed){event.preventDefault();void keys.current.grade(Number(event.key) as Rating);}
    else if(event.key==='u'||event.key==='U'){void keys.current.undo();}
@@ -231,9 +294,32 @@ export default function ReviewRoundV7(){
  // N132: a mouse swipe that starts on text the previous swipe selected would drag that text (the browser's own drag and
  // drop cancels the gesture), so the card never graded. Clear the selection when a swipe starts and after one is read.
  const clearSelection=()=>{try{window.getSelection()?.removeAllRanges();}catch{/* no selection API */}};
- const down=(event:ReactPointerEvent<HTMLElement>)=>{if(busy||(event.target as HTMLElement).closest('a,button')||fromEdge(event.clientX))return;if(event.pointerType==='mouse')clearSelection();dragStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture?.(event.pointerId);};
- const move=(event:ReactPointerEvent<HTMLElement>)=>{if(!dragStart.current)return;setDrag({dx:event.clientX-dragStart.current.x,dy:event.clientY-dragStart.current.y});};
- const up=()=>{const start=dragStart.current;dragStart.current=null;if(!start||!drag){setDrag(null);return;}const rating=swipeGrade(drag.dx,drag.dy);setDrag(null);if(rating){clearSelection();if(!revealed)reveal();else void grade(rating);}};
+ const down=(event:ReactPointerEvent<HTMLElement>)=>{
+  if(busy||gradeLock.current||pending||frozen||!event.isPrimary||event.button!==0||(event.target as Element).closest('a,button')||fromEdge(event.clientX))return;
+  if(event.pointerType==='mouse')clearSelection();
+  dragStart.current={x:event.clientX,y:event.clientY,id:event.pointerId,lastX:event.clientX,lastY:event.clientY,at:event.timeStamp,velocity:{dx:0,dy:0}};setTracking(true);
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+ };
+ const move=(event:ReactPointerEvent<HTMLElement>)=>{
+  const start=dragStart.current;
+  if(start?.id!==event.pointerId)return;
+  const elapsed=Math.max(1,event.timeStamp-start.at);
+  start.velocity={dx:(event.clientX-start.lastX)/elapsed,dy:(event.clientY-start.lastY)/elapsed};
+  start.lastX=event.clientX;start.lastY=event.clientY;start.at=event.timeStamp;
+  setDrag({dx:event.clientX-start.x,dy:event.clientY-start.y});
+ };
+ const up=(event:ReactPointerEvent<HTMLElement>)=>{
+  const start=dragStart.current;if(start?.id!==event.pointerId)return;
+  dragStart.current=null;setTracking(false);
+  const offset={dx:event.clientX-start.x,dy:event.clientY-start.y},rating=swipeGrade(offset.dx,offset.dy);
+  if(!rating){setDrag(null);return;}
+  clearSelection();
+  if(!revealed){setDrag(null);reveal();return;}
+  if(!choices||gradeLock.current){setDrag(null);return;}
+  const direction=gradeDirection(rating);
+  const speed=event.timeStamp-start.at<80?Math.max(0,direction.dx*start.velocity.dx+direction.dy*start.velocity.dy):0;
+  void grade(rating,{...offset,speed});
+ };
  const swiping=drag&&revealed?swipeGrade(drag.dx,drag.dy,48):null;
  const project=home.data?.projects.find(entry=>entry.slug===card?.projectSlug),subject=kitSubject(project?.subject.name??'');
  if(loading)return <main id="main-content" className="v7-review" aria-label="Review round"><Loader className="v7-review-state" label="Restoring your review…"/></main>;
@@ -257,39 +343,40 @@ export default function ReviewRoundV7(){
    ...(card.sourceShort?[{title:'Source',body:<p>{card.sourceShort}{card.pageLabel?', p. '+card.pageLabel:''}</p>}]:[]),
   ]} sheet={false}/>}
   {run.status==='paused'&&<Button onClick={()=>{setBusy(true);void unpauseRun(run).then(setRun).catch(error=>setMessage(String(error))).finally(()=>setBusy(false));}}>Resume this round</Button>}
-  {frozen?<section className="v7-review-state">
-   {busy?<Loader label="Confirming your grade…"/>:<>
-    <p role="status">Your grade selection is saved on this device.</p>
-    <Button disabled={!atomic} onClick={()=>{void retryGrade();}}>Retry grade confirmation</Button>
-   </>}
-  </section>
-  :run.progress.done?<section className="v7-review-state"><p role="status">Round saved. {run.progress.graded} graded; {run.progress.skipped} skipped.</p>
+  {frozen&&!busy&&<div className="v7-review-state">
+   <p role="status">Your grade selection is saved on this device.</p>
+   <Button disabled={!atomic} onClick={()=>{void retryGrade();}}>Retry grade confirmation</Button>
+  </div>}
+  {pending&&!busy&&<div className="v7-review-state"><p role="status">Your answer is recorded. Advance without grading again.</p><Button onClick={()=>{void retryAdvance();}}>Retry advance</Button></div>}
+  {run.progress.done?<section className="v7-review-state"><p role="status">Round saved. {run.progress.graded} graded; {run.progress.skipped} skipped.</p>
    <Button variant="primary" onClick={()=>navigate('/review/done?run='+encodeURIComponent(run.id))}>See results</Button></section>
   :item&&run.status==='running'?<>
-   {pending?<section className="v7-review-state"><p role="status">Your answer is recorded. Advance without grading again.</p><Button disabled={busy} onClick={()=>{void retryAdvance();}}>Retry advance</Button></section>
-   :(!card&&!lookup.isPending||changedItem===item.id)?<section className="v7-review-state"><p role="status">{lookup.isError?'Could not load this card. Retry the lookup.':'This card is no longer available for this review.'}</p>
+   {(!card&&!lookup.isPending&&!pending&&!frozen||changedItem===item.id)?<section className="v7-review-state"><p role="status">{lookup.isError?'Could not load this card. Retry the lookup.':'This card is no longer available for this review.'}</p>
     <Button disabled={busy||lookup.isError} onClick={()=>{void skip();}}>Skip stale card</Button><Button onClick={()=>{void lookup.refetch();}}>Retry card lookup</Button></section>
    :card?<section className="v7-review-stage">
-    <article className={'v7-review-card '+subjectClass(subject)} aria-label="Review card" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{dragStart.current=null;setDrag(null);}}
-     style={drag?{transform:`translate(${drag.dx}px,${Math.min(0,drag.dy)}px) rotate(${Math.max(-6,Math.min(6,drag.dx/24))}deg)`} as CSSProperties:undefined} data-swipe={swiping?gradeNames[swiping-1].toLowerCase():undefined}>
+    <article key={item.id} ref={cardNode} className={'v7-review-card '+subjectClass(subject)} aria-label="Review card" aria-busy={busy&&!!pendingRef.current}
+     data-tracking={tracking||drag?true:undefined} onPointerDown={down} onPointerMove={move} onPointerUp={up}
+     onPointerCancel={()=>{dragStart.current=null;setTracking(false);setDrag(null);}}
+     style={drag&&!reduced?{transform:dragTransform(drag)}:undefined} data-swipe={swiping?gradeNames[swiping-1].toLowerCase():undefined}>
      <div className="v7-review-card-meta">
       {project&&<><span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{subject==='Other'?project.subject.name:subject}</span></span><span className="v7-meta">{project.title}{card.checkpointTitle?' · '+card.checkpointTitle:''}</span></>}
       <p className="v7-eyebrow">{noteKindText(card.kind)}</p>
      </div>
-     <div className="v7-review-front"><MathText source={faces.front} variant="card" interactiveMath/></div>
+     <div className="v7-review-front" ref={question} tabIndex={-1} role="group" aria-label="Question"><MathText source={faces.front} variant="card" interactiveMath/></div>
      {!revealed?<div className="v7-review-confidence"><p>How sure? <span className="v7-meta">Optional</span></p>
       <div role="radiogroup" aria-label="How sure?">{(['sure','unsure','guess'] as const).map(value=><button key={value} type="button" role="radio" aria-checked={confidence===value}
        className="v7-filter-chip" onClick={()=>setConfidence(confidence===value?null:value)}>{value[0].toUpperCase()+value.slice(1)}</button>)}</div></div>
      :<div className="v7-review-back"><p className="v7-eyebrow">Answer</p><MathText source={faces.back} variant="answer" interactiveMath/>
       <p className="v7-review-source">{card.sourceShort&&<span className="v7-meta">{card.sourceShort}{card.pageLabel?' p. '+card.pageLabel:''}</span>}
        {confidence&&<span className="v7-meta">You: {confidence[0].toUpperCase()+confidence.slice(1)}</span>}</p></div>}
+     {busy&&pendingRef.current&&<span className="v7-review-pending" role="status">Saving answer…</span>}
      {swiping&&choices&&<p className="v7-review-swipe-label" aria-hidden="true">{gradeNames[swiping-1]} · {formatInterval(choices[swiping].delay/86_400_000)}</p>}
     </article>
     {isFlagOn('v7Scratch')&&<ScratchPad cardKey={item.id}/>}
     <FirstUseHint key={run.id} name="review-swipe" active={revealed}><p className="v7-review-hint">Swipe: right Good · left Again · up Easy</p></FirstUseHint>
    </section>:<p role="status" className="v7-review-state">Loading the card…</p>}
   </>:null}
-  {item&&card&&changedItem!==item.id&&!pending&&!frozen&&run.status==='running'&&!run.progress.done&&<Dock className="v7-review-dock">
+  {item&&card&&changedItem!==item.id&&(!(pending||frozen)||busy)&&run.status==='running'&&!run.progress.done&&<Dock className="v7-review-dock">
    {!revealed?<Button variant="primary" onClick={reveal}>Show answer<kbd className="v7-review-key" aria-hidden="true">Space</kbd></Button>
    :<div className="v7-review-grades" role="group" aria-label="Grade answer">{gradeNames.map((label,index)=>{const choice=choices?.[(index+1) as Rating];
     return <button key={label} type="button" data-grade={label.toLowerCase()} disabled={busy||!choices} onClick={()=>{void grade((index+1) as Rating);}}

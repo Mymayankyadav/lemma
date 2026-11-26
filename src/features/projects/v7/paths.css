@@ -33,7 +33,7 @@
  :where(html[data-v7]) .v7-paths-new svg {width:20px;height:20px;}
  /* New path sheet. */
  :where(html[data-v7]) .v7-newpath {display:grid;gap:var(--v7-space-4);}
- :where(html[data-v7]) .v7-newpath-drop {display:flex;align-items:center;justify-content:center;gap:var(--v7-space-2);width:100%;min-height:96px;border:var(--v7-hairline) dashed var(--v7-role-border-strong,var(--v7-role-border-default));border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);color:var(--v7-role-text-secondary);font:600 var(--v7-type-supporting)/1.3 var(--v7-sans);cursor:pointer;}
+ :where(html[data-v7]) .v7-newpath-drop {display:flex;align-items:center;justify-content:center;gap:var(--v7-space-2);width:100%;min-height:96px;border:var(--v7-hairline) dashed var(--v7-role-border-strong,var(--v7-role-border-default));border-radius:var(--v7-radius-3);background:transparent;color:var(--v7-role-text-secondary);font:600 var(--v7-type-supporting)/1.3 var(--v7-sans);cursor:pointer;}
  :where(html[data-v7]) .v7-newpath-drop svg {width:20px;height:20px;flex:none;}
  :where(html[data-v7]) .v7-newpath-files {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-newpath-files li {display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:var(--v7-space-3);min-height:var(--v7-touch);padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);}

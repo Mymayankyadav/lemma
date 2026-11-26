@@ -1,5 +1,5 @@
 import type {CalendarBlockRecord} from '../../../data/study/contract';
-import {calendarRange,monthBounds,weekStartDay} from '../model';
+import {calendarRange,monthBounds,shiftDay,weekStartDay} from '../model';
 import type {StudyRange} from '../../../data/study/contract';
 
 /** PLAN §6.5 Week, Month and Agenda: the pieces that do not need React. */
@@ -12,6 +12,15 @@ export function loadRange(view:CalendarView,date:string,zone:string,firstDay:num
  if(view==='month')return monthBounds(date,zone,firstDay).range;
  if(view==='agenda')return calendarRange(date,zone,14);
  return calendarRange(weekStartDay(date,firstDay),zone,7);
+}
+/** Month navigation keeps the selected day when the destination month contains it. */
+export function adjacentPeriod(view:CalendarView,date:string,direction:number):string{
+ if(view!=='month')return shiftDay(date,direction*7);
+ const [year,month,day]=date.split('-').map(Number);
+ const target=new Date(Date.UTC(year,month-1+direction,1));
+ const last=new Date(Date.UTC(target.getUTCFullYear(),target.getUTCMonth()+1,0)).getUTCDate();
+ target.setUTCDate(Math.min(day,last));
+ return target.toISOString().slice(0,10);
 }
 /** KC6: the kit's heatmap steps — 0, 1–15, 16–30, 31–60 and 60+ min — on the Starlight (Night) and Ink (Day) ramps.
  *  0 means an outlined, unfilled cell (never printed as "0"). */

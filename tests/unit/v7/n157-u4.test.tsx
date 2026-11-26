@@ -46,7 +46,7 @@ describe('S2–S4 · S6 · S14 · S16 · S15', () => {
     expect(SKIES).toEqual(['clear', 'stars']);
     const css = readFileSync('src/ui/v7/paper.css', 'utf8');
     expect(css).toContain('stroke-opacity=".07"');
-    expect(css.match(/:not\(\[data-v7-reduce-effects\]\)/g)).toHaveLength(4);
+    expect(css.match(/:not\(\[data-motion="reduced"\]\)/g)).toHaveLength(4);
   });
   it('the desk clock opens in landscape on a phone and keeps the screen awake', () => {
     expect(DESK_QUERY).toBe('(orientation: landscape) and (max-height: 500px)');

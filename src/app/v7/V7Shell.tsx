@@ -1,8 +1,14 @@
 import {warmV7Screen} from './routeScreens';
-import {Children,isValidElement,Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type MouseEvent,type ReactNode,type RefObject} from 'react';
+import {afterPaintOnIdle,createLazyModule} from '../lazyModule';
+import BootReady from '../BootReady';
+import LazyOverlay from './LazyOverlay';
+import RoutePending from './RoutePending';
+import {useRouteIntent} from './routeIntent';
+import {dismissTopLayer,hasOpenLayer,restoreLayerFocus} from '../../ui/v7/layers';
+import {Children,isValidElement,Fragment,useContext,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type MouseEvent,type ReactNode,type RefObject} from 'react';
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {useDeviceCommands} from '../../platform/useDeviceCommands';
-import {Link,useLocation,useNavigate,useNavigationType} from 'react-router';
+import {Link,UNSAFE_DataRouterContext,useBlocker,useLocation,useNavigate,useNavigationType} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
 import {CalendarDays,ChartColumn,House,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
 import {MEANING_ICON} from '../../ui/v7/meanings';
@@ -38,8 +44,8 @@ applyPaper();
 // N157 · U4 S2–S4: the ∎ as the one ending (flag v7Qed).
 if(typeof document!=='undefined'&&isFlagOn('v7Qed'))document.documentElement.setAttribute('data-v7-qed','');
 
-const CaptureSheet=lazy(()=>import('./CaptureSheet'));
-const SearchSheet=lazy(()=>import('./SearchSheet'));
+const captureModule=createLazyModule(()=>import('./CaptureSheet'));
+const searchModule=createLazyModule(()=>import('./SearchSheet'));
 
 /** PLAN §6.1: floating tab bar, session row, capture button and the three header kinds. */
 export const tabs=[
@@ -80,8 +86,8 @@ const openSearch=(event:MouseEvent<HTMLButtonElement>)=>window.dispatchEvent(new
 /** F. Capture: a tap opens the sheet (a block on Calendar, a thought during a session); a 350 ms press offers the four types. */
 function Capture(){
  const [mode,setMode]=useState<'closed'|'sheet'|'picker'>('closed'),location=useLocation();
- const timer=useRef<number|null>(null),long=useRef(false);
- useEffect(()=>{const open=()=>setMode('sheet');window.addEventListener('v7:capture',open);return()=>window.removeEventListener('v7:capture',open);},[]);
+ const timer=useRef<number|null>(null),long=useRef(false),opener=useRef<HTMLButtonElement>(null);
+ useEffect(()=>{const open=()=>{opener.current?.focus({preventScroll:true});setMode('sheet');};window.addEventListener('v7:capture',open);return()=>window.removeEventListener('v7:capture',open);},[]);
  const down=()=>{long.current=false;timer.current=window.setTimeout(()=>{long.current=true;setMode('picker');},350);};
  const up=()=>{if(timer.current)window.clearTimeout(timer.current);timer.current=null;};
  const onCalendar=location.pathname.startsWith('/calendar');
@@ -92,13 +98,14 @@ function Capture(){
  // R0 · F13: an error toast belongs to the screen that raised it.
  useEffect(()=>clearToasts(item=>item.tone==='danger'),[location.pathname]);
  return <>
-  <button type="button" className="v7-capture" aria-label="Capture" title="Capture" aria-haspopup="dialog"
+  <button ref={opener} type="button" className="v7-capture" aria-label="Capture" title="Capture" aria-haspopup="dialog"
    onPointerDown={down} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}
    onClick={()=>{if(long.current){long.current=false;return;}if(onCards){window.dispatchEvent(new Event('v7:new-card'));return;}setMode('sheet');}}
    onKeyDown={event=>{if(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();setMode('picker');}}}><Plus aria-hidden="true"/>
    {/* N252: shown only as the iPad's wide rail row (ipad.css). */}
    <span className="v7-capture-label" aria-hidden="true">Capture</span></button>
-  <Suspense fallback={null}>{mode!=='closed'&&<CaptureSheet key={mode} open onClose={()=>setMode('closed')} picker={mode==='picker'} initialKind={onCalendar&&mode==='sheet'?'block':null}/>}</Suspense>
+  {mode!=='closed'&&<LazyOverlay key={mode} title="Capture" onClose={()=>setMode('closed')} source={captureModule} returnTarget={()=>opener.current}
+   bodyProps={{onClose:()=>setMode('closed'),picker:mode==='picker',initialKind:onCalendar&&mode==='sheet'?'block':null}}/>}
  </>;
 }
 
@@ -141,6 +148,14 @@ function useTabLabelsFit(ref:RefObject<HTMLElement|null>,wide:boolean,enabled:bo
 /** Wraps every v7 route except the kit. Immersive screens provide their own navigation and actions. */
 export default function V7Shell({children,immersive=false,capture=true}:{children:ReactNode;immersive?:boolean;capture?:boolean}){
  const location=useLocation(),navigate=useNavigate(),navigation=useNavigationType(),home=useHome(),{entry}=useActiveFocus();
+ const dataRouter=useContext(UNSAFE_DataRouterContext);
+ const intent=useRouteIntent(),warm=useRef(intent.warm);
+ warm.current=intent.warm;
+ useEffect(()=>afterPaintOnIdle(()=>{
+  if(navigator.onLine===false)return;
+  captureModule.warm();searchModule.warm();
+  for(const {to} of tabs)warm.current(to);
+ }),[]);
  useFocusChangeListener();
  const shell=useRef<HTMLDivElement>(null);
  useRoutePresentation(shell,location.pathname,location.key,navigation);
@@ -199,16 +214,29 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   };
   window.addEventListener('v7:search',open);return()=>window.removeEventListener('v7:search',open);
  },[key]);
- function dismissSearch(){
+ function searchOpener(){
   const opener=searching?.opener;
-  setSearching(null);
-  requestAnimationFrame(()=>{
-   if(document.querySelector('dialog[open]'))return;
-   const anchor=opener?.isConnected&&opener!==document.body&&opener.getClientRects().length>0?opener:
-    [...document.querySelectorAll<HTMLElement>('[data-v7-search-opener]')].find(candidate=>candidate.getClientRects().length>0);
-   anchor?.focus({preventScroll:true});
-  });
+  if(opener?.isConnected&&opener!==document.body&&opener.getClientRects().length>0)return opener;
+  return [...document.querySelectorAll<HTMLElement>('[data-v7-search-opener]')].find(candidate=>candidate.getClientRects().length>0)??null;
  }
+ useEffect(()=>{
+  if(!location.state?.v7SearchFocus||location.state.v7SearchDestination||navigation==='POP')return;
+  const root=shell.current;
+  if(!root)return;
+  let frame=0;
+  const observer=new MutationObserver(schedule);
+  function focus(){
+   if(!root||hasOpenLayer())return;
+   const heading=root.querySelector<HTMLElement>('main h1');
+   if(!heading||heading.getClientRects().length===0)return;
+   observer.disconnect();
+   restoreLayerFocus(heading);
+  }
+  function schedule(){cancelAnimationFrame(frame);frame=requestAnimationFrame(focus);}
+  observer.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['open','inert']});
+  schedule();
+  return()=>{observer.disconnect();cancelAnimationFrame(frame);};
+ },[location.key,location.state,navigation]);
  function pickSearchItem(item:SearchItem,initial:SearchSnapshot){
   if(!searching)return;
   const back=searchBack.current;
@@ -216,7 +244,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   back.set(key,{...searching,initial});
   if(back.size>8){const oldest=back.keys().next().value;if(oldest)back.delete(oldest);}
   setSearching(null);
-  navigate(item.to,{state:{v7SearchDestination:item.group==='Settings'}});
+  navigate(item.to,{state:{v7SearchFocus:true,v7SearchDestination:item.group==='Settings'}});
  }
  // A route outside the five destinations (Inbox, Settings) highlights none of them; the Library link shows where you are.
  const due=home.data?.due??0,active=tabs.findIndex(tab=>tab.match(location.pathname));
@@ -233,16 +261,20 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   };
   window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
  },[wide,immersive,capture,navigate,entry]);
- return <div ref={shell} className="v7-shell" data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
+ return <div ref={shell} className="v7-shell" data-surface-role={immersive?'S7':'S0'} data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
+  <BootReady/>
   <OfflineBanner/>
+  {dataRouter&&<><LayerBack/><RoutePending/></>}
   <Fragment key={colours}>{children}</Fragment>
-  <Suspense fallback={null}>{searching?.key===key&&<SearchSheet key={key} open onClose={dismissSearch} onPick={pickSearchItem} initial={searching.initial}/>}</Suspense>
+  {searching?.key===key&&<LazyOverlay key={key} title="Search" full className="v7-search-dialog"
+   onClose={()=>setSearching(null)} returnTarget={searchOpener} source={searchModule}
+   bodyProps={{onPick:pickSearchItem,initial:searching.initial}}/>}
   {!immersive&&<Dock className="v7-dock">
-   <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home"><EllMark size={22}/><span>Lemma</span></Link><button type="button" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
+   <div className="v7-rail-head"><Link to="/" {...intent.handlers('/')} className="v7-rail-brand" aria-label="Lemma home"><EllMark size={22}/><span>Lemma</span></Link><button type="button" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
    <div className="v7-dock-row">
    <nav ref={tabbar} aria-label="Main navigation" className="v7-tabbar" data-labels={labelsFit?'all':'selected'} style={{'--v7-tab-index':Math.max(0,active)} as CSSProperties}>
     {active>=0&&<span className="v7-tab-pill" aria-hidden="true"/>}
-    {tabs.map(({to,label,Icon},index)=><Link key={label} to={to} className="v7-tab" aria-current={index===active?'page':undefined}>
+    {tabs.map(({to,label,Icon},index)=><Link key={label} to={to} {...intent.handlers(to)} className="v7-tab" aria-current={index===active?'page':undefined}>
      <span className="v7-tab-icon"><Icon aria-hidden="true"/>{label==='Review'&&due>0&&<span className="v7-tab-pip" aria-label={due+' cards due'}>{due>99?'99+':due}</span>}</span>
      <span className="v7-tab-label">{label}</span>
     </Link>)}
@@ -251,14 +283,24 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
    {capture&&<Capture/>}
    </div>
    <nav className="v7-rail-library" aria-label="Library"><p className="v7-eyebrow">Library</p>
-    {[['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']].map(([to,label])=><Link key={to} to={to} aria-current={location.pathname===to||location.pathname.startsWith(to+'/')?'page':undefined}>{label}</Link>)}
+    {([['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']] as const).map(([to,label])=><Link key={to} to={to} {...intent.handlers(to)} aria-current={location.pathname===to||location.pathname.startsWith(to+'/')?'page':undefined}>{label}</Link>)}
    </nav>
-   <Link className="v7-rail-settings" to="/settings" onPointerDown={()=>warmV7Screen('settings')} onFocus={()=>warmV7Screen('settings')} onMouseEnter={()=>warmV7Screen('settings')}><Settings aria-hidden="true"/><span>Settings</span></Link>
+   <Link className="v7-rail-settings" to="/settings" {...intent.handlers('/settings')}><Settings aria-hidden="true"/><span>Settings</span></Link>
   </Dock>}
   <Sheet open={shortcuts} onClose={()=>setShortcuts(false)} title="Keyboard shortcuts" footer={<Button variant="primary" onClick={()=>setShortcuts(false)}>Done</Button>}>
    <dl className="v7-shortcuts">{[['⌘ / Ctrl K','Search'],['N','Capture'],['1–5','Switch destinations'],['F','Start or return to focus'],['Space','Pause focus / reveal answer'],['1–4','Grade an answer'],['U','Undo last answer'],['Esc','Close the top layer'],['?','Show shortcuts']].map(([key,label])=><div key={key}><dt><kbd>{key}</kbd></dt><dd>{label}</dd></div>)}</dl>
   </Sheet>
  </div>;
+}
+
+function LayerBack(){
+ const blocker=useBlocker(({historyAction})=>historyAction==='POP'&&hasOpenLayer());
+ useEffect(()=>{
+  if(blocker.state!=='blocked')return;
+  blocker.reset();
+  dismissTopLayer('back');
+ },[blocker]);
+ return null;
 }
 
 /** A. Hub header. Today: the date and page actions, then the greeting in Display 44 (the one Display per page). Other hubs: the
@@ -284,7 +326,7 @@ export function HubHeader({title,date,settings=false,display=false,control,title
  const [collapsed,setCollapsed]=useState(false);
  useEffect(()=>{
   if(display)return;
-  const onScroll=()=>setCollapsed(window.scrollY>24);
+  const onScroll=()=>setCollapsed(previous=>previous?window.scrollY>=8:window.scrollY>32);
   onScroll();window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll);
  },[display]);
  const actions=<nav aria-label="Page actions" className="v7-page-actions">
@@ -294,10 +336,10 @@ export function HubHeader({title,date,settings=false,display=false,control,title
     {extraAction}
    </nav>;
  if(!display)return <>
-  <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 ref={headingRef} tabIndex={headingRef?-1:undefined} className={titleControl?"v7-sr-only":"v7-hub-title"}>{title}</h1>{titleControl}{control&&<div className="v7-hub-control">{control}</div>}{actions}</div></header>
+  <header data-surface-role="S1" className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 ref={headingRef} tabIndex={headingRef?-1:undefined} className={titleControl?"v7-sr-only":"v7-hub-title"}><span>{title}</span></h1>{titleControl}{control&&<div className="v7-hub-control">{control}</div>}{actions}</div></header>
   {children&&<div className="v7-hub-extra">{children}</div>}
  </>;
- return <header className="v7-hub-header" data-display="true">
+ return <header data-surface-role="S1" className="v7-hub-header" data-display="true">
   <div className="v7-hub-row">
    {date?<p className="v7-hub-date"><SyncMark><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span></SyncMark><span>{date}</span></p>:<span/>}
    {actions}
@@ -321,7 +363,7 @@ export function DetailHeader({title,back,action,extraAction,compact}:{title:stri
   const observer=new IntersectionObserver(([entry])=>setPageTitleVisible(entry.isIntersecting),{rootMargin:'-'+Math.round(bar)+'px 0px 0px 0px'});
   observer.observe(heading);return ()=>observer.disconnect();
  },[title,location.pathname,location.search]);
- return <header className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
+ return <header data-surface-role="S1" className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
   <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
   <p className="v7-detail-title" aria-hidden="true">{compact&&<span className="v7-detail-compact">{compact}</span>}<span>{title}</span></p>
   <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>}{extraAction}</nav>
@@ -329,7 +371,7 @@ export function DetailHeader({title,back,action,extraAction,compact}:{title:stri
 }
 /** C. Immersive header: leave on the left, progress in the centre, more on the right. */
 export function ImmersiveHeader({leave,center,more}:{leave:ReactNode;center:ReactNode;more?:ReactNode}){
- return <header className="v7-immersive-header">
+ return <header data-surface-role="S1" className="v7-immersive-header">
   {leave}<div className="v7-immersive-center">{center}</div>
   {/* SH3: no disabled, outlined "⋯" placeholder — a screen without a menu keeps an empty 44 px slot. */}
   <nav aria-label="Page actions" className="v7-page-actions">{more??<span className="v7-icon-spacer" aria-hidden="true"/>}</nav>

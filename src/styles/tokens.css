@@ -2,15 +2,22 @@
   --obsidian:var(--bg-page); --obsidian-deep:var(--bg-page); --slab:var(--bg-card); --tile:var(--bg-card);
   --raised:var(--bg-card); --raised-2:var(--bg-hover); --sheet:var(--bg-card); --well:var(--bg-sidebar);
   --glass:var(--bg-card); --glass-strong:var(--bg-card);
-  --edge:var(--border); --edge-2:var(--border); --edge-3:var(--text-muted);
+  --edge:var(--border); --edge-2:var(--text-muted); --edge-3:var(--text-muted); --control-edge:var(--text-muted);
   --fill-1:var(--bg-hover); --fill-2:var(--accent-subtle);
-  --ink:var(--text-primary); --ink-soft:var(--text-secondary); --ink-2:var(--text-secondary); --ink-3:var(--text-muted); --ink-4:var(--text-muted);
+  --ink:var(--text-primary); --ink-soft:var(--text-primary); --ink-2:var(--text-secondary); --ink-3:var(--text-muted); --ink-4:var(--text-muted);
   --amber:var(--accent); --amber-hi:var(--accent-hover); --amber-glow:var(--accent-hover); --amber-deep:var(--accent-hover); --amber-ink:var(--on-accent);
   --amber-tint:var(--accent-subtle); --amber-tint-2:var(--accent-subtle);
   --amber-line:color-mix(in srgb,var(--accent) 25%,transparent); --amber-line-2:color-mix(in srgb,var(--accent) 55%,transparent);
   --again:var(--error); --hard:var(--warning); --good:var(--success); --easy:var(--info); --grade-good:var(--success);
   --success-tint:color-mix(in srgb,var(--success) 10%,transparent); --danger-tint:color-mix(in srgb,var(--error) 10%,transparent);
   --violet:var(--accent); --cyan:var(--info); --rose:var(--accent); --lime:var(--success); --slate:var(--text-muted);
+  --line:var(--border); --hair:var(--border); --card:var(--bg-card); --card-2:var(--bg-hover);
+  --paper:var(--bg-card); --paper-2:var(--bg-hover); --link:var(--accent); --page:var(--bg-page); --active:var(--accent-subtle);
+  --danger:var(--error); --bad:var(--error); --warn:var(--warning); --late:var(--warning); --early:var(--success);
+  --track:var(--progress-track); --tab-bg:var(--bg-sidebar); --bg:var(--bg-page);
+  --card-border:1px solid var(--border); --card-shadow:var(--v7-shadow-2,none); --blur:none;
+  --bg-css:linear-gradient(var(--border) 1px,transparent 1px) 0 0/12px 12px,linear-gradient(90deg,var(--border) 1px,transparent 1px) 0 0/12px 12px;
+  --font-display:'Newsreader',Georgia,serif; --font-num:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   --grad-lit: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
   --grad-orb: radial-gradient(circle at 35% 30%, var(--accent-hover), var(--accent) 55%, var(--accent-hover));
   --grad-rail: linear-gradient(90deg, var(--accent-hover), var(--accent));
@@ -19,14 +26,12 @@
   --font-ui: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-math: 'STIX Two Text', 'Times New Roman', serif;
   --r-hero: 28px; --r-sheet: 32px; --r-slab: 22px; --r-btn: 17px; --r-ctl: 14px; --r-chip: 999px; --r-s: 10px; --gutter: 24px;
-  --e-slab: inset 0 1px 0 rgba(255,255,255,0.06), 0 34px 60px -30px rgba(0,0,0,0.95);
-  --e-card: inset 0 1px 0 rgba(255,255,255,0.07), 0 40px 70px -30px rgba(0,0,0,0.95);
-  --e-float: inset 0 1px 0 rgba(255,255,255,0.07), 0 26px 50px -14px rgba(0,0,0,0.85);
+  --e-slab: var(--v7-shadow-2,none);
+  --e-card: var(--v7-shadow-3,none);
+  --e-float: var(--v7-shadow-3,none);
   --e-lit: inset 0 1px 0 rgba(255,255,255,0.5), 0 14px 32px -12px color-mix(in srgb,var(--accent) 75%,transparent);
   --e-orb: inset 0 1px 0 rgba(255,255,255,0.55), 0 16px 40px -10px color-mix(in srgb,var(--accent) 80%,transparent);
-  --blur-glass: blur(22px) saturate(150%);
-  --ease-out: cubic-bezier(.16,1,.3,1); --ease-in-out: cubic-bezier(.65,0,.35,1); --ease-in: cubic-bezier(.4,0,.6,1);
-  --duration-fast: 140ms; --duration-base: 220ms; --duration-slow: 360ms; --duration-enter: 600ms; --duration-reveal: 500ms; --duration-deal: 550ms; --duration-grade: 420ms;
+  --blur-glass: none;
 }
 
 /* UI-3: --amber* is the current theme accent and --obsidian* the background.

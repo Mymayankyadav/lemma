@@ -1,8 +1,8 @@
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {getApi} from '../../data';
 import {useAtlas,useHome} from '../../data/hooks';
 import {getTaskApi} from '../../data/tasks';
-import {Button,Sheet} from '../../ui/v7/components';
+import {Button} from '../../ui/v7/components';
 import {tutorHref} from '../../features/tutor/tutorHref';
 import {chatLink} from '../../lib/chat';
 import {FastTex} from '../../ui/FastTex';
@@ -19,8 +19,8 @@ const readRecent=():SearchItem[]=>{try{
 }catch{return [];}};
 const writeRecent=(item:SearchItem)=>{try{localStorage.setItem(recentKey,JSON.stringify([item,...readRecent().filter(entry=>entry.id!==item.id)].slice(0,5)));}catch{/* recents are a convenience */}};
 /** PLAN §6.1 G: search or jump to a path, checkpoint, card, concept, task, setting or action from the data the screens already load. */
-export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;onClose:()=>void;onPick:(item:SearchItem,snapshot:SearchSnapshot)=>void;initial?:SearchSnapshot}){
- const room=isFlagOn('v7Room'),studyRepair=useStudyUi();
+export default function SearchSheet({onPick,initial}:{onPick:(item:SearchItem,snapshot:SearchSnapshot)=>void;initial?:SearchSnapshot}){
+ const open=true,room=isFlagOn('v7Room'),studyRepair=useStudyUi();
  const home=useHome(),atlas=useAtlas();
  const [query,setQuery]=useState(initial?.query??''),[activeId,setActiveId]=useState(initial?.activeId??null);
  const [expanded,setExpanded]=useState<ReadonlySet<SearchGroupName>>(()=>new Set(initial?.expanded));
@@ -71,6 +71,12 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
  const activeItem=list[active];
  const [keepActiveVisible,setKeepActiveVisible]=useState(Boolean(initial?.activeId));
  const fieldRef=useRef<HTMLInputElement>(null),resultsRef=useRef<HTMLDivElement>(null);
+ useLayoutEffect(()=>{fieldRef.current?.focus();},[]);
+ function updateQuery(value:string){
+  setQuery(value);setActiveId(null);setKeepActiveVisible(false);
+  const body=resultsRef.current?.parentElement;
+  if(body)body.scrollTop=0;
+ }
  // Checkpoint and card results can arrive above a restored selection, moving it after the modal opens.
  // Scroll the sheet body, not the page, and leave space for the sticky search field.
  useEffect(()=>{
@@ -113,10 +119,11 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
    {item.parent&&<small>{item.parent}</small>}
   </button></li>;};
  let cursor=0;
- return <Sheet open={open} onClose={onClose} title="Search" full hideTitle>
+ return <>
   <div className="v7-search-entry"><input ref={fieldRef} data-v7-autofocus="true" className="v7-search-field" type="search" role="combobox" aria-expanded="true" aria-controls="v7-search-results" aria-activedescendant={list.length?'v7-search-'+active:undefined}
-   aria-label="Search" placeholder="Search or jump to…" value={query} onChange={event=>{setQuery(event.target.value);setActiveId(null);setKeepActiveVisible(false);const body=resultsRef.current?.parentElement;if(body)body.scrollTop=0;}}
+   aria-label="Search" placeholder="Search or jump to…" value={query} onChange={event=>updateQuery(event.target.value)}
    onKeyDown={event=>{
+    if(event.key==='Escape'&&query){event.preventDefault();event.stopPropagation();updateQuery('');return;}
     if(event.key==='ArrowDown'||event.key==='ArrowUp'){
      event.preventDefault();
      const next=Math.max(0,Math.min(list.length-1,active+(event.key==='ArrowDown'?1:-1)));
@@ -142,7 +149,7 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
    </div>}
   </div>
   <span className="v7-sr-only" role="status">{idle?'':results.flat.length+' results in '+results.groups.length+' groups'}</span>
- </Sheet>;
+ </>;
 }
 function actions(due:number):SearchItem[]{
  return [

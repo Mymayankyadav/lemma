@@ -1,6 +1,5 @@
-import {lazy,Suspense} from 'react';
-import RouteError,{RouteFallback} from './RouteError';
+import {createLazyModule} from './lazyModule';
+import {lazyRoute} from './lazyRoute';
 
-// The optional week page is additive, like Calendar and Tasks; keep the canonical inventory stable.
-const WeekPage=lazy(()=>import('../features/week/v7/WeekV7'));
-export const weekRoute={path: '/week', element: <Suspense fallback={<RouteFallback/>}><WeekPage/></Suspense>, errorElement: <RouteError/>};
+// The optional Week page is additive, like Calendar and Tasks.
+export const weekRoute=lazyRoute('/week',createLazyModule(()=>import('../features/week/v7/WeekV7')));

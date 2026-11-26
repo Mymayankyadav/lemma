@@ -106,7 +106,7 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
  }
  const comments=detail.comments.filter(item=>item.status!=='dismissed');
  return <main id="main-content" className={'v7-page v7-learn v7-card-page '+subjectClass(subject)} aria-label="Card">
-  <DetailHeader title={isFlagOn('v7Room')?plainMath(note.front):'Card'} back="/cards" action={<IconButton label="More card actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>}/>
+  <DetailHeader title={isFlagOn('v7Room')?plainMath(note.front):'Card'} back="/cards" action={<IconButton label="More card actions" aria-haspopup="menu" onClick={event=>{event.currentTarget.focus();setMore(true);}}><MoreHorizontal aria-hidden="true"/></IconButton>}/>
   {/* N157 · U1 S11 (flag v7Margin): why this card, its source and its last reviews, beside the page. */}
   <Margin notes={[
    ...(project?[{title:'Why this card',body:<p><Link to={'/p/'+encodeURIComponent(project.slug)+(note.checkpointCode?'/cp/'+encodeURIComponent(note.checkpointCode):'')}>{project.title}</Link>
@@ -165,7 +165,7 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
    {label:paused?'Resume card':'Pause card',hint:paused?'Bring it back into reviews':'Keep it out of reviews until you resume',icon:paused?<Play aria-hidden="true"/>:<Pause aria-hidden="true"/>,onClick:()=>{void setNoteStatus(paused?'active':'suspended');}},
    {label:'Delete card',hint:'Its review history is kept',destructive:true,icon:<Trash2 aria-hidden="true"/>,onClick:()=>setDeleting(true)},
   ]}/>
-  <Sheet open={deleting} onClose={()=>setDeleting(false)} title="Delete this card?" footer={<><Button variant="ghost" onClick={()=>setDeleting(false)}>Keep card</Button><Button variant="primary" destructive loading={status.isPending} onClick={()=>{void setNoteStatus('deleted');}}>Delete card</Button></>}>
+  <Sheet surfaceRole="S5" open={deleting} onClose={()=>setDeleting(false)} title="Delete this card?" footer={<><Button variant="ghost" onClick={()=>setDeleting(false)}>Keep card</Button><Button variant="primary" destructive loading={status.isPending} onClick={()=>{void setNoteStatus('deleted');}}>Delete card</Button></>}>
    <p>Its review history is kept, but it leaves your reviews and the library.</p>
   </Sheet>
   {editing&&<CardEditorSheet open onClose={()=>setEditing(false)} initial={note} busy={update.isPending} onSubmit={value=>{void save(value);}}/>}

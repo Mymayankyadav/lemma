@@ -1,3 +1,4 @@
+import {Button} from '../../ui/v7/components';
 import {useId, useMemo, useRef, useState, type PointerEvent} from 'react';
 import {
   PAD_INK_LIMIT, PAD_PAPER, appendPadPoint, clearPadInk, finishPadStroke, padStrokePath,
@@ -78,10 +79,10 @@ export function LocalPadInk({history, onInk}: LocalPadInkProps) {
   return <section className="local-pad" aria-labelledby={heading}>
     <h3 id={heading}>Ink on graph paper</h3>
     <div className="local-pad-controls" role="group" aria-label="Ink controls">
-      <button type="button" aria-pressed={mode === 'draw'} onClick={() => pickMode('draw')}>Draw</button>
-      <button type="button" aria-pressed={mode === 'scroll'} onClick={() => pickMode('scroll')}>Scroll</button>
-      <button type="button" disabled={!history.undo.length} onClick={() => edit(undoPadInk(history), 'Last ink change undone.')}>Undo ink</button>
-      <button type="button" disabled={!history.strokes.length} onClick={() => edit(clearPadInk(history), 'Ink cleared. Undo to restore it.')}>Clear ink</button>
+      <Button aria-pressed={mode === 'draw'} onClick={() => pickMode('draw')}>Draw</Button>
+      <Button aria-pressed={mode === 'scroll'} onClick={() => pickMode('scroll')}>Scroll</Button>
+      <Button disabled={!history.undo.length} onClick={() => edit(undoPadInk(history), 'Last ink change undone.')}>Undo ink</Button>
+      <Button disabled={!history.strokes.length} onClick={() => edit(clearPadInk(history), 'Ink cleared. Undo to restore it.')}>Clear ink</Button>
     </div>
     <svg className="local-pad-ink" data-mode={mode} role="img" aria-label="Pad drawing"
       viewBox={'0 0 ' + PAD_PAPER.width + ' ' + PAD_PAPER.height} preserveAspectRatio="none"

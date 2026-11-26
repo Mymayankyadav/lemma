@@ -4,7 +4,9 @@ import type { SettingsPatch } from '../../../data/api';
 import type { Settings } from '../../../data/types';
 import type { OptimizerMessage, OptimizerRequest } from '../../../lib/optimizer.worker';
 import { renderMarkdown } from '../../../lib/render';
-import { Sheet } from '../../../ui/Sheet';
+import { Sheet as LegacySheet } from '../../../ui/Sheet';
+import {Button, Sheet} from '../../../ui/v7/components';
+import {requestSettingsClose} from '../v7/SettingsLists';
 import { useToast } from '../../../ui/Toast';
 
 const button = 'min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold text-ink focus-visible:outline-2 focus-visible:outline-amber disabled:opacity-50';
@@ -25,7 +27,7 @@ export function teachingStyleDestination(index: number, key: string, count: numb
 
 /** N28.2.1: v6 Study defaults. All writes use the existing updateSettings mutation. */
 /** N121 F9: `part` splits the page between Tutor (teaching style, tutor rules) and Study & review (memory, shortcuts). */
-export default function StudyDefaults({ settings, part = 'all' }: { settings: Settings; part?: 'all' | 'tutor' | 'study' }) {
+export default function StudyDefaults({ settings, part = 'all', v7 = false }: { settings: Settings; part?: 'all' | 'tutor' | 'study'; v7?: boolean }) {
   const styles = useStyles();
   const reviews = useReviewLog();
   const update = useUpdateSettings();
@@ -46,10 +48,13 @@ export default function StudyDefaults({ settings, part = 'all' }: { settings: Se
     worker.current = null;
   }, []);
 
-  async function save(patch: SettingsPatch, message = 'Saved'): Promise<boolean> {
+  async function save(patch: SettingsPatch, message = 'Saved', undo?:SettingsPatch): Promise<boolean> {
     try {
       await update.mutateAsync(patch);
-      notify(message, { tone: 'success' });
+      notify(message, {tone:'success',action:undo?{label:'Undo',onClick:async()=>{
+        try{await update.mutateAsync(undo);}
+        catch{notify("Couldn't undo settings.",{tone:'danger'});}
+      }}:undefined});
       return true;
     } catch {
       notify("Couldn't save settings.", { tone: 'danger' });
@@ -62,7 +67,7 @@ export default function StudyDefaults({ settings, part = 'all' }: { settings: Se
     if (destination === null || busy) return;
     event.preventDefault();
     event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[destination]?.focus();
-    void save({ defaultStyle: available[destination].key });
+    if(!v7)void save({defaultStyle:available[destination].key});
   }
   function saveRetention(value: number) {
     if (busy) return;
@@ -123,6 +128,14 @@ export default function StudyDefaults({ settings, part = 'all' }: { settings: Se
   }
   const reviewCount = reviews.data?.length;
   const canTune = !reviews.isPending && !reviews.isError && (reviewCount ?? 0) >= 400;
+  const rulesChanged=rules.trim()!==(settings.tutorRules??'').trim();
+  const macrosChanged=macros!==settings.macros;
+  const saveRules=async()=>{if(await save({tutorRules:rules.trim()||null},'Tutor rules saved'))setEditor(null);};
+  const saveMacros=async()=>{if(await save({macros},'Math shortcuts saved'))setEditor(null);};
+  const applyTuning=async()=>{
+    if(result&&!result.skipped&&await save({fsrsWeights:result.w,fsrsTunedAt:new Date().toISOString()},'Memory model updated'))
+      closeOptimizer();
+  };
   const preview = renderMarkdown('$\\R \\quad \\norm{x}$', { macros });
 
   return <section aria-labelledby="v6-study-title" className="flex flex-col gap-4 pb-8">
@@ -138,7 +151,10 @@ export default function StudyDefaults({ settings, part = 'all' }: { settings: Se
             aria-checked={settings.defaultStyle === style.key} disabled={busy}
             className="flex min-h-11 w-full items-center gap-3 rounded-[8px] px-2 text-left text-body text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)] disabled:opacity-50"
             onKeyDown={event => moveStyle(event, index)}
-            onClick={() => { void save({ defaultStyle: style.key }); }}>
+            onClick={() => {
+              if(settings.defaultStyle!==style.key)void save({defaultStyle:style.key},v7?'Teaching style set to '+style.name:undefined,
+                v7?{defaultStyle:settings.defaultStyle}:undefined);
+            }}>
             <span aria-hidden="true" className={'flex size-5 shrink-0 items-center justify-center rounded-full border-2 ' + (settings.defaultStyle === style.key ? 'border-[var(--accent)]' : 'border-[var(--control-edge)]')}>
               {settings.defaultStyle === style.key && <span className="size-2.5 rounded-full bg-[var(--accent)]"/>}</span>
             {style.name}
@@ -185,7 +201,37 @@ export default function StudyDefaults({ settings, part = 'all' }: { settings: Se
       <h3 className="mb-3 text-body font-semibold text-ink">Math shortcuts</h3>
       <button type="button" className={button} disabled={busy} onClick={openMacros}>Edit math shortcuts</button>
     </section>}
-    <Sheet open={editor === 'rules'} onClose={() => setEditor(null)} title="Tutor rules" footer={<>
+    {v7 ? <>
+      <Sheet open={editor==='rules'} onClose={()=>{if(!busy)setEditor(null);}} title="Tutor rules" dirty={rulesChanged&&!busy}
+        footer={<><Button variant="ghost" disabled={busy} onClick={requestSettingsClose}>Cancel</Button>
+          <Button disabled={busy||!rules} onClick={()=>setRules('')}>Reset to default</Button>
+          <Button variant="primary" disabled={!rulesChanged} loading={busy} onClick={()=>void saveRules()}>Save rules</Button></>}>
+        <label className="v7-settings-staged-field">Rules
+          <textarea aria-label="Tutor rules text" data-v7-autofocus="true" className="v7-field" value={rules}
+            onChange={event=>setRules(event.target.value)}/>
+        </label>
+      </Sheet>
+      <Sheet open={editor==='macros'} onClose={()=>{if(!busy)setEditor(null);}} title="Math shortcuts" dirty={macrosChanged&&!busy}
+        footer={<><Button variant="ghost" disabled={busy} onClick={requestSettingsClose}>Cancel</Button>
+          <Button variant="primary" disabled={!macrosChanged} loading={busy} onClick={()=>void saveMacros()}>Save shortcuts</Button></>}>
+        <label className="v7-settings-staged-field">KaTeX macros
+          <textarea aria-label="Math shortcuts text" data-v7-autofocus="true" className="v7-field font-mono" value={macros}
+            onChange={event=>setMacros(event.target.value)}/>
+        </label>
+        <p className="v7-meta">Preview</p>
+        <div className="lemma-math" dangerouslySetInnerHTML={{__html:preview}}/>
+      </Sheet>
+      <Sheet open={editor==='optimizer'} onClose={()=>{if(!busy)closeOptimizer();}} title="Tune to your reviews" focusTitle
+        dirty={!!result&&!result.skipped&&!busy}
+        footer={<><Button variant="ghost" disabled={busy} onClick={requestSettingsClose}>Cancel</Button>
+          <Button variant="primary" disabled={!result||result.skipped} loading={busy} onClick={()=>void applyTuning()}>Apply tuning</Button></>}>
+        {progress!==null?<p role="status">Analyzing reviews… {Math.round(progress*100)}%</p>:result?<>
+          <p>Log loss: {result.before.logLoss.toFixed(3)} → {result.after.logLoss.toFixed(3)} · {result.items} answers</p>
+          {result.skipped&&<p>There was not enough usable history to tune the model.</p>}
+        </>:<p>Optimization did not finish. Try again.</p>}
+      </Sheet>
+    </> : <>
+    <LegacySheet open={editor === 'rules'} onClose={() => setEditor(null)} title="Tutor rules" footer={<>
         <button type="button" className={button} onClick={() => setRules('')}>Reset to default</button>
         <button type="button" className={button} disabled={busy}
           onClick={async () => { if (await save({ tutorRules: rules.trim() || null }, 'Tutor rules saved')) setEditor(null); }}>Save rules</button>
@@ -194,8 +240,8 @@ export default function StudyDefaults({ settings, part = 'all' }: { settings: Se
         <textarea aria-label="Tutor rules text" className={field} value={rules}
           onChange={event => setRules(event.target.value)}/>
       </label>
-    </Sheet>
-    <Sheet open={editor === 'macros'} onClose={() => setEditor(null)} title="Math shortcuts" footer={
+    </LegacySheet>
+    <LegacySheet open={editor === 'macros'} onClose={() => setEditor(null)} title="Math shortcuts" footer={
       <button type="button" className={button + ' w-full'} disabled={busy}
         onClick={async () => { if (await save({ macros }, 'Math shortcuts saved')) setEditor(null); }}>Save shortcuts</button>}>
       <label className="text-label text-ink">KaTeX macros
@@ -204,8 +250,8 @@ export default function StudyDefaults({ settings, part = 'all' }: { settings: Se
       </label>
       <p className="mt-3 text-label text-ink-2">Preview</p>
       <div className="lemma-math my-3" dangerouslySetInnerHTML={{ __html: preview }}/>
-    </Sheet>
-    <Sheet open={editor === 'optimizer'} onClose={closeOptimizer} title="Tune to your reviews">
+    </LegacySheet>
+    <LegacySheet open={editor === 'optimizer'} onClose={closeOptimizer} title="Tune to your reviews">
       {progress !== null ? <p role="status">Analyzing reviews… {Math.round(progress * 100)}%</p> :
         result ? <>
           <p>Log loss: {result.before.logLoss.toFixed(3)} → {result.after.logLoss.toFixed(3)} · {result.items} answers</p>
@@ -216,6 +262,7 @@ export default function StudyDefaults({ settings, part = 'all' }: { settings: Se
                 closeOptimizer();
             }}>Apply tuning</button>
         </> : <p>Optimization did not finish. Try again.</p>}
-    </Sheet>
+    </LegacySheet>
+    </>}
   </section>;
 }

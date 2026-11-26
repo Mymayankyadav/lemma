@@ -4,7 +4,6 @@
 :where(html[data-v7]) .v7-emblem-ink {opacity:1;filter:none;}
 :where(html[data-v7]) .v7-emblem-draw path {stroke-dasharray:1;stroke-dashoffset:0;animation:v7-emblem-draw var(--v7-scenic) var(--v7-ease-out) both;}
 @keyframes v7-emblem-draw {from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
-@media(prefers-reduced-motion:reduce){:where(html[data-v7]) .v7-emblem,:where(html[data-v7]) .v7-emblem path {animation:none;stroke-dasharray:none;}}
 :where(html[data-v7])[data-effects="reduced"] .v7-emblem-ink,:where(html[data-v7]) [data-contrast="high"] .v7-emblem-ink {filter:none;}
 @media(prefers-reduced-transparency:reduce){:where(html[data-v7]) .v7-emblem-ink {filter:none;}}
 

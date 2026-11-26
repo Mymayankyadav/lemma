@@ -19,7 +19,7 @@ export function readAppearance():Appearance {
 function updateTheme(mode:AppearanceMode){
  const theme=resolveTheme(mode),root=document.documentElement;
  root.dataset.theme=theme;root.dataset.appearanceMode=mode;
- root.dataset.density='compact';root.dataset.effects='calm';
+ root.dataset.density='compact';
  delete root.dataset.themePreference;
  document.querySelectorAll('meta[name="theme-color"]').forEach(meta=>meta.setAttribute('content',themes.find(t=>t.id===theme)?.t.bg||'#FAF9F5'));
  if(root.hasAttribute('data-v7'))syncThemeColour(root);

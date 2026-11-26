@@ -14,15 +14,17 @@
 @layer v7-components {
  /* N157 (V11, V23): 4 px of vertical padding, so min-height alone sets the height (48, or 40 on wide screens; a 24 px line
     plus 8 px padding and the border made desktop buttons 42) and a 130% line still fits in 48 without growing. */
- :where(html[data-v7]) .v7-button {display:inline-flex;align-items:center;justify-content:center;gap:var(--v7-space-2);min-height:var(--v7-button);padding:var(--v7-space-1) var(--v7-space-4);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font-weight:600;}
+ :where(html[data-v7]) .v7-button {display:inline-flex;align-items:center;justify-content:center;gap:var(--v7-space-2);min-height:var(--v7-button);padding:var(--v7-space-1) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);font-weight:600;}
  :where(html[data-v7]) .v7-button > span {display:inline-flex;align-items:center;justify-content:center;gap:var(--v7-space-2);}
- :where(html[data-v7]) .v7-primary {background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
- :where(html[data-v7]) .v7-ghost {background:transparent;color:var(--v7-role-link-fg);}
+ :where(html[data-v7]) .v7-primary {border-color:transparent;background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
+ :where(html[data-v7]) .v7-ghost {border-color:transparent;background:transparent;color:var(--v7-role-link-fg);}
  /* KC10: a tertiary action leading a row or footer pulls back by its padding, so its label lines up with the column edge. */
  :where(html[data-v7]) .v7-button.v7-ghost:first-child {margin-inline-start:calc(-1 * var(--v7-space-4));}
  :where(html[data-v7]) .v7-button.v7-ghost.v7-small:first-child {margin-inline-start:calc(-1 * var(--v7-space-3));}
  :where(html[data-v7]) .v7-sheet-footer > .v7-footer-reason {order:3;flex-basis:100%;margin:0;text-align:right;}
- :where(html[data-v7]) .v7-danger {background:transparent;color:var(--v7-role-status-danger);}
+ :where(html[data-v7]) .v7-danger {border-color:var(--v7-role-status-danger);background:transparent;color:var(--v7-role-status-danger);}
+ :where(html[data-v7]) .v7-primary.v7-danger {background:var(--v7-role-status-danger-solid);color:var(--v7-role-text-on-action);}
+ :where(html[data-v7]) :is(.v7-sheet,.v7-actions):has(.v7-primary:not(.v7-danger)) .v7-primary.v7-danger {background:transparent;color:var(--v7-role-status-danger);}
  :where(html[data-v7]) .v7-button.v7-small {min-height:var(--v7-touch);font-size:var(--v7-type-supporting);padding-inline:var(--v7-space-3);}
  :where(html[data-v7]) .v7-button svg {width:var(--v7-space-5);height:var(--v7-space-5);}
  :where(html[data-v7]) .v7-icon-button {display:inline-flex;align-items:center;justify-content:center;min-width:var(--v7-touch);min-height:var(--v7-touch);padding:var(--v7-space-2);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-secondary);}
@@ -32,7 +34,7 @@
  :where(html[data-v7]) .v7-spinner {width:var(--v7-space-5);height:var(--v7-space-5);animation:v7-spin var(--v7-skeleton) linear 3;}
  :where(html[data-v7]) .v7-hidden-label {visibility:hidden;}
  :where(html[data-v7]) .v7-proof {font-family:var(--v7-glyph);}
- :where(html[data-v7]) .v7-segmented {display:flex;gap:var(--v7-space-1);padding:var(--v7-space-1);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);}
+ :where(html[data-v7]) .v7-segmented {display:flex;gap:var(--v7-space-1);padding:var(--v7-space-1);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-state-hover);}
  :where(html[data-v7]) .v7-segmented button {flex:1;min-width:0;min-height:var(--v7-touch);padding:var(--v7-space-2);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-secondary);font-size:var(--v7-type-supporting);font-weight:600;}
  /* V11 (v7 UX audit r3): a label never wraps inside a segment by accident; when the labels do not fit, up to three wrap
     on purpose (two lines, centred) and more become a menu (Segmented / useSegmentsFit). */
@@ -51,7 +53,7 @@
  :where(html[data-v7]) .v7-field {width:100%;min-width:0;min-height:var(--v7-field);padding:var(--v7-space-2) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-field-optional {color:var(--v7-role-text-secondary);font-weight:400;}
  :where(html[data-v7]) .v7-field-group > .v7-field-hint {font-size:var(--v7-type-supporting);font-weight:400;color:var(--v7-role-text-secondary);}
- :where(html[data-v7]) .v7-field::placeholder {color:var(--v7-role-text-tertiary);opacity:1;}
+ :where(html[data-v7]) .v7-field::placeholder {color:var(--v7-role-text-secondary);opacity:1;}
  :where(html[data-v7]) .v7-field[readonly] {border:0;background:transparent;color:var(--v7-role-text-primary);padding-inline:0;}
  :where(html[data-v7]) .v7-readonly-note {color:var(--v7-role-text-secondary);font-size:var(--v7-type-caption);}
  :where(html[data-v7]) .v7-field[aria-invalid="true"] {border-color:var(--v7-role-status-danger);}
@@ -80,19 +82,15 @@
  :where(html[data-v7]) .v7-radio-row {display:flex;gap:var(--v7-space-3);align-items:center;min-height:var(--v7-touch);}
  :where(html[data-v7]) .v7-stepper-field {display:grid;gap:var(--v7-space-2);justify-items:start;}
  :where(html[data-v7]) .v7-stepper-label {font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);color:var(--v7-role-text-primary);}
- :where(html[data-v7]) .v7-stepper {display:inline-flex;align-items:center;gap:var(--v7-space-2);padding:2px;background:var(--v7-role-surface-muted);border-radius:var(--v7-round);}
+ :where(html[data-v7]) .v7-stepper {display:inline-flex;align-items:center;gap:var(--v7-space-2);padding:2px;border:var(--v7-hairline) solid var(--v7-role-border-default);background:var(--v7-role-surface-raised);border-radius:var(--v7-round);}
  :where(html[data-v7]) .v7-stepper .v7-icon-button {border-radius:var(--v7-round);}
  :where(html[data-v7]) .v7-stepper output {min-width:calc(var(--v7-space-10) * 2);text-align:center;font:600 var(--v7-type-body)/1 var(--v7-sans);font-variant-numeric:tabular-nums lining-nums;}
  :where(html[data-v7]) .v7-toast {position:fixed;bottom:var(--v7-space-6);left:var(--v7-space-5);right:var(--v7-space-5);z-index:var(--v7-toast-layer);max-width:var(--v7-toast-max);margin:auto;display:flex;align-items:center;gap:var(--v7-space-2);padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);font-size:var(--v7-type-supporting);}
  :where(html[data-v7]) .v7-toast > span {flex:1;}
  :where(html[data-v7]) .v7-toast-preview {position:static;width:100%;max-width:none;margin:0;}
- :where(html[data-v7]) .v7-skeleton {display:grid;gap:var(--v7-space-3);visibility:hidden;animation:v7-show 0s var(--v7-skeleton-delay) forwards;}
- :where(html[data-v7]) .v7-skeleton span {height:var(--v7-space-5);border-radius:var(--v7-radius-1);background:var(--v7-role-surface-muted);}
+ :where(html[data-v7]) .v7-skeleton {display:grid;gap:var(--v7-space-3);visibility:hidden;animation:v7-show var(--motion-none) var(--motion-skeleton-delay) forwards;}
+ :where(html[data-v7]) .v7-skeleton span {height:var(--v7-space-5);border-radius:var(--v7-radius-1);background:var(--v7-role-surface-track);}
  :where(html[data-v7]) .v7-skeleton span:first-child {width:60%;height:var(--v7-space-8);}
- /* Visibility normally flips after the short loading delay. Both motion settings disable
-    that animation, so provide the static placeholders immediately in those modes. */
- :where(html[data-v7][data-v7-reduce-effects]) .v7-skeleton {visibility:visible;}
- @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) .v7-skeleton {visibility:visible;}}
  :where(html[data-v7]) .v7-stack {display:grid;gap:var(--v7-space-4);}
  /* CL3: the kit's mastery layout — label row above the bar, 8 px apart; rows 16 px apart. */
  :where(html[data-v7]) .v7-meter-row {display:grid;gap:var(--v7-space-2);}
@@ -160,8 +158,7 @@
 :where(html[data-v7]:not([data-theme="graph-night"])) .v7-app-toast-action {color:var(--v7-role-surface-page);}
 :where(html[data-v7]) .v7-app-toast-close {flex:none;width:var(--v7-touch);height:var(--v7-touch);display:grid;place-items:center;border:0;border-radius:var(--v7-round);background:transparent;color:inherit;opacity:.8;}
 :where(html[data-v7]) .v7-app-toast-close svg {width:16px;height:16px;}
-:where(html[data-v7]) .v7-app-toast-countdown {position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--v7-role-selection-fg);transform-origin:left;animation:v7-toast-countdown linear forwards;}
-@keyframes v7-toast-countdown {from{transform:scaleX(1)}to{transform:scaleX(0)}}
+:where(html[data-v7]) .v7-app-toast-countdown {position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--v7-role-selection-fg);transform-origin:left;}
 :where(html[data-v7]) .v7-sheet-footer > .v7-primary:only-child {flex:1;margin-left:0;}
 :where(html[data-v7]) .v7-sheet-danger-zone {display:grid;justify-items:start;gap:var(--v7-space-2);padding-top:var(--v7-space-3);border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
 /* R1 · F33: disabled looks disabled (40% of its own style) and says why in a reason line beneath (v7-disabled-reason). */
@@ -185,9 +182,7 @@
 /* N131 · L-09 loader: an emblem glyph draws itself in construction order, holds, and lifts again (1.6 s a cycle). */
 :where(html[data-v7]) .v7-loader {display:inline-flex;align-items:center;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-loader-mark {flex:none;display:inline-flex;width:20px;height:20px;color:var(--v7-subject,var(--v7-role-selection-fg));}
-@media (prefers-reduced-motion: no-preference) {
- :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-loader-mark .v7-emblem-draw path {animation:v7-loader-draw 1.6s var(--v7-ease-draw,cubic-bezier(.65,0,.35,1)) infinite;}
-}
+:where(html[data-v7]:not([data-motion="reduced"])) .v7-loader-mark .v7-emblem-draw path {animation:v7-loader-draw var(--motion-ambient) var(--ease-draw) 3;}
 @keyframes v7-loader-draw {0%{stroke-dashoffset:1;opacity:1}55%{stroke-dashoffset:0;opacity:1}85%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
 }
 
@@ -241,8 +236,8 @@
  :where(html[data-v7]) .v7-sheet-footer {padding:var(--v7-space-3) var(--v7-space-5) calc(var(--v7-space-3) + var(--v7-safe-bottom));flex-wrap:nowrap;}
  /* The footer's actions are one size: equal widths, 48 px, the secondary as a tonal button rather than a bare link. */
  :where(html[data-v7]) .v7-sheet-footer > :is(.v7-button,a.v7-button) {flex:1 1 0;min-width:0;margin:0;justify-content:center;text-align:center;}
- :where(html[data-v7]) .v7-sheet-footer > .v7-button.v7-ghost {background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);}
- :where(html[data-v7]) .v7-sheet-footer > .v7-button.v7-ghost.v7-danger {color:var(--v7-role-status-danger);}
+ :where(html[data-v7]) .v7-sheet-footer > .v7-button.v7-ghost {border-color:var(--v7-role-border-default);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-sheet-footer > .v7-button.v7-ghost.v7-danger {border-color:var(--v7-role-status-danger);background:transparent;color:var(--v7-role-status-danger);}
  :where(html[data-v7]) .v7-sheet-footer:has(> .v7-footer-reason) {flex-wrap:wrap;}
  :where(html[data-v7]) .v7-sheet-footer > .v7-footer-reason {flex:1 0 100%;text-align:start;}
  @media(min-width:700px){:where(html[data-v7]) .v7-sheet-footer {padding-bottom:var(--v7-space-3);}}

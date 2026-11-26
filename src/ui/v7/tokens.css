@@ -6,6 +6,9 @@
   --v7-role-surface-sunken: #FAF9F5;
   --v7-role-surface-raised: #FFFFFF;
   --v7-role-surface-overlay: #FFFFFF;
+  --v7-role-surface-track: var(--progress-track);
+  --v7-role-surface-lifted: #ffffff;
+  --v7-role-state-lifted-hover: #f0eee6;
   --v7-role-surface-muted: #FAF9F5;
   --v7-role-surface-muted-hover: #F0EEE6;
   --v7-role-border-subtle: #E8E6DC;
@@ -66,6 +69,9 @@
   --v7-role-surface-sunken: #1F1E1D;
   --v7-role-surface-raised: #30302E;
   --v7-role-surface-overlay: #30302E;
+  --v7-role-surface-track: var(--progress-track);
+  --v7-role-surface-lifted: #393937;
+  --v7-role-state-lifted-hover: #45453f;
   --v7-role-surface-muted: #30302E;
   --v7-role-surface-muted-hover: #393937;
   --v7-role-border-subtle: #3D3D3A;
@@ -126,6 +132,9 @@
   --v7-role-surface-sunken: #FAF9F5;
   --v7-role-surface-raised: #FFFFFF;
   --v7-role-surface-overlay: #FFFFFF;
+  --v7-role-surface-track: var(--progress-track);
+  --v7-role-surface-lifted: #ffffff;
+  --v7-role-state-lifted-hover: #f0eee6;
   --v7-role-surface-muted: #FAF9F5;
   --v7-role-surface-muted-hover: #F0EEE6;
   --v7-role-border-subtle: #E8E6DC;
@@ -182,6 +191,9 @@
   --v7-role-surface-sunken: #1F1E1D;
   --v7-role-surface-raised: #30302E;
   --v7-role-surface-overlay: #30302E;
+  --v7-role-surface-track: var(--progress-track);
+  --v7-role-surface-lifted: #393937;
+  --v7-role-state-lifted-hover: #45453f;
   --v7-role-surface-muted: #30302E;
   --v7-role-surface-muted-hover: #393937;
   --v7-role-border-subtle: #3D3D3A;
@@ -232,6 +244,14 @@
   --v7-role-state-pressed: #423538;
   --v7-role-viz-neutral: #C2C0B6;
   --v7-role-viz-easy: #6A9BCC;
+}
+[data-v7][data-theme="graph-night"] :where([data-v7-lifted],.v7-menu,.v7-picker-list,.v7-toast,.v7-app-toast,.v7-info-tip) {
+  --v7-role-surface-overlay: var(--v7-role-surface-lifted);
+  --v7-role-surface-raised: var(--v7-role-surface-lifted);
+  --v7-role-surface-muted: var(--v7-role-state-lifted-hover);
+  --v7-role-surface-muted-hover: var(--v7-role-state-lifted-hover);
+  --v7-role-state-hover: var(--v7-role-state-lifted-hover);
+  --v7-role-text-tertiary: var(--v7-role-text-secondary);
 }
 [data-v7] {
   --v7-sans: "Lemma v7 Instrument Sans", "Lemma v7 Sans fallback", sans-serif;
@@ -306,22 +326,6 @@
   --v7-semibold: 600;
   --v7-display-tracking: -.015em;
   --v7-eyebrow-tracking: .08em;
-  --v7-instant: 80ms;
-  --v7-fast: 120ms;
-  --v7-base: 200ms;
-  --v7-slow: 320ms;
-  --v7-scenic: 900ms;
-  --v7-ease-standard: cubic-bezier(.2,0,0,1);
-  --v7-ease-out: cubic-bezier(0,0,0,1);
-  --v7-ease-in: cubic-bezier(.3,0,1,1);
-  --v7-snappy-stiffness: 520;
-  --v7-snappy-damping: 38;
-  --v7-gentle-stiffness: 260;
-  --v7-gentle-damping: 28;
-  --v7-lively-stiffness: 400;
-  --v7-lively-damping: 22;
-  --v7-skeleton: 1.6s;
-  --v7-skeleton-delay: 300ms;
   --v7-pressed: .98;
   --v7-disabled: .4;
   --v7-focus-gap: 2px;
@@ -336,9 +340,6 @@
   --v7-section-gap: 48px;
   --v7-numeric-lg: 2.5rem;
   --v7-star-height: 54px;
-  --v7-long: 600ms;
-  --v7-completion: 300ms;
-  --v7-pulse: 2s;
   --v7-toast-max: 400px;
   --v7-grid-line: 1px;
   --v7-texture-star: 1.5px;

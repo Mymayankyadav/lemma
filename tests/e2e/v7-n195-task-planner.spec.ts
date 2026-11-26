@@ -37,7 +37,7 @@ for(const expanded of [false,true]){
   await field.fill(original);
   await page.getByRole('radio',{name:'Task',exact:true}).click();
   if(expanded){
-   const more=page.getByRole('button',{name:'More options'});
+   const more=page.getByRole('button',{name:'Add details'});
    await more.click();
    let dialog=page.getByRole('dialog',{name:'New task'});
    await expect(dialog.getByLabel('Title',{exact:true})).toHaveValue('Review lemma');

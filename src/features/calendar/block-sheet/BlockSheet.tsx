@@ -1,10 +1,12 @@
-import {useEffect,useRef, useState, type FormEvent, type ReactElement, type ReactNode} from 'react';
+import {useEffect,useId,useRef, useState, type ComponentType, type FormEvent, type ReactElement, type ReactNode} from 'react';
 import {getApi} from '../../../data';
 import {getTaskApi} from '../../../data/tasks';
 import type {TaskRecord} from '../../../data/tasks/contract';
 import type {ProjectSummary,CheckpointView} from '../../../data/types';
 import Dialog from '../../../ui/v6/Dialog';
 import {Button,Chip,DatePicker,Field,Picker,Segmented,Sheet} from '../../../ui/v7/components';
+import type {SheetProps} from '../../../ui/v7/Sheet';
+import {requestLayerClose} from '../../../ui/v7/layers';
 import {TimeField} from '../../../ui/v7/TimeField';
 import {formatDuration} from '../../../lib/format';
 import {Disclosure} from '../../../ui/v7/Disclosure';
@@ -106,6 +108,11 @@ function endAfter(start:string,zone:string,minutes?:number):string{
 export interface BlockSheetProps {
  /** v7 shell: the same form, drawn with the kit's sheet and controls. */
  v7?:boolean;
+ frame?:ComponentType<SheetProps>;
+ focusTitle?:boolean;
+ returnTarget?:()=>HTMLElement|null;
+ onPlaceInCalendar?:(draft:CalendarBlockDraft)=>void;
+ onShowInCalendar?:(block:CalendarBlockRecord,draft?:CalendarBlockDraft)=>void;
  /** Hand-over from quick-add: keep the typed title, the linked task and the chosen length. */
  initialTitle?:string;initialTaskId?:string;initialProjectId?:string;initialMinutes?:number;draft?:CalendarBlockDraft;
  block:CalendarBlockRecord|null;
@@ -113,29 +120,29 @@ export interface BlockSheetProps {
 }
 type Frame=(props:{title:string;eyebrow:string;onClose:()=>void;busy:boolean;footer:ReactNode;children:ReactNode})=>ReactElement;
 const V6Frame:Frame=props=><Dialog {...props}/>;
-export default function BlockSheet({block,date,zone:pageZone,initialStart,onClose,onRefresh,v7=false,initialTitle,initialTaskId,initialMinutes,draft,initialProjectId}:BlockSheetProps) {
+export default function BlockSheet({block,date,zone:pageZone,initialStart,onClose,onRefresh,v7=false,initialTitle,initialTaskId,initialMinutes,draft,initialProjectId,frame:V7Frame=Sheet,focusTitle=false,returnTarget,onPlaceInCalendar,onShowInCalendar}:BlockSheetProps) {
  const zone=draft?.zone??pageZone;
  const Frame=V6Frame;
  const look={field,action,primary:action+' bg-amber text-amber-ink',danger:action+' lemma-destructive',label:'text-label',error:'text-label text-again',note:'text-label text-ink-2',
   seg:'ui-segmented flex min-h-12 gap-1 rounded-ctl bg-well p-1',segOn:'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold bg-raised-2 text-ink',segOff:'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold text-ink-3',confirm:'rounded-ctl border border-edge p-3'};
- const busy=useRef(false);
+ const busy=useRef(false),formId=useId();
  const requested=initialStart&&Number.isFinite(Date.parse(initialStart))&&/Z$|[+-]\d\d:\d\d$/.test(initialStart)
   ?zonedInput(initialStart,zone):null;
  const proposed=draft?zonedInput(draft.startsAt,zone):requested??suggestedBlockStart(date,zone);
  const notify=useToast();
  const [current,setCurrent]=useState(block);
- const [title,setTitle]=useState(block?.title??draft?.title??initialTitle??'');
+ const [title,setTitle]=useState(draft?.title??block?.title??initialTitle??'');
  const titleEdited=useRef(false);
- const [kind,setKind]=useState<CalendarBlockKind>(block?.kind??draft?.kind??'study');
- const [start,setStart]=useState(block?zonedInput(block.startsAt,zone):proposed);
- const [end,setEnd]=useState(block?zonedInput(block.endsAt,zone):draft?zonedInput(draft.endsAt,zone):endAfter(proposed,zone,initialMinutes));
- const [status,setStatus]=useState<CalendarBlockStatus>(block?.status??'planned');
+ const [kind,setKind]=useState<CalendarBlockKind>(draft?.kind??block?.kind??'study');
+ const [start,setStart]=useState(draft?proposed:block?zonedInput(block.startsAt,zone):proposed);
+ const [end,setEnd]=useState(draft?zonedInput(draft.endsAt,zone):block?zonedInput(block.endsAt,zone):endAfter(proposed,zone,initialMinutes));
+ const [status,setStatus]=useState<CalendarBlockStatus>(draft?.status??block?.status??'planned');
  const [projects,setProjects]=useState<ProjectSummary[]>([]);
  const [tasks,setTasks]=useState<TaskRecord[]>([]);
  const [checkpoints,setCheckpoints]=useState<CheckpointView[]>([]);
- const [projectId,setProjectId]=useState(block?.projectId??draft?.projectId??initialProjectId??'');
- const [checkpointId,setCheckpointId]=useState(block?.checkpointId??'');
- const [taskId,setTaskId]=useState(block?.taskId??(draft?draft.taskId:initialTaskId)??'');
+ const [projectId,setProjectId]=useState((draft?draft.projectId:block?.projectId??initialProjectId)??'');
+ const [checkpointId,setCheckpointId]=useState((draft?draft.checkpointId:block?.checkpointId)??'');
+ const [taskId,setTaskId]=useState((draft?draft.taskId:block?.taskId??initialTaskId)??'');
  const [linksError,setLinksError]=useState('');
  useEffect(()=>{
   if(!v7||block||draft||!initialTaskId||initialTitle)return;
@@ -174,6 +181,27 @@ export default function BlockSheet({block,date,zone:pageZone,initialStart,onClos
  const [saving,setSaving]=useState(false);
  const [confirmDelete,setConfirmDelete]=useState(false);
  const [error,setError]=useState('');
+ const newBaseline=useRef({title:initialTitle??'',kind:draft?.kind??'study',start,end,
+  projectId:draft?.projectId??initialProjectId??'',checkpointId:draft?.checkpointId??'',taskId:draft?.taskId??initialTaskId??'',status:'planned'});
+ const baseline=current?{...originalInput(current,zone),projectId:current.projectId??'',checkpointId:current.checkpointId??'',taskId:current.taskId??''}:newBaseline.current;
+ const dirty=(current?title!==baseline.title:titleEdited.current&&title!==baseline.title||!!draft?.title.trim())||kind!==baseline.kind||start!==baseline.start||end!==baseline.end||
+  status!==baseline.status||projectId!==baseline.projectId||checkpointId!==baseline.checkpointId||taskId!==baseline.taskId;
+ const original=draft??current??undefined;
+ const linkedSubject=projects.find(p=>p.id===projectId)?.subject.id??(projectId===current?.projectId?current?.subjectId:null)??
+  (projectId===(draft?.projectId??'')?draft?.subjectId:null)??null;
+
+ function calendarDraft():CalendarBlockDraft{
+  const times=blockFormInput({title:title.trim()||'Study block',kind,start,end,zone,original});
+  return {title,kind,zone,startsAt:times.startsAt,endsAt:times.endsAt,status,
+   projectId:kind==='study'?projectId||null:null,subjectId:kind==='study'?linkedSubject:null,
+   checkpointId:kind==='study'?checkpointId||null:null,taskId:taskId||null};
+ }
+ function showInCalendar(){
+  try{
+   if(current){onShowInCalendar?.(current,dirty?calendarDraft():undefined);}
+   else onPlaceInCalendar?.(calendarDraft());
+  }catch(error){setError(error instanceof Error?error.message:'Check the block details.');}
+ }
 
  function restore(record:CalendarBlockRecord) {
   setCurrent(record);
@@ -205,12 +233,8 @@ export default function BlockSheet({block,date,zone:pageZone,initialStart,onClos
   event.preventDefault();if(busy.current)return;
   let input:NewCalendarBlock;
   try{
-   input=blockFormInput({title,kind,start,end,zone,original:draft});
-   const project=projects.find(p=>p.id===projectId);
-   input={...input,projectId:projectId||null,
-    subjectId:project?.subject.id??(projectId===current?.projectId?current?.subjectId:null)??
-     (projectId===(draft?.projectId??'')?draft?.subjectId:null)??null,
-    checkpointId:checkpointId||null,taskId:taskId||null};
+   input=blockFormInput({title,kind,start,end,zone,original});
+   input={...input,projectId:projectId||null,subjectId:linkedSubject,checkpointId:checkpointId||null,taskId:taskId||null};
   }
   catch(e){setError(e instanceof Error?e.message:'Invalid block details.');return;}
   busy.current=true;setSaving(true);setError('');setConfirmDelete(false);
@@ -283,12 +307,17 @@ const day=start.slice(0,10);
   const statuses:Record<string,CalendarBlockStatus>={Planned:'planned',Done:'done',Cancelled:'cancelled'};
   const blockLength=Math.round((Date.parse(instantInZone(end,zone)??'')-Date.parse(instantInZone(start,zone)??''))/60000)||0;
   // N125 (kit rule R1 · F17/F39): the footer holds Cancel and the primary action on one row; Delete is the body's last item.
-  return <Sheet open onClose={onClose} title={current?'Edit time block':'New time block'} eyebrow="Time block" footer={<>
-    <Button variant="ghost" disabled={saving} onClick={onClose}>Cancel</Button>
-    <button type="submit" form="n121-block-form" className="v7-button v7-primary" disabled={saving}><span>{saving?'Saving…':current?'Save changes':'Create block'}</span></button>
+  return <V7Frame open onClose={onClose} dirty={dirty} focusTitle={focusTitle} returnTarget={returnTarget} title={current?'Edit time block':'New time block'} eyebrow="Time block" footer={<>
+    {onPlaceInCalendar?<Button variant="secondary" disabled={saving} onClick={showInCalendar}>Place in Calendar</Button>:
+     <Button variant="ghost" disabled={saving} onClick={event=>{
+      const dialog=event.currentTarget.closest('dialog');
+      if(dialog)requestLayerClose(dialog,'close');
+      else onClose();
+     }}>Cancel</Button>}
+    <button type="submit" form={formId} className="v7-button v7-primary" disabled={saving}><span>{saving?'Saving…':current?'Save changes':'Create block'}</span></button>
    </>}>
    {otherZone&&<p className="v7-meta">Planned in {current!.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
-   <form id="n121-block-form" noValidate onSubmit={event=>{void save(event);}} className="v7-bs">
+   <form id={formId} noValidate onSubmit={event=>{void save(event);}} className="v7-bs">
     {/* N220 (Owner report): no autofocus, so the keyboard opens only when the title is tapped; Start and End are typed
         times and the length is a choice of presets, instead of three full-day rulers. */}
     <Field label="Title" aria-label="Calendar block title" placeholder="e.g. Compactness problems" maxLength={200} value={title} onChange={event=>{titleEdited.current=true;setTitle(event.target.value);}}/>
@@ -317,6 +346,7 @@ const day=start.slice(0,10);
     {current&&<Picker label="Status" value={Object.keys(statuses).find(key=>statuses[key]===status)??'Planned'} options={Object.keys(statuses)} onChange={text=>setStatus(statuses[text]??'planned')}/>}
     </Disclosure>
     {error&&<p role="alert" className="v7-alert">{error}</p>}
+    {current&&onShowInCalendar&&<Button variant="secondary" disabled={saving} onClick={showInCalendar}>Show in Calendar</Button>}
     {current&&!confirmDelete&&<div className="v7-sheet-danger-zone"><Button small variant="ghost" destructive disabled={saving} onClick={()=>setConfirmDelete(true)}>Delete</Button></div>}
     {current&&confirmDelete&&<div className="v7-bs-confirm">
      <p>Delete this block? You can restore it with Undo.</p>
@@ -324,19 +354,19 @@ const day=start.slice(0,10);
       <Button small destructive disabled={saving} onClick={()=>{void remove();}}>Confirm delete block</Button></div>
     </div>}
    </form>
-  </Sheet>;
+  </V7Frame>;
  }
  return <Frame title={current?'Edit time block':'New time block'} eyebrow={eyebrow}
    onClose={onClose} busy={saving} footer={<>
     {current&&!confirmDelete&&<button type="button" className={look.danger+' mr-auto'} disabled={saving}
       onClick={()=>setConfirmDelete(true)}>Delete block</button>}
     <button type="button" className={look.action} disabled={saving} onClick={onClose}>Cancel</button>
-    <button type="submit" form="n121-block-form" className={look.primary} disabled={saving}>
+    <button type="submit" form={formId} className={look.primary} disabled={saving}>
       {saving?'Saving…':current?'Save changes':'Create block'}
     </button>
    </>}>
    {otherZone&&<p className={look.note}>Planned in {current!.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
-   <form id="n121-block-form" noValidate onSubmit={event=>{void save(event);}} className="flex flex-col gap-3">
+   <form id={formId} noValidate onSubmit={event=>{void save(event);}} className="flex flex-col gap-3">
     <label className={look.label}>Title
      <input aria-label="Calendar block title" className={look.field} placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title}
        onChange={event=>setTitle(event.target.value)}/>

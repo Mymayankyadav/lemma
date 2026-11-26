@@ -23,11 +23,17 @@ export const typing = (target: EventTarget | null) =>
 /** The Inbox's own route (the stack and its tabs), not a proposal's detail page. */
 export const isInboxRoute = (hash: string) => /^#\/proposals(?:[?]|$)/.test(hash);
 
+let pendingInbox = false;
 let listening = 0, early: {action: InboxKeyAction; at: number} | null = null;
 /** An Inbox started or stopped listening for keys itself (while one listens, nothing is kept here). */
 export const inboxListening = (delta: 1 | -1) => {listening = Math.max(0, listening + delta);};
+/** A lazy route may leave the previous hash in place while its module loads. */
+export function trackPendingInbox(target:string|undefined,committed:string){
+  if(pendingInbox&&target!=='/proposals'&&committed!=='/proposals')early=null;
+  pendingInbox=target==='/proposals';
+}
 /** Keep an E pressed on the Inbox route while no Inbox is listening. Exported for tests. */
-export function recordEarlyKey(event: KeyboardEvent, hash = location.hash, at = performance.now()) {
+export function recordEarlyKey(event: KeyboardEvent, hash = pendingInbox ? '#/proposals' : location.hash, at = performance.now()) {
   if (listening > 0 || !isInboxRoute(hash) || typing(event.target) || inboxKeyAction(event) !== 'edit') return;
   early = {action: 'edit', at};
 }

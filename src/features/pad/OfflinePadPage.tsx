@@ -1,3 +1,4 @@
+import {Button} from '../../ui/v7/components';
 import {DetailHeader} from '../../app/v7/V7Shell';
 import {Picker} from '../../ui/v7/components';
 import {useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore} from 'react';
@@ -54,7 +55,7 @@ export default function OfflinePadPage() {
     {demo ? <AuthorizedPage key={'demo:' + getDemoProfile()} demo online={online}/> : onlineVisit
       ? <OnlineOwner online={online}/>
       : <><OfflineLibrary/>{online && <div className="local-pad-controls"><p>Save or export your current work before loading online checkpoints.</p>
-          <button type="button" onClick={loadOnline}>Load online checkpoints</button></div>}</>}
+          <Button onClick={loadOnline}>Load online checkpoints</Button></div>}</>}
   </main>;
 }
 
@@ -63,7 +64,7 @@ function OnlineOwner({online}: {online: boolean}) {
   if (auth.isPending) return <p role="status">Checking sign-in…</p>;
   if (!auth.data) return <section className="local-pad" aria-label="Pad sign-in">
     <p role={auth.isError ? 'alert' : 'status'}>{auth.isError ? 'Could not check sign-in. Your saved Pads are unchanged.' : 'Sign in to choose a checkpoint for Lemma Pad.'}</p>
-    {auth.isError ? <div className="local-pad-controls"><button type="button" onClick={() => void auth.refetch()}>Try sign-in again</button></div>
+    {auth.isError ? <div className="local-pad-controls"><Button onClick={() => void auth.refetch()}>Try sign-in again</Button></div>
       : <Link to="/sign-in" state={{from: location.pathname + location.search}}>Sign in</Link>}
     {!online && <OfflineLibrary/>}
   </section>;
@@ -126,7 +127,7 @@ function CheckpointPicker({slug, selectedCode, demo, online, owner, generation}:
   return <section className="local-pad-chooser" aria-label="Choose a Pad checkpoint">
     <h2>Your checkpoints</h2>
     {projects.isPending ? <p role="status">Loading your paths…</p> : projects.isError && !projects.data
-      ? <><p role="alert">Could not load your paths.</p><button type="button" onClick={() => void projects.refetch()}>Try paths again</button></>
+      ? <><p role="alert">Could not load your paths.</p><Button onClick={() => void projects.refetch()}>Try paths again</Button></>
       : paths.length === 0 ? <><p role="status">No checkpoints yet. Create a path and approve its plan to start a Pad.</p><Link to="/projects">Open Paths</Link></>
         : v7 ? <Picker label="Path" value={paths.map(pathLabel)[paths.findIndex(path=>path.slug===slug)]??'Choose a path'}
           options={paths.map(pathLabel)} onChange={label=>{const path=paths.find(candidate=>pathLabel(candidate)===label);if(path)navigate(padAddress(path.slug));}}/>
@@ -136,7 +137,7 @@ function CheckpointPicker({slug, selectedCode, demo, online, owner, generation}:
             {paths.map(path => <option key={path.id} value={path.slug}>{path.title}</option>)}
           </select></>}
     {slug && <>{project.isPending ? <p role="status">Loading checkpoints…</p> : project.isError && !project.data
-      ? <><p role="alert">Could not load this path's checkpoints.</p><button type="button" onClick={() => void project.refetch()}>Try checkpoints again</button></>
+      ? <><p role="alert">Could not load this path's checkpoints.</p><Button onClick={() => void project.refetch()}>Try checkpoints again</Button></>
       : checkpoints.length === 0 ? <p role="status">This path has no approved checkpoints yet.</p>
         : v7 ? <Picker label="Checkpoint" value={checkpoints.map(checkpointLabel)[checkpoints.findIndex(cp=>cp.code===selectedCode)]??'Choose a checkpoint'}
           options={checkpoints.map(checkpointLabel)} onChange={label=>{const cp=checkpoints.find(candidate=>checkpointLabel(candidate)===label);if(cp)navigate(padAddress(slug,cp.code));}}/>
@@ -177,7 +178,7 @@ function SelectedPad({selection, demo, online, owner, generation}: {
     <CheckpointPad fullPage slug={slug} code={code} detail={detail}/>
   </section>;
   if (result.isError) return <section className="local-pad"><p role="alert">Could not open this checkpoint. Your saved Pads are unchanged.</p>
-    <div className="local-pad-controls"><button type="button" onClick={() => void result.refetch()}>Try opening checkpoint again</button></div></section>;
+    <div className="local-pad-controls"><Button onClick={() => void result.refetch()}>Try opening checkpoint again</Button></div></section>;
   return <p role="status">{online || demo ? 'Opening checkpoint…' : 'This checkpoint was not opened on this device. Connect to authorize it first.'}</p>;
 }
 

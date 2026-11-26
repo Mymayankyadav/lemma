@@ -24,6 +24,7 @@ type Props = {
   projects: readonly ProjectSummary[]; tasks: readonly TaskRecord[];
   commitment?: {title:string;startsAt:string};
   onFocus: () => void;
+  onCommitmentDetails?:(opener:HTMLElement)=>void;
   onStartFocus: (title: string, links?: StudyLinks) => void;
 };
 
@@ -77,7 +78,10 @@ export function NextStep(props: Props) {
     {(thenTutor||props.commitment)&&<div className="v7-today-then">
       <p className="v7-eyebrow">Then</p>
       {thenTutor&&<Link to={thenTutor.href}><strong>{thenTutor.title}</strong><small>With tutor</small></Link>}
-      {props.commitment&&<Link to="/calendar?view=day"><strong>{props.commitment.title}</strong><small>{clockTime(props.commitment.startsAt,props.zone)}</small></Link>}
+      {props.commitment&&(props.onCommitmentDetails?
+       <button type="button" aria-haspopup="dialog" onClick={event=>props.onCommitmentDetails?.(event.currentTarget)}><strong>{props.commitment.title}</strong>
+        <small>{clockTime(props.commitment.startsAt,props.zone)} · Details</small></button>:
+       <Link to="/calendar?view=day"><strong>{props.commitment.title}</strong><small>{clockTime(props.commitment.startsAt,props.zone)}</small></Link>)}
     </div>}
     {!props.pending&&step.part!=='Close'&&<div className="v7-today-capacity" aria-busy={saving}>
       <RulerSlider label="Time you have now" min={10} max={90} value={minutes} format={formatDuration} tickFormat={String}

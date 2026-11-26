@@ -1,13 +1,12 @@
 import {StudyUiRelease} from '../data/StudyUiRelease';
 import { onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import {lazy,Suspense} from 'react'
-import { createHashRouter, RouterProvider, Navigate } from 'react-router'
+import { createHashRouter, RouterProvider,Navigate,Outlet } from 'react-router'
 import { LemmaError } from '../data/api'
 import { getMode } from '../data/mode'
 import AppShell from './AppShell'
 import AuthGate from './AuthGate'
 import ErrorBoundary from './ErrorBoundary'
-import RouteError,{RouteFallback} from './RouteError'
+import RouteError from './RouteError'
 import ToastHost from './ToastHost'
 import PwaStatus from './PwaStatus'
 import { screenRoutes } from './routes'
@@ -15,14 +14,19 @@ import { calendarRoute } from './calendarRoute'
 import { tasksRoute } from './tasksRoute'
 import { weekRoute } from './weekRoute'
 import {isFlagOn} from '../flags'
-import {TutorScreen} from './v7/routeScreens'
-const OfflinePadPage=lazy(()=>import('../features/pad/OfflinePadPage'))
-const PracticePage=lazy(()=>import('../features/practice/Page'))
-const DayRitual=lazy(()=>import('../features/ritual/Page'))
-const TimeLog=lazy(()=>import('../features/time-log/Page'))
-const FocusV7=lazy(()=>import('../features/focus/v7/FocusV7'))
-const WelcomeV7=lazy(()=>import('../features/sign-in/v7/WelcomeV7'))
-const NotFoundV7=lazy(()=>import('./v7/NotFoundV7'))
+import {v7Modules} from './v7/routeScreens'
+import {createLazyModule} from './lazyModule'
+import {lazyRoute} from './lazyRoute'
+import {V7MotionConfig} from '../ui/v7/MotionConfig'
+import BootReady from './BootReady'
+import {trackPendingInbox} from '../features/proposals/v7/inboxEarlyKeys'
+const OfflinePadPage=createLazyModule(()=>import('../features/pad/OfflinePadPage'))
+const PracticePage=createLazyModule(()=>import('../features/practice/Page'))
+const DayRitual=createLazyModule(()=>import('../features/ritual/Page'))
+const TimeLog=createLazyModule(()=>import('../features/time-log/Page'))
+const FocusV7=createLazyModule(()=>import('../features/focus/v7/FocusV7'))
+const WelcomeV7=createLazyModule(()=>import('../features/sign-in/v7/WelcomeV7'))
+const NotFoundV7=createLazyModule(()=>import('./v7/NotFoundV7'))
 // TanStack's online listener can miss the event that preceded a cold offline launch.
 onlineManager.setOnline(navigator.onLine!==false)
 const networkMode=getMode()==='demo'?'always':'online'
@@ -32,31 +36,31 @@ const queryClient = new QueryClient({defaultOptions: {queries: {
  retryDelay: attempt=>Math.min(2_000,250*2**attempt),
 }, mutations: {networkMode, retry: false}}})
 const allowKit=import.meta.env.DEV||import.meta.env.MODE==='test'||import.meta.env.VITE_ALLOW_FLAG_OVERRIDES==='1';
-const router = createHashRouter([{element: <AuthGate><StudyUiRelease><AppShell /></StudyUiRelease></AuthGate>, errorElement: <RouteError />, children: [
+const v7=isFlagOn('v7Shell');
+const router = createHashRouter([{element: <AuthGate><StudyUiRelease><AppShell /></StudyUiRelease></AuthGate>, errorElement: <RouteError />, HydrateFallback:()=>null,children: [
  ...screenRoutes.filter(route=>route.path!=='/kit'||allowKit),
  calendarRoute,
  tasksRoute,
  weekRoute,
- ...(isFlagOn('v6Shell')||isFlagOn('v7Shell')?[{path:'/today/close',
-  element:<Suspense fallback={<RouteFallback/>}><DayRitual/></Suspense>,
-  errorElement:<RouteError/>}, {path:'/log',
-  element:<Suspense fallback={<RouteFallback/>}><TimeLog/></Suspense>,
-  errorElement:<RouteError/>}, {path:'/practice',
-  element:<Suspense fallback={<RouteFallback/>}><PracticePage/></Suspense>,
-  errorElement:<RouteError/>}]:[]),
- // v7 Focus is a full screen of its own (PLAN §6.3); without v7 it stays the Today dialog.
- ...(isFlagOn('v7Shell')?[
-  ...['/p/:slug/tutor','/p/:slug/cp/:code/tutor'].map(path=>({path,
-    element:<Suspense fallback={<RouteFallback/>}><TutorScreen/></Suspense>,errorElement:<RouteError/>})),
-  {path:'/focus',element:<Suspense fallback={<RouteFallback/>}><FocusV7/></Suspense>,errorElement:<RouteError/>},
-  // PLAN §6.15 first run: three skippable steps after the first sign-in.
-  {path:'/welcome',element:<Suspense fallback={<RouteFallback/>}><WelcomeV7/></Suspense>,errorElement:<RouteError/>}]:[]),
- // V32 (v7 UX audit r3): with v7 an unknown address says so (NotFoundV7); without it, it still goes to Today.
- {path: '*', handle: {notFound: true}, element: isFlagOn('v7Shell')?<Suspense fallback={<RouteFallback/>}><NotFoundV7/></Suspense>:<Navigate to="/" replace />},
-]}, ...(isFlagOn('v7Shell') && isFlagOn('padLocal') ? [{path: '/pad/:checkpointId?', element:
-  <Suspense fallback={<RouteFallback/>}><OfflinePadPage/></Suspense>, errorElement: <RouteError/>}] : [])])
-export default function App() {
- return <ErrorBoundary><QueryClientProvider client={queryClient}>
-  <RouterProvider router={router} /><ToastHost /><PwaStatus />
- </QueryClientProvider></ErrorBoundary>
+ ...(isFlagOn('v6Shell')||v7?[
+  lazyRoute('/today/close',v7?v7Modules.closeDay:DayRitual),
+  lazyRoute('/log',v7?v7Modules.log:TimeLog),
+  lazyRoute('/practice',v7?v7Modules.practice:PracticePage),
+ ]:[]),
+ ...(v7?[
+  ...['/p/:slug/tutor','/p/:slug/cp/:code/tutor'].map(path=>lazyRoute(path,v7Modules.tutor)),
+  lazyRoute('/focus',FocusV7),
+  lazyRoute('/welcome',WelcomeV7),
+ ]:[]),
+ // V32: v7 explains unknown addresses; legacy goes to Today.
+ v7?{...lazyRoute('*',NotFoundV7),handle:{notFound:true}}:{path:'*',element:<Navigate to="/" replace/>},
+]}, ...(v7&&isFlagOn('padLocal')?[{
+ element:<><BootReady/><Outlet/></>,HydrateFallback:()=>null,
+ children:[lazyRoute('/pad/:checkpointId?',OfflinePadPage)],
+}]:[])])
+router.subscribe(({navigation,location})=>trackPendingInbox(navigation.location?.pathname,location.pathname));
+export default function App(){
+ return <ErrorBoundary><QueryClientProvider client={queryClient}><V7MotionConfig>
+  <RouterProvider router={router}/><ToastHost/><PwaStatus/>
+ </V7MotionConfig></QueryClientProvider></ErrorBoundary>
 }

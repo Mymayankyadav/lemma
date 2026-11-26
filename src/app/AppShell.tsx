@@ -1,4 +1,4 @@
-import {lazy,Suspense,useLayoutEffect} from 'react';
+import {Suspense,useLayoutEffect} from 'react';
 import {useOutlet,useLocation,useMatches,useNavigationType} from 'react-router';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
@@ -11,10 +11,12 @@ import {setShellRoot} from './shellRoot';
 import {v7Screen,V7_DETAIL_SCREENS} from './v7Kit';
 import OfflineBanner from './OfflineBanner';
 import {RouteFallback} from './RouteError';
+import {retryLazy} from './lazyModule';
+import BootReady from './BootReady';
 // Lazy, so flag-off builds never load the v7 shell or its styles on first paint.
-const V7Shell=lazy(()=>import('./v7/V7Shell'));
-const LibrarySplit=lazy(()=>import('./v7/LibrarySplit'));
-const LegacyStyles=lazy(()=>import('./LegacyStyles'));
+const V7Shell=retryLazy(()=>import('./v7/V7Shell'));
+const LibrarySplit=retryLazy(()=>import('./v7/LibrarySplit'));
+const LegacyStyles=retryLazy(()=>import('./LegacyStyles'));
 import DemoChip from './DemoChip';
 import {Ground} from '../ui/Ground';
 import {GraphSketch} from '../ui/backgrounds/graph/GraphSketch';
@@ -31,9 +33,11 @@ export default function AppShell(){
  const inboxActions=v6&&location.pathname==='/proposals';
  const tab=showTabs,back=navigation==='POP';
  // The kit, sign-in and first run stand alone: no tab bar or capture.
- if(screen==='kit'||screen==='sign-in'||screen==='welcome')return <><OfflineBanner/>{outlet}</>;
- if(v7)return <Suspense fallback={<RouteFallback/>}><V7Shell immersive={V7_DETAIL_SCREENS.has(screen)} capture={screen!=='atlas'&&screen!=='path'&&screen!=='checkpoint'&&screen!=='tutor'&&screen!=='session'&&screen!=='card'}>{isFlagOn('v7Room')&&/^(?:\/projects(?:\/new)?|\/p\/[^/]+|\/cards(?:\/\d+)?)$/.test(location.pathname)?<Suspense fallback={<RouteFallback/>}><LibrarySplit>{outlet}</LibrarySplit></Suspense>:outlet}</V7Shell></Suspense>;
- return <Suspense fallback={null}><LegacyStyles><OfflineBanner/><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
+ if(screen==='kit'||screen==='sign-in'||screen==='welcome')return <><BootReady/><OfflineBanner/><Suspense fallback={<RouteFallback/>}>{outlet}</Suspense></>;
+ if(v7)return <Suspense fallback={<RouteFallback/>}><V7Shell immersive={V7_DETAIL_SCREENS.has(screen)} capture={screen!=='atlas'&&screen!=='path'&&screen!=='checkpoint'&&screen!=='tutor'&&screen!=='session'&&screen!=='card'}>
+  <Suspense fallback={<RouteFallback/>}>{isFlagOn('v7Room')&&/^(?:\/projects(?:\/new)?|\/p\/[^/]+|\/cards(?:\/\d+)?)$/.test(location.pathname)?<LibrarySplit>{outlet}</LibrarySplit>:outlet}</Suspense>
+ </V7Shell></Suspense>;
+ return <Suspense fallback={null}><LegacyStyles><BootReady/><OfflineBanner/><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
  {fullBleed&&!v6&&<DemoChip floating/>}
  <main id="main-content" className={fullBleed?(v6?'v6-atlas-shell relative flex h-dvh w-full flex-col overflow-hidden pb-[calc(var(--tab)+env(safe-area-inset-bottom))] [&>div]:min-h-0 [&>div]:flex-1 [&>div>main]:!h-full':'relative min-h-dvh w-full overflow-hidden'):'relative mx-auto min-h-dvh max-w-[528px] px-6 pt-[calc(max(env(safe-area-inset-top),12px)+16px)] '+(inboxActions?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+112px)]':showTabs?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+24px)]':'pb-6')}>
  {!fullBleed&&!v6&&<DemoChip/>}

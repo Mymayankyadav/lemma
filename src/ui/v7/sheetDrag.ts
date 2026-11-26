@@ -1,4 +1,5 @@
-import {dismissSheet} from './motion';
+import {dismissSheet, durations} from './motion';
+import {requestLayerClose, topLayerElement} from './layers';
 import {motionReduced} from './effects';
 import {haptic} from './haptics';
 import './sheet-drag.css';
@@ -26,9 +27,9 @@ export function releaseVelocity(samples:readonly [number,number][],y:number,time
 }
 
 function settle(dialog:HTMLDialogElement){
- dialog.style.transition=motionReduced()?'':'transform var(--v7-m-quick, .16s) var(--v7-ease-standard, ease)';
+ dialog.style.transition=motionReduced()?'':'transform var(--motion-quick) var(--ease-standard)';
  dialog.style.transform='';
- window.setTimeout(()=>{dialog.style.transition='';},200);
+ window.setTimeout(()=>{dialog.style.transition='';},durations.quick*1000);
 }
 
 export function installSheetDrag(doc:Document=document):()=>void{
@@ -38,6 +39,8 @@ export function installSheetDrag(doc:Document=document):()=>void{
   const target=event.target instanceof Element?event.target:null;
   const handle=target?.closest(HANDLE),dialog=handle?.closest<HTMLDialogElement>('dialog.v7-sheet');
   if(!handle||!dialog?.open||target!.closest(INTERACTIVE))return;
+  const top=topLayerElement(doc);
+  if(top && top!==dialog)return;
   const box=dialog.getBoundingClientRect(),bottom=doc.defaultView?.innerHeight??0;
   if(box.height<=0||box.bottom<bottom-1)return;
   drag={dialog,id:event.pointerId,startY:event.clientY,height:box.height,distance:0,samples:[[event.clientY,event.timeStamp]],past:false};
@@ -61,8 +64,9 @@ export function installSheetDrag(doc:Document=document):()=>void{
    const dialog=current.dialog;
    // The sheet leaves from where it was let go; its styles are cleared once it has closed.
    dialog.addEventListener('close',()=>{dialog.style.transform='';dialog.style.transition='';},{once:true});
-   dialog.dispatchEvent(new Event('cancel',{cancelable:true}));
-   window.setTimeout(()=>{if(dialog.open)settle(dialog);},300);
+   if(topLayerElement(doc) === dialog) requestLayerClose(dialog,'drag');
+   else dialog.dispatchEvent(new Event('cancel',{cancelable:true}));
+   requestAnimationFrame(()=>{if(dialog.open)settle(dialog);});
   }else if(distance>0)settle(current.dialog);
   else current.dialog.style.transition='';
  };

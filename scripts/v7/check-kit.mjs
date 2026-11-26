@@ -37,6 +37,11 @@ for(const mode of modes){
  for(const fg of ["text.primary","text.secondary","text.tertiary"])
   for(const bg of ["surface.page","surface.raised","surface.sunken","surface.muted","surface.overlay"])pair(fg,bg,4.5);
  for(const bg of ["surface.page","surface.raised","surface.sunken","surface.muted","surface.overlay"])pair("border.default",bg,3);
+ for(const bg of ["surface.track","surface.lifted","state.hover","state.lifted-hover"]){
+  pair("text.primary",bg,4.5);
+  pair("text.secondary",bg,4.5);
+  pair("border.default",bg,3);
+ }
  for(const bg of ["surface.page","surface.raised"])pair("focus.ring",bg,3);
  for(const level of ["success","warning","danger"]){
   pair("status."+level,"surface.page",4.5);
@@ -89,6 +94,13 @@ for(const [name,v] of Object.entries(doc.component))
   assert(!/<select\b|type=["'](date|time|datetime-local)["']/.test(text),file+" renders a native select, date or time control (B7)");
  }
  for(const [file,text] of sources)assert(!/#(121212|FF7B6B|1A2028|202841)\b/i.test(text),file+" contains an off-kit colour from the Night critique");
+ for(const [file,text] of sources.filter(([f])=>f.endsWith(".css"))){
+  for(const [,block] of text.matchAll(/\{([^{}]+)\}/g)){
+   const hasTertiary=/\bcolor\s*:\s*var\(--v7-role-text-tertiary\)/.test(block);
+   const hasInteractionFill=/\bbackground[^:]*:[^;]*var\(--v7-role-(?:state-(?:hover|pressed|lifted-hover)|surface-track|selection-subtle)\)/.test(block);
+   assert(!(hasTertiary&&hasInteractionFill),file+" pairs tertiary text with an interaction or track fill");
+  }
+ }
  // Release plan R1 · F20/F21/F22: every colour has one job. Status icons are for status only (not dates, targets, "Next",
  // diffs, suggestions or grades); red is for destructive actions and errors only (never Save or Undo); grades use the
  // shared grade language, not status badges.
@@ -113,4 +125,5 @@ for(const filename of ["src/ui/v7/components.css","src/ui/v7/kit-system.css","sr
 const generated=spawnSync(process.execPath,["scripts/v7/generate-tokens.mjs","--check"],{encoding:"utf8"});
 assert(generated.status===0,"generated tokens/Figma manifest are stale: "+generated.stderr);
 if(fail.length){for(const line of fail)console.error("✗",line);process.exit(1);}
+await import('./check-surfaces.mjs');
 console.log("v7 tokens: 4 modes, contrast, categorical CVD, aliases, source and generated files pass");

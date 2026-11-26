@@ -181,8 +181,8 @@ describe('N78 v6 practice, never card review',()=>{
  it('registers /practice lazily only behind the v6 shell flag',()=>{
   const source=readFileSync('src/app/App.tsx','utf8');
   expect(source).toContain("isFlagOn('v6Shell')");
-  expect(source).toContain("path:'/practice'");
-  expect(source).toContain("lazy(()=>import('../features/practice/Page'))");
+  expect(source).toContain("lazyRoute('/practice'");
+  expect(source).toContain("createLazyModule(()=>import('../features/practice/Page'))");
   expect(source).not.toContain('recordReview(');
  });
 });

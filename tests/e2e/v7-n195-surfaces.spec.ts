@@ -45,13 +45,13 @@ for(const width of [360,390])test(`Capture saves Busy and Study with the chosen 
  }
 });
 
-test('Capture More options carries Busy and clears the parsed study path',async({page})=>{
+test('Capture Add details carries Busy and clears the parsed study path',async({page})=>{
  await page.clock.setFixedTime(NOW);await page.goto(repair('/'));
  await page.getByRole('button',{name:'Capture',exact:true}).click();
  const capture=page.getByRole('dialog',{name:'Capture',exact:true});
  await capture.getByRole('textbox',{name:'What do you want to add?'}).fill('Appointment tomorrow 4pm 25m #real');
  await capture.getByRole('radio',{name:'Busy',exact:true}).click();
- await capture.getByRole('button',{name:'More options'}).click();
+ await capture.getByRole('button',{name:'Add details'}).click();
  const full=page.getByRole('dialog',{name:'New time block'});
  await expect(full.getByRole('radio',{name:'Busy',exact:true})).toHaveAttribute('aria-checked','true');
  await expect(full.getByRole('textbox',{name:'Calendar block title'})).toHaveValue('Appointment');

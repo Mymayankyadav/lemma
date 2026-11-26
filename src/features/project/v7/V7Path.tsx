@@ -1,3 +1,5 @@
+import LazyOverlay from '../../../app/v7/LazyOverlay';
+import {createLazyModule,retryLazy} from '../../../app/lazyModule';
 import {useReadingIntent} from '../../../app/v7/readingIntent';
 import {CourseContinuation,coursePastDeadline} from '../../exam/CourseContinuation';
 import {useExamIdeas} from '../../../data/exam/queries';
@@ -14,7 +16,7 @@ import {LemmaError} from '../../../data/api';
 import {ProjectScheduler,PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../../adaptive/Views';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {ProofEnd} from '../../../ui/v7/ProofEnd';
-import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
+import {Suspense,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
@@ -51,8 +53,8 @@ import {actionTitle} from '../../exam/NextCard';
 import {examTutorHref} from '../../exam/model';
 import '../../exam/exam.css';
 
-const SourcesPanel=lazy(()=>import('./SourcesV7'));
-const ProjectSwitcher=lazy(()=>import('../ProjectSwitcher').then(module=>({default:module.ProjectSwitcher})));
+const SourcesPanel=retryLazy(()=>import('./SourcesV7'));
+const switchPath=createLazyModule(()=>import('../ProjectSwitcher'));
 const tabs=['Plan','Sessions','Sources','Cards','Exam'] as const;
 type Tab=typeof tabs[number];
 const star='M10 2.2l2.2 5 5.4.5-4.1 3.6 1.2 5.3L10 13.9l-4.7 2.7 1.2-5.3-4.1-3.6 5.4-.5z';
@@ -128,6 +130,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const room=isFlagOn('v7Room');
  const {slug:raw}=useParams(),slug=selectedSlug??raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
+ const pathRoot=useRef<HTMLElement>(null);
  const [switcher,setSwitcher]=useState(false),[setup,setSetup]=useState(false),[modeBusy,setModeBusy]=useState(false);
  const examEnabled=isFlagOn('examMode'),exam=usePathExam(query.data?.project.id??'',slug,params.get('examSitting'),examEnabled);
  const sitting=exam.sitting,hasExam=examEnabled&&!!sitting;
@@ -154,7 +157,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   return()=>cancelAnimationFrame(frame);
  },[room,!!data,slug,tab,current?.id]);
  const unavailable=query.error instanceof LemmaError&&['not_found','auth'].includes(query.error.code);
- if(!data||unavailable)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/>
+ if(!data||unavailable)return <main id="main-content" ref={pathRoot} className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/>
   {!online?<EmptyMoment title="Connect to open this path." action={{label:'Back to Paths',to:'/projects'}}/>
    :query.isPending?<><Skeleton/><Skeleton/></>
    :query.error instanceof LemmaError&&query.error.code==='not_found'?<EmptyMoment title="This path doesn't exist." action={{label:'Back to Paths',to:'/projects'}}/>
@@ -213,7 +216,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   if(value.startsWith('Ideas'))next.set('cards','ideas');else {next.delete('cards');next.delete('idea');}
   setParams(next);
  }
- return <main id="main-content" className={'v7-page v7-path '+klass} aria-label="Path">
+ return <main id="main-content" ref={pathRoot} className={'v7-page v7-path '+klass} aria-label="Path">
   <DetailHeader title={project.title} back="/projects" compact={<><Emblem subject={subject} seed={project.id} size={24} tier="glyph" animate={false}/><ProgressRing done={data.done} total={data.total}/></>}
    extraAction={<MoreActions label="More path actions" title={project.title} items={[
    {label:'Switch path',hint:'Open another path in the same place',icon:<MEANING_ICON.switchPath aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
@@ -327,6 +330,8 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
    </Button>
    {due>0&&<Link className="v7-button v7-secondary" to={studyRepair?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(slug)}>Review {due}</Link>}
   </Dock>}
-  {switcher&&<Suspense fallback={null}><ProjectSwitcher open onClose={()=>setSwitcher(false)} current={slug}/></Suspense>}
+  {switcher&&<LazyOverlay title="Switch path" source={switchPath} onClose={()=>setSwitcher(false)}
+   returnTarget={()=>pathRoot.current?.querySelector<HTMLElement>('[aria-label="More path actions"]')??null}
+   bodyProps={{onClose:()=>setSwitcher(false),current:slug}}/>}
  </main>;
 }

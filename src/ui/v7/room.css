@@ -13,9 +13,6 @@
  html[data-v7][data-v7-room] .v7-search-actions .v7-search-row {width:auto;min-height:var(--v7-touch);border:1px solid var(--v7-role-border-default);border-radius:var(--v7-round);padding:8px 12px;}
  html[data-v7][data-v7-room] .v7-search-entry {position:sticky;top:0;z-index:2;padding:var(--v7-space-1) var(--v7-space-1) var(--v7-space-2);margin-inline:calc(-1 * var(--v7-space-1));background:var(--v7-role-surface-overlay);}
  html[data-v7][data-v7-room] .v7-search-field {background:var(--v7-role-surface-page);}
- html[data-v7][data-v7-room] .v7-sheet:has(> .v7-sheet-body > .v7-search-entry) > .v7-sheet-header {position:absolute;top:20px;right:20px;z-index:3;padding:0;pointer-events:none;}
- html[data-v7][data-v7-room] .v7-sheet:has(> .v7-sheet-body > .v7-search-entry) > .v7-sheet-header button {pointer-events:auto;}
- html[data-v7][data-v7-room] .v7-search-field {padding-right:56px;}
  html[data-v7][data-v7-room] .v7-cal[data-calendar-view="day"] {gap:4px;padding-top:0;}
  html[data-v7][data-v7-room] .v7-cal-compact {display:flex;align-items:center;gap:2px;min-height:48px;}
  html[data-v7][data-v7-room] .v7-cal-compact h1 {flex:1;min-width:0;font-size:var(--v7-type-lead);line-height:1.2;}
@@ -41,6 +38,6 @@
  html[data-v7][data-v7-room] .v7-atlas[data-view="map"] .v7-room-atlas-subsets {position:absolute;top:64px;left:0;right:0;}
  html[data-v7][data-v7-room] .v7-room-atlas-subsets > button {flex:none;min-height:var(--v7-touch);}
  html[data-v7][data-v7-room] .v7-room-atlas-index {position:sticky;top:64px;z-index:2;display:flex;gap:4px;flex-wrap:wrap;background:var(--v7-role-surface-page);}
- html[data-v7][data-v7-room] .v7-room-atlas-index > button {min-height:var(--v7-touch);min-width:var(--v7-touch);border:0;border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);}
+ html[data-v7][data-v7-room] .v7-room-atlas-index > button {min-height:var(--v7-touch);min-width:var(--v7-touch);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);}
  html[data-v7][data-v7-room] .v7-room-atlas-subject {scroll-margin-top:124px;}
 }

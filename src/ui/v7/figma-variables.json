@@ -51,6 +51,36 @@
           }
         },
         {
+          "name": "surface/track",
+          "type": "COLOR",
+          "modes": {
+            "day": "#e8e6dc",
+            "night": "#45453f",
+            "day-hc": "#e8e6dc",
+            "night-hc": "#45453f"
+          }
+        },
+        {
+          "name": "surface/lifted",
+          "type": "COLOR",
+          "modes": {
+            "day": "#ffffff",
+            "night": "#393937",
+            "day-hc": "#ffffff",
+            "night-hc": "#393937"
+          }
+        },
+        {
+          "name": "state/lifted-hover",
+          "type": "COLOR",
+          "modes": {
+            "day": "#f0eee6",
+            "night": "#45453f",
+            "day-hc": "#f0eee6",
+            "night-hc": "#45453f"
+          }
+        },
+        {
           "name": "surface/muted",
           "type": "COLOR",
           "modes": {
@@ -911,86 +941,6 @@
           "value": ".08em"
         },
         {
-          "name": "foundation/instant",
-          "type": "duration",
-          "value": "80ms"
-        },
-        {
-          "name": "foundation/fast",
-          "type": "duration",
-          "value": "120ms"
-        },
-        {
-          "name": "foundation/base",
-          "type": "duration",
-          "value": "200ms"
-        },
-        {
-          "name": "foundation/slow",
-          "type": "duration",
-          "value": "320ms"
-        },
-        {
-          "name": "foundation/scenic",
-          "type": "duration",
-          "value": "900ms"
-        },
-        {
-          "name": "foundation/ease-standard",
-          "type": "string",
-          "value": "cubic-bezier(.2,0,0,1)"
-        },
-        {
-          "name": "foundation/ease-out",
-          "type": "string",
-          "value": "cubic-bezier(0,0,0,1)"
-        },
-        {
-          "name": "foundation/ease-in",
-          "type": "string",
-          "value": "cubic-bezier(.3,0,1,1)"
-        },
-        {
-          "name": "foundation/snappy-stiffness",
-          "type": "number",
-          "value": "520"
-        },
-        {
-          "name": "foundation/snappy-damping",
-          "type": "number",
-          "value": "38"
-        },
-        {
-          "name": "foundation/gentle-stiffness",
-          "type": "number",
-          "value": "260"
-        },
-        {
-          "name": "foundation/gentle-damping",
-          "type": "number",
-          "value": "28"
-        },
-        {
-          "name": "foundation/lively-stiffness",
-          "type": "number",
-          "value": "400"
-        },
-        {
-          "name": "foundation/lively-damping",
-          "type": "number",
-          "value": "22"
-        },
-        {
-          "name": "foundation/skeleton",
-          "type": "duration",
-          "value": "1.6s"
-        },
-        {
-          "name": "foundation/skeleton-delay",
-          "type": "duration",
-          "value": "300ms"
-        },
-        {
           "name": "foundation/pressed",
           "type": "number",
           "value": ".98"
@@ -1059,21 +1009,6 @@
           "name": "foundation/star-height",
           "type": "dimension",
           "value": "54px"
-        },
-        {
-          "name": "foundation/long",
-          "type": "duration",
-          "value": "600ms"
-        },
-        {
-          "name": "foundation/completion",
-          "type": "duration",
-          "value": "300ms"
-        },
-        {
-          "name": "foundation/pulse",
-          "type": "duration",
-          "value": "2s"
         },
         {
           "name": "foundation/toast-max",
@@ -1177,6 +1112,39 @@
             "night": "#30302E",
             "day-hc": "#FFFFFF",
             "night-hc": "#30302E"
+          }
+        },
+        {
+          "name": "surface/track",
+          "type": "COLOR",
+          "description": "Visible progress tracks, busy blocks and loading placeholders.",
+          "modes": {
+            "day": "#e8e6dc",
+            "night": "#45453f",
+            "day-hc": "#e8e6dc",
+            "night-hc": "#45453f"
+          }
+        },
+        {
+          "name": "surface/lifted",
+          "type": "COLOR",
+          "description": "Popover, child dialog and toast fill above a sheet.",
+          "modes": {
+            "day": "#ffffff",
+            "night": "#393937",
+            "day-hc": "#ffffff",
+            "night-hc": "#393937"
+          }
+        },
+        {
+          "name": "state/lifted-hover",
+          "type": "COLOR",
+          "description": "Interaction fill inside a lifted surface.",
+          "modes": {
+            "day": "#f0eee6",
+            "night": "#45453f",
+            "day-hc": "#f0eee6",
+            "night-hc": "#45453f"
           }
         },
         {
@@ -2162,102 +2130,6 @@
           "description": "Shared eyebrow tracking foundation."
         },
         {
-          "name": "foundation/instant",
-          "type": "duration",
-          "alias": "{foundation.raw.instant}",
-          "description": "Shared instant foundation."
-        },
-        {
-          "name": "foundation/fast",
-          "type": "duration",
-          "alias": "{foundation.raw.fast}",
-          "description": "Shared fast foundation."
-        },
-        {
-          "name": "foundation/base",
-          "type": "duration",
-          "alias": "{foundation.raw.base}",
-          "description": "Shared base foundation."
-        },
-        {
-          "name": "foundation/slow",
-          "type": "duration",
-          "alias": "{foundation.raw.slow}",
-          "description": "Shared slow foundation."
-        },
-        {
-          "name": "foundation/scenic",
-          "type": "duration",
-          "alias": "{foundation.raw.scenic}",
-          "description": "Shared scenic foundation."
-        },
-        {
-          "name": "foundation/ease-standard",
-          "type": "string",
-          "alias": "{foundation.raw.ease-standard}",
-          "description": "Shared ease standard foundation."
-        },
-        {
-          "name": "foundation/ease-out",
-          "type": "string",
-          "alias": "{foundation.raw.ease-out}",
-          "description": "Shared ease out foundation."
-        },
-        {
-          "name": "foundation/ease-in",
-          "type": "string",
-          "alias": "{foundation.raw.ease-in}",
-          "description": "Shared ease in foundation."
-        },
-        {
-          "name": "foundation/snappy-stiffness",
-          "type": "number",
-          "alias": "{foundation.raw.snappy-stiffness}",
-          "description": "Shared snappy stiffness foundation."
-        },
-        {
-          "name": "foundation/snappy-damping",
-          "type": "number",
-          "alias": "{foundation.raw.snappy-damping}",
-          "description": "Shared snappy damping foundation."
-        },
-        {
-          "name": "foundation/gentle-stiffness",
-          "type": "number",
-          "alias": "{foundation.raw.gentle-stiffness}",
-          "description": "Shared gentle stiffness foundation."
-        },
-        {
-          "name": "foundation/gentle-damping",
-          "type": "number",
-          "alias": "{foundation.raw.gentle-damping}",
-          "description": "Shared gentle damping foundation."
-        },
-        {
-          "name": "foundation/lively-stiffness",
-          "type": "number",
-          "alias": "{foundation.raw.lively-stiffness}",
-          "description": "Shared lively stiffness foundation."
-        },
-        {
-          "name": "foundation/lively-damping",
-          "type": "number",
-          "alias": "{foundation.raw.lively-damping}",
-          "description": "Shared lively damping foundation."
-        },
-        {
-          "name": "foundation/skeleton",
-          "type": "duration",
-          "alias": "{foundation.raw.skeleton}",
-          "description": "Shared skeleton foundation."
-        },
-        {
-          "name": "foundation/skeleton-delay",
-          "type": "duration",
-          "alias": "{foundation.raw.skeleton-delay}",
-          "description": "Shared skeleton delay foundation."
-        },
-        {
           "name": "foundation/pressed",
           "type": "number",
           "alias": "{foundation.raw.pressed}",
@@ -2340,24 +2212,6 @@
           "type": "dimension",
           "alias": "{foundation.raw.star-height}",
           "description": "Shared star height foundation."
-        },
-        {
-          "name": "foundation/long",
-          "type": "duration",
-          "alias": "{foundation.raw.long}",
-          "description": "Shared long foundation."
-        },
-        {
-          "name": "foundation/completion",
-          "type": "duration",
-          "alias": "{foundation.raw.completion}",
-          "description": "Shared completion foundation."
-        },
-        {
-          "name": "foundation/pulse",
-          "type": "duration",
-          "alias": "{foundation.raw.pulse}",
-          "description": "Shared pulse foundation."
         },
         {
           "name": "foundation/toast-max",

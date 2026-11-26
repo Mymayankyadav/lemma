@@ -134,7 +134,7 @@
   background:transparent;color:var(--v7-role-text-secondary);white-space:nowrap;touch-action:manipulation;
 }
 .lemma-tutor .tutor-paper-input-button[aria-pressed=true] {
-  background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);
+  border:var(--v7-hairline) solid var(--v7-role-border-default);background:var(--v7-role-selection-subtle);color:var(--v7-role-text-primary);
 }
 .lemma-tutor .tutor-paper-input-button svg {width:16px;height:16px;}
 .lemma-tutor .tutor-paper-input-button span {font-size:.75rem;}
@@ -142,7 +142,7 @@
 .lemma-tutor .tutor-paper-eraser-more {padding-inline:0;min-width:28px;}
 .tutor-paper-eraser-choices {display:grid;gap:8px;}
 .tutor-paper-eraser-choices button {padding:10px;border:1px solid currentColor;border-radius:var(--v7-radius-2);text-align:start;}
-.tutor-paper-eraser-choices button[aria-pressed=true] {background:var(--v7-role-surface-muted);}
+.tutor-paper-eraser-choices button[aria-pressed=true] {border-color:var(--v7-role-border-default);background:var(--v7-role-selection-subtle);}
 
 .lemma-tutor .tutor-equation-sheet-suggestions .latex-words {
   display: grid;

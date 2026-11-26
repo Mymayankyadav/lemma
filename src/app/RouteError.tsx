@@ -1,38 +1,47 @@
-import {useEffect} from "react";
-import {Link, useRouteError} from "react-router";
+import {useEffect,useState} from 'react';
+import {durations} from '../ui/v7/motion';
+import {Link,useLocation,useNavigate} from 'react-router';
+import {v7ScreenFor} from './v7Kit';
+import BootReady from './BootReady';
 
-const chunkFailure = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? "");
-  return /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message);
-};
-
-/** A readable error screen for each route; keeps a failed render from blanking the app. */
 export default function RouteError(){
-  const error = useRouteError();
-  const chunk = chunkFailure(error);
-  useEffect(() => {
-    if (!chunk) return;
-    const key = `lemma:chunk-reload:${window.location.pathname}${window.location.hash}`;
-    try {
-      if (sessionStorage.getItem(key)) return;
-      sessionStorage.setItem(key, "1");
-      window.location.reload();
-    } catch { /* Storage can be disabled; the readable fallback remains. */ }
-  }, [chunk]);
-  return <main role="alert" className="mx-auto flex min-h-dvh max-w-[560px] flex-col gap-4 bg-obsidian p-6 text-ink">
-    <h1 className="font-serif text-title">Couldn’t open this screen</h1>
-    <p className="text-body text-ink-2">This page could not be displayed. Your pending work has not been approved or discarded.</p>
-    <div className="flex flex-wrap gap-3">
-      <Link to="/" className="ghost flex min-h-11 items-center rounded-ctl px-4">Back to Today</Link>
-      <button type="button" onClick={()=>window.location.reload()} className="lit min-h-11 px-4">Reload screen</button>
-    </div>
-  </main>;
+ const location=useLocation(),navigate=useNavigate();
+ return <RouteErrorScreen onRetry={()=>{void navigate(location.pathname+location.search+location.hash,{replace:true,state:location.state});}}/>;
+}
+
+export function RouteErrorScreen({onRetry,busy=false}:{onRetry:()=>void;busy?:boolean}){
+ return <main id="main-content" className="v7-page lemma-route-error" role="alert">
+  <BootReady/>
+  <h1>Couldn’t open this screen</h1>
+  <p>Try opening this screen again.</p>
+  <div>
+   <button type="button" className="v7-button v7-primary" disabled={busy} aria-busy={busy} onClick={onRetry}><span>Retry</span></button>
+   <Link to="/">Back to Today</Link>
+  </div>
+ </main>;
+}
+
+export function RouteSkeleton({path}:{path:string}){
+ const screen=v7ScreenFor(path);
+ const shape=screen==='calendar'?'calendar':screen==='atlas'?'atlas':
+  screen==='paths'||screen==='tasks'||screen==='cards'||screen==='inbox'?'list':'page';
+ return <div className="lemma-route-skeleton" data-shape={shape} aria-hidden="true">
+  <span/><span/><span/><span/>
+ </div>;
+}
+
+export function markLoadingSurface(element:HTMLElement|null){
+ if(element&&!element.dataset.shownAt)element.dataset.shownAt=String(performance.now());
 }
 
 export function RouteFallback(){
-  return <main role="status" aria-live="polite" className="lemma-route-loading mx-auto min-h-dvh max-w-[560px] bg-obsidian p-6 text-ink">
-    <h1 className="font-serif text-title">Loading screen…</h1>
-    <div aria-hidden="true" className="mt-6 h-20 animate-pulse rounded-slab bg-fill-1"/>
-    <div aria-hidden="true" className="mt-3 h-48 animate-pulse rounded-slab bg-fill-1"/>
-  </main>;
+ const {pathname}=useLocation();
+ const [visible,setVisible]=useState(false);
+ useEffect(()=>{
+  const timer=window.setTimeout(()=>setVisible(true),durations.skeletonDelay*1000);
+  return()=>window.clearTimeout(timer);
+ },[]);
+ return <main className="v7-page lemma-route-fallback" aria-label="Opening screen" aria-busy="true">
+  {visible&&<div ref={markLoadingSurface} data-loading-surface="route-skeleton"><RouteSkeleton path={pathname}/></div>}
+ </main>;
 }

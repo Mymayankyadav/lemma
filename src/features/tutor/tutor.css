@@ -65,7 +65,7 @@
 .lemma-tutor .note{align-self:center;display:flex;align-items:center;gap:10px;font:600 var(--v7-type-caption)/1.3 var(--v7-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--v7-role-text-tertiary);text-align:center}
 .lemma-tutor .note::before,.lemma-tutor .note::after{content:"";width:24px;height:1px;background:var(--v7-role-border-subtle)}
 .lemma-tutor .note.strong{color:var(--v7-role-text-secondary)}
-.lemma-tutor .note button{border:0;background:var(--v7-role-surface-muted);border-radius:9999px;padding:6px 12px;font:600 var(--v7-type-caption) var(--v7-sans);letter-spacing:0;text-transform:none;color:var(--v7-role-text-primary)}
+.lemma-tutor .note button{border:var(--v7-hairline) solid var(--v7-role-border-default);background:var(--v7-role-surface-raised);border-radius:9999px;padding:6px 12px;font:600 var(--v7-type-caption) var(--v7-sans);letter-spacing:0;text-transform:none;color:var(--v7-role-text-primary)}
 /* ── composer ── */
 .lemma-tutor .composer{flex:none;padding:4px 0 6px}
 .lemma-tutor .composer textarea{flex:1;min-width:0;height:44px;max-height:120px;border:0;background:transparent;padding:11px 0;color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/1.4 var(--v7-sans);resize:none;caret-color:var(--v7-role-action-bg);overflow-y:auto;outline:none}
@@ -133,7 +133,7 @@
 .lemma-tutor .row.catbar{align-items:center}
 .lemma-tutor .k.abc{flex:0 0 74px}
 .lemma-tutor .cats{flex:1;min-width:0;display:flex;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none;height:var(--cell);padding:0 4px;mask-image:linear-gradient(90deg,transparent 0,#000 8px,#000 calc(100% - 8px),transparent)}
-.lemma-tutor .cats button{flex:none;height:36px;padding:0 12px;border:0;border-radius:9999px;background:transparent;font:600 13.5px var(--v7-sans);color:var(--v7-role-text-tertiary)}
+.lemma-tutor .cats button{flex:none;height:36px;padding:0 12px;border:0;border-radius:9999px;background:transparent;font:600 13.5px var(--v7-sans);color:var(--v7-role-text-secondary)}
 .lemma-tutor .cats button.cur{background:var(--key);color:var(--v7-role-text-primary);box-shadow:var(--v7-shadow-1)}
 .lemma-tutor .row.catbar .k.bk{flex:0 0 66px}
 .lemma-tutor{font-feature-settings:"lnum" 1,"tnum" 0;text-rendering:optimizeLegibility}
@@ -150,9 +150,9 @@
 
 /* session rail (Segmented, 4 parts) */
 .lemma-tutor .rail{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px;padding:var(--v7-space-3) 0 0}
-.lemma-tutor .seg-r{min-height:56px;border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);padding:6px 8px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;text-align:left;min-width:0}
+.lemma-tutor .seg-r{min-height:56px;border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-state-hover);padding:6px 8px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;text-align:left;min-width:0}
 .lemma-tutor .seg-r b{font:600 var(--v7-type-supporting)/1.2 var(--v7-sans);color:var(--v7-role-text-secondary)}
-.lemma-tutor .seg-r small{font:500 var(--v7-type-caption)/1.2 var(--v7-sans);color:var(--v7-role-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lemma-tutor .seg-r small{font:500 var(--v7-type-caption)/1.2 var(--v7-sans);color:var(--v7-role-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .lemma-tutor .seg-r.cur{background:var(--v7-role-selection-subtle);border-color:transparent}
 .lemma-tutor .seg-r.cur b,.lemma-tutor .seg-r.cur small{color:var(--v7-role-selection-fg)}
 .lemma-tutor .seg-r.done{background:var(--v7-role-status-success-subtle);border-color:transparent}
@@ -165,7 +165,7 @@
 .lemma-tutor .msg.a .bd p{margin:0 0 10px}.lemma-tutor .msg.a .bd p:last-child{margin:0}
 .lemma-tutor .ans{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .lemma-tutor .ctag{font:600 var(--v7-type-caption) var(--v7-sans);color:var(--v7-role-text-tertiary)}
-.lemma-tutor .chip{display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:0 12px;border-radius:9999px;border:0;background:var(--v7-role-surface-muted);color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/1 var(--v7-sans);white-space:nowrap;max-width:100%}
+.lemma-tutor .chip{display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:0 12px;border-radius:9999px;border:var(--v7-hairline) solid var(--v7-role-border-default);background:var(--v7-role-surface-raised);color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/1 var(--v7-sans);white-space:nowrap;max-width:100%}
 .lemma-tutor .chip.subjchip{background:var(--subject-subtle);color:var(--v7-role-text-primary)}
 .lemma-tutor .chip.subjchip .sd{margin:0}
 .lemma-tutor .sd{width:10px;height:10px;border-radius:50%;background:var(--subject);flex:none;display:inline-block;margin-right:8px;vertical-align:middle}
@@ -193,7 +193,7 @@
 .lemma-tutor .cta{min-height:56px;}
 .lemma-tutor .cta svg{width:20px;height:20px}
 .lemma-tutor .duo{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:12px}
-.lemma-tutor .btn{display:inline-flex;align-items:center;justify-content:center;min-height:var(--v7-button);padding:0 20px;border:0;border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:600 var(--v7-type-body) var(--v7-sans)}
+.lemma-tutor .btn{display:inline-flex;align-items:center;justify-content:center;min-height:var(--v7-button);padding:0 20px;border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);font:600 var(--v7-type-body) var(--v7-sans)}
 .lemma-tutor .btn.primary{background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action)}
 .lemma-tutor .btn.primary:active{background:var(--v7-role-action-hover)}
 .lemma-tutor .btn.small{min-height:var(--v7-touch)}
@@ -397,7 +397,7 @@
 .lemma-tutor .tutor-composer-tools [data-tutor-send] {margin-inline-start:auto;isolation:isolate;color:var(--v7-role-text-on-action);}
 .lemma-tutor .tutor-composer-tools [data-tutor-send]::before {content:"";position:absolute;z-index:-1;inset:5px;border-radius:inherit;background:var(--v7-role-action-bg);}
 .lemma-tutor .tutor-composer-tools [data-tutor-send] svg {inline-size:var(--tutor-composer-send-size);block-size:var(--tutor-composer-send-size);}
-.lemma-tutor .tutor-composer-tools [data-tutor-send]:disabled::before {background:var(--v7-role-surface-muted);}
+.lemma-tutor .tutor-composer-tools [data-tutor-send]:disabled::before {background:var(--v7-role-surface-track);}
 .lemma-tutor .tutor-composer-tools [data-unfinished-drawing] {color:var(--v7-role-selection-fg);}
 .lemma-tutor .tutor-composer-tools [data-unfinished-drawing]::after {content:"";position:absolute;inset-block-start:8px;inset-inline-end:7px;
  width:6px;height:6px;border-radius:50%;background:currentColor;}
@@ -448,3 +448,6 @@
 @media (pointer:coarse) {
  .lemma-tutor .msg[data-tutor-message] {-webkit-touch-callout:none;user-select:none;}
 }
+
+.lemma-tutor .note button:hover,
+.lemma-tutor :is(.chip,.btn):not(:disabled):hover {background:var(--v7-role-state-hover);}

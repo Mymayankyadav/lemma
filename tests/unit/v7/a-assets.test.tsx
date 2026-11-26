@@ -30,7 +30,7 @@ describe('A3 coded moments', () => {
     expect(STAMP_MS).toBeGreaterThanOrEqual(220);
     expect(STAMP_MS).toBeLessThanOrEqual(400);
     const css = readFileSync('src/features/proposals/v7/inbox.css', 'utf8');
-    expect(css).toMatch(/prefers-reduced-motion: no-preference[\s\S]*data-stamped/);
+    expect(css).toMatch(/:not\(\[data-motion="reduced"\]\)[\s\S]*data-stamped/);
     expect(css).toContain('calc(var(--v7-stamp-turn,-8deg) + 4deg)');
   });
   it('L-09 the loader is an emblem glyph beside words that say what is loading', () => {
@@ -42,7 +42,7 @@ describe('A3 coded moments', () => {
   });
   it('L-16 a Day/Night switch cross-fades as a View Transition, only when motion is allowed', () => {
     const css = readFileSync('src/ui/v7/motion.css', 'utf8');
-    expect(css).toMatch(/::view-transition-new\(root\) \{animation-duration: var\(--v7-m-base\)/);
+    expect(css).toMatch(/::view-transition-new\(root\) \{animation-duration: var\(--motion-base\)/);
     expect(css).not.toContain('clip-path: circle');
     document.documentElement.setAttribute('data-v7', '');
     const update = vi.fn();

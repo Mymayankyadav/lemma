@@ -1,37 +1,55 @@
-/** Browser motion reads the same tokens as CSS; fallbacks cover SSR and tests. */
-function numberToken(name:string,fallback:number):number {
- if(typeof document==='undefined')return fallback;
- const raw=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
- const value=parseFloat(raw);
- return Number.isFinite(value)?value:fallback;
+/** Motion duration values are seconds in JavaScript. Fallbacks mirror motion.css for SSR and tests. */
+function readToken(name: string): string {
+  return typeof document === 'undefined' ? '' : getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
-function seconds(name:string,fallback:number):number {return numberToken(name,fallback*1000)/1000;}
-function bezier(name:string,fallback:readonly [number,number,number,number]):[number,number,number,number] {
- if(typeof document==='undefined')return [...fallback];
- const raw=getComputedStyle(document.documentElement).getPropertyValue(name);
- const match=raw.match(/cubic-bezier\(([^)]+)\)/);
- const values=match?.[1].split(',').map(Number);
- return values?.length===4&&values.every(Number.isFinite)?values as [number,number,number,number]:[...fallback];
+function numberToken(name: string, fallback: number): number {
+  const value = parseFloat(readToken(name));
+  return Number.isFinite(value) ? value : fallback;
 }
-export const durations={
- get instant(){return seconds('--v7-instant',.09)},get fast(){return seconds('--v7-fast',.16)},
- get base(){return seconds('--v7-base',.24)},get slow(){return seconds('--v7-slow',.4)},get scenic(){return seconds('--v7-scenic',.7)},
-};
-export const easings={
- get standard(){return bezier('--v7-ease-standard',[.2,0,0,1])},
- get out(){return bezier('--v7-ease-out',[.16,1,.3,1])},get in(){return bezier('--v7-ease-in',[.4,0,1,1])},
-};
-export const springs={
- get snappy(){return {type:'spring' as const,stiffness:numberToken('--v7-snappy-stiffness',520),damping:numberToken('--v7-snappy-damping',38)}},
- get gentle(){return {type:'spring' as const,stiffness:numberToken('--v7-gentle-stiffness',260),damping:numberToken('--v7-gentle-damping',28)}},
- get lively(){return {type:'spring' as const,stiffness:numberToken('--v7-lively-stiffness',400),damping:numberToken('--v7-lively-damping',22)}},
-};
-/** Reduced motion uses opacity alone and never exceeds 160 ms. */
-export function routeMotion(reduced: boolean) {
-  return reduced
-    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: durations.fast } }
-    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 }, transition: { duration: durations.fast, ease: easings.standard } };
+function duration(name: string, fallbackMs: number): number {
+  const raw = readToken('--motion-' + name);
+  const value = parseFloat(raw);
+  return Number.isFinite(value) ? value / (raw.endsWith('ms') ? 1000 : 1) : fallbackMs / 1000;
 }
+function bezier(name: string, fallback: [number, number, number, number]): [number, number, number, number] {
+  const values = readToken('--ease-' + name).match(/cubic-bezier\(([^)]+)\)/)?.[1].split(',').map(Number);
+  return values?.length === 4 && values.every(Number.isFinite) ? values as typeof fallback : fallback;
+}
+
+export const durations = {
+  get instant() {return duration('instant', 90);},
+  get quick() {return duration('quick', 160);},
+  get quickExit() {return duration('quick-exit', 120);},
+  get fast() {return this.quickExit;},
+  get base() {return duration('base', 240);},
+  get baseExit() {return duration('base-exit', 160);},
+  get layout() {return duration('layout', 200);},
+  get slow() {return duration('slow', 320);},
+  get sheet() {return duration('sheet', 350);},
+  get draw() {return duration('draw', 700);},
+  get scenic() {return duration('scenic', 900);},
+  get cameraMin() {return duration('camera-min', 240);},
+  get cameraMax() {return duration('camera-max', 600);},
+  get stagger() {return duration('stagger', 30);},
+  get skeletonDelay() {return duration('skeleton-delay', 300);},
+  get reduced() {return duration('reduced', 120);},
+  get progressDelay() {return duration('progress-delay', 120);},
+  get dismissMax() {return duration('dismiss-max', 220);},
+};
+export const easings = {
+  get standard() {return bezier('standard', [.2, 0, 0, 1]);},
+  get enter() {return bezier('enter', [0, 0, 0, 1]);},
+  get exit() {return bezier('exit', [.3, 0, 1, 1]);},
+  get draw() {return bezier('draw', [.65, 0, .35, 1]);},
+  get out() {return this.enter;},
+  get in() {return this.exit;},
+};
+export const distances = {
+  get rise() {return numberToken('--rise', 12);},
+  get riseSmall() {return numberToken('--rise-small', 6);},
+  get nudge() {return numberToken('--nudge', 4);},
+  get swapShift() {return numberToken('--swap-shift', 16);},
+};
 
 /** Meter/figure interpolation skips counting for reduced-motion users (used by useAnimatedNumber). */
 export function interpolateNumber(from:number,to:number,progress:number,reduced=false):number {
@@ -48,14 +66,16 @@ export function dismissSheet(distance:number,height:number,velocity:number):bool
  * A1 · Motion v1 tokens ("drawn with a compass"): lines stroke in, surfaces fade and rise a few points, nothing
  * bounces, one thing moves at a time. Durations in seconds for `motion`; motion.css has the same values for CSS.
  */
-export const motionV1={
- instant:.09, quick:.16, base:.24, draw:.7,
- drawEase:[.65,0,.35,1] as [number,number,number,number],
- sheet:{type:'spring' as const,stiffness:380,damping:36},
- /** Stagger between list items, capped at six items. */
- stagger:.03, staggerCap:6,
- /** Largest translate, in CSS pixels. */
- rise:12,
+export const motionV1 = {
+  get instant() {return durations.instant;},
+  get quick() {return durations.quick;},
+  get base() {return durations.base;},
+  get draw() {return durations.draw;},
+  get drawEase() {return easings.draw;},
+  sheet: {type:'spring' as const, stiffness:380, damping:36},
+  get stagger() {return durations.stagger;},
+  staggerCap: 6,
+  get rise() {return distances.rise;},
 };
 /** Delay for the i-th entering item: 30 ms apart, never more than six steps. */
 export function staggerDelay(index:number):number{

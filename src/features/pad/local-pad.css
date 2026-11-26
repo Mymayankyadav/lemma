@@ -2,19 +2,18 @@
 .local-pad {display:grid; gap:.5rem; min-width:0}
 .local-pad-paper, .local-pad-preview {
   box-sizing:border-box; min-width:0; margin:0; padding:.65rem;
-  border:1px solid var(--line, currentColor); border-radius:.5rem;
+  border:1px solid var(--v7-role-border-subtle); border-radius:.5rem;
 }
 .local-pad-paper {
   width:100%; min-height:8rem; resize:vertical;
-  background-color:var(--well, transparent); color:inherit; font:inherit;
-  background-image:linear-gradient(to right, var(--line, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line, transparent) 1px, transparent 1px);
+  background-color:var(--v7-role-surface-sunken); color:inherit; font:inherit;
+  background-image:linear-gradient(to right, var(--v7-role-border-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--v7-role-border-subtle) 1px, transparent 1px);
   background-size:1.5rem 1.5rem;
 }
 .local-pad-controls {display:flex; flex-wrap:wrap; gap:.35rem}
 .local-pad-controls button {
-  min-width:44px; min-height:44px; padding-inline:.5rem; border:1px solid var(--line, currentColor);
-  border-radius:.5rem; background:var(--raised, transparent); color:inherit;
+  min-width:44px; min-height:44px; padding-inline:.5rem;
 }
 .local-pad-controls button:disabled {opacity:.55}
 /* The checkpoint's floating tutor bar must not cover Save or the ink controls.
@@ -33,10 +32,10 @@
 
 .local-pad-ink {
   display:block; width:100%; height:auto; aspect-ratio:8/5; user-select:none;
-  outline:1px solid var(--line, currentColor); border-radius:.5rem;
-  background-color:var(--well, transparent);
-  background-image:linear-gradient(to right, var(--line, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line, transparent) 1px, transparent 1px);
+  outline:1px solid var(--v7-role-border-subtle); border-radius:.5rem;
+  background-color:var(--v7-role-surface-sunken);
+  background-image:linear-gradient(to right, var(--v7-role-border-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--v7-role-border-subtle) 1px, transparent 1px);
   background-size:calc(100% / 32) calc(100% / 20);
 }
 .local-pad-ink[data-mode="draw"] {touch-action:none; cursor:crosshair}
@@ -44,7 +43,7 @@
 .local-pad-ink-status {margin:0; min-height:1.4em}
 
 .local-pad-import-text {max-height:12rem; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere}
-.local-pad-import-ink {width:100%; max-width:20rem; outline:1px solid var(--line,currentColor)}
+.local-pad-import-ink {width:100%; max-width:20rem; outline:1px solid var(--v7-role-border-subtle)}
 
 .local-pad-page {
   box-sizing:border-box; display:grid; gap:1rem; max-width:48rem; margin-inline:auto;
@@ -57,24 +56,26 @@ html[data-native-app] .local-pad-controls button {min-width:48px; min-height:48p
 
 .local-pad-page-header {display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem}
 .local-pad-page-header a, .local-pad-cached a {display:inline-flex; align-items:center; min-height:44px}
-.local-pad-eyebrow {margin:0 0 .25rem; font-size:.875rem; color:var(--ink-2,inherit)}
-.local-pad-chooser {display:grid; grid-template-columns:minmax(0,1fr); gap:.5rem; padding:1rem; border:1px solid var(--line,currentColor); border-radius:.75rem; background:var(--well,transparent)}
+.local-pad-eyebrow {margin:0 0 .25rem; font-size:.875rem; color:var(--v7-role-text-secondary)}
+.local-pad-chooser {display:grid; grid-template-columns:minmax(0,1fr); gap:.5rem; padding:1rem; border:1px solid var(--v7-role-border-subtle); border-radius:.75rem; background:var(--v7-role-surface-sunken)}
 .local-pad-chooser h2,.local-pad-cached h2 {margin:0; font-size:1.125rem}
-.local-pad-chooser select,.local-pad-chooser button {width:100%; min-width:0; min-height:44px; padding:.5rem; border:1px solid var(--line,currentColor); border-radius:.5rem; background:var(--raised,transparent); color:inherit; font:inherit}
-.local-pad-chooser option {background:var(--page,#faf9f5); color:var(--ink,#141413)}
+.local-pad-chooser select {width:100%; min-width:0; min-height:44px; padding:.5rem; border:1px solid var(--v7-role-border-default); border-radius:.5rem; background:var(--v7-role-surface-raised); color:inherit; font:inherit}
+.local-pad-chooser option {background:var(--v7-role-surface-raised); color:var(--v7-role-text-primary)}
 .local-pad-chooser p {margin:.25rem 0}
 .local-pad-cached ul {display:flex; flex-wrap:wrap; gap:.5rem 1rem; padding:0; list-style:none}
 .local-pad-page h2,.local-pad-page p,.local-pad-page a {overflow-wrap:anywhere}
-.local-pad-page :is(button,a,input,select,textarea):focus-visible {outline:2px solid var(--ink,currentColor); outline-offset:3px}
+.local-pad-page :is(button,a,input,select,textarea):focus-visible {outline:2px solid var(--v7-role-focus-ring); outline-offset:3px}
 @media (max-width:360px) {.local-pad-page {padding-inline:.75rem}.local-pad-chooser {padding:.75rem}}
 :where(html[data-v7]) .v7-page.local-pad-page {padding-inline:var(--v7-page-margin);}
 
 .pad-equation-assist {display:grid; gap:.35rem; min-width:0}
 .pad-equation-assist p {margin:.25rem 0}
-.pad-equation-assist button[aria-pressed="true"] {border-color:var(--ink,currentColor)}
+.pad-equation-assist button[aria-pressed="true"] {border-color:var(--v7-role-focus-ring)}
 .pad-equation-candidates {display:grid; grid-template-columns:minmax(0,1fr)}
 .pad-equation-candidates button {
   display:grid; grid-template-columns:minmax(0,1fr); gap:.25rem;
   text-align:start; padding:.45rem .6rem; font:inherit;
 }
 .pad-equation-preview {min-width:0; overflow:auto; font-size:1.0625rem}
+
+.local-pad-controls button[aria-pressed="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}

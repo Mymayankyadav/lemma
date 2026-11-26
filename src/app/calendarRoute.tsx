@@ -1,10 +1,7 @@
-import {lazy,Suspense} from 'react';
-import RouteError, {RouteFallback} from './RouteError';
+import {isFlagOn} from '../flags';
+import {createLazyModule} from './lazyModule';
+import {lazyRoute} from './lazyRoute';
+import {v7Modules} from './v7/routeScreens';
 
-// Keep the existing canonical route inventory stable; Calendar is an additive v6 destination.
-const CalendarPage=lazy(()=>import('../features/calendar/Page'));
-export const calendarRoute={
- path: '/calendar',
- element: <Suspense fallback={<RouteFallback/>}><CalendarPage /></Suspense>,
- errorElement: <RouteError/>,
-};
+// Keep the canonical inventory stable; Calendar is additive.
+export const calendarRoute=lazyRoute('/calendar',isFlagOn('v7Shell')?v7Modules.calendar:createLazyModule(()=>import('../features/calendar/Page')));

@@ -1,7 +1,8 @@
 import {Disclosure} from '../../../ui/v7/Disclosure';
 import {formatShortDate} from '../../../lib/format';
 import {NextStep,TodayFirstRun} from './NextStep';
-import {lazy,Suspense,useEffect,useMemo,useState,type CSSProperties} from 'react';
+import {retryLazy,retryNamed} from '../../../app/lazyModule';
+import {Suspense,useEffect,useMemo,useRef,useState,type CSSProperties} from 'react';
 import {haptic} from '../../../ui/v7/haptics';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,ChevronRight,Pause,Play} from 'lucide-react';
@@ -23,6 +24,8 @@ import {useOnline,useSavedCopyAt} from '../../../ui/v7/savedCopy';
 import {DEFAULT_PLANNING} from '../../planner/model';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';
+import {openCalendarAfterSheet} from '../../../app/v7/calendarHandoff';
+import BlockSheet from '../../calendar/block-sheet/BlockSheet';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {useReadingIntent} from '../../../app/v7/readingIntent';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
@@ -37,9 +40,9 @@ import {clockTime,heroState,localDay,localMinute,minutesLabel,nextStudyBlock,sta
 import {useTodayDay} from './useTodayDay';
 import './today.css';
 
-const StudyDetails=lazy(()=>import('../../adaptive/panels/LearningDetails').then(module=>({default:module.StudyModelDetailsContent})));
-const TodayExams=lazy(()=>import('../../exam/TodayExams').then(module=>({default:module.TodayExams})));
-const DesktopDayGrid=lazy(()=>import('../../calendar/v7/DayGrid'));
+const StudyDetails=retryNamed(()=>import('../../adaptive/panels/LearningDetails'),module=>module.StudyModelDetailsContent);
+const TodayExams=retryNamed(()=>import('../../exam/TodayExams'),module=>module.TodayExams);
+const DesktopDayGrid=retryLazy(()=>import('../../calendar/v7/DayGrid'));
 function SubjectChip({subject,name}:{subject:Subject;name:string}){
  return <span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{name}</span></span>;
 }
@@ -53,6 +56,8 @@ export default function V7Today(){
  const now=useNow(30_000),date=new Date(now);
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const day=localDay(zone,date);
+ const blockOpener=useRef<HTMLElement|null>(null);
+ const [editingBlock,setEditingBlock]=useState<CalendarBlockRecord|null>(null);
  const [busy,setBusy]=useState(false),[actionError,setActionError]=useState(''),[quick,setQuick]=useState(false);
  const [intention,setIntention]=useState(''),[pathId,setPathId]=useState<string|null>(null);
  const [presets,setPresets]=useState<PresetRecord[]>([]),[presetId,setPresetId]=useState<string|null>(null),[showAll,setShowAll]=useState(false);
@@ -171,7 +176,7 @@ export default function V7Today(){
    {nextStepEnabled?firstRun?<TodayFirstRun configured={Boolean(typeof weekday.data==='number'?weekday.data:weekday.data?.some(value=>value>0))} tutor={Boolean(settings.data?.connectorLastSeenAt)} onFocus={()=>setQuick(true)}/>
     :<NextStep now={now} day={day} zone={zone} localMinute={localMinute(date,zone)} logged={logged} focusMinutes={settings.data?.focusDefaults?.focus_minutes??25}
       due={due} reviewMinutes={reviewMinutes??10} pending={!!entry} closed={!!data?.closed}
-      projects={projects} tasks={data?.tasks??[]} commitment={nextCommitment}
+      projects={projects} tasks={data?.tasks??[]} commitment={nextCommitment} onCommitmentDetails={nextCommitment?opener=>{blockOpener.current=opener;setEditingBlock(nextCommitment);}:undefined}
       onFocus={()=>setQuick(true)} onStartFocus={(title,links)=>{void act(async()=>{
         const study=getStudyApi();
         if(await study.activeStudyEntry())throw Error('A focus session is already running.');
@@ -194,7 +199,7 @@ export default function V7Today(){
       <button type="button" className="v7-today-round" disabled={busy} onClick={()=>{void toggle(entry);}} aria-label={entry.status==='paused'?'Resume focus':'Pause focus'}>
        {entry.status==='paused'?<Play aria-hidden="true"/>:<Pause aria-hidden="true"/>}</button></>}
      {(state==='now'||state==='upcoming')&&next&&<><Button variant="primary" disabled={busy} onClick={()=>{void startBlock(next);}}>{state==='now'?'Start focus':'Start now'}</Button>
-      <Link className="v7-button v7-secondary" to={'/calendar?view=day&block='+encodeURIComponent(next.id)}><span>Details</span></Link></>}
+      <Button aria-haspopup="dialog" onClick={event=>{blockOpener.current=event.currentTarget;setEditingBlock(next);}}>Details</Button></>}
      {state==='free'&&<><Link className="v7-button v7-primary" to="/calendar?view=day&plan=1"><span>Plan my day</span></Link>
       <Button onClick={()=>setQuick(true)}>Quick focus</Button></>}
      {state==='closed'&&<Link className="v7-button v7-secondary" to="/calendar?view=day&plan=tomorrow"><span>Plan tomorrow</span></Link>}
@@ -261,10 +266,16 @@ export default function V7Today(){
    <Suspense fallback={<p role="status">Loading today's grid…</p>}><DesktopDayGrid date={day} zone={zone} clock={instant=>clockTime(instant,zone)} entries={data.entries} blocks={data.blocks} now={now} busy={busy}
     lookOf={block=>({subjectClass:subjectClass(subjectOf(block.projectId).subject),path:projectOf(block.projectId)?.title??''})}
     onCreate={startsAt=>navigate('/calendar?view=day&date='+day+'&quick=1&start='+encodeURIComponent(startsAt))}
-    onEdit={block=>navigate('/calendar?view=day&date='+day+'&block='+encodeURIComponent(block.id))}
+    onEdit={block=>{blockOpener.current=document.activeElement as HTMLElement;setEditingBlock(block);}}
     onAdjust={(block,patch)=>{void act(()=>getStudyApi().updateCalendarBlock(block.id,block.version,patch));}}
     onDropDay={()=>{}} onSwipe={()=>navigate('/calendar?view=day&date='+day)}/></Suspense>
   </aside>}
+  {editingBlock&&<BlockSheet v7 focusTitle returnTarget={()=>blockOpener.current} block={editingBlock} date={day} zone={zone}
+   onClose={()=>setEditingBlock(null)} onRefresh={()=>{void reload();}}
+   onShowInCalendar={(block,draft)=>openCalendarAfterSheet(()=>setEditingBlock(null),()=>{
+    const date=localDay(zone,new Date(block.startsAt));
+    void navigate('/calendar?view=day&date='+date+'&edit='+encodeURIComponent(block.id),{state:{calendarBlockDraft:draft}});
+   })}/>}
   <Sheet open={quick} onClose={()=>setQuick(false)} title="Start a focus session" eyebrow="Quick focus"
    footer={<Button variant="primary" disabled={busy||!!entry} onClick={()=>{void startQuick();}}>Start focus</Button>}>
    {entry&&<p role="status" className="v7-disabled-reason">Unavailable · Finish or resume your running session first.</p>}

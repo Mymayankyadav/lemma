@@ -19,6 +19,18 @@
         "$type": "color",
         "$value": "#FFFFFF"
       },
+      "surface.track": {
+        "$type": "color",
+        "$value": "#e8e6dc"
+      },
+      "surface.lifted": {
+        "$type": "color",
+        "$value": "#ffffff"
+      },
+      "state.lifted-hover": {
+        "$type": "color",
+        "$value": "#f0eee6"
+      },
       "surface.muted": {
         "$type": "color",
         "$value": "#FAF9F5"
@@ -236,6 +248,18 @@
       "surface.overlay": {
         "$type": "color",
         "$value": "#30302E"
+      },
+      "surface.track": {
+        "$type": "color",
+        "$value": "#45453f"
+      },
+      "surface.lifted": {
+        "$type": "color",
+        "$value": "#393937"
+      },
+      "state.lifted-hover": {
+        "$type": "color",
+        "$value": "#45453f"
       },
       "surface.muted": {
         "$type": "color",
@@ -518,6 +542,87 @@
           {
             "foreground": "text.primary",
             "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "surface.track": {
+      "$type": "color",
+      "$value": "{raw.day.surface.track}",
+      "$description": "Visible progress tracks, busy blocks and loading placeholders.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.track}",
+          "day-hc": "{raw.day.surface.track}",
+          "night-hc": "{raw.night.surface.track}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.track",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.track",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "surface.lifted": {
+      "$type": "color",
+      "$value": "{raw.day.surface.lifted}",
+      "$description": "Popover, child dialog and toast fill above a sheet.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.lifted}",
+          "day-hc": "{raw.day.surface.lifted}",
+          "night-hc": "{raw.night.surface.lifted}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.lifted",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.lifted",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "state.lifted-hover": {
+      "$type": "color",
+      "$value": "{raw.day.state.lifted-hover}",
+      "$description": "Interaction fill inside a lifted surface.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.state.lifted-hover}",
+          "day-hc": "{raw.day.state.lifted-hover}",
+          "night-hc": "{raw.night.state.lifted-hover}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "state.lifted-hover",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "state.lifted-hover",
             "minimum": 4.5,
             "kind": "text"
           }
@@ -2139,70 +2244,6 @@
         "$type": "string",
         "$value": ".08em"
       },
-      "instant": {
-        "$type": "duration",
-        "$value": "80ms"
-      },
-      "fast": {
-        "$type": "duration",
-        "$value": "120ms"
-      },
-      "base": {
-        "$type": "duration",
-        "$value": "200ms"
-      },
-      "slow": {
-        "$type": "duration",
-        "$value": "320ms"
-      },
-      "scenic": {
-        "$type": "duration",
-        "$value": "900ms"
-      },
-      "ease-standard": {
-        "$type": "string",
-        "$value": "cubic-bezier(.2,0,0,1)"
-      },
-      "ease-out": {
-        "$type": "string",
-        "$value": "cubic-bezier(0,0,0,1)"
-      },
-      "ease-in": {
-        "$type": "string",
-        "$value": "cubic-bezier(.3,0,1,1)"
-      },
-      "snappy-stiffness": {
-        "$type": "number",
-        "$value": "520"
-      },
-      "snappy-damping": {
-        "$type": "number",
-        "$value": "38"
-      },
-      "gentle-stiffness": {
-        "$type": "number",
-        "$value": "260"
-      },
-      "gentle-damping": {
-        "$type": "number",
-        "$value": "28"
-      },
-      "lively-stiffness": {
-        "$type": "number",
-        "$value": "400"
-      },
-      "lively-damping": {
-        "$type": "number",
-        "$value": "22"
-      },
-      "skeleton": {
-        "$type": "duration",
-        "$value": "1.6s"
-      },
-      "skeleton-delay": {
-        "$type": "duration",
-        "$value": "300ms"
-      },
       "pressed": {
         "$type": "number",
         "$value": ".98"
@@ -2258,18 +2299,6 @@
       "star-height": {
         "$type": "dimension",
         "$value": "54px"
-      },
-      "long": {
-        "$type": "duration",
-        "$value": "600ms"
-      },
-      "completion": {
-        "$type": "duration",
-        "$value": "300ms"
-      },
-      "pulse": {
-        "$type": "duration",
-        "$value": "2s"
       },
       "toast-max": {
         "$type": "dimension",
@@ -2679,86 +2708,6 @@
         "$value": "{foundation.raw.eyebrow-tracking}",
         "$description": "Shared eyebrow tracking foundation."
       },
-      "instant": {
-        "$type": "duration",
-        "$value": "{foundation.raw.instant}",
-        "$description": "Shared instant foundation."
-      },
-      "fast": {
-        "$type": "duration",
-        "$value": "{foundation.raw.fast}",
-        "$description": "Shared fast foundation."
-      },
-      "base": {
-        "$type": "duration",
-        "$value": "{foundation.raw.base}",
-        "$description": "Shared base foundation."
-      },
-      "slow": {
-        "$type": "duration",
-        "$value": "{foundation.raw.slow}",
-        "$description": "Shared slow foundation."
-      },
-      "scenic": {
-        "$type": "duration",
-        "$value": "{foundation.raw.scenic}",
-        "$description": "Shared scenic foundation."
-      },
-      "ease-standard": {
-        "$type": "string",
-        "$value": "{foundation.raw.ease-standard}",
-        "$description": "Shared ease standard foundation."
-      },
-      "ease-out": {
-        "$type": "string",
-        "$value": "{foundation.raw.ease-out}",
-        "$description": "Shared ease out foundation."
-      },
-      "ease-in": {
-        "$type": "string",
-        "$value": "{foundation.raw.ease-in}",
-        "$description": "Shared ease in foundation."
-      },
-      "snappy-stiffness": {
-        "$type": "number",
-        "$value": "{foundation.raw.snappy-stiffness}",
-        "$description": "Shared snappy stiffness foundation."
-      },
-      "snappy-damping": {
-        "$type": "number",
-        "$value": "{foundation.raw.snappy-damping}",
-        "$description": "Shared snappy damping foundation."
-      },
-      "gentle-stiffness": {
-        "$type": "number",
-        "$value": "{foundation.raw.gentle-stiffness}",
-        "$description": "Shared gentle stiffness foundation."
-      },
-      "gentle-damping": {
-        "$type": "number",
-        "$value": "{foundation.raw.gentle-damping}",
-        "$description": "Shared gentle damping foundation."
-      },
-      "lively-stiffness": {
-        "$type": "number",
-        "$value": "{foundation.raw.lively-stiffness}",
-        "$description": "Shared lively stiffness foundation."
-      },
-      "lively-damping": {
-        "$type": "number",
-        "$value": "{foundation.raw.lively-damping}",
-        "$description": "Shared lively damping foundation."
-      },
-      "skeleton": {
-        "$type": "duration",
-        "$value": "{foundation.raw.skeleton}",
-        "$description": "Shared skeleton foundation."
-      },
-      "skeleton-delay": {
-        "$type": "duration",
-        "$value": "{foundation.raw.skeleton-delay}",
-        "$description": "Shared skeleton delay foundation."
-      },
       "pressed": {
         "$type": "number",
         "$value": "{foundation.raw.pressed}",
@@ -2840,21 +2789,6 @@
         "$type": "dimension",
         "$value": "{foundation.raw.star-height}",
         "$description": "Shared star height foundation."
-      },
-      "long": {
-        "$type": "duration",
-        "$value": "{foundation.raw.long}",
-        "$description": "Shared long foundation."
-      },
-      "completion": {
-        "$type": "duration",
-        "$value": "{foundation.raw.completion}",
-        "$description": "Shared completion foundation."
-      },
-      "pulse": {
-        "$type": "duration",
-        "$value": "{foundation.raw.pulse}",
-        "$description": "Shared pulse foundation."
       },
       "toast-max": {
         "$type": "dimension",

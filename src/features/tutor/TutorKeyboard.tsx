@@ -1,3 +1,4 @@
+import {motionReduced} from '../../ui/v7/effects';
 import {memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type HTMLAttributes, type PointerEvent, type ReactNode, type RefObject} from 'react';
 import {ArrowBigUp, ArrowBigUpDash, ArrowRightToLine, ChevronDown, ChevronLeft, ChevronRight, CornerDownLeft, Delete, Keyboard, Pin, Search} from 'lucide-react';
 import {haptic} from '../../ui/v7/haptics';
@@ -9,8 +10,6 @@ import type {KeyTouch} from './writingAid/decoder/ngramSpatial';
 const keepSelection = (event: PointerEvent) => event.preventDefault();
 /** How long a key's enlarged preview stays after the finger lifts (Gboard keeps it briefly, so a quick tap is seen). */
 const PREVIEW_LINGER = 110;
-const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-  || typeof document !== 'undefined' && document.documentElement.hasAttribute('data-v7-reduce-effects');
 
 /** N249: drawing one symbol over the keys (useKeyInk). Absent when the flag is off or the answer cannot be edited. */
 export interface KeyboardInk {
@@ -95,7 +94,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
     const preview = popup.current;
     clearTimeout(previewTimer.current);
     if (!preview) return;
-    if (!linger || preview.style.visibility === 'hidden' || reducedMotion()) {preview.style.visibility = 'hidden'; preview.removeAttribute('data-leaving'); return;}
+    if (!linger || preview.style.visibility === 'hidden' || motionReduced()) {preview.style.visibility = 'hidden'; preview.removeAttribute('data-leaving'); return;}
     preview.setAttribute('data-leaving', '');
     previewTimer.current = setTimeout(() => {preview.style.visibility = 'hidden'; preview.removeAttribute('data-leaving');}, PREVIEW_LINGER);
   };

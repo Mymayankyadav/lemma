@@ -1,0 +1,99 @@
+import {expect,test} from '@playwright/test';
+import {NOW} from './v7-scenes';
+
+const visit=(route:string,theme='day')=>'/lemma/?demo=1&flags=v7Shell,v6Shell&mode='+theme+'#'+route;
+for(const width of [390,700,840,1024,1440]){
+  test('picker owns Escape, focus and the editor draft at '+width+' px',async({page})=>{
+    await page.setViewportSize({width,height:900});
+    await page.goto(visit('/tasks?new=1'));
+    const editor=page.getByRole('dialog',{name:'New task',exact:true});
+    const title=editor.getByRole('textbox',{name:'Title',exact:true});
+    await title.fill('Keep this draft');
+    const due=page.getByRole('button',{name:/^Due:/});
+    await due.click();
+    if(width>=700){
+      const list=page.getByRole('listbox',{name:'Due',exact:true});
+      await expect(list).toBeVisible();
+      expect(await list.evaluate(el=>el.matches(':popover-open'))).toBe(true);
+      await page.keyboard.press('End');await expect(list.getByRole('option').last()).toBeFocused();
+      const fits=await list.evaluate(el=>{
+        const box=el.getBoundingClientRect();
+        return box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight;
+      });
+      expect(fits).toBe(true);
+    }else{
+      await expect(page.locator('dialog[open]')).toHaveCount(1);
+      await expect(page.getByRole('radiogroup',{name:'Due'})).toBeVisible();
+      await expect(page.getByRole('button',{name:'Back',exact:true})).toBeVisible();
+    }
+    await page.keyboard.press('Escape');
+    await expect(editor).toBeVisible();
+    await expect(due).toBeFocused();
+    await expect(title).toHaveValue('Keep this draft');
+    if(width>=700){
+      await due.click();await page.keyboard.press('Tab');
+      await expect(page.getByRole('listbox',{name:'Due'})).toHaveCount(0);
+      await expect(editor.getByRole('button',{name:/^Path:/})).toBeFocused();
+    }
+    await page.keyboard.press('Escape');
+    const guard=page.getByRole('dialog',{name:'Discard changes?'});
+    await expect(guard.getByRole('button',{name:'Keep editing'})).toBeFocused();
+    await guard.getByRole('button',{name:'Keep editing'}).click();
+    await expect(title).toHaveValue('Keep this draft');
+    await page.keyboard.press('Escape');await guard.getByRole('button',{name:'Discard changes'}).click();
+    await expect(page.locator('dialog[open]')).toHaveCount(0);
+    expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+  });
+}
+test('date grid follows civil dates across month and year and commits only on selection',async({page})=>{
+  await page.setViewportSize({width:1024,height:768});
+  await page.clock.setFixedTime(NOW);
+  await page.goto(visit('/calendar?view=day&date=2026-11-26'));
+  await page.getByRole('button',{name:'Calendar actions',exact:true}).click();
+  await page.getByRole('menuitem',{name:'Choose date',exact:true}).click();
+  const picker=page.getByRole('dialog',{name:'Choose a date'}),day=(key:string)=>picker.locator('[data-day="'+key+'"]');
+  await expect(day('2026-11-26')).toBeFocused();
+  await page.keyboard.press('ArrowDown');await expect(day('2026-12-03')).toBeFocused();
+  await page.keyboard.press('ArrowUp');await expect(day('2026-11-26')).toBeFocused();
+  await page.keyboard.press('PageDown');await page.keyboard.press('PageDown');await expect(day('2027-01-26')).toBeFocused();
+  await expect(page).toHaveURL(/date=2026-11-26/);
+  await expect(picker.locator('[data-day][tabindex="0"]')).toHaveCount(1);
+  await page.keyboard.press('Enter');await expect(page).toHaveURL(/date=2027-01-26/);
+});
+
+for(const scenario of [
+ {entry:'Capture task',kind:'Task',picker:'Due',field:'Title',route:'/'},
+ {entry:'Capture card',kind:'Card',picker:'Path',field:'Front',route:'/'},
+ {entry:'Capture card with a draft',kind:'Card',picker:'Path',field:'Front',route:'/'},
+ {entry:'Capture time block',kind:'Time block',picker:'Path',field:'Calendar block title',route:'/'},
+ {entry:'Calendar editor',picker:'Path',field:'Calendar block title',route:'/calendar?view=day&new=block'},
+ {entry:'Clean task',picker:'Due',field:'Title',route:'/tasks?new=1'},
+ {entry:'Edit card',picker:'Type',field:'Front',route:'/cards/1'},
+ {entry:'Add a goal',picker:'Subject',route:'/insights'},
+]){
+  test('one desktop Escape in '+scenario.entry+' closes only its list',async({page})=>{
+    await page.setViewportSize({width:1440,height:900});await page.clock.setFixedTime(NOW);
+    await page.goto(visit(scenario.route));
+    if(scenario.kind){
+      await page.getByRole('button',{name:'Capture',exact:true}).click();
+      await page.getByRole('textbox',{name:'What do you want to add?'}).fill(scenario.kind==='Card'?'Question :: Answer':'Read chapter tomorrow 4pm');
+      await page.getByRole('radio',{name:scenario.kind,exact:true}).click();
+      await page.getByRole('button',{name:'Add details',exact:true}).click();
+    }else if(scenario.entry==='Edit card')await page.getByRole('button',{name:'Edit card',exact:true}).click();
+    else if(scenario.entry==='Add a goal'){
+      await page.getByRole('button',{name:'Progress actions'}).click();
+      await page.getByRole('menuitem',{name:'Add a goal'}).click();
+    }
+    const panel=page.locator('dialog[data-layer-active]');
+    const field=scenario.field?panel.getByRole('textbox',{name:scenario.field,exact:true}):null;
+    if(scenario.entry==='Capture card with a draft')await field!.fill('Keep the advanced draft');
+    const value=field?await field.inputValue():null;
+    const trigger=panel.getByRole('button',{name:new RegExp('^'+scenario.picker+':')});
+    await trigger.click();
+    await expect(page.getByRole('listbox',{name:scenario.picker,exact:true})).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('listbox',{name:scenario.picker,exact:true})).toHaveCount(0);
+    await expect(panel).toBeVisible();await expect(trigger).toBeFocused();
+    if(field)await expect(field).toHaveValue(value!);
+  });
+}

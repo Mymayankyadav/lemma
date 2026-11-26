@@ -6,12 +6,12 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
-## N254 Warm Lemma palette, responsive suggestion strip and iPad tutor keyboard
+## N254 Warm Lemma palette, tutor keyboard, motion and surface ownership
 
 Stage: Harden · Status: in progress · Needs: N252 · Assigned: chat-568402#d4nw
-Done = The warm day and night palette covers the app, subject chips and brand assets, with small adjustments for color separation. The UI token HTML shows both themes. The tutor keyboard echoes the typed word, preloads local prediction in a disposable worker, and docks to the iPad window with native key dimensions. A separate pin keeps Lemma open, the keyboard switch selects the device keyboard, and tutor-authored questions and choices render mathematical notation.
-Tests: Palette, subject emblems, tutor suggestions, iPad key geometry, keyboard switching and questionnaires.
-Scope: Shared theme, brand assets, subject components, tutor interface, local writing decoder, related regression tests and docs/current.
+Done = The warm day and night palette covers the app, subject chips and brand assets, with small adjustments for color separation. The UI token HTML shows both themes. The tutor keyboard echoes the typed word, preloads local prediction in a disposable worker, and docks to the iPad window with native key dimensions. A separate pin keeps Lemma open, the keyboard switch selects the device keyboard, and tutor-authored questions and choices render mathematical notation. The motion and surface plan covers shared layer ownership, guarded drafts, route and study transitions, and the recorded audit.
+Tests: Palette, subject emblems, tutor suggestions, iPad key geometry, keyboard switching, questionnaires, layer order and focus, date navigation, Capture handoffs, Calendar, Review, Atlas, Focus and recorded motion in both themes.
+Scope: Shared theme, brand assets, subject components, tutor interface, local writing decoder, v7 app and study surfaces, local audit tooling, related regression tests and docs/current.
 Not: Publishing the app, changing the study algorithm, training models or changing server records.
 
 ## N252 iPad tutor keyboard and layout in portrait and landscape

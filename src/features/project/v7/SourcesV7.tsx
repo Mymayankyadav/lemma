@@ -6,7 +6,7 @@ import type {Source} from '../../../data/types';
 import {Button,Sheet} from '../../../ui/v7/components';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {SourceTranscriptionView} from '../SourceTranscriptionView';
-import {SourcesPanel} from '../SourcesPanel';
+import {V7SourcesManager} from '../SourcesPanel';
 
 export default function SourcesV7({projectId,sources,focusSourceId}: {projectId:string;sources:Source[];focusSourceId?:string|null}) {
   const stats=useSourceTranscriptionStats(projectId),location=useLocation();
@@ -35,11 +35,11 @@ export default function SourcesV7({projectId,sources,focusSourceId}: {projectId:
       </section>}
     {source&&<Sheet key={source.id} open title={source.title} focusTitle onClose={()=>setSelected(null)}>
         <p className="v7-meta">{source.short}{source.pageCount!=null?' · '+source.pageCount+' pages':''}</p>
-        <SourceTranscriptionView source={source} stat={stats.data?.find(row=>row.sourceId===source.id)} initiallyOpen/>
+        <SourceTranscriptionView source={source} stat={stats.data?.find(row=>row.sourceId===source.id)} initiallyOpen v7/>
         <Button small onClick={()=>{setManageSource(source.id);setSelected(null);}}>Manage this source</Button>
     </Sheet>}
     {manageSource!==undefined&&<Sheet open title="Manage sources" onClose={()=>setManageSource(undefined)}>
-      <SourcesPanel projectId={projectId} sources={sources} focusSourceId={manageSource}/>
+      <V7SourcesManager projectId={projectId} sources={sources} focusSourceId={manageSource}/>
     </Sheet>}
   </>;
 }
