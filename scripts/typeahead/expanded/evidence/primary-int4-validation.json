@@ -1,0 +1,122 @@
+{
+  "notebook": "mayankyadav9432/lemma-typeahead-export-int4-primary-20261124/2",
+  "productionQualification": false,
+  "result": {
+    "casesSha256": "d041471492b324b70cae9f353bc5aea08d9c247cd90ac5fce8de136f93d3e47c",
+    "checkpointSha256": "972efe68a9d589e53655ad0ff49a1ac1a988fea5d8ddefee2bdf4a9846782efa",
+    "coldPrefillMs": 6.624340000030315,
+    "contextLengths": {
+      "1": 60,
+      "2": 60,
+      "256": 60,
+      "48": 60,
+      "512": 60
+    },
+    "contextSplit": "validation",
+    "contexts": 300,
+    "dataSha256": "b42bb97b183c136dfe3c23f62f39c605f4f17448640d66e3d2bf61c1e0a5ba3c",
+    "downloadBytes": 19644707,
+    "exportParityPassed": false,
+    "floatCachedMaxLogitError": 1.049041748046875e-05,
+    "floatMaxLogitError": 1.049041748046875e-05,
+    "floatNll": 1029.5611772340615,
+    "floatPerplexity": 30.934454367010016,
+    "floatTopThreeSetMatches": 300.0,
+    "graph": {
+      "incremental.onnx": {
+        "initializerBytesByType": {
+          "FLOAT": 2330624,
+          "INT4": 131072,
+          "UINT4": 4259840,
+          "UINT8": 16777216
+        },
+        "operators": {
+          "Add": 66,
+          "Cast": 16,
+          "Concat": 16,
+          "Constant": 146,
+          "Div": 8,
+          "Erf": 8,
+          "Gather": 17,
+          "GatherBlockQuantized": 2,
+          "GreaterOrEqual": 8,
+          "LayerNormalization": 17,
+          "MatMul": 16,
+          "MatMulNBits": 33,
+          "Mul": 24,
+          "Not": 8,
+          "Range": 8,
+          "Reshape": 16,
+          "Shape": 16,
+          "Softmax": 8,
+          "Split": 8,
+          "Squeeze": 24,
+          "Transpose": 24,
+          "Unsqueeze": 16,
+          "Where": 8
+        }
+      },
+      "prefill.onnx": {
+        "initializerBytesByType": {
+          "FLOAT": 2330624,
+          "INT4": 131072,
+          "UINT4": 4259840,
+          "UINT8": 16777216
+        },
+        "operators": {
+          "Add": 57,
+          "Cast": 25,
+          "Concat": 16,
+          "Constant": 220,
+          "Div": 8,
+          "Erf": 8,
+          "Gather": 34,
+          "GatherBlockQuantized": 2,
+          "GreaterOrEqual": 8,
+          "LayerNormalization": 17,
+          "MatMul": 16,
+          "MatMulNBits": 33,
+          "Mul": 24,
+          "Not": 8,
+          "Range": 17,
+          "Reshape": 16,
+          "Shape": 33,
+          "Softmax": 8,
+          "Split": 8,
+          "Squeeze": 24,
+          "Transpose": 24,
+          "Unsqueeze": 56,
+          "Where": 8
+        }
+      }
+    },
+    "graphBytes": 19643759,
+    "incrementalP95Ms": 43.02301105001333,
+    "layouts": {
+      "prose": {
+        "cachedContexts": 240,
+        "cachedMatches": 205,
+        "contexts": 300,
+        "matches": 251
+      }
+    },
+    "nativeCachedMaxLogitError": 3.814697265625e-06,
+    "nativeDevice": "CPU",
+    "nativeNll": 1029.5611938484058,
+    "nativePerplexity": 30.93445608019565,
+    "onnxProvider": "CPUExecutionProvider",
+    "precision": "int4",
+    "quantCachedCases": 240.0,
+    "quantCachedTopThreeSetAgreement": 0.8541666666666666,
+    "quantCachedTopThreeSetMatches": 205.0,
+    "quantMeanTotalVariation": 0.032913123690735215,
+    "quantNll": 1026.3747794023857,
+    "quantPerplexity": 30.607628175561977,
+    "quantTopOneMatches": 286.0,
+    "quantTopThreeSetAgreement": 0.8366666666666667,
+    "quantTopThreeSetMatches": 251.0,
+    "version": 1,
+    "warmPrefillP95Ms": 308.6280419999781
+  },
+  "status": "failed parity qualification only on validation"
+}

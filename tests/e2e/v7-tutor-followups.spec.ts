@@ -41,6 +41,28 @@ const tutor = (page: Page) => page.getByRole('main', {name: 'Checkpoint tutor'})
 const answer = (page: Page) => tutor(page).getByRole('textbox', {name: 'Your answer', exact: true});
 const send = (page: Page) => tutor(page).getByRole('button', {name: 'Send', exact: true});
 
+test('a slow send shows a provisional message and restores the draft after rejection',async({page})=>{
+  const server=await waitingTurn(page);
+  await expect(tutor(page).getByText(/Waiting for/)).toBeVisible();
+  let respond!:()=>void;
+  const held=new Promise<void>(resolve=>{respond=resolve});
+  await page.route('**/rpc/tutor_followup_add',async route=>{await held;await route.fallback()});
+  const text='Can we check this implication?';
+  server.refuse='40001';
+  await answer(page).fill(text);
+  await send(page).click();
+  const preview=tutor(page).locator('[aria-label="Outgoing message"]');
+  try{
+    await expect(preview).toContainText(text);
+    await expect(preview).toContainText('Sending…');
+    await expect(send(page)).toBeDisabled();
+  }finally{respond()}
+  await expect(tutor(page).getByText(/The tutor has just replied/)).toBeVisible();
+  await expect(preview).toHaveCount(0);
+  await expect(answer(page)).toHaveText(text);
+  expect(server.adds).toHaveLength(1);
+});
+
 test('messages can be posted while the tutor has not replied, each kept with the waiting question', async ({page}) => {
   await page.setViewportSize({width: 393, height: 873});
   const server = await waitingTurn(page);

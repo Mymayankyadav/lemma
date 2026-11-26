@@ -325,6 +325,12 @@
           "unit": "enabled toggle",
           "bounds": null,
           "description": "daily intention"
+        },
+        "exam_card_mode": {
+          "type": "enum",
+          "unit": null,
+          "bounds": "later | now | quiet",
+          "description": "Default card creation mode for new exam sittings (N241, Planning)"
         }
       }
     },

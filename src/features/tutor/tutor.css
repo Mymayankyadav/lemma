@@ -69,6 +69,8 @@
 /* ── composer ── */
 .lemma-tutor .composer{flex:none;padding:4px 0 6px}
 .lemma-tutor .composer textarea{flex:1;min-width:0;height:44px;max-height:120px;border:0;background:transparent;padding:11px 0;color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/1.4 var(--v7-sans);resize:none;caret-color:var(--v7-role-action-bg);overflow-y:auto;outline:none}
+/* N232: the browser sizes the plain answer box to its text, so a tap never measures scrollHeight. */
+@supports (field-sizing: content) {.lemma-tutor .composer textarea{field-sizing:content;height:auto;min-height:44px}}
 .lemma-tutor .composer textarea:focus-visible{outline:none;box-shadow:none}
 .lemma-tutor textarea::placeholder{color:var(--v7-role-text-disabled)}
 .lemma-tutor .send{flex:none;width:var(--v7-touch);height:var(--v7-touch);border:0;border-radius:9999px;background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);display:grid;place-items:center}
@@ -96,7 +98,7 @@
 .lemma-tutor .rows{display:flex;flex-direction:column;padding:0 0 2px}
 .lemma-tutor .row{display:flex}
 .lemma-tutor .k{position:relative;isolation:isolate;flex:1 1 0;min-width:0;height:var(--cell);border:0;background:transparent;padding:0;color:var(--v7-role-text-primary);display:grid;place-items:center;font:400 24px/1 var(--v7-sans);transition:none;--capl:3px;--capr:3px}
-.lemma-tutor .k::before{content:"";position:absolute;z-index:-1;top:4px;bottom:4px;left:var(--capl);right:var(--capr);border-radius:8px;background:var(--key);box-shadow:var(--v7-shadow-1)}
+.lemma-tutor .k::before{content:"";position:absolute;z-index:-1;top:4px;bottom:4px;left:var(--capl);right:var(--capr);border-radius:8px;background:var(--tutor-key-press,var(--key));box-shadow:var(--v7-shadow-1)}
 .lemma-tutor .k:active{transform:none}
 .lemma-tutor .k.down::before{background:var(--key-down)}
 .lemma-tutor .k .kl{pointer-events:none;position:absolute;top:0;bottom:0;left:var(--capl);right:var(--capr);display:grid;place-items:center}
@@ -105,7 +107,7 @@
 .lemma-tutor .k.mid{font:500 16px/1 var(--v7-glyph)}
 .lemma-tutor .k.w15{flex-grow:1.5}
 .lemma-tutor .k.fn{color:var(--v7-role-text-primary)}
-.lemma-tutor .k.fn::before{background:var(--key-fn)}
+.lemma-tutor .k.fn::before{background:var(--tutor-key-press,var(--key-fn))}
 .lemma-tutor .k.fn.down::before{background:var(--key-down)}
 .lemma-tutor .k.fn svg,.lemma-tutor .k.go svg{width:24px;height:24px;pointer-events:none}
 .lemma-tutor .k.lbl{font:600 15px/1 var(--v7-sans)}
@@ -113,7 +115,7 @@
 .lemma-tutor .k.fn.lit{color:var(--v7-role-selection-fg)}
 .lemma-tutor .k.pill::before{border-radius:9999px}
 .lemma-tutor .k.go{color:var(--v7-role-text-on-action);flex-grow:1.5}
-.lemma-tutor .k.go::before{background:var(--v7-role-action-bg);border-radius:9999px;box-shadow:none}
+.lemma-tutor .k.go::before{background:var(--tutor-key-press,var(--v7-role-action-bg));border-radius:9999px;box-shadow:none}
 .lemma-tutor .k.go.down::before{background:var(--v7-role-action-bg);filter:brightness(1.15)}
 .lemma-tutor .k.space{flex-grow:4.6}
 .lemma-tutor .k.space .kl{font:500 11px var(--v7-sans);letter-spacing:.16em;color:var(--v7-role-text-disabled);text-transform:uppercase;opacity:.75}
@@ -230,12 +232,12 @@
 .lemma-tutor .kb {flex:none; overflow-x:clip;}
 .lemma-tutor .kb .strip {flex:none;}
 .lemma-tutor .kb .grid {scrollbar-width:thin; scrollbar-color:var(--v7-role-border-default) transparent;}
-.lemma-tutor.v7-page:has(.keyboard-composer) {overflow-y:auto; scroll-padding-top:calc(52px + var(--v7-safe-top,env(safe-area-inset-top)));}
-.lemma-tutor.v7-page:has(.keyboard-composer[data-keyboard="math"]) {
+.lemma-tutor.v7-page[data-tutor-composer] {overflow-y:auto; scroll-padding-top:calc(52px + var(--v7-safe-top,env(safe-area-inset-top)));}
+.lemma-tutor.v7-page[data-tutor-composer][data-tutor-keyboard] {
   overflow:clip;
   overflow-anchor:none;
 }
-.lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) .chat {min-height:0;}
+.lemma-tutor[data-tutor-composer][data-tutor-keyboard] .chat {min-height:0;}
 .lemma-tutor .kb .k.space {touch-action: none;}
 .lemma-tutor .kb .k:active::before {background: var(--key-down);}
 .lemma-tutor .tb:disabled, .lemma-tutor .k:disabled {opacity: .4;}
@@ -355,16 +357,16 @@
 /* On short wide screens, keep the transcript independently scrollable beside
    the keyboard while the title and session progress span both columns. */
 @media (min-width:560px) and (max-height:559px) and (orientation:landscape) {
-  .lemma-tutor.v7-page:has(.keyboard-composer[data-keyboard="math"]) {
+  .lemma-tutor.v7-page[data-tutor-composer][data-tutor-keyboard] {
     display:grid;
     grid-template-columns:minmax(0, 1fr) minmax(0, 1.45fr);
     grid-template-rows:auto auto auto minmax(0, 1fr);
     column-gap:var(--v7-space-3);
   }
-  .lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) :is(.tutor-header,.tutor-session-progress) {grid-column:1 / -1;}
-  .lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) .tutor-pinned {grid-area:3 / 1;}
-  .lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) .chat {grid-area:4 / 1;max-height:none;}
-  .lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) > .composer-status {grid-area:3 / 2;}
+  .lemma-tutor[data-tutor-composer][data-tutor-keyboard] :is(.tutor-header,.tutor-session-progress) {grid-column:1 / -1;}
+  .lemma-tutor[data-tutor-composer][data-tutor-keyboard] .tutor-pinned {grid-area:3 / 1;}
+  .lemma-tutor[data-tutor-composer][data-tutor-keyboard] .chat {grid-area:4 / 1;max-height:none;}
+  .lemma-tutor[data-tutor-composer][data-tutor-keyboard] > .composer-status {grid-area:3 / 2;}
   .lemma-tutor .keyboard-composer[data-keyboard="math"] {grid-area:4 / 2;align-self:end;min-width:0;}
   .lemma-tutor .keyboard-composer[data-keyboard="math"] :is(.composer textarea,.tutor-answer-editor) {max-height:44px;}
 }

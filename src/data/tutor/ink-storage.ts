@@ -1,12 +1,13 @@
 import type {PadStrokes} from '../../ui/v7/ink/ink';
-import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
-import {TUTOR_ATTACHMENT_COUNT,unresolvedTutorImageIds,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from './attachment-types';
+import {readTutorAcceptedSpans, referencedImageIds, type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer';
+import {IMAGE_ONLY_ANSWER,TUTOR_ATTACHMENT_COUNT,unresolvedTutorImageIds,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from './attachment-types';
 import {authGeneration,onAccountChange} from '../authBoundary';
 import {getDemoProfile,getMode,type DemoProfile} from '../mode';
 import {subscribeTutorLocalCleanup,tutorLocalScopeActive,tutorOwnerDeleted,tutorStorageOwner} from './local-storage';
 
 export type InkDraft={
   drawingId?:string;strokes:PadStrokes;width:number;accent:boolean;queuedText?:string;
+  queuedAcceptedSpans?:readonly TutorAcceptedSpan[];
   inlineImages?:true;
   editingDrawing?:TutorDrawingInk&{id:string};
   /** A durable image whose answer reference is being inserted. The working vectors survive until publication. */
@@ -59,13 +60,31 @@ export function editInkDraft(draft:InkDraft,edit:(draft:InkDraft)=>InkDraft,refe
   return count<=TUTOR_ATTACHMENT_COUNT?next:draft;
 }
 
-export function removeSubmittedInk(draft:InkDraft,submitted:ReadonlySet<string>):InkDraft {
+function answerIdentity(text:string,spans?:readonly TutorAcceptedSpan[]):string {
+  const question=text.trim()||IMAGE_ONLY_ANSWER,offset=text.length-text.trimStart().length;
+  const accepted=readTutorAcceptedSpans(question,spans?.map(span=>({...span,start:span.start-offset,end:span.end-offset})));
+  return JSON.stringify([question,accepted.map(({start,end,text,source,aidId,aidVersion})=>[start,end,text,source,aidId,aidVersion])]);
+}
+
+export function removeSubmittedInk(draft:InkDraft,submitted:ReadonlySet<string>,
+  answer?:{question:string;acceptedSpans?:readonly TutorAcceptedSpan[]}):InkDraft {
+  const queued=draft.queuedText!==undefined,refs=referencedImageIds(draft.queuedText??'');
+  const legacy=refs.length===0&&!draft.inlineImages;
+  const queuedIds=legacy?[...draft.photos.map(photo=>photo.id),...(draft.drawingId&&draft.strokes.length?[draft.drawingId]:[])]:refs;
+  const clearQueue=queued&&!!answer&&queuedIds.length>0&&queuedIds.every(id=>submitted.has(id))&&
+    (!legacy||!draft.strokes.length||!!draft.drawingId)&&
+    answerIdentity(draft.queuedText!,draft.queuedAcceptedSpans)===answerIdentity(answer.question,answer.acceptedSpans);
+  // A later answer can reuse an already-sent image. Preserve both its text and
+  // its bytes until the confirmed submission matches the queued answer itself.
+  const retained=new Set(queued&&!clearQueue?queuedIds:[]);
+  const removable=(id:string)=>submitted.has(id)&&!retained.has(id);
   const staged=draft.stagedDrawing;
-  const current=staged&&submitted.has(staged.id)?finishStagedDrawing(draft,staged.id):draft;
-  const drawing=!!current.drawingId&&submitted.has(current.drawingId);
-  const photos=current.photos.filter(photo=>!submitted.has(photo.id));
-  if(current===draft&&!drawing&&photos.length===draft.photos.length)return draft;
-  return {...current,photos,queuedText:undefined,...(drawing&&{strokes:[],drawingId:undefined})};
+  const current=staged&&removable(staged.id)?finishStagedDrawing(draft,staged.id):draft;
+  const drawing=!!current.drawingId&&removable(current.drawingId);
+  const photos=current.photos.filter(photo=>!removable(photo.id));
+  if(current===draft&&!drawing&&photos.length===draft.photos.length&&!clearQueue)return draft;
+  return {...current,photos,...(clearQueue&&{queuedText:undefined,queuedAcceptedSpans:undefined}),
+    ...(drawing&&{strokes:[],drawingId:undefined})};
 }
 
 const DRAFTS='drafts',DELETED_OWNERS='deleted-owners';
@@ -162,7 +181,10 @@ export async function removeDeletedOwnerInk(ownerId:string):Promise<void> {
 function checkedInkDraft(draft:InkDraft|undefined):InkDraft {
   if(draft&&(!Array.isArray(draft.strokes)||!Array.isArray(draft.photos)||draft.photos.some(image=>typeof image?.id!=='string')))
     throw storageUnavailable();
-  return draft??emptyInk;
+  if (!draft) return emptyInk;
+  if (!draft.queuedAcceptedSpans) return draft;
+  const spans = readTutorAcceptedSpans(draft.queuedText ?? '', draft.queuedAcceptedSpans);
+  return {...draft, queuedAcceptedSpans: spans.length ? spans : undefined};
 }
 export async function readInkDraft(scope:TutorInkScope):Promise<InkDraft> {
   return checkedInkDraft(await persist({...scope},'readonly',(store,key)=>store.get(key)));

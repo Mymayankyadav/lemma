@@ -6,12 +6,12 @@ import {isMachineRead,MACHINE_READS} from '../../../supabase/functions/mcp/machi
 // "\nNEXT: …" line after every tool result made impossible on the real server.
 describe('incident #1402 machine-readable get reads',()=>{
  it('names the N160 JSON reports, only for the get tool',()=>{
-  for(const what of ['resources','today','connection','devices','progress','export','calendar_overlaps','source_upload','atlas_worker','atlas_tag_suggestions'])
+  for(const what of ['resources','today','connection','devices','progress','export','calendar_overlaps','source_upload','atlas_worker','atlas_tag_suggestions','review_corrections'])
    expect(isMachineRead('get',{what}),what).toBe(true);
   for(const what of ['cards','notes','tasks',undefined,'',7])expect(isMachineRead('get',{what}),String(what)).toBe(false);
   expect(isMachineRead('resume',{what:'today'})).toBe(false);
   expect(isMachineRead('get',null)).toBe(false);
-  expect([...MACHINE_READS].sort()).toEqual(['atlas_tag_suggestions','atlas_worker','calendar_overlaps','connection','devices','export','progress','resources','source_upload','today']);
+  expect([...MACHINE_READS].sort()).toEqual(['atlas_tag_suggestions','atlas_worker','calendar_overlaps','connection','devices','export','progress','resources','review_corrections','source_upload','today']);
  });
  it('is what the server uses to leave the hint off',()=>{
   const server=readFileSync('supabase/functions/mcp/server.ts','utf8');

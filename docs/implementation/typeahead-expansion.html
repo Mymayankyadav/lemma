@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Lemma typeahead · Larger models and tutor-aware ranking</title>
+<style>
+:root{color-scheme:light dark;--paper:#f8f5f0;--panel:#fffcf8;--ink:#17213a;--text:#303a4b;--sub:#535e70;--rule:#d8d3ca;--accent:#3d429e;--tint:#ececfa;--font:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--serif:"Newsreader","Iowan Old Style",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
+@media(prefers-color-scheme:dark){:root{--paper:#111726;--panel:#171f31;--ink:#f1f0fa;--text:#e0dfeb;--sub:#b6bcd0;--rule:#3b4356;--accent:#bebfff;--tint:#272947}}
+*{box-sizing:border-box}html{scroll-padding-top:1.5rem}body{margin:0;background:var(--paper);color:var(--text);font:1rem/1.62 var(--font)}main,header,footer{max-width:64rem;margin:auto;padding:0 clamp(1rem,4vw,3.5rem)}
+header{padding-top:1.25rem}header p{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.45rem 1rem;margin:0;padding-bottom:.85rem;border-bottom:1px solid var(--rule);font-size:.86rem;color:var(--sub)}header strong{color:var(--ink)}h1,h2,h3{color:var(--ink);text-wrap:balance}h1,h2{font-family:var(--serif);font-weight:500}h1{font-size:clamp(2.75rem,6.4vw,5.15rem);line-height:1.03;letter-spacing:-.05em;margin:2.35rem 0 1.05rem}h2{font-size:clamp(1.95rem,3.7vw,2.7rem);line-height:1.14;letter-spacing:-.035em;margin:0 0 .9rem}h3{font-size:1.14rem;line-height:1.36;margin:1.55rem 0 .35rem}p{margin:.4rem 0 .85rem;max-width:78ch}a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:.18em}a:hover{text-decoration-thickness:2px}a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}strong,b{color:var(--ink)}
+.lede{font:clamp(1.22rem,2.4vw,1.5rem)/1.45 var(--serif);max-width:61ch;color:var(--ink)}.meta,.sources,figcaption,footer{font-size:.87rem;color:var(--sub)}.meta{margin:1rem 0}.sources{margin:.65rem 0 .1rem}.sources a{margin-right:.5rem}
+nav{display:flex;flex-wrap:wrap;gap:.45rem 1.2rem;border-block:1px solid var(--rule);padding:.8rem 0;margin:1.55rem 0 0;font-size:.92rem}section{padding:2.3rem 0;border-bottom:1px solid var(--rule)}section:last-child{border-bottom:0}.note{border-left:3px solid var(--accent);padding:.7rem 1rem;background:var(--tint);margin:1.05rem 0}.note p{margin:.15rem 0;max-width:85ch}.math{font:1.03rem/1.65 var(--serif);letter-spacing:.01em;background:var(--panel);border-left:2px solid var(--rule);padding:.42rem .8rem;max-width:100%;overflow-wrap:anywhere}
+code{font: .88em/1.4 var(--mono);overflow-wrap:anywhere}.number{font-variant-numeric:tabular-nums;white-space:nowrap}.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:.7rem 0 .75rem;font-size:.93rem}caption{text-align:left;font-size:.87rem;color:var(--sub);padding:.1rem 0 .5rem}th,td{padding:.65rem .6rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--rule)}thead th{font-weight:650;background:var(--tint);color:var(--ink)}tbody th{font-weight:650;color:var(--ink)}tbody tr:last-child>*{border-bottom:0}td p{margin:0}ol,ul{padding-left:1.35rem;margin:.45rem 0 1rem}li{padding-left:.2rem;margin:.45rem 0;max-width:88ch}details{margin:1rem 0 .1rem;padding:.7rem .95rem;border:1px solid var(--rule);background:var(--panel);border-radius:.25rem}summary{cursor:pointer;font-weight:650;color:var(--ink)}details[open] summary{margin-bottom:.65rem}.two{display:grid;grid-template-columns:1fr 1fr;gap:.65rem 1.4rem}.two article{border-top:2px solid var(--rule);padding-top:.55rem}.two h3{margin:.15rem 0 .35rem}footer{padding-top:.8rem;padding-bottom:2rem}
+@media(max-width:650px){.two{grid-template-columns:1fr}section{padding:1.65rem 0}h1{margin-top:1.8rem}.stack,.stack tbody,.stack tr,.stack td,.stack tbody th{display:block}.stack thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.stack tr{padding:.65rem 0;border-bottom:1px solid var(--rule)}.stack tbody tr:last-child{border:0}.stack td,.stack tbody th{border:0;padding:.1rem 0}.stack td[data-label]::before{content:attr(data-label) " ";font-weight:650;color:var(--ink)}.stack tbody th{color:var(--accent)}}
+@media print{:root{color-scheme:light;--paper:white;--panel:white;--ink:#111;--text:#222;--sub:#444;--rule:#bbb;--accent:#28366e;--tint:#f4f4f4}body{font-size:10pt}nav{display:none}main,header,footer{max-width:none;padding-inline:0}h1{margin-top:.4cm;font-size:30pt}h2{font-size:20pt}section{padding:.45cm 0}h2,h3,summary,caption{break-after:avoid}tr,.note,.math{break-inside:avoid}.two{display:block}details{border:0;padding:0}.scroll{overflow:visible}a{color:inherit}}
+
+.improvement{border-top:1px solid var(--rule);padding:.3rem 0 .9rem}
+.improvement h3{font-size:1.2rem;margin:1.05rem 0 .6rem}
+.improvement dl{margin:.4rem 0}.improvement dt{font-size:.8rem;letter-spacing:.015em;color:var(--sub);font-weight:600;margin:.55rem 0 .1rem}
+.improvement dd{margin:0;max-width:79ch}
+.stages li{margin:.8rem 0}
+.audit{margin-top:2rem;padding:1rem clamp(.65rem,2vw,1.2rem)}
+.audit>summary{font-size:1.12rem}
+.audit section{padding:1.75rem 0}
+@media print{.improvement{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><p><strong>Lemma · Tutor answer keyboard</strong><span>Expanded plan · 24 November 2026</span></p></header>
+<main id="top">
+<h1>Typeahead expansion plan</h1>
+<p class="lede">Build larger n-gram and neural models on much broader mathematical corpora, then rank their completions using the tutor’s scoped preferences and the learner’s typed context.</p>
+<p>This revision adds <strong>sixteen concrete improvements</strong> to the handoff branch, with proposed sizes, ranking behavior, an implementation order and measurable acceptance criteria. The earlier mathematical audit remains available below.</p>
+<p class="meta">Reviewed <code>ccr-220fd71d-iaf0fy</code> at <code>1444b245</code>. The local checkout and remote <code>main</code> were at <code>260dae12</code>. Their common ancestor is <code>787490ad</code>, the revision cited by the original plan.</p>
+<nav aria-label="Plan sections"><a href="#nov25">Current evaluation</a><a href="#delivery-result">Earlier 40-answer replay</a><a href="#scale">Scale and data</a><a href="#ranking">Tutor ranking</a><a href="#improvements">16 improvements</a><a href="#plan">Delivery and budgets</a><a href="#audit">Math review</a><a href="#implementation">Implementation evidence</a><a href="#sources">Evidence and sources</a></nav>
+
+
+<section id="nov25">
+<h2>Exact edits and independent evaluation</h2>
+<p>In <strong>Settings → Tutor → Writing aid</strong>, turn on <strong>Try faster typing</strong> to try the expanded count predictor for the current account on this device. The optional FP16 model installs from a verified local file. The count predictor serves suggestions while the FP16 model runs, and only timely neural scores can reorder them. Turn off the experiment at any time to return to regular suggestions.</p>
+<p>The Tutor now ranks a replacement range, literal insertion and resulting caret together. In a Chromium probe, reversing the tutor's preference between “notation” and “notational” switched the center suggestion. The underlying language scores stayed at −4.570 and −4.897. Accepting “notation” in the middle of a sentence preserved the trailing text, put the caret at offset 27 and supported undo.</p>
+<div class="scroll"><table class="stack"><caption>Evidence for the revised implementation, 25 November 2026</caption><thead><tr><th>Area</th><th>Verified behavior</th></tr></thead><tbody>
+<tr><th>Proof and tutor context</th><td>100 controlled preference pairs and 100 withholding cases passed. Scope changes neutralize the preference. Offered multiword completions require a learner-authored opening from the tutor's scaffold.</td></tr>
+<tr><th>Natural math answers</th><td>10,000 distinct public question threads from Math Stack Exchange and MathOverflow supplied 200 fitting threads, 100 development threads and 1,000 reserved final threads after exclusion. The scorer compares the exact displayed edit and the actual accepted change.</td></tr>
+<tr><th>Returning to a partly typed word</th><td>After typing one more letter in an existing learner-authored stem, the previous implementation showed zero exact edits in 50 development cases. The first fix showed 28. A repeat with the final word-boundary guard showed 32 of 50 (64%, 95% interval 50–76%). The composer checks the origin of every character in the stem. <a href="typeahead-evidence/middle-edit-development.json">Both diagnostic runs</a>.</td></tr>
+<tr><th>Count model</th><td>A bounded successor index retains original tie order. A 16-bit log-probability format reconstructs row backoff from the decoded lower-order model. The selection gates cover both menu recall and full-answer cost.</td></tr>
+<tr><th>Optional model</th><td>The 512-token FP16 file contains 68,193,934 bytes. The owner can install and remove it in Writing assistance. It is an explicit download or local file selection. Desktop WASM matched 298/300 full and 268/270 cached results. Cached p95 was 292.6 ms on a shared host. ADB found no physical phone. <a href="typeahead-evidence/optional-fp16-desktop-300.json">All 300 cases</a>.</td></tr>
+</tbody></table></div>
+<p>The source ranker fitted 5,684 opportunities across 200 threads. On the separate 100-thread development split, conditional log loss fell from 2.2394 to 1.7823. The eligible pool's exact top-three count increased from 955 to 961 before the composer groups variants and stabilizes the three visible slots. <a href="../../src/features/tutor/writingAid/menu-ranker.json">Coefficients and capture identities</a>.</p>
+<p>On the 100 development threads, the previous implementation took 8,829 actions and the fitted candidate took 8,795 against 12,990 manual key equivalents. Estimated savings rose from 32.03% to 32.29%. The paired gain was 0.26 percentage points with a 95% interval of −0.07 to +0.58 points. The predeclared sample-size rule selected 200 held-out threads. <a href="typeahead-evidence/natural-development-cost.json">Development cost and enrollment</a>.</p>
+<p>The optional FP16 package passed the strict cold-transfer check on desktop Chromium at 112,082,616 of 134,217,728 bytes including runtime and support. Across 274 scheduled edits on ten development threads, zero of 230 eligible edits received a neural score by the 60 ms deadline. The count model continued serving the menu. <a href="typeahead-evidence/optional-fp16-natural-development.json">Strict browser trial</a>.</p>
+<h3>Would more topics help?</h3>
+<p>Four-grams capture adjacent phrases such as “upper bound.” A topic signal could connect a distant clue in a question with an eligible answer word. We fitted 34,266 question-to-answer associations on 5,000 public training pairs. The fixed weight increased word top-three hits from 898 to 902 of 2,865 across 100 separate development threads. Seven exact completions entered the menu and three left it. The gain was 0.14 percentage points with a thread-bootstrap 95% interval of −0.07 to +0.36 points. We retained the current topic routing. The experiment measured word ranking. LDA candidate generation and full-answer cost were outside this comparison.</p>
+<p>An earlier direct word-prediction experiment found about one percentage point in simulated keystroke savings on conversational text from soft topic adaptation. Recent keyboard research found benefits from long-range context and showed that real users sometimes type words even when a correct suggestion is visible. The Lemma decision uses the held-out math result. <a href="typeahead-evidence/topic-development.json">Development comparison</a> · <a href="https://aclanthology.org/P08-3011.pdf">Topic adaptation for word prediction</a> · <a href="https://aclanthology.org/2024.emnlp-industry.93/">Gboard’s contextual decoder</a> · <a href="https://doi.org/10.1145/3749520">Mobile suggestion use</a></p>
+<p><a href="typeahead-evidence/natural-replay-freeze.json">Frozen input identities and sampling method</a> · <a href="../current/N238.md">Implementation record</a></p>
+</section>
+<section id="delivery-result">
+<h2>Earlier implementation and 40-answer results</h2>
+<p>The expanded four-gram, topology, linear algebra and LaTeX packs and calibrated mixture are included in
+PR <strong>#1861</strong>. The verified packs remain behind the existing default-off rollout flags.</p>
+<div class="scroll"><table class="stack">
+<caption>Frozen browser replay on 40 short answers</caption>
+<thead><tr><th scope="col">Arm</th><th scope="col">Boundary top-three</th><th scope="col">Key equivalents saved</th></tr></thead>
+<tbody>
+<tr><th scope="row">Corrected trigram</th><td data-label="Boundary top-three">121/468 · 25.85%</td><td data-label="Key equivalents saved">1,015/3,003 · 33.80%</td></tr>
+<tr><th scope="row">Expanded counts and calibrated mixture</th><td data-label="Boundary top-three">121/468 · 25.85%</td><td data-label="Key equivalents saved">1,026/3,003 · 34.17%</td></tr>
+<tr><th scope="row">With Tutor priorities</th><td data-label="Boundary top-three">122/468 · 26.07%</td><td data-label="Key equivalents saved">1,029/3,003 · 34.27%</td></tr>
+<tr><th scope="row">With prospective personalization</th><td data-label="Boundary top-three">122/468 · 26.07%</td><td data-label="Key equivalents saved">1,027/3,003 · 34.20%</td></tr>
+</tbody></table></div>
+<p>The replay took exact-match taps on answers of 65–85 codepoints and measured key equivalents.
+Expanded counts missed the targets of 55% key savings and 35% boundary top-three.
+Every arm matched 1 of 55 symbol opportunities. Paired 95% intervals included zero for the effects
+of the expanded packs, Tutor ranking and prospective personalization.
+Actual learner typing, acceptance and retention were not measured.</p>
+<p>The final scoped cold subtotal was 29,267,559 uncompressed bytes. In desktop Chromium at 4× CPU,
+100 warm taps per condition measured 35.2 ms p95 empty and 39.0 ms with eight equations. The empty case missed
+32 ms. Its worker measured 26.6 ms p95 against 8 ms. The eight-equation case met both timing targets.
+The browser used an animation-frame proxy for presentation.</p>
+<p>The three primary quantized graphs missed the parity gate. The requested FP16 trial passed numerical validation
+and completed one desktop WASM compatibility case, then failed the graph and cold byte limits. Neural and grey-text
+offers stayed off. Physical-device qualification remains open.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/pull/1861">Implementation PR</a>
+<a href="typeahead-evidence/final-frozen-replay.json">Final replay and paired evidence</a>
+<a href="typeahead-evidence/final-model-mass-and-fit.json">Model and calibration audit</a>
+<a href="typeahead-evidence/final-desktop-cold-and-timing.json">Final desktop cold and timing evidence</a></p>
+</section>
+
+<section id="scale">
+<h2>Larger models, larger training corpora</h2>
+<p>The expansion covers both the n-gram and neural models. The starting point is a trigram built on <strong>8.49 million tokens</strong> and a written, untrained <strong>7.55-million-parameter</strong> neural model. The targets below are proposed experiments. Their product value will be measured on identical learner-visible suggestions.</p>
+<div class="scroll"><table class="stack"><caption>Proposed scale compared with branch 1444b245</caption><thead><tr><th scope="col">Component</th><th scope="col">Current branch</th><th scope="col">Expanded plan</th></tr></thead><tbody>
+<tr><th scope="row">N-gram corpus</th><td data-label="Current">8,489,412 word/maths tokens from one Math StackExchange subset.</td><td data-label="Proposed">A 100M-token development sample, then <strong>500M–1B unique, cleaned word/maths tokens</strong> across explanations, proofs and question/answer text. The full target is about 59–118× the current token count.</td></tr>
+<tr><th scope="row">N-gram model</th><td data-label="Current">3-gram, 30,005 IDs, 5.11 MB asset.</td><td data-label="Proposed"><strong>4-gram and 5-gram candidates</strong>, about 60,000 lexical entries plus special tokens, up to 20 MiB for the general model and 4 MiB for one active subject pack.</td></tr>
+<tr><th scope="row">Neural corpus</th><td data-label="Current">A training script for the same small corpus, repeated across epochs.</td><td data-label="Proposed"><strong>500M–1B unique training subword tokens</strong> from the shared document collection. Track unique tokens and total training exposures separately. Save checkpoints at 100M, 500M and 1B processed tokens.</td></tr>
+<tr><th scope="row">Primary neural candidate</th><td data-label="Current">4 layers, width 192, 3 heads, 48 word tokens.</td><td data-label="Proposed"><strong>33.87M parameters</strong>, 8 layers, width 512, 8 heads, a 16,384-token vocabulary and 512-token context. About 4.5× the parameter count.</td></tr>
+<tr><th scope="row">Larger neural candidate</th><td data-label="Current">No larger candidate.</td><td data-label="Proposed"><strong>70.22M parameters</strong>, 12 layers, width 640, 10 heads, the same 16,384-token vocabulary and 1,024-token context. About 9.3× the parameter count. Compare at a matched data budget after the primary model's throughput is measured.</td></tr>
+<tr><th scope="row">Equation model</th><td data-label="Current">LaTeX trigram, 444,412-byte asset, broad letter classes.</td><td data-label="Proposed"><strong>A LaTeX 4-gram</strong> from an initial 50M-token set of extracted formulae, with command arguments, delimiters and locally declared symbol roles. Measure its corpus size independently of prose.</td></tr>
+</tbody></table></div>
+<p>The two neural parameter counts use the existing block design, a 4× feed-forward expansion, tied input/output embeddings and learned position embeddings. Architectural changes would require a fresh count. A token in the existing word model and a token in the subword model represent different amounts of text.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/public/models/typeahead/ngram-v1/manifest.json">Prose baseline</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/public/models/typeahead/latex-v1/manifest.json">Equation baseline</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/train.py#L15">Current neural architecture</a></p>
+
+<h3>A larger corpus with the right mix</h3>
+<p>Start with a proposed mix of <strong>60% educational mathematical explanations, 30% proof/definition prose and 10% short learner-style answers</strong>, measured in each model's own tokens. Use public, attributable question/answer text and carefully reviewed synthetic examples for the last group. Keep the learner's own answers in the existing local evaluation and personal model unless separately authorized for export. Include false starts, notation questions and incomplete proofs in the replay and ranking data. Tune the mix on learner-style validation, report per-subject results, and publish the achieved proportions when source availability changes.</p>
+<div class="scroll"><table class="stack"><thead><tr><th scope="col">Source pool</th><th scope="col">Contribution and handling</th></tr></thead><tbody>
+<tr><th scope="row">FineMath-4+</th><td>Its card reports 9.6B tokens and 6.7M documents of educational mathematics. Use a filtered sample for explanatory prose. The card lists ODC-By and CommonCrawl terms. Preserve document provenance and source notices. <a href="https://huggingface.co/datasets/HuggingFaceTB/finemath/blob/main/README.md">Dataset card</a></td></tr>
+<tr><th scope="row">OpenWebMath</th><td>The authors report 14.7B tokens. Add domains and subjects missing from the first sample, after deduplication across sources. <a href="https://github.com/keirp/OpenWebMath/blob/main/README.md">Authors' documentation</a></td></tr>
+<tr><th scope="row">Proof-Pile-2 and proof sources</th><td>Proof-Pile-2 includes arXiv, OpenWebMath and mathematical code, totaling 55B tokens. Select proof and definition prose and extracted formulae by source. Its OpenWebMath subset overlaps the pool above. Keep formal-code streams available for a separate equation experiment. Its card retains underlying source licences. <a href="https://huggingface.co/datasets/EleutherAI/proof-pile-2/blob/main/README.md">Dataset card</a></td></tr>
+</tbody></table></div>
+<p>Build a shared document manifest, deduplicate before splitting, and group versions of the same page, question thread, paper and paraphrased problem together. Keep train, validation, calibration and final test groups disjoint across <em>both</em> models and the tokenizer. Remove overlaps with the Lemma replay. Record document counts, retained tokens, source/subject coverage, hashes and licence metadata after filtering. Dataset-card totals use their publishers' tokenizers and describe available source pools.</p>
+<p>Scale preparation with streaming shards and a disk-backed n-gram estimator such as KenLM, followed by a versioned browser export. The present builder materializes sentences and counts in Python memory. For the new exporter, compare count pruning with entropy-based pruning at the same byte budget. KenLM's documented built-in pruning uses count thresholds. Validate continuation-count smoothing, BOS/EOS conventions and normalized exported scores against tiny exact cases and the uncompressed reference. <a href="https://kheafield.com/code/kenlm/estimation/">KenLM estimation documentation</a></p>
+
+<h3>Make the larger download explicit</h3>
+<p>The proposed general n-gram budget is <strong>20,971,520 bytes</strong>, with <strong>4,194,304 bytes</strong> for one active subject pack. The neural targets are <strong>40 MiB</strong> for the 33.87M model and <strong>48 MiB</strong> for a quantized 70.22M model. These replace the earlier proposed 6 MB n-gram and 20 MB neural limits in this expansion plan. Count the tokenizer, metadata and external tensor files in the download report.</p>
+<p>A primary installation has a proposed <strong>68 MiB total typeahead-asset budget</strong>, and the larger option <strong>76 MiB</strong>. Those totals allow the general model, one subject pack, one neural model and 4 MiB for the equation model, tokenizer and metadata. Load a subject pack and neural weights on demand, verify their hashes, and evict the previous pack when switching subjects. Measure peak working memory separately from file size.</p>
+<p>Ideal weight storage is 32.30 MiB at int8 for the primary model and 33.49 MiB at int4 for the larger model, before quantization scales, graph overhead and any tensors kept at higher precision. The browser's operator implementation determines whether that representation is usable. The repository's ONNX Runtime Web 1.27.0 operator table lists <code>MatMulNBits</code> and <code>GatherBlockQuantized</code> for WebGPU. Run the exported graph on the actual device and provide a measured WASM path or the n-gram when acceleration is unavailable. <a href="https://github.com/microsoft/onnxruntime/blob/v1.27.0/js/web/docs/webgpu-operators.md">Pinned runtime operator table</a></p>
+</section>
+
+
+<section id="ranking">
+<h2>Let the tutor express relative priority</h2>
+<p>Today <code>setDecoderContext</code> mixes question, step and tutor terms into one word-count cache. <code>answerAidContext</code> contributes plain terms and symbols, while the phrase bank uses fixed prefix scores and prepends its matches. Add a tutor hint that can <strong>prefer, leave neutral or deemphasize</strong> an eligible completion for the current turn and context.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/decoder/ngramSpatial.ts#L161">Pooled cache</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/answerAids.ts#L38">Current aid context and bank</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/engine.ts#L162">Bank insertion</a></p>
+<div class="scroll"><table class="stack"><caption>Proposed optional ranking hints alongside the existing aid fields</caption><thead><tr><th scope="col">Information</th><th scope="col">Meaning</th></tr></thead><tbody>
+<tr><th scope="row">Entry and kind</th><td>A canonical word, phrase or symbol, with its permitted aliases and a stable entry ID.</td></tr>
+<tr><th scope="row">Priority</th><td><code>prefer</code>, <code>neutral</code> or <code>deemphasize</code>. Omitted hints are neutral. The existing <code>withhold</code> field continues to exclude an insertion.</td></tr>
+<tr><th scope="row">Role</th><td>A given fact, learner-authored term, neutral wording, an alternative mentioned in the question or part of the goal. A role records why an entry is present. Merely appearing in the question does not establish the learner's choice.</td></tr>
+<tr><th scope="row">Applicability</th><td>Subject, active checkpoint step, prose/equation mode, and a finite set of permitted prefix or phrase states. Prefer the most specific active hint. A broader hint applies when no more specific hint matches.</td></tr>
+<tr><th scope="row">Lifetime and provenance</th><td>Bind hints to the handoff, turn, aid version and editor instance. Clear them when that context changes. Keep tutor hints and learner-authored context identifiable.</td></tr>
+</tbody></table></div>
+<p>Keep withheld entries in guard metadata. Keep the existing string arrays readable. Introduce optional structured ranking hints in a versioned contract and map older aids to neutral hint values. Validate lengths, enumerated roles and conditions on both client and server, with replacement, retry and undo semantics. A repeated entry contributes once. Keep ranking hints outside word-occurrence counts to prevent double counting their influence. Explicit withholding takes precedence over priority.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/supabase/functions/_shared/tutor-answer-aids.ts#L9">Current aid contract</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/docs/current/N234.md">N234 contract and open work</a></p>
+
+<h3>Promotion and demotion on one scale</h3>
+<div class="math">s(c | h) = wᵀφ(c, h) + b<sub>tutor</sub>(c, h)<br>
+b<sub>tutor</sub>(c, h) = clip(β ∑<sub>matched entries</sub> priority × match strength, −B, B)</div>
+<p>For the initial experiment, use priorities +1, 0 and −1, <i>β</i> = log 2 and <i>B</i> = log 4. A fully matched hint doubles or halves the unnormalized weight, with a bounded total effect. Match strength lies between 0 and 1 and is zero outside the hint's scope. Equal-specificity contradictory hints cancel. Tune these starting values on held-out ranking examples. The base features include language-model evidence, typed-prefix fit, touch likelihood, source-specific cache evidence, phrase position and local acceptance history.</p>
+<p>Consider a learner asked to restate a definition, who has typed “the def”. The three completions below are assumed eligible. Their base weights are normalized over this illustrative three-item list only.</p>
+<div class="scroll"><table><caption>Illustrative arithmetic showing how a lower-ranked completion can rise</caption><thead><tr><th scope="col">Completion</th><th scope="col">Base weight</th><th scope="col">Tutor hint</th><th scope="col">Adjusted weight</th><th scope="col">Order</th></tr></thead><tbody>
+<tr><th scope="row">definition</th><td class="number">0.30</td><td>Prefer ×2</td><td class="number">0.60</td><td>1</td></tr>
+<tr><th scope="row">defect</th><td class="number">0.25</td><td>Neutral</td><td class="number">0.25</td><td>2</td></tr>
+<tr><th scope="row">deformation</th><td class="number">0.45</td><td>Deemphasize ×½</td><td class="number">0.225</td><td>3</td></tr>
+</tbody></table></div>
+<p>After normalization these three weights are 55.81%, 23.26% and 20.93%. They express relative preference inside this list. Actual acceptance probability needs calibration on displayed suggestions. In a geometry question about deformation, different applicable hints can reverse the order. As the learner types “deform”, prefix evidence makes the matching completion eligible even if it carried a lower priority earlier.</p>
+
+<h3>Use relations and phrase position</h3>
+<p>If the tutor gives “<i>U</i> is an open subset of <i>Y</i>” and “<i>f</i> maps <i>X</i> to <i>Y</i>”, the text “<i>U</i> is open in …” can rank <i>Y</i> above <i>X</i> while restating the given fact. A symbol table can retain the set's ambient space, the map's domain and codomain, and the scope of a local declaration. Missing or ambiguous annotations give neutral type evidence. A prompt asking the learner to choose a witness still requires the learner's choice.</p>
+<p>For a wording phrase already in progress, boost its valid next extension and reduce other boilerplate openers that would interrupt it. Use the full phrase and sentence state, preserve punctuation, and stop its preference after completion. Apply a bounded bonus once to a whole displayed phrase. For token-by-token search, use a bounded prefix potential and its change at each step, so a phrase receives no repeated full bonus for every token. Duplicate or nested phrases share evidence.</p>
+<p>Keep hard withholding and learner-choice eligibility outside the learned score. “Is <i>f</i> injective or surjective?” provides two alternatives. A tutor priority cannot itself establish which conclusion the learner reached. Check the exact insertion plus the surrounding draft before display and acceptance, including phrases that cross the caret. This permits strong contextual ranking among eligible candidates.</p>
+</section>
+
+
+<section id="improvements">
+<h2>Sixteen improvements to the current branch</h2>
+<p>Each item below changes a model, an input, a ranking decision or the evidence used to accept it. The current behavior is pinned to <code>1444b245</code>. The proposed sizes, initial weights and acceptance checks are planning choices for the expanded work.</p>
+<article class="improvement" id="improve-corpus">
+<h3>1. Expand and balance the shared corpus</h3>
+<dl><dt>Current branch</dt><dd>The prose asset uses 8.49M tokens from a single StackExchange subset. The neural preparation script rebuilds that same collection in memory.</dd><dt>Proposed change</dt><dd>Prepare a 100M development sample and a 500M–1B-token training pool with streaming shards, document-level provenance and the proposed explanatory/proof/learner-style mix. Use separate token counts for each model.</dd><dt>Acceptance evidence</dt><dd>Publish retained size, duplicate removal and per-subject coverage. Compare the current-sized and enlarged data at a fixed model size. Record aggregate and subject-level replay changes.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/prepare.py#L27">Current preparation</a></p>
+</article>
+<article class="improvement" id="improve-ngram">
+<h3>2. Build larger 4-gram and 5-gram models</h3>
+<dl><dt>Current branch</dt><dd>The builder and browser layout encode only trigrams. Pruning is chosen from count thresholds to fit about 5.5 MB.</dd><dt>Proposed change</dt><dd>Extend training and the versioned browser format to orders 4 and 5, about 60k lexical entries, and a 20 MiB target. Keep per-history probability totals consistent after pruning and quantization. Compare entropy-based and count pruning at matched bytes.</dd><dt>Acceptance evidence</dt><dd>Verify lookup against the reference, compare 3/4/5-grams at the same corpus and vocabulary, and report KSR, OOV rate and p95 worker lookup within the 8 ms target.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/kn_build.py#L1">Builder and format</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/decoder/kn.ts#L21">Runtime format</a></p>
+</article>
+<article class="improvement" id="improve-subjects">
+<h3>3. Adapt vocabulary and probabilities to the active subject</h3>
+<dl><dt>Current branch</dt><dd>One general maths model and a fixed 10% cache weight serve every subject.</dd><dt>Proposed change</dt><dd>Mix the general model with one active subject model and separately normalized question, draft and personal caches over a common word/symbol outcome space. Learn nonnegative mixture weights that sum to one on held-out subject data, with shrinkage toward the general model when evidence is sparse.</dd><dt>Acceptance evidence</dt><dd>Switch between topology and linear algebra on the same ambiguous prefix. Report per-subject gains and cross-subject regressions, and verify a missing subject pack gives a normalized fallback.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/decoder/ngramSpatial.ts#L247">Current language score</a></p>
+</article>
+<article class="improvement" id="improve-neural">
+<h3>4. Train 34M and 70M neural candidates</h3>
+<dl><dt>Current branch</dt><dd>The untrained script defines a 7.55M-parameter transformer with 48-token context.</dd><dt>Proposed change</dt><dd>Use the 33.87M configuration as the first larger model and compare the 70.22M configuration after measuring throughput. Train on the enlarged corpus and retain checkpoints along the data schedule. Evaluate each exported precision.</dd><dt>Acceptance evidence</dt><dd>Hold data fixed for the size comparison. Measure final-strip KSR, top-three recall, actual model bytes and device latency. The larger candidate advances when its incremental benefit is measurable.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/train.py#L15">Current model</a></p>
+</article>
+<article class="improvement" id="improve-tokenizer">
+<h3>5. Represent rare mathematical terms with subwords</h3>
+<dl><dt>Current branch</dt><dd>The neural model shares a 30,005-entry word vocabulary and maps rarer words to one unknown ID.</dd><dt>Proposed change</dt><dd>Train and freeze a 16,384-token tokenizer with byte fallback on training documents only. Reserve structural markers, preserve common TeX commands and test case/Unicode handling. Score a full word extension and its boundary across all its subword pieces, sharing prefix work.</dd><dt>Acceptance evidence</dt><dd>Test Hausdorff, non-Archimedean, accented names, apostrophes and partly typed compounds. Tokenizer IDs and segmentation must match in preparation, export and browser. Compare models on the same word/character replay.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/prepare.py#L42">Word vocabulary and IDs</a></p>
+</article>
+<article class="improvement" id="improve-context">
+<h3>6. Use longer context with explicit tutor and learner roles</h3>
+<dl><dt>Current branch</dt><dd>The neural interface sees a short flat word sequence. The n-gram helper reads two IDs from a 400-character suffix.</dd><dt>Proposed change</dt><dd>Allocate a 512-token prompt, then test 1,024 tokens. Include the active question, given terms/symbols, current step, applicable hints and the draft before the caret with distinct role markers. Start at 128 tokens for question/context, 128 for aids and 256 for the draft, lending unused space to the draft. Train a final adaptation stage on that layout and mask loss on prompt metadata, after general prose pretraining. Form training hints from the question and available prefix under the runtime policy.</dd><dt>Acceptance evidence</dt><dd>Use matched-prefix examples whose correct next item changes with the question. Measure gains with and without tutor context, long-range recall and performance after an edit in the middle. Missing aids and oversized prompts get deterministic handling.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/train.py#L15">48-token input</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/decoder/kn.ts#L118">Two-token context</a></p>
+</article>
+<article class="improvement" id="improve-priority">
+<h3>7. Add tutor promotion and demotion hints</h3>
+<dl><dt>Current branch</dt><dd>Terms are pooled by occurrence and bank matches are prepended. The aid contract has no relative-priority field.</dd><dt>Proposed change</dt><dd>Add optional prefer/neutral/deemphasize hints with turn, subject and prefix scope. Apply bounded signed log-score adjustments once per canonical entry. Missing hints are neutral. Repeated hints cannot accumulate unlimited influence.</dd><dt>Acceptance evidence</dt><dd>Run paired cases with fixed prefix and candidates, changing only priority. Verify the requested ordering, neutral behavior, duplicated-entry invariance and successful completion of a strongly typed lower-priority term.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/answerAids.ts#L56">Current bank</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/supabase/functions/_shared/tutor-answer-aids.ts#L9">Aid fields</a></p>
+</article>
+<article class="improvement" id="improve-symbols">
+<h3>8. Rank symbols using their declared roles</h3>
+<dl><dt>Current branch</dt><dd>Single letters from the draft and question are ordered mostly by recency and reciprocal rank.</dd><dt>Proposed change</dt><dd>Retain declared sets, maps, ambient spaces, domain/codomain and binder scope in structured context. Rank the conditional symbol distribution using the relation being restated and typed intent. Let uncertain types contribute neutral evidence.</dd><dt>Acceptance evidence</dt><dd>For a given U ⊆ Y, rank Y above X when restating its ambient space. Test nested scopes, redeclarations and incomplete annotations. Keep new-witness choices behind the common eligibility rule.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/decoder/ngramSpatial.ts#L145">Symbol extraction</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/engine.ts#L175">Symbol probability allocation</a></p>
+</article>
+<article class="improvement" id="improve-phrases">
+<h3>9. Score phrases by intent and position</h3>
+<dl><dt>Current branch</dt><dd>Bank scores depend on matched word count and a fixed ceiling. Matching considers only a sentence suffix.</dd><dt>Proposed change</dt><dd>Keep phrase identity, role, punctuation and progress. Favor the active phrase's valid continuation, lower unrelated openers, and retire completed phrases. Use a bounded whole-phrase bonus or incremental prefix potential during search.</dd><dt>Acceptance evidence</dt><dd>Test “with this” → “notation” in a wording bank and restore neutral priorities after the phrase ends. Compare long and short phrases, nested duplicates and abandoned prefixes. Verify no repeated full bonus per token.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/answerAids.ts#L56">Phrase matching</a></p>
+</article>
+<article class="improvement" id="improve-menu">
+<h3>10. Rank one shared candidate menu</h3>
+<dl><dt>Current branch</dt><dd>The decoder normally returns 12 candidates, and the composer chooses the first available source among equation readings, symbols, LaTeX and words.</dd><dt>Proposed change</dt><dd>Generate up to 64 eligible candidates, testing 128 only where recall improves. Combine n-gram, neural proposals, tutor terms, copy candidates and active notation sources. Deduplicate exact insertions, filter unsafe candidates, score on common features, then choose three with stable slot identity.</dd><dt>Acceptance evidence</dt><dd>Measure recall before ranking and after filtering, including rare names added by the tutor. Replay the exact final menu through the UI. Record replacement rate and ensure a tap applies the proposal that was visible.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/decoder/ngramSpatial.ts#L275">Candidate limit</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/TutorComposer.tsx#L212">Source precedence</a></p>
+</article>
+<article class="improvement" id="improve-eligibility">
+<h3>11. Apply learner-choice and withholding rules to every insertion</h3>
+<dl><dt>Current branch</dt><dd>Seen risky words can pass early, bank words enter after the general guard, and the withheld matcher splits multiword phrases into selected longer words.</dd><dt>Proposed change</dt><dd>Check the full insertion and adjacent draft across every candidate source. Preserve phrase and role information, resolve hard withholding before ranking, and revalidate at acceptance against the current turn, aid version and learner-authored prefix.</dd><dt>Acceptance evidence</dt><dd>Cover “injective or surjective”, multiword “not all”, punctuation variants, a withheld phrase split across the caret, and a bank with a high priority. Test both display and acceptance paths.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/engine.ts#L67">Learner-choice rule</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/answerAids.ts#L27">Withheld matcher</a></p>
+</article>
+<article class="improvement" id="improve-equations">
+<h3>12. Expand equation prediction and grammar coverage</h3>
+<dl><dt>Current branch</dt><dd>The equation model is a small trigram. Environment bodies and the Equation sheet integration remain unfinished in N235.</dd><dt>Proposed change</dt><dd>Train the LaTeX 4-gram on the expanded formula corpus. Preserve command argument roles, environment nesting and declared-symbol classes. Apply it in inline maths and the Equation sheet, with separate quality and latency reports.</dd><dt>Acceptance evidence</dt><dd>Replay fractions, roots, matrices, nested delimiters, environments and incomplete edits. Check balanced accepted output, legal continuations and learner-choice handling when an operand must be chosen.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/docs/current/N235.md">N235 status</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/latexGrammar.ts#L49">Current parser</a></p>
+</article>
+<article class="improvement" id="improve-runtime">
+<h3>13. Reuse neural state and qualify each device tier</h3>
+<dl><dt>Current branch</dt><dd>The export accepts full context and returns last-position logits. It exposes no key/value cache, and the n-gram executes on the main thread.</dd><dt>Proposed change</dt><dd>Export prefill and incremental decoding paths with cached attention state. Keep inference in a worker, recompute after earlier edits, and invalidate on context/version changes. Retokenize the unfinished word and reuse only the stable earlier prefix. With learned absolute positions, sliding past the context limit requires a fresh prefill. Verify embedding and output quantization. Select the measured 34M, 70M or n-gram path according to runtime capability.</dd><dt>Acceptance evidence</dt><dd>Measure cold/warm prefill, per-token decoding, end-to-end display, peak memory, long-session behavior and fallback. Count dropped requests. Maintain ≤50 ms p95 tap-to-paint with eight equations and the inherited suggestion deadlines.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/export_onnx.py#L14">Current graph</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/docs/current/N233.md">Execution status</a></p>
+</article>
+<article class="improvement" id="improve-calibration">
+<h3>14. Calibrate useful suggestions by context and length</h3>
+<dl><dt>Current branch</dt><dd>The handoff proposes one Platt transform over a blended score, while mixing acceptance and exact-match interpretations.</dd><dt>Proposed change</dt><dd>Keep exact continuation match, acceptance and retention as separate outcomes. Calibrate on unseen documents and later local impressions, with length, source and context strata and shrinkage where data are sparse. Combine expected saved time with the displayed-precision floor and latency deadline.</dd><dt>Acceptance evidence</dt><dd>Publish reliability, Brier/log loss, coverage, acceptance and undo by stratum. A longer wrong suggestion must not pass solely because its estimated key saving is large. Evaluate grey text against the same strip with ghost text disabled.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/HANDOFF_PROMPT.md#L14">Proposed calibration</a></p>
+</article>
+<article class="improvement" id="improve-personal">
+<h3>15. Learn individual preferences with limited evidence</h3>
+<dl><dt>Current branch</dt><dd>Local learning uses fixed rewards and a small retained vocabulary. N237's learned pairwise ranker and personal n-gram are pending.</dd><dt>Proposed change</dt><dd>Learn from the exact displayed slate and source-specific outcomes, with slot position and visible duration. Treat ambiguous non-selection as weak evidence. Use hierarchical shrinkage from subject to general priors, let personal weight grow with effective sample size, and reduce repeated ignored boilerplate. Record authorship so accepted suggestions do not become independent evidence of a learner's preferred wording.</dd><dt>Acceptance evidence</dt><dd>Evaluate on later answers, including a new user, changed subjects and repeated dismissals. Verify account isolation, opt-out, reset, stable slots and bounded local storage. Report key savings alongside acceptance and undo denominators.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/learning.ts#L12">Current rewards</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/personalization.ts#L48">Local storage</a></p>
+</article>
+<article class="improvement" id="improve-experiments">
+<h3>16. Measure which expansion produces the gain</h3>
+<dl><dt>Current branch</dt><dd>The reported pilot has four authored answers, an optimistic symbol evaluation and a neural perplexity target on different events.</dd><dt>Proposed change</dt><dd>Freeze an answer-level replay and separate calibration/final sets. Compare more data alone, more capacity at matched data, tutor ranking at fixed weights, and the complete system. Add paired context-change cases, OOV cases and learner-choice regressions. Keep a reproducible run manifest and resumable checkpoints.</dd><dt>Acceptance evidence</dt><dd>Publish paired answer-level intervals, per-subject outcomes, coverage and compute. The full candidate must beat the corrected expanded n-gram baseline, meet the final menu and latency targets, and pass the common guard suite.</dd></dl>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/train.py#L67">Training and evaluation</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/export_onnx.py#L44">Current export gate</a></p>
+</article>
+</section>
+
+
+<section id="plan">
+<h2>Carry the branch forward in measurable stages</h2>
+<p>Start from <code>ccr-220fd71d-iaf0fy</code> at <code>1444b245</code>. Its first commit contains N232–N235 and its second adds the N236 training pipeline. Use the existing feature flags, verified-asset pattern, local storage and ONNX worker integrations. The revised scope expands model assets, training data and the tutor aid contract.</p>
+<ol class="stages">
+<li><strong>Establish the corrected baseline.</strong> Finish the shared display replay, normalize scores, score the same events and test all eligibility paths. Recheck N232 on the eight-equation and empty drafts. This provides the comparison for every later experiment.</li>
+<li><strong>Prepare data and the larger n-grams.</strong> Freeze source revisions, tokenization and document groups. Build the 100M sample, then the 500M–1B pool. Compare 3/4/5-grams at matched data and bytes. Retain the chosen general model and subject packs with hashes and coverage reports.</li>
+<li><strong>Add tutor ranking and equation context.</strong> Extend N234 with optional scoped priorities and roles, apply one eligibility decision and unified ranking, and complete N235's equation coverage. Test old aid records, replay, idempotent retries, undo, accepted-text provenance and context changes. The migration follows the repository's existing independent-review rule.</li>
+<li><strong>Measure the 34M pipeline, then expand training.</strong> Use a bounded initial GPU session to verify throughput, loss, resume, quantization and browser export. Continue the same reproducible run to 500M and 1B processed tokens as the budget permits. Record each checkpoint's product gain. Benchmark the 70M candidate once the primary measurements justify its cost.</li>
+<li><strong>Qualify the browser implementation and calibrate grey text.</strong> Test prefill, incremental decoding, edits, context changes, device tiers and failure recovery. Fit calibration on its own data, select the operating point on validation, then run the frozen final replay. Preserve the tap-latency targets when larger assets are enabled.</li>
+<li><strong>Add N237 personal adaptation.</strong> Learn from displayed choices, local evidence and later answers. Report gains by source and subject with opt-out/reset tests and bounded storage. Compare static and adaptive ranking prospectively.</li>
+</ol>
+
+<h3>Compute estimates and proposed run limits</h3>
+<p>Using the parameter counts above, <i>C</i> ≈ 6<i>ND</i> gives the following arithmetic estimate. The time range assumes one T4 sustaining 15–30% of 65 TFLOP/s. Attention overhead, input processing, checkpointing, validation and export add work. Measured tokens per second determines the run schedule.</p>
+<div class="scroll"><table><caption>Arithmetic-only reference for the proposed training sizes</caption><thead><tr><th scope="col">Model</th><th scope="col">Processed tokens</th><th scope="col">Approximate FLOP</th><th scope="col">Single-T4 hours</th></tr></thead><tbody>
+<tr><th scope="row">33.87M</th><td class="number">100M</td><td class="number">2.03 × 10<sup>16</sup></td><td class="number">0.29–0.58</td></tr>
+<tr><th scope="row">33.87M</th><td class="number">500M</td><td class="number">1.02 × 10<sup>17</sup></td><td class="number">1.45–2.89</td></tr>
+<tr><th scope="row">33.87M</th><td class="number">1B</td><td class="number">2.03 × 10<sup>17</sup></td><td class="number">2.89–5.79</td></tr>
+<tr><th scope="row">70.22M</th><td class="number">1B</td><td class="number">4.21 × 10<sup>17</sup></td><td class="number">6.00–12.00</td></tr>
+</tbody></table></div>
+<p><strong>Proposed accounting.</strong> Keep the handoff's approximately one-GPU-hour allowance as the initial pipeline experiment. Budget up to <strong>10 allocated GPU-hours</strong> for the primary model, bounded comparisons and export checks, with a further <strong>14 allocated GPU-hours</strong> for the larger candidate. The combined 24-hour proposal expands the handoff's original total allowance. Spend in stages, use the observed quota charge, and stop an experiment when the remaining budget cannot cover its next checkpoint and evaluation.</p>
+<p>Start with 4–8 sequences per microbatch and accumulate gradients to a fixed effective token batch. Chunk the vocabulary loss when necessary and measure peak memory, since the old batch of 256 scales poorly with longer context. The existing training loop selects one CUDA device. For the dual-T4 runtime, measure single-device throughput and two-device distributed training on the same workload, including synchronization. T4 memory is separate per device. Count allocated GPU-hours conservatively as session duration × assigned GPU count, alongside Kaggle's reported quota usage. Prepare shards on CPU before GPU allocation and store the optimizer, scheduler, random state, data cursor and model hash for resumable runs.</p>
+<p>The earlier private Kaggle test completed on two Tesla T4s after a queued run was cancelled and restarted. A future training job should inspect status and logs after about 20 minutes queued, then confirm cancellation before a retry. The notebook must return failure if export or evaluation fails. Package the graph, tokenizer, manifest and metrics together only after all selected criteria pass.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/kaggle_train.py#L16">Current runner</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/train.py#L74">Device and checkpoint handling</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/export_onnx.py#L44">Existing export gate</a></p>
+
+<h3>Keep the comparisons interpretable</h3>
+<div class="scroll"><table class="stack"><thead><tr><th scope="col">Comparison</th><th scope="col">What stays fixed</th><th scope="col">What it measures</th></tr></thead><tbody>
+<tr><th scope="row">More data</th><td>Model, tokenizer, total processed-token budget and optimizer schedule.</td><td>A larger unique document pool versus repeated exposure to the smaller pool. Report corpus size and repetitions.</td></tr>
+<tr><th scope="row">More capacity</th><td>Corpus, tokenizer, processed tokens and evaluation. Tune learning rate on validation using a bounded budget.</td><td>7.55M reference versus 33.87M and 70.22M candidates. For the controlled comparison, rebuild a small model on the new tokenizer and report its actual parameter count. The original 7.55M asset remains a product baseline.</td></tr>
+<tr><th scope="row">Tutor ranking</th><td>Models, candidates and typed prefix.</td><td>Neutral hints versus scoped promotion/demotion, including paired cases where the same prefix occurs in different questions.</td></tr>
+<tr><th scope="row">Context length</th><td>Architecture, tokenizer, data and hints.</td><td>Short versus longer context windows. Measure prefill cost and the gain on sentences whose next item depends on earlier context.</td></tr>
+<tr><th scope="row">Complete product</th><td>Frozen answer replay and final three-slot UI.</td><td>Expanded n-gram alone versus n-gram plus neural model, hints and personal adaptation. Report the incremental gain of each component.</td></tr>
+</tbody></table></div>
+<p>The subword model and expanded word vocabulary change the meaning of a token. Compare perplexity only when tokenization, target support and event selection match. For cross-model adoption, use exact word/character replay, KSR, top-three recall and calibrated whole-insertion outcomes. When reporting bits per byte for subword models, score identical UTF-8 text and state the conditioning context. Report the word model's OOV coverage separately.</p>
+
+<div class="scroll"><table class="stack"><caption>Product targets retained from the original plan</caption><thead><tr><th scope="col">Area</th><th scope="col">Acceptance evidence</th></tr></thead><tbody>
+<tr><th scope="row">N-gram</th><td>≥55% KSR and ≥35% pooled boundary top-three on the frozen final display replay. Compare against the corrected current branch and report per-subject differences.</td></tr>
+<tr><th scope="row">Neural contribution</th><td>Both ≥60% KSR and ≥3 percentage points over the selected expanded n-gram, with ≥45% pooled top-three. Publish paired answer-level intervals and coverage. A 10% perplexity-reduction criterion applies only within an identical token/event definition.</td></tr>
+<tr><th scope="row">Latency</th><td>Tap-to-paint p95 ≤32 ms empty and ≤50 ms with eight equations at 4× CPU. N-gram worker p95 ≤8 ms. Neural token latency p95 ≤15 ms. Grey text p90 ≤60 ms from the relevant edit to display. Report prefill, timeouts, suppressed offers, cold starts and sustained-session behavior.</td></tr>
+<tr><th scope="row">Calibration and learner choice</th><td>Grey-text displayed exact-match precision ≥70%, with coverage and confidence intervals. Track acceptance and retention separately. Zero observed withheld or disallowed insertions on the documented regression suite.</td></tr>
+<tr><th scope="row">Export</th><td>Compare the native model, full-precision graph and each quantized graph on fixed contexts spanning the supported lengths. Retain ≥95% top-three set agreement on at least 300 distinct cases, plus final replay, probability drift, total-file-size and device-memory reports.</td></tr>
+</tbody></table></div>
+<p>These targets are acceptance criteria for future implementation. The larger model, corpus, asset and compute sizes are proposed choices. Every run records the commit, tokenizer, source/split manifest, random seeds, actual training exposures, precision, device, timing and outcome.</p>
+</section>
+
+<details id="audit" class="audit"><summary>Open the verified mathematics and baseline review</summary>
+<section id="evidence">
+<h2>What the pilot actually counted</h2>
+<div class="scroll"><table class="stack"><thead><tr><th scope="col">Reported result</th><th scope="col">Arithmetic</th><th scope="col">What it establishes</th></tr></thead><tbody>
+<tr><th scope="row">Previous strip</th><td>15 / 222 = <strong>6.76%</strong></td><td>The supplied plan reports this baseline on four authored answers. It is a reference for those answers.</td></tr>
+<tr><th scope="row">Proposed strip</th><td>90 / 196 words plus 16 / 26 symbols gives <strong>106 / 222 = 47.75%</strong>.</td><td>The replay branches on the identity of the next target. Words can use three word slots and symbols can use three symbol slots. A learner gets one menu of three before the next target is known.</td></tr>
+<tr><th scope="row">Keys saved</th><td><strong>57.8%</strong> reported with the question-aware rule and maths slot.</td><td>The simulated typist takes the first correct offer and gets a space with the tap. This measures an ideal user's key count under the pilot policy. Human typing speed and the branch's actual savings still need measuring.</td></tr>
+<tr><th scope="row">Grey text at the strictest pilot setting</th><td>11 / 15 = <strong>73.3%</strong> exact matches.</td><td>The two-sided exact 95% interval is <strong>44.9–92.2%</strong> under an independent-binomial model. Fifteen displays give little precision. The 70% product target still needs a separate evaluation with coverage.</td></tr>
+</tbody></table></div>
+<p>Score a single ordered display per caret and record it before revealing the next gold item. Replay the final UI choice, including equation readings, catalogue symbols, fallback, family deduplication, acceptance and undo. Report word, symbol and pooled hits with their denominators, KSR, and paired bootstrap intervals resampling whole answers. Four answers can serve as regression examples. Use a larger answer-level sample to estimate a product gain.</p>
+<p>The pilot's headline perplexities, 1006 and 110, correspond to a decrease of <strong>3.19 bits per scored token</strong> in mean surprise. Its code evaluates perplexity on 300 sentences and keystrokes on 600. Keep those denominators alongside the figures.</p>
+<p class="sources">Supplied pilot, <code>pilot-replay-reference.py</code> lines 199–228, 250–260 and 329–365. <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/TutorComposer.tsx#L210">Branch strip selection</a></p>
+</section>
+
+<section id="probability">
+<h2>Where the scores stop being probabilities</h2>
+<h3>The trigram’s counts are sound. Its packed scores drift.</h3>
+<p>The builder counts distinct left contexts for lower orders and estimates separate modified Kneser–Ney discounts at each order. The pre-quantization backoff weight redistributes the remaining mass over the omitted continuations. This is count-threshold pruning. The original design also discusses entropy pruning, which has a different selection criterion.</p>
+<p>I decoded the 5,109,064-byte binary, verified its SHA-256 and summed all 30,005 possible next-token scores for each stored history using the branch's lookup rule. The total should be 1 for a probability distribution.</p>
+<div class="scroll"><table><caption>Mass of decoded scores in the committed prose model</caption><thead><tr><th scope="col">History</th><th scope="col">Minimum total</th><th scope="col">Maximum total</th></tr></thead><tbody>
+<tr><th scope="row">Unigram</th><td class="number">0.999644</td><td class="number">0.999644</td></tr>
+<tr><th scope="row">One token</th><td class="number">0.953225</td><td class="number">1.049400</td></tr>
+<tr><th scope="row">Two tokens, 188,019 stored histories</th><td class="number">0.930381</td><td class="number">1.078411</td></tr></tbody></table></div>
+<p><strong>1,164</strong> stored trigram histories differ from 1 by more than 5%. Direct full-vocabulary sums confirm both extremes, after “an overall” and “the causal”. After sentence-initial “let”, the raw score for a maths object is 0.86936 and its normalized probability is <strong>0.85552</strong>. The plan's pilot value of 0.83 came from a different model.</p>
+<p>Subtract the history's log total when calculating perplexity or multiplying probabilities across a proposed phrase. A common offset preserves word order within one history. Keep the existing fast lookup for that case. For small training sets, give the discount estimator a defined fallback when a count-of-counts denominator is zero. The size estimator also needs nine bytes per stored trigram history for key, start and backoff. Its estimate for this asset is 4,545,056 bytes, 564,008 below the actual size.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/kn_build.py#L42">Counting and estimation</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/kn_build.py#L143">Packing and evaluation</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/decoder/kn.ts#L72">Runtime lookup</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/public/models/typeahead/ngram-v1/manifest.json">Asset manifest</a></p>
+
+<h3>Normalize the cache and the neural blend</h3>
+<p>When the cache is populated, the branch discounts the base probability only for words found in the cache. For base probabilities (0.8, 0.2), a cache containing only the second word, and a cache weight of 0.1, the branch gives (0.8, 0.28). The intended mixture gives <strong>(0.72, 0.28)</strong>. Apply the 0.9 factor to every base outcome. Use the full base distribution when the cache is empty.</p>
+<div class="math" aria-label="Normalized log-linear interpolation">s(w) = (1 − λ) log P<sub>KN</sub>(w | h) + λ log P<sub>neural</sub>(w | h)<br>log P<sub>mix</sub>(w | h) = s(w) − log ∑<sub>v∈V</sub> exp s(v)</div>
+<p>For equally weighted inputs (0.9, 0.1) and (0.1, 0.9), exponentiating the mixed scores gives (0.3, 0.3). The normalized blend is (0.5, 0.5). Normalizing only over the shortlist gives probabilities conditional on that shortlist. Rank candidates with the score, then use a full-vocabulary distribution or an explicitly calibrated event probability when the magnitude matters.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/decoder/ngramSpatial.ts#L248">Cache scoring</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/HANDOFF_PROMPT.md#L12">Proposed neural blend</a></p>
+
+<h3>Put words and symbols in the same three slots</h3>
+<p>For an eligible symbol <i>s</i>, give it mass <i>P</i>(maths | history) × <i>q</i>(<i>s</i> | maths, history), with <i>q</i> normalized over the symbol outcomes being modeled. Sorting all eligible items by their individual probability maximizes expected exact hits when one item is correct. The branch's prose symbol path already splits the mass by normalized reciprocal rank. Preserve it and verify the word and symbol scores share a scale.</p>
+<p>Suppose four symbols share 0.40 equally and three words have masses 0.21, 0.20 and 0.19. The three words cover <strong>0.60</strong>. Rounding an aggregate symbol quota to one slot would cover <strong>0.51</strong>. If the objective changes to time saved, compare each item's expected time benefit instead.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/engine.ts#L175">Symbol scores</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/latexGrammar.ts#L146">LaTeX symbol expansion</a></p>
+</section>
+
+<section id="evaluation">
+<h2>Give the two models an identical exam</h2>
+<p>Both evaluators take up to the first 20,000 held-out sentences and skip <code>&lt;m&gt;</code> and <code>&lt;num&gt;</code> as targets. The trigram scores every remaining token and the true sentence end. The neural evaluator keeps the first 47 tokens, then assigns the end-of-sentence target to that prefix. For a 60-word sentence without skipped tokens, that gives <strong>61 targets versus 48</strong>, with the last neural target at the wrong position.</p>
+<div class="note"><p><strong>The original 91.197 cutoff is premature.</strong> The arithmetic 0.9 × 101.33 is right. Recompute the baseline <i>B</i> on normalized probabilities and identical events. Within the original shared-vocabulary setup, a 10% perplexity improvement means PPL<sub>candidate</sub> ≤ 0.9<i>B</i>, or a mean negative log-likelihood improvement of at least 0.10536 nats per target. The expanded subword and word models require the cross-model replay comparison described above.</p></div>
+<ol>
+<li><strong>Freeze the events.</strong> Pin the corpus hash, ordered vocabulary and document IDs. Use separate training, tuning, calibration and final test documents, with duplicates grouped before splitting. Use only consented learner text for a local product replay. The four pilot answers are separate from the original 16-example writing-aid fixture.</li>
+<li><strong>Use a rolling context.</strong> Predict every in-scope token exactly once, including the true final <code>&lt;/s&gt;</code>. Keep skipped targets in history and retain <code>&lt;unk&gt;</code> in the scoring convention. At a sentence start, use each model's defined start state. For the original 48-token neural model, keep the last 48 available input IDs, including <code>&lt;s&gt;</code> only while it fits. Match this behavior in training, evaluation and browser tokenization.</li>
+<li><strong>Check input identity.</strong> The branch's <code>contextIds</code> returns two IDs from a 400-character suffix. Training currently samples windows from a flat stream with one start marker per document, even across document boundaries. Share the sentence tokenizer, define reset behavior, and test closed maths spans, bare letters, apostrophes, numbers, a formula containing a full stop, and a caret in the middle of the draft. Pin the ordered vocabulary hash as well as its size.</li>
+<li><strong>Measure the graph that would ship.</strong> Compare PyTorch, float ONNX and int8 ONNX on the same contexts at lengths 1, 2 and 48. Report int8 perplexity, unordered top-three set agreement, ordered top-one, and final-strip replay. The exporter currently gates on the best PyTorch validation perplexity and compares only the two ONNX graphs' top-three sets. Its 300 draws use replacement. Retain a fixed list of 300 distinct contexts and record the achieved denominator. Select the checkpoint on validation and report final metrics once on an untouched set.</li>
+</ol>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/kn_build.py#L196">Trigram targets</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/train.py#L44">Neural targets</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/prepare.py#L46">Training stream</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/decoder/kn.ts#L118">Browser context</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/export_onnx.py#L36">Existing export gate</a></p>
+</section>
+
+<section id="display">
+<h2>When a suggestion earns its place</h2>
+<div class="two"><article><h3>Word completion</h3><p>With the plan's timings, accepting “compact” after two letters saves <strong>1.155 s</strong>. After six letters the same calculation loses <strong>0.665 s</strong>. A miss costs 1.000 s under the stated glance model. Early offers break even at <strong>46.4%</strong> effective hits. Count an offer as a hit only when the learner sees and takes it. Measure reach time, glances and auto-space on the actual keyboard.</p></article>
+<article><h3>Grey text</h3><p>Solving the expected-saving inequality gives the stated threshold. With the handoff timings, five characters require <strong>43.21%</strong>, twelve require <strong>23.16%</strong> and twenty-five require <strong>15.82%</strong>. These are economic break-even probabilities under a one-key acceptance assumption. Choose a separate operating point that also meets the 70% displayed-precision target and report its coverage.</p></article></div>
+<div class="math">θ(L) = [t<sub>read</sub>(L) + t<sub>miss</sub>] / [(L − 1)t<sub>key</sub> + t<sub>miss</sub>]</div>
+<p>Offline next-text exact match, a tap, and a tap retained after three seconds are different events. Fit and evaluate calibration for the event the decision uses. Estimate the chance a correct offer is noticed and accepted when translating replay into time. Record eligible boundaries, actual displays, exact matches, accepts and undos separately. Compare incremental ghost savings against the same strip with grey text off.</p>
+<h3>Keep mathematical choices with the learner</h3>
+<p>On “Is <i>f</i> injective or surjective?”, both terms have been seen. That alone cannot license completing “Therefore <i>f</i> is …” at a boundary. The branch returns early on a seen risky word. Bank suggestions enter after the general word guard, and symbol, personal-vocabulary and ghost paths have their own checks. A token-by-token check also misses a withheld phrase that begins in the draft. For example, <code>not all</code> contributes no token to the current multiword withheld set because both words have only three letters.</p>
+<p>Use one eligibility check on the exact visible insertion and its surrounding prefix, for every source and again on acceptance. Match normalized withheld phrases across the caret, preserve learner-authored versus suggested text, and clear pending offers when the turn or aid version changes. Keep a tutor's wording role for truly neutral scaffolds. Record its provenance in <code>answerParts</code> so the tutor can see what the learner supplied.</p>
+<details><summary>Two proof examples behind the learner-choice rule</summary>
+<p><strong>Preimages.</strong> For a continuous map <i>f</i> from <i>X</i> to <i>Y</i> and an open subset <i>U</i> of <i>Y</i>, <i>f</i><sup>−1</sup>(<i>U</i>) is open in <i>X</i> by the topological definition of continuity. The claim in the plan is correct. Whether choosing that definition is part of the exercise depends on the checkpoint.</p>
+<p><strong>Compact subsets.</strong> In a Hausdorff space, fix <i>y</i> outside a compact set <i>K</i>. For each <i>x</i> in <i>K</i>, choose disjoint open neighborhoods of <i>x</i> and <i>y</i>. Finitely many of the first neighborhoods cover <i>K</i>. The intersection of their paired neighborhoods of <i>y</i> is open and misses <i>K</i>. Thus the complement is open. Offering “finite subcover” in this exercise would supply the central proof step.</p>
+</details>
+<p>Require zero observed displays on the blocked-case suite. For a separately sampled, representative set of independent opportunities, zero in 600 gives a <strong>0.498%</strong> upper bound at one-sided 95% confidence. The two-sided 95% upper endpoint is <strong>0.613%</strong>. Report the convention and sample unit. A curated regression suite establishes coverage of its examples.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/engine.ts#L67">Seen-word rule</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/engine.ts#L162">Bank and symbol insertion</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/src/features/tutor/writingAid/answerAids.ts#L27">Withheld-term matching</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/docs/current/N234.md">N234 provenance work</a></p>
+<details><summary>Other mathematical assumptions in the original plan</summary>
+<ul>
+<li><strong>Subject model and copy cache (§§5.4–5.5).</strong> The EM update is a valid mixture-weight update for fixed, normalized components on shared support. Smooth marginal ratios, give an empty cache zero weight, and normalize pointer attention over available positions. Shortlist-only rescaling conditions on candidate inclusion. The informative-prior log-odds z-score is an approximate distinctiveness statistic.</li>
+<li><strong>Phrase bias and grammar (§§5.6–5.7).</strong> A bonus of log 20 multiplies relative weight by at most 20 on that step. Treat it as a ranking feature. A grammar mask defines a conditional distribution only if legal mass is positive. Suppress offers on an empty mask. After <code>\in</code>, the learner chooses the operand. TeX also permits <code>\frac{a}b</code>, so a brace-only suggestion is an editor preference. Keep uncertain grammatical heuristics soft, including English “any sets”.</li>
+<li><strong>Distillation (§5.8).</strong> The temperature-squared KL loss is appropriate when teacher and student use the same outcomes. For different tokenizers, score complete word extensions with word boundaries. Record remaining probability mass or explicitly condition both distributions on the same shortlist. At the plan's assumed 15–30% of 65 TFLOP/s, 6 × 10<sup>16</sup> FLOP takes about 51–103 minutes and 3 × 10<sup>17</sup> takes about 4.3–8.5 T4-hours. The handoff's smaller budget puts teacher scoring in a later experiment.</li>
+<li><strong>Learning from selections (§§5.9–5.10).</strong> The pairwise logistic loss is valid for an observed comparison. Learn from candidates actually displayed together, record position, and keep unshown or stale items out of the negatives. Calibrate separately on later impressions. A 0.5 margin represents a 1.65-fold ratio on a natural-log probability scale. A learned score needs its own margin after the weights change. Start personal weight at zero without evidence and tune shrinkage toward the proposed 0.4 as local counts grow.</li>
+</ul></details>
+</section>
+
+
+
+</details>
+<section id="implementation">
+<h2>Implementation evidence</h2>
+<p>The implementation lives in PR <strong>#1861</strong>. The expanded Tutor menu, guarded insertions, equation suggestions,
+local learning, and verified model loaders use the existing release flags. A parity-checked neural graph can be
+examined in a local replay even while its production qualification is pending.</p>
+<div class="scroll"><table class="stack">
+<caption>Measured diagnostics available for this implementation</caption>
+<thead><tr><th scope="col">Check</th><th scope="col">Observation</th></tr></thead>
+<tbody>
+<tr><th scope="row">Corrected trigram browser replay</th><td data-label="Observation">66 exact hits across 283 sampled
+boundaries from 24 held-out public mathematics answers. The scripted full-answer trajectories saved 584 of 1,859 key
+equivalents (31.4%, answer-bootstrap 95% interval 27.2–35.7%). The Tutor fixture used each source question. This first run
+used the existing fallback for filling an otherwise-empty family slot. It is diagnostic evidence before strict deduplication.</td></tr>
+<tr><th scope="row">Audited corpus and frozen replay</th><td data-label="Observation">The cleaned training corpus contains 500,002,914 words and 613,502 documents. The nested development corpus contains 100,016,956 words. Both met their register quotas and passed the provider publisher-group audit. The audit pinned the original archive and manifests, and reconciled one training-only publisher alias (571,642 physical groups, 571,641 canonical groups). The original shards were unchanged. The question-only sampler froze 40 groups per split, with 460 calibration, 460 validation and 468 test events. The held-out model comparison is pending.</td></tr>
+<tr><th scope="row">Full audited counts and LaTeX</th><td data-label="Observation">All 500,002,914
+word and maths token occurrences were counted across 154 training shards. The order-five SQLite checkpoint passed
+its integrity check. The 2 MiB LaTeX four-gram used 50,000,004 formula tokens. Chromium summed all 50,908 stored
+history rows and 235,002 edges, with a maximum probability-mass error of 2.96 × 10<sup>−8</sup>.
+Combined browser verification passed across all four final packs, covering 630,953 history rows and 3,515,746 edges.</td></tr>
+<tr><th scope="row">Matched neural data controls</th><td data-label="Observation">Both primary runs processed
+100 million scored training targets. On the same 30,855 training-validation targets, native perplexity was 8.3759
+with the current-size pool and 7.6928 with the development pool. Weight-only int8 exports matched the float graph
+in 291 and 294 of the same 300 next-token cases. Both matched 47 of 50 partial-word retokenizations, below the
+95% gate. These two graphs are unavailable for browser weight comparisons.</td></tr>
+<tr><th scope="row">Matched-size n-gram pilot</th><td data-label="Observation">On an 8.39-million-token training
+slice, the count-pruned orders 3, 4 and 5 measured perplexities of 107.31, 102.43 and 102.20 on the same
+155,670 validation targets and 51,815-token vocabulary. Each artifact stayed within 20 MiB. The fifth-order pilot, two
+subject packs and a LaTeX pack were available for browser diagnostics. Larger-corpus and device gates remain pending.</td></tr>
+<tr><th scope="row">Concurrent replay diagnostic</th><td data-label="Observation">Four arms produced all 283 fixed
+slates, with 62–65 exact hits. Ten complete trajectories were common to the same four arms, whose estimated key savings
+ranged from 29.2% to 30.4% over 876 manual key equivalents. The neural arm failed to start a fixture under concurrent
+load. These recovered records lack per-event active asset hashes and do not qualify a model.</td></tr>
+<tr><th scope="row">Guard and provenance</th><td data-label="Observation">Curated tests verify actual word and equation
+acceptance, withholding across the caret, stale-offer rejection, preserved partial assisted text and draft reload.
+The local Tutor draft stops offering additional insertions at its 32-range provenance limit.</td></tr>
+<tr><th scope="row">Subject pack attribution</th><td data-label="Observation">One synthetic same-build replay verified
+the active topology, linear algebra and LaTeX packs in the expanded arm and the two committed trigrams in the corrected arm.
+The replay recorded empty-caret opportunities separately from edits with an active model.</td></tr>
+<tr><th scope="row">Phone-sized Chromium at 4× throttling</th><td data-label="Observation">The latest isolated run
+used the verified fifth-order pilot and 100 warm taps per condition. Tap-to-frame p95 was 35.3 ms empty and 36.4 ms
+with eight equations. The empty setup missed 32 ms and the eight-equation setup met 50 ms. Worker p95 was 4.5 ms empty
+and 0.2 ms with equations. The inert control was 8.4 ms. Physical phone testing remains open.</td></tr>
+<tr><th scope="row">Empty-editor caret diagnostic</th><td data-label="Observation">A 4× Chromium trace identified
+native caret restoration and synchronous layout on the slow taps. An interleaved comparison replaced the native
+selection setter only for collapsed carets. Both policies measured 34.6 ms pooled p95 over 50 warm taps each.
+All 100 carets were restored exactly. The change showed no repeatable gain, and the existing caret behavior was retained.</td></tr>
+<tr><th scope="row">Completed full-pool and role training</th><td data-label="Observation">The primary model
+processed 500M scored targets in 16,769 batches and recorded 16,765 Adam updates. Its native perplexity on
+30,855 training-validation targets fell from 7.5415 at 100M scored targets to 5.5759 at 500M. The role run added
+17.84M reply-masked targets within its time budget. On the distinct 300 next-token export cases, perplexity was
+24.6798 for the 100M development pool, 26.1133 for the 100M full pool, 25.5873 for the 500M full pool and
+24.6685 after role adaptation. The larger pool did not beat the development pool on these cases.</td></tr>
+<tr><th scope="row">Primary precision validation</th><td data-label="Observation">The weight-only int8,
+int4 and mixed primary exports matched 46, 31 and 32 of 50 partial-role retokenization cases, below the 95%
+gate. The 5.02M capacity reference passed export validation. Its matched primary browser contrast is unavailable.</td></tr>
+<tr><th scope="row">Requested FP16 diagnostic</th><td data-label="Observation">FP16 matched 298 of 300
+top-three sets and 48 of 50 partial-role cases. One desktop WASM probe verified finite FP32 logits and caches
+with matching incremental and fresh-prefix top-three sets. The 68,194,895-byte bundle exceeded the 40 MiB graph
+limit and the accounted cold path exceeded 68 MiB. No neural candidate qualifies for product use.</td></tr>
+<tr><th scope="row">Neural export</th><td data-label="Observation">A 34,587,365-byte weight-only int8 bundle
+matched the float graph’s top-three set in 297 of 300 validation contexts on native ONNX. This establishes export parity
+under that test. The browser probe produced zero scored requests within the edit deadline on WASM (77 dropped requests)
+or in the forced SwiftShader trial (45 dropped). Default Chromium exposed no WebGPU adapter. A hardware WebGPU tier
+remains unmeasured. The WebGPU JSEP runtime adds 24,254,953 transfer bytes beyond the existing 13,479,978-byte ink WASM.
+These runtime bytes are separate from the model package.</td></tr>
+<tr><th scope="row">Smaller neural packages</th><td data-label="Observation">The 19.64 MB int4 pilot matched 251 of
+300 float top-three sets on prefill and 205 of 240 on cached transitions. The best 24.22 MB mixed int4/int8 pilot
+matched 273 of 300 prefills and 218 of 240 cached transitions. Both missed export parity.</td></tr>
+<tr><th scope="row">JSPI WebGPU diagnostic</th><td data-label="Observation">ONNX Runtime Web 1.27.0 fetched
+15,046,878 runtime bytes in a Chromium worker using SwiftShader. The quantized pilot left its attention state on
+the GPU, and incremental and full-context logits agreed to 0.000004 with the same top-three set. Software took
+3.84 seconds for prefill and 4.02 seconds for one incremental token. Hardware latency and memory remain open.</td></tr>
+<tr><th scope="row">Neural cache lifecycle</th><td data-label="Observation">Worker tests verify that a late prefill can
+warm the next request in the same composer epoch without emitting late scores. Token-prefix edits, turn changes
+and resets invalidate incompatible attention state.</td></tr>
+</tbody></table></div>
+<p>The public diagnostic is not a prospective measure of ordinary learner acceptance, retention or time saved. The model
+and feature gates stay in place while device, quality and calibration evidence is collected.</p>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/pull/1861">Implementation PR</a>
+<a href="../current/N238.md">Implementation and test record</a>
+<a href="typeahead-evidence/corrected-v1-diagnostic.json">Corrected trigram diagnostic</a>
+<a href="typeahead-evidence/concurrent-diagnostic.json">Recovered concurrent diagnostics</a>
+<a href="typeahead-evidence/audited-corpus-and-schedules.json">Audited corpus and schedules</a>
+<a href="typeahead-evidence/subject-replay-smoke.json">Subject pack replay smoke</a>
+<a href="typeahead-evidence/final-neural-training-and-validation.json">Completed neural training and validation</a>
+<a href="typeahead-evidence/audited-controls-count-and-latex.json">Counts, LaTeX and matched neural evidence</a>
+<a href="typeahead-evidence/empty-editor-caret-diagnostic.json">Empty-editor caret diagnostic</a>
+<a href="typeahead-evidence/phone-tap-timings.json">Phone-sized Chromium timings</a>
+<a href="../../scripts/typeahead/expanded/evidence/primary-mixed-precision-validation.json">Mixed precision validation</a>
+<a href="typeahead-evidence/jspi-software-smoke.json">JSPI software smoke</a></p>
+</section>
+
+<section id="sources">
+<h2>Evidence and sources</h2>
+<p>The attachment's plan §§3, 5, 10 and 11 supplies the pilot numbers, equations and targets. I compared the ZIP's training, preparation, export and build files with the pinned branch. I verified the binary independently, including its vocabulary order and backoff mass. During the baseline audit, the training corpus host returned HTTP 403 through this workspace's proxy. The ZIP also omits the four original question/answer pairs required by the pilot's optional fourth argument. The manifest's 101.33 perplexity, the affected corpus token count, and the four-answer UI replay therefore remain unreplicated here.</p>
+<p>The numerical mass checks in the baseline review describe the existing n-gram asset. The implementation evidence reports subsequent training diagnostics and browser benchmarks. The final replay is reported above. Physical-phone measurements and release qualification remain open.</p>
+<details><summary>Reproduction identifiers and mass calculation</summary>
+<p>Handoff commit <code>1444b245593b7d0bc372e3351025a26dfeead3a6</code>. Trigram binary SHA-256 <code>d439be36601fe22e599c4624ecb49d2ed043f658814942b1c95ea0105aadaceb</code>. Ordered vocabulary SHA-256 <code>a80b2f41633dfc2f1d3cc451bfaff55d87ca357aa7bd8e0d9064533e58eda571</code> over UTF-8 entries joined by a newline with no trailing newline. Expected compressed corpus SHA-256 <code>9a33bde2feabb2421936bbde65ab15692ba814812bb2cf0e82a77b35e07e0b9b</code>.</p>
+<p>Decode each stored score with exp(−0.07<i>q</i>) and its backoff factor with exp(0.1<i>b</i>). For a row with explicit successors <i>E</i>, its mass equals the sum of their stored probabilities plus its backoff factor times the lower-order mass outside <i>E</i>. This accounts for the full vocabulary without scanning 30,005 entries for every row. The minimum and maximum rows were also summed directly over every ID.</p>
+</details>
+<p class="sources"><a href="https://github.com/Mymayankyadav/lemma/tree/1444b245593b7d0bc372e3351025a26dfeead3a6">Pinned handoff tree</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/docs/current/N232.md">N232 note</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/docs/current/N233.md">N233 note</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/docs/current/N234.md">N234 note</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/docs/current/N235.md">N235 note</a> <a href="https://github.com/Mymayankyadav/lemma/blob/1444b245593b7d0bc372e3351025a26dfeead3a6/scripts/typeahead/train/README.md">N236 handoff</a></p>
+</section>
+</main><footer><a href="#top">Back to the plan</a></footer>
+</body>
+</html>

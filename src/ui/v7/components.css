@@ -89,6 +89,10 @@
  :where(html[data-v7]) .v7-skeleton {display:grid;gap:var(--v7-space-3);visibility:hidden;animation:v7-show 0s var(--v7-skeleton-delay) forwards;}
  :where(html[data-v7]) .v7-skeleton span {height:var(--v7-space-5);border-radius:var(--v7-radius-1);background:var(--v7-role-surface-muted);}
  :where(html[data-v7]) .v7-skeleton span:first-child {width:60%;height:var(--v7-space-8);}
+ /* Visibility normally flips after the short loading delay. Both motion settings disable
+    that animation, so provide the static placeholders immediately in those modes. */
+ :where(html[data-v7][data-v7-reduce-effects]) .v7-skeleton {visibility:visible;}
+ @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) .v7-skeleton {visibility:visible;}}
  :where(html[data-v7]) .v7-stack {display:grid;gap:var(--v7-space-4);}
  /* CL3: the kit's mastery layout — label row above the bar, 8 px apart; rows 16 px apart. */
  :where(html[data-v7]) .v7-meter-row {display:grid;gap:var(--v7-space-2);}

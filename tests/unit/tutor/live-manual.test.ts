@@ -19,6 +19,17 @@ beforeEach(()=>{localStorage.clear();publishAuth(null);publishAuth({id:'owner'})
 afterEach(()=>vi.unstubAllGlobals())
 
 describe('live tutor persistence',()=>{
+ it('opens the last confirmed conversation immediately with writes disabled and fences account changes',async()=>{
+  rpc.mockResolvedValue(ok(thread(2)))
+  await open().resume()
+  const next=open()
+  rpc.mockClear()
+  expect(next.readSaved?.()).toMatchObject({head:{lastSequence:2},canSubmit:false,canConnect:false})
+  expect(open('owner','other-checkpoint').readSaved?.()).toBeUndefined()
+  expect(rpc).not.toHaveBeenCalled()
+  publishAuth({id:'other-owner'})
+  expect(()=>next.readSaved?.()).toThrow(/account changed/i)
+ })
  it('rejects every unbound answer reference before either submit API writes an outbox entry or an RPC',async()=>{
   const first='12345678-0123-4123-8123-123456789abc',second='87654321-0123-4123-8123-123456789abc'
   const attachment={id:first,kind:'drawing' as const,mimeType:'image/png' as const}

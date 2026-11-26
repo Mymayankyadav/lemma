@@ -18,14 +18,22 @@ export async function prepareLiveTutor(page:Page,released=true){
   max_interval_days:36500,fuzz:true,load_balance:true,learn_ahead_minutes:20,fsrs_weights:null,fsrs_tuned_at:null,macros:'',default_style:'socratic',time_zone:'UTC'}
  const subject={id:subjectId,name:'Logic',glyph:'∫',hue:'amber',position:0}
  const payload:Record<string,unknown>={projects:[project],checkpoints:[cp],subjects:[subject],settings:[settings],
-  'rpc/home_summary':{projects:[],resume:null,due:0,pendingProposals:0},'rpc/bootstrap':settings,'rpc/lemma_plan_released':released,'rpc/project_summaries':[]}
+  // N251: with exam mode on, Today reads exam_home_summary (the server's home_summary plus `exam`).
+  'rpc/home_summary':{projects:[],resume:null,due:0,pendingProposals:0},'rpc/exam_home_summary':{projects:[],resume:null,due:0,pendingProposals:0,exam:{sittings:[]}},'rpc/bootstrap':settings,'rpc/lemma_plan_released':released,'rpc/project_summaries':[]}
  await page.route('**/auth/v1/**',route=>route.fulfill({json:user}))
  return {owner,cpId,threadId,projectId,proposalId,payload}
 }
 
 export function liveTutorFixtureResponse(payload:Record<string,unknown>,path:string,accept?:string) {
  let result=payload[path]??[]
- if(accept?.includes('vnd.pgrst.object')&&Array.isArray(result))result=result[0]??null
+ if(accept?.includes('vnd.pgrst.object')&&Array.isArray(result)){
+  result=result[0]??null
+  if(path==='checkpoints'&&result){
+   const checkpoint=result as Record<string,unknown>
+   const source=(payload.sources as {id:string;short:string}[]|undefined)?.find(row=>row.id===checkpoint.source_id)
+   result={...checkpoint,source:source?{short:source.short}:null}
+  }
+ }
  return result
 }
 

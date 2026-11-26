@@ -70,7 +70,27 @@
   border-start-start-radius:var(--v7-radius-3);border-start-end-radius:var(--v7-radius-3);}
 :where(html[data-v7]) .writing-aid-settings fieldset > :is(.writing-aid-mode,.v7-switch-choice):not(:has(~ :is(.writing-aid-mode,.v7-switch-choice))) {
   border-bottom:1px solid var(--v7-role-border-subtle);border-end-start-radius:var(--v7-radius-3);border-end-end-radius:var(--v7-radius-3);}
-:where(html[data-v7]) .writing-aid-settings fieldset > p {display:none;}
+:where(html[data-v7]) .writing-aid-settings fieldset:not(.writing-aid-package) > p {display:none;}
 /* Only the chosen mode explains itself; the others are their names (Owner: fewer words in Settings). */
 :where(html[data-v7]) .writing-aid-settings .writing-aid-mode:not(:has(input:checked)) small {display:none;}
 :where(html[data-v7]) .writing-aid-settings fieldset > .v7-button {justify-self:start;margin-top:var(--v7-space-2);}
+
+.writing-aid-settings fieldset.writing-aid-package-web {
+  gap: var(--v7-space-2, .5rem);
+}
+
+.writing-aid-package-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v7-space-2, .5rem);
+}
+
+.writing-aid-package-file {
+  display: grid;
+  gap: var(--v7-space-1, .25rem);
+  font-size: var(--v7-type-supporting, .875rem);
+}
+
+.writing-aid-package-file input {
+  max-inline-size: 100%;
+}

@@ -1,0 +1,2059 @@
+{
+  "analysisReceiptSha256": "0d49d5efd165ea55fcea7cde544fb56c5004a289637aa323d0bbf23fc06a99ab",
+  "buildIndexSha256": "b6ac31aa95d75cb473bbe7b116804e2f131090cacf9a9ca4d65334ac78eba19e",
+  "configSha256": "a5aff59a0eb019d9b419f9d8facce63d043d18b5e7baa268e87f29c089989524",
+  "correctedBaselineComparison": {
+    "baseline": "corrected-v1",
+    "events": 468,
+    "goldSha256": "c883c1ccd5cecbe62c6fccf2b3db542193e283eae0726d683f5bcd29f7fba9ca",
+    "runs": {
+      "corrected-v1": {
+        "blockedCases": {
+          "observedDisplays": 0,
+          "opportunities": 0
+        },
+        "calibration": {},
+        "ghost": {
+          "counts": {
+            "eligible": 0
+          },
+          "coverage": null
+        },
+        "impressionsSha256": "ee79143bda121b9b13c340a323b463e1a9375dbc068376d0702858ef20c95047",
+        "keysSha256": "7ba0fa647a5ffef36244cbbfea896f0daa9541846a7e168c66a1fb1b16210d88",
+        "rates": {
+          "boundary": {
+            "answerBootstrap95": [
+              0.2236514235782422,
+              0.292755986200868
+            ],
+            "answers": 40,
+            "denominator": 468,
+            "numerator": 121,
+            "rate": 0.25854700854700857
+          },
+          "boundary/algebra": {
+            "answerBootstrap95": [
+              0.1590909090909091,
+              0.423728813559322
+            ],
+            "answers": 4,
+            "denominator": 50,
+            "numerator": 15,
+            "rate": 0.3
+          },
+          "boundary/analysis": {
+            "answerBootstrap95": [
+              0.08888888888888889,
+              0.22857142857142856
+            ],
+            "answers": 5,
+            "denominator": 59,
+            "numerator": 10,
+            "rate": 0.1694915254237288
+          },
+          "boundary/linear-algebra": {
+            "answerBootstrap95": [
+              0.07692307692307693,
+              0.4
+            ],
+            "answers": 2,
+            "denominator": 23,
+            "numerator": 5,
+            "rate": 0.21739130434782608
+          },
+          "boundary/mathOpportunity/equation-command": {
+            "answerBootstrap95": [
+              0.0,
+              0.25
+            ],
+            "answers": 7,
+            "denominator": 12,
+            "numerator": 1,
+            "rate": 0.08333333333333333
+          },
+          "boundary/mathOpportunity/inline-variable": {
+            "answerBootstrap95": [
+              0.0,
+              0.0
+            ],
+            "answers": 20,
+            "denominator": 43,
+            "numerator": 0,
+            "rate": 0.0
+          },
+          "boundary/number-theory": {
+            "answerBootstrap95": [
+              0.1,
+              0.35714285714285715
+            ],
+            "answers": 3,
+            "denominator": 38,
+            "numerator": 10,
+            "rate": 0.2631578947368421
+          },
+          "boundary/other": {
+            "answerBootstrap95": [
+              0.1965067652662512,
+              0.30918123412520543
+            ],
+            "answers": 17,
+            "denominator": 188,
+            "numerator": 48,
+            "rate": 0.2553191489361702
+          },
+          "boundary/probability": {
+            "answerBootstrap95": [
+              0.28169014084507044,
+              0.36363636363636365
+            ],
+            "answers": 6,
+            "denominator": 76,
+            "numerator": 25,
+            "rate": 0.32894736842105265
+          },
+          "boundary/source/hoskinson-center/proof-pile": {
+            "answerBootstrap95": [
+              0.2236514235782422,
+              0.292755986200868
+            ],
+            "answers": 40,
+            "denominator": 468,
+            "numerator": 121,
+            "rate": 0.25854700854700857
+          },
+          "boundary/stratum/math-rich": {
+            "answerBootstrap95": [
+              0.2385924330398951,
+              0.32894843991085204
+            ],
+            "answers": 24,
+            "denominator": 291,
+            "numerator": 83,
+            "rate": 0.2852233676975945
+          },
+          "boundary/stratum/prose": {
+            "answerBootstrap95": [
+              0.16184538437575716,
+              0.26737967914438504
+            ],
+            "answers": 16,
+            "denominator": 177,
+            "numerator": 38,
+            "rate": 0.21468926553672316
+          },
+          "boundary/topology": {
+            "answerBootstrap95": [
+              0.18181818181818182,
+              0.3076923076923077
+            ],
+            "answers": 3,
+            "denominator": 34,
+            "numerator": 8,
+            "rate": 0.23529411764705882
+          },
+          "ksr": {
+            "answerBootstrap95": [
+              0.30306956402849616,
+              0.3746313118991686
+            ],
+            "answers": 40,
+            "denominator": 3003,
+            "numerator": 1015,
+            "rate": 0.337995337995338
+          },
+          "ksr/algebra": {
+            "answerBootstrap95": [
+              0.32903225806451614,
+              0.4429530201342282
+            ],
+            "answers": 4,
+            "denominator": 304,
+            "numerator": 117,
+            "rate": 0.3848684210526316
+          },
+          "ksr/analysis": {
+            "answerBootstrap95": [
+              0.13850415512465375,
+              0.4005037783375315
+            ],
+            "answers": 5,
+            "denominator": 365,
+            "numerator": 108,
+            "rate": 0.2958904109589041
+          },
+          "ksr/linear-algebra": {
+            "answerBootstrap95": [
+              0.379746835443038,
+              0.4025974025974026
+            ],
+            "answers": 2,
+            "denominator": 156,
+            "numerator": 61,
+            "rate": 0.391025641025641
+          },
+          "ksr/number-theory": {
+            "answerBootstrap95": [
+              0.3333333333333333,
+              0.39285714285714285
+            ],
+            "answers": 3,
+            "denominator": 232,
+            "numerator": 84,
+            "rate": 0.3620689655172414
+          },
+          "ksr/other": {
+            "answerBootstrap95": [
+              0.24651442678932586,
+              0.33998999258297896
+            ],
+            "answers": 17,
+            "denominator": 1287,
+            "numerator": 375,
+            "rate": 0.2913752913752914
+          },
+          "ksr/probability": {
+            "answerBootstrap95": [
+              0.2979683972911964,
+              0.48660714285714285
+            ],
+            "answers": 6,
+            "denominator": 445,
+            "numerator": 178,
+            "rate": 0.4
+          },
+          "ksr/topology": {
+            "answerBootstrap95": [
+              0.2857142857142857,
+              0.5131578947368421
+            ],
+            "answers": 3,
+            "denominator": 214,
+            "numerator": 92,
+            "rate": 0.42990654205607476
+          },
+          "symbol": {
+            "answerBootstrap95": [
+              0.0,
+              0.057692307692307696
+            ],
+            "answers": 24,
+            "denominator": 55,
+            "numerator": 1,
+            "rate": 0.01818181818181818
+          },
+          "word": {
+            "answerBootstrap95": [
+              0.24933808127356513,
+              0.33496393188009244
+            ],
+            "answers": 40,
+            "denominator": 413,
+            "numerator": 120,
+            "rate": 0.29055690072639223
+          }
+        },
+        "slateViolations": {
+          "duplicateFamilies": 0,
+          "duplicateInsertions": 0
+        }
+      },
+      "expanded-kn": {
+        "blockedCases": {
+          "observedDisplays": 0,
+          "opportunities": 0
+        },
+        "calibration": {},
+        "ghost": {
+          "counts": {
+            "eligible": 0
+          },
+          "coverage": null
+        },
+        "impressionsSha256": "3e51376b8ba56bb2b672cb664c986547575dcc4847a6bf8cb5425cbcc022dd40",
+        "keysSha256": "98c5d427ba80562c47110fb519840c34e4ffe6a0b8f0a88cb66bb6b6800a8150",
+        "rates": {
+          "boundary": {
+            "answerBootstrap95": [
+              0.22196747683746545,
+              0.29412378730197714
+            ],
+            "answers": 40,
+            "denominator": 468,
+            "numerator": 121,
+            "rate": 0.25854700854700857
+          },
+          "boundary/algebra": {
+            "answerBootstrap95": [
+              0.18181818181818182,
+              0.4406779661016949
+            ],
+            "answers": 4,
+            "denominator": 50,
+            "numerator": 17,
+            "rate": 0.34
+          },
+          "boundary/analysis": {
+            "answerBootstrap95": [
+              0.10416666666666667,
+              0.25757575757575757
+            ],
+            "answers": 5,
+            "denominator": 59,
+            "numerator": 11,
+            "rate": 0.1864406779661017
+          },
+          "boundary/linear-algebra": {
+            "answerBootstrap95": [
+              0.07692307692307693,
+              0.5
+            ],
+            "answers": 2,
+            "denominator": 23,
+            "numerator": 6,
+            "rate": 0.2608695652173913
+          },
+          "boundary/mathOpportunity/equation-command": {
+            "answerBootstrap95": [
+              0.0,
+              0.25
+            ],
+            "answers": 7,
+            "denominator": 12,
+            "numerator": 1,
+            "rate": 0.08333333333333333
+          },
+          "boundary/mathOpportunity/inline-variable": {
+            "answerBootstrap95": [
+              0.0,
+              0.0
+            ],
+            "answers": 20,
+            "denominator": 43,
+            "numerator": 0,
+            "rate": 0.0
+          },
+          "boundary/number-theory": {
+            "answerBootstrap95": [
+              0.1,
+              0.35714285714285715
+            ],
+            "answers": 3,
+            "denominator": 38,
+            "numerator": 11,
+            "rate": 0.2894736842105263
+          },
+          "boundary/other": {
+            "answerBootstrap95": [
+              0.1745985603543743,
+              0.27896850286337593
+            ],
+            "answers": 17,
+            "denominator": 188,
+            "numerator": 43,
+            "rate": 0.22872340425531915
+          },
+          "boundary/probability": {
+            "answerBootstrap95": [
+              0.3026315789473684,
+              0.35802929795467103
+            ],
+            "answers": 6,
+            "denominator": 76,
+            "numerator": 25,
+            "rate": 0.32894736842105265
+          },
+          "boundary/source/hoskinson-center/proof-pile": {
+            "answerBootstrap95": [
+              0.22196747683746545,
+              0.29412378730197714
+            ],
+            "answers": 40,
+            "denominator": 468,
+            "numerator": 121,
+            "rate": 0.25854700854700857
+          },
+          "boundary/stratum/math-rich": {
+            "answerBootstrap95": [
+              0.23739816509162007,
+              0.3344262295081967
+            ],
+            "answers": 24,
+            "denominator": 291,
+            "numerator": 84,
+            "rate": 0.28865979381443296
+          },
+          "boundary/stratum/prose": {
+            "answerBootstrap95": [
+              0.16477105614973261,
+              0.25
+            ],
+            "answers": 16,
+            "denominator": 177,
+            "numerator": 37,
+            "rate": 0.20903954802259886
+          },
+          "boundary/topology": {
+            "answerBootstrap95": [
+              0.18181818181818182,
+              0.3076923076923077
+            ],
+            "answers": 3,
+            "denominator": 34,
+            "numerator": 8,
+            "rate": 0.23529411764705882
+          },
+          "ksr": {
+            "answerBootstrap95": [
+              0.30644918545689936,
+              0.3798875693228458
+            ],
+            "answers": 40,
+            "denominator": 3003,
+            "numerator": 1026,
+            "rate": 0.34165834165834164
+          },
+          "ksr/algebra": {
+            "answerBootstrap95": [
+              0.34838709677419355,
+              0.4697986577181208
+            ],
+            "answers": 4,
+            "denominator": 304,
+            "numerator": 124,
+            "rate": 0.40789473684210525
+          },
+          "ksr/analysis": {
+            "answerBootstrap95": [
+              0.13142857142857142,
+              0.37333333333333335
+            ],
+            "answers": 5,
+            "denominator": 365,
+            "numerator": 103,
+            "rate": 0.2821917808219178
+          },
+          "ksr/linear-algebra": {
+            "answerBootstrap95": [
+              0.4050632911392405,
+              0.4155844155844156
+            ],
+            "answers": 2,
+            "denominator": 156,
+            "numerator": 64,
+            "rate": 0.41025641025641024
+          },
+          "ksr/number-theory": {
+            "answerBootstrap95": [
+              0.3048780487804878,
+              0.42857142857142855
+            ],
+            "answers": 3,
+            "denominator": 232,
+            "numerator": 82,
+            "rate": 0.35344827586206895
+          },
+          "ksr/other": {
+            "answerBootstrap95": [
+              0.2501794575323987,
+              0.3335855197587721
+            ],
+            "answers": 17,
+            "denominator": 1287,
+            "numerator": 373,
+            "rate": 0.2898212898212898
+          },
+          "ksr/probability": {
+            "answerBootstrap95": [
+              0.30663615560640733,
+              0.4935039417104633
+            ],
+            "answers": 6,
+            "denominator": 445,
+            "numerator": 182,
+            "rate": 0.40898876404494383
+          },
+          "ksr/topology": {
+            "answerBootstrap95": [
+              0.2857142857142857,
+              0.5588235294117647
+            ],
+            "answers": 3,
+            "denominator": 214,
+            "numerator": 98,
+            "rate": 0.45794392523364486
+          },
+          "symbol": {
+            "answerBootstrap95": [
+              0.0,
+              0.057692307692307696
+            ],
+            "answers": 24,
+            "denominator": 55,
+            "numerator": 1,
+            "rate": 0.01818181818181818
+          },
+          "word": {
+            "answerBootstrap95": [
+              0.24702944102879687,
+              0.33412350756471015
+            ],
+            "answers": 40,
+            "denominator": 413,
+            "numerator": 120,
+            "rate": 0.29055690072639223
+          }
+        },
+        "slateViolations": {
+          "duplicateFamilies": 0,
+          "duplicateInsertions": 0
+        },
+        "versusBaseline": {
+          "boundary": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              -0.02183645522102201,
+              0.021190967695204958
+            ]
+          },
+          "boundary/algebra": {
+            "difference": 0.040000000000000036,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.07999999999999996
+            ]
+          },
+          "boundary/analysis": {
+            "difference": 0.01694915254237289,
+            "pairedAnswerBootstrap95": [
+              -0.043478260869565216,
+              0.10344827586206898
+            ]
+          },
+          "boundary/linear-algebra": {
+            "difference": 0.043478260869565216,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.09999999999999998
+            ]
+          },
+          "boundary/mathOpportunity/equation-command": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "boundary/mathOpportunity/inline-variable": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "boundary/number-theory": {
+            "difference": 0.026315789473684237,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.07142857142857145
+            ]
+          },
+          "boundary/other": {
+            "difference": -0.026595744680851047,
+            "pairedAnswerBootstrap95": [
+              -0.06633503401360544,
+              0.010000000000000009
+            ]
+          },
+          "boundary/probability": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              -0.03798685491723464,
+              0.038461538461538436
+            ]
+          },
+          "boundary/source/hoskinson-center/proof-pile": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              -0.02183645522102201,
+              0.021190967695204958
+            ]
+          },
+          "boundary/stratum/math-rich": {
+            "difference": 0.0034364261168384758,
+            "pairedAnswerBootstrap95": [
+              -0.030511068834313405,
+              0.03619201402228197
+            ]
+          },
+          "boundary/stratum/prose": {
+            "difference": -0.005649717514124297,
+            "pairedAnswerBootstrap95": [
+              -0.025776534373163792,
+              0.012121212121212116
+            ]
+          },
+          "boundary/topology": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "ksr": {
+            "difference": 0.00366300366300365,
+            "pairedAnswerBootstrap95": [
+              -0.006600409475913968,
+              0.014244310240307
+            ]
+          },
+          "ksr/algebra": {
+            "difference": 0.023026315789473673,
+            "pairedAnswerBootstrap95": [
+              -0.0059880239520958,
+              0.05839416058394159
+            ]
+          },
+          "ksr/analysis": {
+            "difference": -0.0136986301369863,
+            "pairedAnswerBootstrap95": [
+              -0.03989361702127664,
+              0.011799410029498525
+            ]
+          },
+          "ksr/linear-algebra": {
+            "difference": 0.019230769230769218,
+            "pairedAnswerBootstrap95": [
+              0.012987012987012991,
+              0.0253164556962025
+            ]
+          },
+          "ksr/number-theory": {
+            "difference": -0.008620689655172431,
+            "pairedAnswerBootstrap95": [
+              -0.04878048780487804,
+              0.0357142857142857
+            ]
+          },
+          "ksr/other": {
+            "difference": -0.001554001554001594,
+            "pairedAnswerBootstrap95": [
+              -0.019305392276798783,
+              0.014986411202422872
+            ]
+          },
+          "ksr/probability": {
+            "difference": 0.008988764044943809,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.022779043280182265
+            ]
+          },
+          "ksr/topology": {
+            "difference": 0.028037383177570097,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0735294117647059
+            ]
+          },
+          "symbol": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "word": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              -0.02487562189054726,
+              0.024214544300524245
+            ]
+          }
+        }
+      },
+      "personal": {
+        "blockedCases": {
+          "observedDisplays": 0,
+          "opportunities": 0
+        },
+        "calibration": {},
+        "ghost": {
+          "counts": {
+            "eligible": 0
+          },
+          "coverage": null
+        },
+        "impressionsSha256": "29102ff82fdbb593872d57daa67e5f71b662dd359616474c4fa91c69cbb9f8c4",
+        "keysSha256": "2074c5968bc7a034e081bb49b98acdff26bf3653dfd63356a8724a9ed87740a1",
+        "rates": {
+          "boundary": {
+            "answerBootstrap95": [
+              0.22362365798072434,
+              0.2963001623753189
+            ],
+            "answers": 40,
+            "denominator": 468,
+            "numerator": 122,
+            "rate": 0.2606837606837607
+          },
+          "boundary/algebra": {
+            "answerBootstrap95": [
+              0.18181818181818182,
+              0.4406779661016949
+            ],
+            "answers": 4,
+            "denominator": 50,
+            "numerator": 17,
+            "rate": 0.34
+          },
+          "boundary/analysis": {
+            "answerBootstrap95": [
+              0.10416666666666667,
+              0.25757575757575757
+            ],
+            "answers": 5,
+            "denominator": 59,
+            "numerator": 11,
+            "rate": 0.1864406779661017
+          },
+          "boundary/linear-algebra": {
+            "answerBootstrap95": [
+              0.07692307692307693,
+              0.5
+            ],
+            "answers": 2,
+            "denominator": 23,
+            "numerator": 6,
+            "rate": 0.2608695652173913
+          },
+          "boundary/mathOpportunity/equation-command": {
+            "answerBootstrap95": [
+              0.0,
+              0.25
+            ],
+            "answers": 7,
+            "denominator": 12,
+            "numerator": 1,
+            "rate": 0.08333333333333333
+          },
+          "boundary/mathOpportunity/inline-variable": {
+            "answerBootstrap95": [
+              0.0,
+              0.0
+            ],
+            "answers": 20,
+            "denominator": 43,
+            "numerator": 0,
+            "rate": 0.0
+          },
+          "boundary/number-theory": {
+            "answerBootstrap95": [
+              0.1,
+              0.35714285714285715
+            ],
+            "answers": 3,
+            "denominator": 38,
+            "numerator": 11,
+            "rate": 0.2894736842105263
+          },
+          "boundary/other": {
+            "answerBootstrap95": [
+              0.18681318681318682,
+              0.2906495165115854
+            ],
+            "answers": 17,
+            "denominator": 188,
+            "numerator": 45,
+            "rate": 0.2393617021276596
+          },
+          "boundary/probability": {
+            "answerBootstrap95": [
+              0.3026315789473684,
+              0.35802929795467103
+            ],
+            "answers": 6,
+            "denominator": 76,
+            "numerator": 25,
+            "rate": 0.32894736842105265
+          },
+          "boundary/source/hoskinson-center/proof-pile": {
+            "answerBootstrap95": [
+              0.22362365798072434,
+              0.2963001623753189
+            ],
+            "answers": 40,
+            "denominator": 468,
+            "numerator": 122,
+            "rate": 0.2606837606837607
+          },
+          "boundary/stratum/math-rich": {
+            "answerBootstrap95": [
+              0.24459385979588422,
+              0.33559322033898303
+            ],
+            "answers": 24,
+            "denominator": 291,
+            "numerator": 85,
+            "rate": 0.2920962199312715
+          },
+          "boundary/stratum/prose": {
+            "answerBootstrap95": [
+              0.15934065934065933,
+              0.25806451612903225
+            ],
+            "answers": 16,
+            "denominator": 177,
+            "numerator": 37,
+            "rate": 0.20903954802259886
+          },
+          "boundary/topology": {
+            "answerBootstrap95": [
+              0.09090909090909091,
+              0.3076923076923077
+            ],
+            "answers": 3,
+            "denominator": 34,
+            "numerator": 7,
+            "rate": 0.20588235294117646
+          },
+          "ksr": {
+            "answerBootstrap95": [
+              0.30662958715558397,
+              0.3792407641028666
+            ],
+            "answers": 40,
+            "denominator": 3003,
+            "numerator": 1027,
+            "rate": 0.341991341991342
+          },
+          "ksr/algebra": {
+            "answerBootstrap95": [
+              0.34838709677419355,
+              0.4697986577181208
+            ],
+            "answers": 4,
+            "denominator": 304,
+            "numerator": 124,
+            "rate": 0.40789473684210525
+          },
+          "ksr/analysis": {
+            "answerBootstrap95": [
+              0.1329639889196676,
+              0.376
+            ],
+            "answers": 5,
+            "denominator": 365,
+            "numerator": 104,
+            "rate": 0.28493150684931506
+          },
+          "ksr/linear-algebra": {
+            "answerBootstrap95": [
+              0.4025974025974026,
+              0.4050632911392405
+            ],
+            "answers": 2,
+            "denominator": 156,
+            "numerator": 63,
+            "rate": 0.40384615384615385
+          },
+          "ksr/number-theory": {
+            "answerBootstrap95": [
+              0.3048780487804878,
+              0.39285714285714285
+            ],
+            "answers": 3,
+            "denominator": 232,
+            "numerator": 79,
+            "rate": 0.34051724137931033
+          },
+          "ksr/other": {
+            "answerBootstrap95": [
+              0.2503974562798092,
+              0.3373244189166814
+            ],
+            "answers": 17,
+            "denominator": 1287,
+            "numerator": 376,
+            "rate": 0.29215229215229216
+          },
+          "ksr/probability": {
+            "answerBootstrap95": [
+              0.30663615560640733,
+              0.4935039417104633
+            ],
+            "answers": 6,
+            "denominator": 445,
+            "numerator": 182,
+            "rate": 0.40898876404494383
+          },
+          "ksr/topology": {
+            "answerBootstrap95": [
+              0.3,
+              0.5588235294117647
+            ],
+            "answers": 3,
+            "denominator": 214,
+            "numerator": 99,
+            "rate": 0.46261682242990654
+          },
+          "symbol": {
+            "answerBootstrap95": [
+              0.0,
+              0.057692307692307696
+            ],
+            "answers": 24,
+            "denominator": 55,
+            "numerator": 1,
+            "rate": 0.01818181818181818
+          },
+          "word": {
+            "answerBootstrap95": [
+              0.24825903802800678,
+              0.33738013534841454
+            ],
+            "answers": 40,
+            "denominator": 413,
+            "numerator": 121,
+            "rate": 0.2929782082324455
+          }
+        },
+        "slateViolations": {
+          "duplicateFamilies": 0,
+          "duplicateInsertions": 0
+        },
+        "versusBaseline": {
+          "boundary": {
+            "difference": 0.002136752136752129,
+            "pairedAnswerBootstrap95": [
+              -0.01702218391326047,
+              0.021460381189718016
+            ]
+          },
+          "boundary/algebra": {
+            "difference": 0.040000000000000036,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.07999999999999996
+            ]
+          },
+          "boundary/analysis": {
+            "difference": 0.01694915254237289,
+            "pairedAnswerBootstrap95": [
+              -0.043478260869565216,
+              0.10344827586206898
+            ]
+          },
+          "boundary/linear-algebra": {
+            "difference": 0.043478260869565216,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.09999999999999998
+            ]
+          },
+          "boundary/mathOpportunity/equation-command": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "boundary/mathOpportunity/inline-variable": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "boundary/number-theory": {
+            "difference": 0.026315789473684237,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.07142857142857145
+            ]
+          },
+          "boundary/other": {
+            "difference": -0.015957446808510606,
+            "pairedAnswerBootstrap95": [
+              -0.04688113547120419,
+              0.01212198795180681
+            ]
+          },
+          "boundary/probability": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              -0.03798685491723464,
+              0.038461538461538436
+            ]
+          },
+          "boundary/source/hoskinson-center/proof-pile": {
+            "difference": 0.002136752136752129,
+            "pairedAnswerBootstrap95": [
+              -0.01702218391326047,
+              0.021460381189718016
+            ]
+          },
+          "boundary/stratum/math-rich": {
+            "difference": 0.006872852233677007,
+            "pairedAnswerBootstrap95": [
+              -0.021741106719367603,
+              0.036795491143317226
+            ]
+          },
+          "boundary/stratum/prose": {
+            "difference": -0.005649717514124297,
+            "pairedAnswerBootstrap95": [
+              -0.026045075261780123,
+              0.012121212121212116
+            ]
+          },
+          "boundary/topology": {
+            "difference": -0.02941176470588236,
+            "pairedAnswerBootstrap95": [
+              -0.09090909090909091,
+              0.0
+            ]
+          },
+          "ksr": {
+            "difference": 0.003996003996004027,
+            "pairedAnswerBootstrap95": [
+              -0.00529301868746636,
+              0.013838987302023898
+            ]
+          },
+          "ksr/algebra": {
+            "difference": 0.023026315789473673,
+            "pairedAnswerBootstrap95": [
+              -0.0059880239520958,
+              0.05839416058394159
+            ]
+          },
+          "ksr/analysis": {
+            "difference": -0.010958904109589052,
+            "pairedAnswerBootstrap95": [
+              -0.035264483627204024,
+              0.011799410029498525
+            ]
+          },
+          "ksr/linear-algebra": {
+            "difference": 0.01282051282051283,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0253164556962025
+            ]
+          },
+          "ksr/number-theory": {
+            "difference": -0.02155172413793105,
+            "pairedAnswerBootstrap95": [
+              -0.04878048780487804,
+              0.0
+            ]
+          },
+          "ksr/other": {
+            "difference": 0.0007770007770007692,
+            "pairedAnswerBootstrap95": [
+              -0.014582294863800966,
+              0.016159836065573713
+            ]
+          },
+          "ksr/probability": {
+            "difference": 0.008988764044943809,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.022779043280182265
+            ]
+          },
+          "ksr/topology": {
+            "difference": 0.03271028037383178,
+            "pairedAnswerBootstrap95": [
+              0.013157894736842035,
+              0.0735294117647059
+            ]
+          },
+          "symbol": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "word": {
+            "difference": 0.002421307506053294,
+            "pairedAnswerBootstrap95": [
+              -0.019231927710843363,
+              0.024330900243308973
+            ]
+          }
+        }
+      },
+      "tutor": {
+        "blockedCases": {
+          "observedDisplays": 0,
+          "opportunities": 0
+        },
+        "calibration": {},
+        "ghost": {
+          "counts": {
+            "eligible": 0
+          },
+          "coverage": null
+        },
+        "impressionsSha256": "52c1697dcf32af02c508a66418dcf654a9a101c0c59dcf340299e10a1527f96e",
+        "keysSha256": "02ca3a242506a2f7ed27bfaeb508b4ede1432597c6bd03f96247f28dea73f08e",
+        "rates": {
+          "boundary": {
+            "answerBootstrap95": [
+              0.22362365798072434,
+              0.2963001623753189
+            ],
+            "answers": 40,
+            "denominator": 468,
+            "numerator": 122,
+            "rate": 0.2606837606837607
+          },
+          "boundary/algebra": {
+            "answerBootstrap95": [
+              0.18181818181818182,
+              0.4406779661016949
+            ],
+            "answers": 4,
+            "denominator": 50,
+            "numerator": 17,
+            "rate": 0.34
+          },
+          "boundary/analysis": {
+            "answerBootstrap95": [
+              0.10416666666666667,
+              0.25757575757575757
+            ],
+            "answers": 5,
+            "denominator": 59,
+            "numerator": 11,
+            "rate": 0.1864406779661017
+          },
+          "boundary/linear-algebra": {
+            "answerBootstrap95": [
+              0.07692307692307693,
+              0.5
+            ],
+            "answers": 2,
+            "denominator": 23,
+            "numerator": 6,
+            "rate": 0.2608695652173913
+          },
+          "boundary/mathOpportunity/equation-command": {
+            "answerBootstrap95": [
+              0.0,
+              0.25
+            ],
+            "answers": 7,
+            "denominator": 12,
+            "numerator": 1,
+            "rate": 0.08333333333333333
+          },
+          "boundary/mathOpportunity/inline-variable": {
+            "answerBootstrap95": [
+              0.0,
+              0.0
+            ],
+            "answers": 20,
+            "denominator": 43,
+            "numerator": 0,
+            "rate": 0.0
+          },
+          "boundary/number-theory": {
+            "answerBootstrap95": [
+              0.1,
+              0.35714285714285715
+            ],
+            "answers": 3,
+            "denominator": 38,
+            "numerator": 11,
+            "rate": 0.2894736842105263
+          },
+          "boundary/other": {
+            "answerBootstrap95": [
+              0.18681318681318682,
+              0.2906495165115854
+            ],
+            "answers": 17,
+            "denominator": 188,
+            "numerator": 45,
+            "rate": 0.2393617021276596
+          },
+          "boundary/probability": {
+            "answerBootstrap95": [
+              0.3026315789473684,
+              0.35802929795467103
+            ],
+            "answers": 6,
+            "denominator": 76,
+            "numerator": 25,
+            "rate": 0.32894736842105265
+          },
+          "boundary/source/hoskinson-center/proof-pile": {
+            "answerBootstrap95": [
+              0.22362365798072434,
+              0.2963001623753189
+            ],
+            "answers": 40,
+            "denominator": 468,
+            "numerator": 122,
+            "rate": 0.2606837606837607
+          },
+          "boundary/stratum/math-rich": {
+            "answerBootstrap95": [
+              0.24459385979588422,
+              0.33559322033898303
+            ],
+            "answers": 24,
+            "denominator": 291,
+            "numerator": 85,
+            "rate": 0.2920962199312715
+          },
+          "boundary/stratum/prose": {
+            "answerBootstrap95": [
+              0.15934065934065933,
+              0.25806451612903225
+            ],
+            "answers": 16,
+            "denominator": 177,
+            "numerator": 37,
+            "rate": 0.20903954802259886
+          },
+          "boundary/topology": {
+            "answerBootstrap95": [
+              0.09090909090909091,
+              0.3076923076923077
+            ],
+            "answers": 3,
+            "denominator": 34,
+            "numerator": 7,
+            "rate": 0.20588235294117646
+          },
+          "ksr": {
+            "answerBootstrap95": [
+              0.30765992647713475,
+              0.380492976755351
+            ],
+            "answers": 40,
+            "denominator": 3003,
+            "numerator": 1029,
+            "rate": 0.34265734265734266
+          },
+          "ksr/algebra": {
+            "answerBootstrap95": [
+              0.34838709677419355,
+              0.4697986577181208
+            ],
+            "answers": 4,
+            "denominator": 304,
+            "numerator": 124,
+            "rate": 0.40789473684210525
+          },
+          "ksr/analysis": {
+            "answerBootstrap95": [
+              0.1329639889196676,
+              0.376
+            ],
+            "answers": 5,
+            "denominator": 365,
+            "numerator": 104,
+            "rate": 0.28493150684931506
+          },
+          "ksr/linear-algebra": {
+            "answerBootstrap95": [
+              0.4050632911392405,
+              0.4155844155844156
+            ],
+            "answers": 2,
+            "denominator": 156,
+            "numerator": 64,
+            "rate": 0.41025641025641024
+          },
+          "ksr/number-theory": {
+            "answerBootstrap95": [
+              0.3048780487804878,
+              0.42857142857142855
+            ],
+            "answers": 3,
+            "denominator": 232,
+            "numerator": 82,
+            "rate": 0.35344827586206895
+          },
+          "ksr/other": {
+            "answerBootstrap95": [
+              0.2503924841301611,
+              0.33434904177746866
+            ],
+            "answers": 17,
+            "denominator": 1287,
+            "numerator": 374,
+            "rate": 0.2905982905982906
+          },
+          "ksr/probability": {
+            "answerBootstrap95": [
+              0.30663615560640733,
+              0.4935039417104633
+            ],
+            "answers": 6,
+            "denominator": 445,
+            "numerator": 182,
+            "rate": 0.40898876404494383
+          },
+          "ksr/topology": {
+            "answerBootstrap95": [
+              0.3,
+              0.5588235294117647
+            ],
+            "answers": 3,
+            "denominator": 214,
+            "numerator": 99,
+            "rate": 0.46261682242990654
+          },
+          "symbol": {
+            "answerBootstrap95": [
+              0.0,
+              0.057692307692307696
+            ],
+            "answers": 24,
+            "denominator": 55,
+            "numerator": 1,
+            "rate": 0.01818181818181818
+          },
+          "word": {
+            "answerBootstrap95": [
+              0.24825903802800678,
+              0.33738013534841454
+            ],
+            "answers": 40,
+            "denominator": 413,
+            "numerator": 121,
+            "rate": 0.2929782082324455
+          }
+        },
+        "slateViolations": {
+          "duplicateFamilies": 0,
+          "duplicateInsertions": 0
+        },
+        "versusBaseline": {
+          "boundary": {
+            "difference": 0.002136752136752129,
+            "pairedAnswerBootstrap95": [
+              -0.01702218391326047,
+              0.021460381189718016
+            ]
+          },
+          "boundary/algebra": {
+            "difference": 0.040000000000000036,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.07999999999999996
+            ]
+          },
+          "boundary/analysis": {
+            "difference": 0.01694915254237289,
+            "pairedAnswerBootstrap95": [
+              -0.043478260869565216,
+              0.10344827586206898
+            ]
+          },
+          "boundary/linear-algebra": {
+            "difference": 0.043478260869565216,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.09999999999999998
+            ]
+          },
+          "boundary/mathOpportunity/equation-command": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "boundary/mathOpportunity/inline-variable": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "boundary/number-theory": {
+            "difference": 0.026315789473684237,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.07142857142857145
+            ]
+          },
+          "boundary/other": {
+            "difference": -0.015957446808510606,
+            "pairedAnswerBootstrap95": [
+              -0.04688113547120419,
+              0.01212198795180681
+            ]
+          },
+          "boundary/probability": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              -0.03798685491723464,
+              0.038461538461538436
+            ]
+          },
+          "boundary/source/hoskinson-center/proof-pile": {
+            "difference": 0.002136752136752129,
+            "pairedAnswerBootstrap95": [
+              -0.01702218391326047,
+              0.021460381189718016
+            ]
+          },
+          "boundary/stratum/math-rich": {
+            "difference": 0.006872852233677007,
+            "pairedAnswerBootstrap95": [
+              -0.021741106719367603,
+              0.036795491143317226
+            ]
+          },
+          "boundary/stratum/prose": {
+            "difference": -0.005649717514124297,
+            "pairedAnswerBootstrap95": [
+              -0.026045075261780123,
+              0.012121212121212116
+            ]
+          },
+          "boundary/topology": {
+            "difference": -0.02941176470588236,
+            "pairedAnswerBootstrap95": [
+              -0.09090909090909091,
+              0.0
+            ]
+          },
+          "ksr": {
+            "difference": 0.004662004662004671,
+            "pairedAnswerBootstrap95": [
+              -0.0055997039159254285,
+              0.015166963026194412
+            ]
+          },
+          "ksr/algebra": {
+            "difference": 0.023026315789473673,
+            "pairedAnswerBootstrap95": [
+              -0.0059880239520958,
+              0.05839416058394159
+            ]
+          },
+          "ksr/analysis": {
+            "difference": -0.010958904109589052,
+            "pairedAnswerBootstrap95": [
+              -0.035264483627204024,
+              0.011799410029498525
+            ]
+          },
+          "ksr/linear-algebra": {
+            "difference": 0.019230769230769218,
+            "pairedAnswerBootstrap95": [
+              0.012987012987012991,
+              0.0253164556962025
+            ]
+          },
+          "ksr/number-theory": {
+            "difference": -0.008620689655172431,
+            "pairedAnswerBootstrap95": [
+              -0.04878048780487804,
+              0.0357142857142857
+            ]
+          },
+          "ksr/other": {
+            "difference": -0.0007770007770007692,
+            "pairedAnswerBootstrap95": [
+              -0.018532818532818518,
+              0.015555088089877182
+            ]
+          },
+          "ksr/probability": {
+            "difference": 0.008988764044943809,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.022779043280182265
+            ]
+          },
+          "ksr/topology": {
+            "difference": 0.03271028037383178,
+            "pairedAnswerBootstrap95": [
+              0.013157894736842035,
+              0.0735294117647059
+            ]
+          },
+          "symbol": {
+            "difference": 0.0,
+            "pairedAnswerBootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "word": {
+            "difference": 0.002421307506053294,
+            "pairedAnswerBootstrap95": [
+              -0.019231927710843363,
+              0.024330900243308973
+            ]
+          }
+        }
+      }
+    },
+    "seed": 52489,
+    "version": 1
+  },
+  "formalNeuralDecision": {
+    "ghost": "disabled",
+    "reason": "fallback-no-native-and-byte-qualified-candidate",
+    "selectionProvenance": {
+      "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+      "preparedManifestSha256": "5ed7c4039a78c67bc0f8e24a23492d9bab1455d449f5b7787e06c5d90c097ab8",
+      "sharedHeldoutManifestSha256": "fd86f565b78840fbed6c0e4c5ec56d2ff2750e3b7e533b310681d7efee0467ee",
+      "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc",
+      "trainingLedgerSha256": "8c12c05c5a2cf253e9ff8b271656ebf312255aee47ee6b1f0575e24340f291e5",
+      "validationCasesSha256": "1a2f47cd12d8c2b9947470920cbc96bfffefb9c618e68f13b803dd48aacec29c"
+    },
+    "selectionSha256": "64fa190db84da27049ba8f2f136c458389ea7d07048a75ed9ad2dbb2b2051d27",
+    "status": "unavailable",
+    "variantRejections": {
+      "int4": [
+        "native-or-layout-parity"
+      ],
+      "int4-int8-head": [
+        "native-or-layout-parity"
+      ],
+      "int8-weight-only": [
+        "native-or-layout-parity"
+      ]
+    },
+    "weightContrasts": "unavailable"
+  },
+  "independentReviewSha256": "b11996fdc143771aa37b0c7493dbd6dfecc26a57a9f6828aded6b13d86dcb8e5",
+  "inventorySha256": "8afbedded715be37530a9d6d8eb12d418464ef2bdfaeba9553e82484ae7797ab",
+  "modelAndActedAssetReceipts": {
+    "corrected-v1": {
+      "answers": 40,
+      "arm": "corrected-v1",
+      "assetCounts": {
+        "empty": 77,
+        "ineligible": 211,
+        "latex": 390,
+        "neural": 0,
+        "ngram": 2168,
+        "no-current-model": 0,
+        "subject": 0
+      },
+      "assetSha256": [
+        "d439be36601fe22e599c4624ecb49d2ed043f658814942b1c95ea0105aadaceb",
+        "feeb995115c6f8aa7a0f6ae701b7d9ebc8e1e82b972ed3aa6d87d550c10f0c8d"
+      ],
+      "captureOnly": false,
+      "events": 468,
+      "ghostCalibration": false,
+      "graphTrial": false,
+      "neuralResults": {
+        "admissions": [],
+        "deliveredOnTimeContinuationReplies": 0,
+        "deliveredOnTimeScoredReplies": 0,
+        "lateReplies": 0,
+        "observedFingerprints": []
+      },
+      "receiptSha256": "b0fac5b7cdfab2faec7cc72e7336cdc293d37de2c7c01df78358342a9a606d93",
+      "strictGraphTrial": false,
+      "subjectAssetSha256": {},
+      "withoutCurrentFingerprint": {
+        "latex": 2066,
+        "neural": 2456,
+        "subject": 2456
+      }
+    },
+    "expanded-kn": {
+      "answers": 40,
+      "arm": "expanded-kn",
+      "assetCounts": {
+        "empty": 77,
+        "ineligible": 210,
+        "latex": 389,
+        "neural": 0,
+        "ngram": 2158,
+        "no-current-model": 0,
+        "subject": 236
+      },
+      "assetSha256": [
+        "79eff0d5440b999e88520d6b472bfa95016786b7301d8f781c2e928a2304a3e4",
+        "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0",
+        "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe"
+      ],
+      "captureOnly": false,
+      "events": 468,
+      "ghostCalibration": false,
+      "graphTrial": false,
+      "neuralResults": {
+        "admissions": [],
+        "deliveredOnTimeContinuationReplies": 0,
+        "deliveredOnTimeScoredReplies": 0,
+        "lateReplies": 0,
+        "observedFingerprints": []
+      },
+      "receiptSha256": "f41e919e7e1f30012c0a15218ef8639014696778a46af8c84223c7f0515ad68f",
+      "strictGraphTrial": false,
+      "subjectAssetSha256": {
+        "linear-algebra": [
+          "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe"
+        ],
+        "topology": [
+          "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0"
+        ]
+      },
+      "withoutCurrentFingerprint": {
+        "latex": 2056,
+        "neural": 2445,
+        "subject": 2209
+      }
+    },
+    "personal": {
+      "answers": 40,
+      "arm": "personal",
+      "assetCounts": {
+        "empty": 77,
+        "ineligible": 209,
+        "latex": 389,
+        "neural": 0,
+        "ngram": 2158,
+        "no-current-model": 0,
+        "subject": 237
+      },
+      "assetSha256": [
+        "79eff0d5440b999e88520d6b472bfa95016786b7301d8f781c2e928a2304a3e4",
+        "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0",
+        "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe"
+      ],
+      "captureOnly": false,
+      "events": 468,
+      "ghostCalibration": false,
+      "graphTrial": false,
+      "neuralResults": {
+        "admissions": [],
+        "deliveredOnTimeContinuationReplies": 0,
+        "deliveredOnTimeScoredReplies": 0,
+        "lateReplies": 0,
+        "observedFingerprints": []
+      },
+      "receiptSha256": "0b6545c8378418a9ca576c9de90a058e3c667fb2413140fd3f8d1152af604e40",
+      "strictGraphTrial": false,
+      "subjectAssetSha256": {
+        "linear-algebra": [
+          "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe"
+        ],
+        "topology": [
+          "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0"
+        ]
+      },
+      "withoutCurrentFingerprint": {
+        "latex": 2055,
+        "neural": 2444,
+        "subject": 2207
+      }
+    },
+    "tutor": {
+      "answers": 40,
+      "arm": "tutor",
+      "assetCounts": {
+        "empty": 77,
+        "ineligible": 210,
+        "latex": 389,
+        "neural": 0,
+        "ngram": 2155,
+        "no-current-model": 0,
+        "subject": 235
+      },
+      "assetSha256": [
+        "79eff0d5440b999e88520d6b472bfa95016786b7301d8f781c2e928a2304a3e4",
+        "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0",
+        "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe"
+      ],
+      "captureOnly": false,
+      "events": 468,
+      "ghostCalibration": false,
+      "graphTrial": false,
+      "neuralResults": {
+        "admissions": [],
+        "deliveredOnTimeContinuationReplies": 0,
+        "deliveredOnTimeScoredReplies": 0,
+        "lateReplies": 0,
+        "observedFingerprints": []
+      },
+      "receiptSha256": "d52f0ee5f833fafa9c31d1dfa954f04150fd05c13d990b30f9a94d6a5b045c7a",
+      "strictGraphTrial": false,
+      "subjectAssetSha256": {
+        "linear-algebra": [
+          "e641f727f7ed625dceacb5a8aabbdc5386562b55ff60f73ed43c0e7b6a9acbbe"
+        ],
+        "topology": [
+          "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0"
+        ]
+      },
+      "withoutCurrentFingerprint": {
+        "latex": 2053,
+        "neural": 2442,
+        "subject": 2207
+      }
+    }
+  },
+  "pairedIncrements": {
+    "paired-personal-vs-tutor": {
+      "analysisReceiptSha256": "e92ee9ff0fffb9ecaea27b2ebcca43e45b212d39e81ba235bebddf0c659c967d",
+      "baseline": "tutor",
+      "candidate": "personal",
+      "strata": {
+        "boundary": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/algebra": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/analysis": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/linear-algebra": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/mathOpportunity/equation-command": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/mathOpportunity/inline-variable": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/number-theory": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/other": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/probability": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/source/hoskinson-center/proof-pile": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/stratum/math-rich": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/stratum/prose": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/topology": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ksr": {
+          "difference": -0.0006660006660006434,
+          "pairedAnswerBootstrap95": [
+            -0.0033223973333480956,
+            0.0016705786094469805
+          ]
+        },
+        "ksr/algebra": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ksr/analysis": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ksr/linear-algebra": {
+          "difference": -0.0064102564102563875,
+          "pairedAnswerBootstrap95": [
+            -0.012987012987012991,
+            0.0
+          ]
+        },
+        "ksr/number-theory": {
+          "difference": -0.012931034482758619,
+          "pairedAnswerBootstrap95": [
+            -0.0357142857142857,
+            0.0
+          ]
+        },
+        "ksr/other": {
+          "difference": 0.0015540015540015384,
+          "pairedAnswerBootstrap95": [
+            -0.001584786053882682,
+            0.005380476556494986
+          ]
+        },
+        "ksr/probability": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ksr/topology": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "symbol": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "word": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        }
+      }
+    },
+    "paired-tutor-vs-expanded": {
+      "analysisReceiptSha256": "703692a677629f87e243469f250f5937dc531528d83bdd45a0c4fd266b1298f7",
+      "baseline": "expanded-kn",
+      "candidate": "tutor",
+      "strata": {
+        "boundary": {
+          "difference": 0.002136752136752129,
+          "pairedAnswerBootstrap95": [
+            -0.004494889289065863,
+            0.00896860986547085
+          ]
+        },
+        "boundary/algebra": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/analysis": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/linear-algebra": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/mathOpportunity/equation-command": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/mathOpportunity/inline-variable": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/number-theory": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/other": {
+          "difference": 0.010638297872340441,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.02617801047120419
+          ]
+        },
+        "boundary/probability": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "boundary/source/hoskinson-center/proof-pile": {
+          "difference": 0.002136752136752129,
+          "pairedAnswerBootstrap95": [
+            -0.004494889289065863,
+            0.00896860986547085
+          ]
+        },
+        "boundary/stratum/math-rich": {
+          "difference": 0.0034364261168385313,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.010752688172043003
+          ]
+        },
+        "boundary/stratum/prose": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            -0.016856313083222257,
+            0.016393442622950838
+          ]
+        },
+        "boundary/topology": {
+          "difference": -0.02941176470588236,
+          "pairedAnswerBootstrap95": [
+            -0.09090909090909091,
+            0.0
+          ]
+        },
+        "ksr": {
+          "difference": 0.0009990009990010207,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0020576484743723266
+          ]
+        },
+        "ksr/algebra": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ksr/analysis": {
+          "difference": 0.002739726027397249,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0077319587628865705
+          ]
+        },
+        "ksr/linear-algebra": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ksr/number-theory": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ksr/other": {
+          "difference": 0.0007770007770008247,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.002377179080824078
+          ]
+        },
+        "ksr/probability": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ksr/topology": {
+          "difference": 0.004672897196261683,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.01428571428571429
+          ]
+        },
+        "symbol": {
+          "difference": 0.0,
+          "pairedAnswerBootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "word": {
+          "difference": 0.002421307506053294,
+          "pairedAnswerBootstrap95": [
+            -0.005089383081476856,
+            0.01010164940544688
+          ]
+        }
+      }
+    }
+  },
+  "pretestFreezeSha256": "e736b32b5ab459bba9d4d6f46936a85a4c1bfc9fa6e73267e11d97080ca8ab79",
+  "questionAidCount": 30,
+  "releaseGate": {
+    "boundaryTopThreeTarget": 0.35,
+    "expandedCountsPassed": false,
+    "humanAcceptanceAndRetention": "unverified",
+    "keysTarget": 0.55,
+    "physicalDevice": "unverified"
+  },
+  "scheduleManifestSha256": "cff4f66c8a75d38ef957bc8228f4c97825e705b53ed1fd33fa21952f9d25b275",
+  "scope": "Frozen actual Tutor browser comparison. 468 fixed events and 40 fully typed short answer trajectories (65\u201385 codepoints per answer) per arm. Exact taps in replay estimate key equivalents, with no learner acceptance or time outcome.",
+  "sourceCommit": "f8a1a066a482ebaf8c3fa1cb7673155525fc78f3",
+  "version": 1
+}

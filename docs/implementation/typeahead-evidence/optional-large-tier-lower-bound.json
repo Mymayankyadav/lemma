@@ -1,0 +1,38 @@
+{
+  "assessment": "No eligible optional larger candidate under the current dense four-bit and mixed exporter formats and allowed large-tier cold backend paths.",
+  "backendBounds": {
+    "webgpu": {
+      "idealWeightBytesOverCeiling": 10084201,
+      "modelCeilingBytes": 25028119,
+      "runtimeBytes": 24254953
+    },
+    "webgpuJspi": {
+      "idealWeightBytesOverCeiling": 876126,
+      "modelCeilingBytes": 34236194,
+      "runtimeBytes": 15046878
+    }
+  },
+  "candidate": "larger",
+  "coldBudgetBytes": 79691776,
+  "decision": "Leave conditional optional larger training allocation unused; preserve the approved primary candidate and fixed-precision control matrix.",
+  "dimensions": {
+    "context": 1024,
+    "heads": 10,
+    "layers": 12,
+    "vocabulary": 16384,
+    "width": 640
+  },
+  "idealDense4BitWeightBytes": 35112320,
+  "limitations": "Ideal four-bit lower bound before per-block scales, wider mixed head, float tensors, graph metadata and tokenizer. This does not bound unrelated representations or changed architectures, and it does not measure device performance or qualify primary deployment.",
+  "parameterFormula": "(vocabulary + context) \u00d7 width + layers \u00d7 (12 \u00d7 width\u00b2 + 13 \u00d7 width) + 2 \u00d7 width; tied output head",
+  "parameters": 70224640,
+  "sourceCommit": "f8a1a066a482ebaf8c3fa1cb7673155525fc78f3",
+  "sourceFilesSha256": {
+    "scripts/typeahead/expanded/export.py": "7c93e1d46f2f6b12d2f66883ae6d11eb05a94a3ef5453663bba1872086158d40",
+    "scripts/typeahead/expanded/neural.py": "c899c25718c5d6b472a0c4e8dc9f5ed410b2ac0ec5f6fbc0445ceeb57208e949",
+    "src/features/tutor/writingAid/decoder/neuralManifest.ts": "03efba29ea8747b0df14c5bca5734b96ee246bab629705b60eaf3955751e3c53"
+  },
+  "supportReserveBytes": 30408704,
+  "version": 1,
+  "wasmLargeTierEligible": false
+}

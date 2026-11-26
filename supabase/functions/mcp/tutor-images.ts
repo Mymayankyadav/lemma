@@ -19,6 +19,17 @@ export async function tutorImageRows(db:Db,scope:TutorImageScope):Promise<TutorI
   return rows.data??[];
 }
 
+/** Exam attachment metadata comes from the exact grant-authorized turn RPC. */
+export function examTutorImageRows(turn:{snapshot?:{attachments?:unknown}},owner:string,attachmentId?:string):TutorImageRow[] {
+  const attachments=turn.snapshot?.attachments;
+  if(!Array.isArray(attachments))return [];
+  return attachments.slice(0,TUTOR_ATTACHMENT_COUNT).flatMap(row=>
+    row&&typeof row.id==='string'&&(!attachmentId||row.id===attachmentId)&&
+    (row.kind==='drawing'||row.kind==='photo')&&(row.mimeType==='image/png'||row.mimeType==='image/jpeg')&&
+    Number.isSafeInteger(row.byteSize)&&row.byteSize>0&&row.byteSize<=TUTOR_IMAGE_LIMIT
+    ? [{id:row.id,user_id:owner,kind:row.kind,mime_type:row.mimeType,byte_size:row.byteSize}] : []);
+}
+
 export async function tutorImageBlock(blob:Blob,mimeType:string) {
   if (!blob.size||blob.size>TUTOR_IMAGE_LIMIT) throw new Error('Tutor image is unavailable.');
   const bytes=new Uint8Array(await blob.arrayBuffer());
@@ -43,18 +54,18 @@ export function tutorFollowupFields(followups?: readonly {body: string; createdA
 }
 
 export async function tutorTurnContent(
-  db:Db,turn:{snapshot?:{question?:unknown}}|null,rows:readonly TutorImageRow[],referenceId:(id:string)=>string=id=>id,
+  db:Db,turn:{snapshot?:{question?:unknown;acceptedSpans?:unknown}}|null,rows:readonly TutorImageRow[],referenceId:(id:string)=>string=id=>id,
   details?:()=>Promise<Record<string,unknown>>,
 ):Promise<TutorContentBlock[]> {
   const content=rows.length?{...turn,attachments:rows.map(row=>({id:referenceId(row.id),kind:row.kind,mimeType:row.mime_type}))}:turn;
   const question=typeof turn?.snapshot?.question==='string'?turn.snapshot.question:'';
   const images=new Map(rows.map(row=>[row.id,row]));
-  const parts=tutorAnswerParts(question,images.keys());
+  const parts=tutorAnswerParts(question,images.keys(),turn?.snapshot?.acceptedSpans);
   // Details can acknowledge follow-ups. Load the images first so a failed download acknowledges nothing.
   const summary=async (value:object|null)=>({type:'text' as const,text:JSON.stringify(details?{...value,...await details()}:value)});
   if(!parts.some(part=>part.type==='image')) {
     const blocks=await Promise.all(rows.map(row=>downloadTutorImage(db,row)));
-    return [await summary(content),...blocks];
+    return [await summary(parts.some(part=>part.type==='text'&&part.accepted)?{...content,answerParts:parts}:content),...blocks];
   }
 
   const labels=new Map<string,string>(),counts={drawing:0,photo:0};

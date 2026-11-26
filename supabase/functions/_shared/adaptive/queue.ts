@@ -7,9 +7,9 @@ export type ReviewItem={
   type:'recheck'|'cards';ref:string;classId:string;system?:string|null;minutes:number;
   retrievability:number;importance:number;prereqOfToday:boolean;
 };
-export type QueueItem={type:'recheck'|'cards'|'step'|'cp'|'probe';ref:string;est_minutes:number;reason_code:string};
+export type QueueItem={type:'recheck'|'cards'|'step'|'cp'|'probe'|'exam';ref:string;est_minutes:number;reason_code:string};
 export type QueueInput={
-  today:DateStr;mode:Mode;capacity:number;configured:boolean;used:number;
+  examBlocks?:import('../exam/block.ts').ExamBlock[];today:DateStr;mode:Mode;capacity:number;configured:boolean;used:number;
   reviewShare:number;reviewBudgetMinutes:number;reviews:ReviewItem[];
   projects:PlanProject[];cps:PlanCp[];nextStudyDays:DateStr[];
   /** study days since the last session; > 3 adds a re-entry probe (§8.6) */
@@ -38,7 +38,16 @@ const available=(c:PlanCp,done:Set<string>)=>c.prereqs.every(p=>done.has(p));
 export function buildQueue(i:QueueInput):Queue{
   const flags:string[]=[];
   const q:Queue={items:[],tail:[],overflow:{},flags,minutes:{available:0,review:0,learning:0}};
-  if(i.mode==='post_deadline'){flags.push('post_deadline');return q}
+  if(i.mode==='post_deadline'){
+    let left=Math.max(0,i.capacity-i.used);
+    for(const b of i.examBlocks??[]){
+      if(b.next.minutes>left)continue;
+      q.items.push({type:'exam',ref:b.sittingId,est_minutes:b.next.minutes,reason_code:b.next.why});left-=b.next.minutes;
+    }
+    if(!q.items.length)flags.push('post_deadline');
+    else {q.minutes.available=Math.max(0,i.capacity-i.used);q.minutes.learning=q.minutes.available-left;}
+    return q;
+  }
   if(!i.configured||i.capacity<=0){flags.push(i.configured?'zero_capacity':'capacity_unset');}
   const avail=Math.max(0,i.capacity-i.used);q.minutes.available=avail;
   const mand=i.reviews.filter(r=>r.type==='recheck'&&r.prereqOfToday);

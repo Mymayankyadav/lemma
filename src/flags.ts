@@ -21,6 +21,14 @@ export const FLAG_DEFAULTS = {
   /** Owner-requested tutor page. Live writes also require the server release capability. */
   tutorThreads: true,
   todayNextStep: false,
+  /** N241: exam setup and prep ledger on a Path. N251 (Owner): on by default at the Owner's request (needs a review),
+   *  with the exam tutor, Today's exam card, return to study and card ideas (docs/current/N251.md).
+   *  `?flags=-examMode` turns it off in dev/test/e2e builds. */
+  examMode: true,
+  /** N249 (Owner): draw one symbol at a time over the tutor's keys; the strip offers its readings and a confident,
+   *  complete one goes in by itself (docs/current/N249.md). On by default at the Owner's request (needs a review);
+   *  `?flags=-tutorKeyInk` turns it off in dev/test/e2e builds. */
+  tutorKeyInk: true,
   /** N223 (Owner): the tutor's rich answer, with equations as rendered chips, the pencil's scratch pad and image
    *  attachments, on by default; `?flags=-tutorScratch` shows the plain text answer in dev/test/e2e builds. */
   tutorScratch: true,
@@ -49,9 +57,6 @@ export const FLAG_DEFAULTS = {
   v7Scratch: true,
   /** N198: full-page Pad in Settings and the device-local offline entry. */
   padLocal: true,
-  /** N248 (Owner): the Pad's math keys double as paper for one drawn symbol at a time; confident complete readings
-   *  go in by themselves (docs/current/N248.md). Build stage, default off. */
-  padLatentInk: false,
   /** N222: explicit Equation Assist and notation slots in the local Pad. */
   equationAssist: false,
   /** N223 (Owner): the tutor keyboard's suggestions are always on, with no settings; the old Writing assistance settings
@@ -59,6 +64,11 @@ export const FLAG_DEFAULTS = {
   writingAidSettings: false,
   /** N223 (Owner): the writing aid's grey-text continuation is off; it returns later as a proof-assist option. */
   proofAssistGhost: false,
+  /** N233/N235: the keyboard's Kneser-Ney next-word model, the maths slot, the question-aware learner-choice rule and the
+   *  LaTeX grammar inside equations. Default off until Harden; a default-on change needs an independent review. */
+  typeaheadV2: false,
+  /** N234: the tutor's answer aids (phrase bank, terms, symbols, withheld words) shape the strip. */
+  tutorAnswerAids: false,
   /** N157 · U4 S14 paper and sky: Plain, Graph, Dot or Ruled paper by day; Clear or Stars by night. */
   v7Paper: true,
   /** N157 · U4 S16 desk clock: Focus as large digits, the intention and a ring; the screen stays awake while it runs. */

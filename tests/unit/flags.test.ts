@@ -5,7 +5,7 @@ import {setShellRoot} from '../../src/app/shellRoot'
 describe('feature flags',()=>{
  it('the shells and reviewed feature defaults are on; unreleased flags are off',()=>{
   const {v6Shell,v7Shell,v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week,atlasV3,
-    atlasAgendaV1,padLocal,uiRepairV1,tutorThreads,tutorScratch,...rest}=FLAG_DEFAULTS
+    atlasAgendaV1,padLocal,uiRepairV1,tutorThreads,tutorScratch,tutorKeyInk,examMode,...rest}=FLAG_DEFAULTS
   expect(v6Shell).toBe(true)
   expect(v7Shell).toBe(true)
   expect([v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week].every(Boolean)).toBe(true)
@@ -14,6 +14,9 @@ describe('feature flags',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?flags=-tutorThreads'}).tutorThreads).toBe(false)
   expect(tutorScratch).toBe(true)   // the Owner's N223: the rich answer, the pencil's scratch pad and image attachments
   expect(resolveFlags({allowOverrides:true,search:'?flags=-tutorScratch'}).tutorScratch).toBe(false)
+  expect(tutorKeyInk).toBe(true)   // the Owner's N249: one symbol drawn over the tutor's keys
+  expect(resolveFlags({allowOverrides:true,search:'?flags=-tutorKeyInk'}).tutorKeyInk).toBe(false)
+  expect(examMode).toBe(true)   // the Owner's N251: exam preparation on a Path
   expect(Object.values(rest).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })
@@ -21,6 +24,12 @@ describe('feature flags',()=>{
   expect(FLAG_DEFAULTS.androidShell).toBe(false)
   expect(resolveFlags({allowOverrides:true,search:'?flags=androidShell'}).androidShell).toBe(true)
   expect(resolveFlags({allowOverrides:false,search:'?flags=androidShell',envFlags:'androidShell'}).androidShell).toBe(false)
+ })
+ it('exam prep is on by default; only a permitted override turns it off',()=>{
+  expect(FLAG_DEFAULTS.examMode).toBe(true)
+  expect(resolveFlags({allowOverrides:true,search:'?flags=-examMode'}).examMode).toBe(false)
+  expect(resolveFlags({allowOverrides:true,envFlags:'-examMode'}).examMode).toBe(false)
+  expect(resolveFlags({allowOverrides:false,search:'?flags=-examMode',envFlags:'-examMode'}).examMode).toBe(true)
  })
  it('notificationsPush is off by default and only enabled through permitted overrides',()=>{
   expect(FLAG_DEFAULTS.notificationsPush).toBe(false)

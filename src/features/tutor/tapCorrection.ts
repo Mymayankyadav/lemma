@@ -40,11 +40,16 @@ function likelihood(key: KeyBox, point: {x: number; y: number}): number {
   return Math.exp(-(dx * dx + dy * dy) / 2);
 }
 
+/** A first letter or an already-valid word prefix does not need neighbour geometry. */
+export function needsTapCorrection(pressed: string, before: string): boolean {
+  const prefix = before.toLowerCase(), letter = pressed.toLowerCase();
+  return Boolean(words && /^[a-z]+$/.test(prefix) && /^[a-z]$/.test(letter) && !isWordPrefix(prefix + letter));
+}
+
 /** The letter to type for a touch at `point` on `pressed`, given the word typed so far (`before`). */
 export function correctTap(pressed: string, point: {x: number; y: number}, keys: readonly KeyBox[], before: string): string {
   const prefix = before.toLowerCase(), lower = pressed.toLowerCase();
-  if (!words || !prefix || !/^[a-z]+$/.test(prefix) || !/^[a-z]$/.test(lower)) return pressed;
-  if (isWordPrefix(prefix + lower)) return pressed;
+  if (!needsTapCorrection(pressed, before)) return pressed;
   const own = keys.find(key => key.letter === lower);
   if (!own) return pressed;
   const ownScore = likelihood(own, point);

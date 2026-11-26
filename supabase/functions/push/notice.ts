@@ -1,3 +1,4 @@
+import {notifyTitle,notifyBody} from '../_shared/notify-text.ts';
 import {notificationCopy} from '../notify/copy.ts';
 import {tutorActions,type ReminderCandidate,type ReminderContext,type ReminderKind} from '../notify/rules.ts';
 
@@ -9,6 +10,7 @@ import {tutorActions,type ReminderCandidate,type ReminderContext,type ReminderKi
  */
 export interface Checkpoint {slug?: string; project: string; code: string; title: string; step?: number; steps?: number}
 export interface NoticeFacts {
+  exams?:{id:string;title:string;slug:string;startsAt:string;zone:string;minutes?:number|null}[];
   holds?:Record<string,string>;
   tz?: string; today?: string; studiedToday?: boolean; lastStudyAt?: string | null; live?: boolean; quietDays?: number;
   due?: {count?: number; backlog?: number; minutes?: number};
@@ -23,7 +25,7 @@ export interface NoticeFacts {
 }
 export interface NoticePrefs {
   enabled?: boolean; mode?: string; studyTime?: string; quiet?: {start?: string; end?: string}; maxPerDay?: number;
-  kinds?: Partial<Record<ReminderKind, boolean>>; dueThreshold?: number; approveCards?: boolean;
+  kinds?: Partial<Record<ReminderKind|'examMorning'|'examFollowup', boolean>>; dueThreshold?: number; approveCards?: boolean;
   digest?: {weekday?: number; time?: string}; [key: string]: unknown;
 }
 /** A button on the notification. `open` needs only a link; every other action carries a signed token made at delivery. */
@@ -85,6 +87,23 @@ export function noticePlan(facts: NoticeFacts, prefs: NoticePrefs, now: number):
   const dueAt = zonedInstant(today, studyTime, zone);
   const withSent = (candidate: ReminderCandidate, key: string): ReminderCandidate => {const at = sentOn(key); if (at !== undefined) candidate.lastSentAt = at; return candidate;};
 
+  for(const exam of facts.exams??[]) {
+    const start=ms(exam.startsAt);
+    if(start===undefined)continue;
+    const examDay=localDate(start,exam.zone), end=start+(exam.minutes??0)*60000;
+    const morning=now<start;
+    const preference=morning?'examMorning':'examFollowup';
+    if(kinds[preference]!==true)continue;
+    if(morning && localDate(now,exam.zone)!==examDay)continue;
+    if(!morning && (exam.minutes==null||exam.minutes<=0||now<end||now>start+2*DAY))continue;
+    const key=['exam',preference,exam.id,start].join('/');
+    const url=link(exam.slug)+(morning?'/tutor?exam=':'?tab=exam&examSitting=')+encodeURIComponent(exam.id);
+    const time=new Intl.DateTimeFormat('en-GB',{timeZone:exam.zone,hour:'2-digit',minute:'2-digit'}).format(start);
+    add({kind:'deadline',key,enabled:true,sentToday:sentOn(key)===undefined?0:1,
+      dueAt:morning?Math.min(zonedInstant(examDay,studyTime,exam.zone),start-30*60000):end},
+      {kind:'deadline',title:notifyTitle(exam.title),body:notifyBody(morning?'Your exam starts at '+time+'. Open exam prep for a warm-up.':'How did the exam go? Open the sitting to finish or reschedule it.'),
+        url,actions:[open(url,morning?'Open prep':'Open exam')]});
+  }
   // K1 due: only when the owner switched it on (as the phone's own reminder is), once a day at their study time.
   const due = facts.due;
   if (due && Number.isFinite(due.count)) {

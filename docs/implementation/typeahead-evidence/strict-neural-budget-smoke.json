@@ -1,0 +1,35 @@
+{
+  "browserFixtureSha256": "77cefc62019f2e80dde99bf09483668e9177313382414f350f79a799bd6c776d",
+  "buildIndexSha256": "72c4f102527e304e91a40b1ee0b2ea9b691f93eb9bce01506f7f66c82028ce3d",
+  "candidateManifestSha256": "b68feecf0b8b57b35ebb98fa96c1865fcc19cb0a1b1c57df92deeafd198b4737",
+  "expectedCandidateBundleFingerprint": "887619b518a03e500ef6337327fd7a94f6af422ba8c463b2e8b4c3888ba44366:5727d4112d3bf70a277d7f698b48f8a556306745bbd378172ed9bda29e9f9123:cddf913dc9b5853e0dbadd4ac7b2d849ac712df101c740946175bf26b073340b:58c8e2b2ee236b69887835ceb193a0dd51a30cb41106fc64553e785292945f1b",
+  "graphAndWeightRequests": 0,
+  "neuralModelBackedObservations": 0,
+  "rawProvenanceSha256": {
+    "assets.json": "5af239e3ca7390e2093d553795274b84891265d9d90ea6b6b3e2dea4dea8637a",
+    "impressions.jsonl": "b975f60f2a687cf867282df1001ada8e2ac85db9e641b9f87700c43686deaad6",
+    "neural-coverage.jsonl": "f39c208886ec749a2a2b06b5248285e94f946d015cc864efa0f03f6e47f1548a"
+  },
+  "scope": "Strict unqualified graph-trial refusal smoke in Chromium, not a latency or model-quality measurement.",
+  "sourceCommit": "e08f40fc34e077ef13334b2449976486bbe3c09c",
+  "sourceTree": "328a5aae86601678b90ae268ab85d8e0f4cd8ddc",
+  "strictTrialResults": {
+    "admissions": [
+      {
+        "limitBytes": 71303168,
+        "modelBytes": 34586405,
+        "provider": "wasm",
+        "result": "cold-budget",
+        "runtimeBytes": 13479978,
+        "supportReserveBytes": 30408704,
+        "totalBytes": 78475087
+      }
+    ],
+    "deliveredOnTimeContinuationReplies": 0,
+    "deliveredOnTimeScoredReplies": 0,
+    "lateReplies": 1,
+    "observedFingerprints": []
+  },
+  "verifiedNgramObservations": 3,
+  "version": 1
+}

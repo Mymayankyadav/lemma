@@ -1,0 +1,52 @@
+import {useEffect, useState} from 'react'
+import {useQuery, useQueryClient} from '@tanstack/react-query'
+import {authOwner, authSignedOut, onAccountChange} from '../authBoundary'
+import {readDeviceSession} from '../deviceSession'
+import {getDemoProfile,getMode} from '../mode'
+import {createDemoExamApi} from './demo'
+import {createLiveExamApi} from './live'
+import type {ExamApi, SittingRecord} from './contract'
+
+let live:ExamApi|undefined
+let demo:ExamApi|undefined
+let demoProfile:string|undefined
+/** N251: the demo exam store, whatever the page's mode. The demo adapter builds its Home from it, so a
+ *  DemoAdapter used outside `?demo=` (tests, stress fixtures) never reaches the live server. */
+export function getDemoExamApi(){
+ const profile=getDemoProfile()
+ if(!demo||demoProfile!==profile){demo=createDemoExamApi();demoProfile=profile}
+ return demo
+}
+export function getExamApi(){
+ if(getMode()==='demo')return getDemoExamApi()
+ return live??=createLiveExamApi()
+}
+function examOwner() {
+ return getMode()==='demo'?'demo':authSignedOut()?null:authOwner()??readDeviceSession()?.ownerId??null
+}
+export function useExamSnapshot(projectId:string,slug:string,enabled:boolean){
+ const [owner,setOwner]=useState(examOwner)
+ useEffect(()=>onAccountChange(()=>setOwner(examOwner())),[])
+ const query=useQuery({
+  queryKey:['exam',owner,projectId,slug], enabled:enabled&&!!owner&&!!projectId, staleTime:30_000,
+  queryFn:()=>getExamApi().read(projectId,slug),
+ })
+ return {query,owner}
+}
+export function useExamEvidence(sitting:SittingRecord|undefined,owner:string|null,slug:string,enabled:boolean){
+ return useQuery({
+  queryKey:['exam-attempts',owner,sitting?.id,slug,sitting?.blueprint_version===undefined?'1':String(sitting.blueprint_version)],
+  enabled:enabled&&!!owner&&!!sitting,staleTime:30_000,
+  queryFn:()=>getExamApi().readEvidence(sitting!),
+ })
+}
+export function useExamIdeas(projectId:string,owner:string|null,enabled:boolean){
+ return useQuery({
+  queryKey:['card-ideas',owner,projectId],enabled:enabled&&!!owner&&!!projectId,staleTime:30_000,
+  queryFn:()=>getExamApi().readIdeas(projectId),
+ })
+}
+export function useRefreshExam(){
+ const client=useQueryClient()
+ return async ()=>{await Promise.all(['exam','exam-attempts','card-ideas','deadlines','calendar','agenda','home','proposals'].map(key=>client.invalidateQueries({queryKey:[key]})))}
+}

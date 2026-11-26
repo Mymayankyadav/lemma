@@ -18,7 +18,7 @@ vi.mock('../../../src/platform/useDeviceCommands',()=>({useDeviceCommands:()=>{}
 vi.mock('../../../src/app/OfflineBanner',()=>({default:()=>null}));
 vi.mock('../../../src/app/v7/useMinWidth',()=>({useMinWidth:()=>true}));
 vi.mock('../../../src/app/v7/subjectColours',()=>({useSubjectColours:()=>0}));
-vi.mock('../../../src/app/v7/focus',()=>({useActiveFocus:()=>({entry:null}),useNow:()=>0}));
+vi.mock('../../../src/app/v7/focus',()=>({useActiveFocus:()=>({entry:null}),useFocusChangeListener:()=>{},useNow:()=>0}));
 vi.mock('../../../src/ui/v7/paper',()=>({applyPaper:()=>{}}));
 vi.mock('../../../src/ui/v7/FirstUseHint',()=>({FirstUseHint:()=>null}));
 vi.mock('../../../src/flags',()=>({isFlagOn:(name:string)=>name==='v7Room'&&f.room}));

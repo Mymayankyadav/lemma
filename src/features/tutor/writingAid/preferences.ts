@@ -9,7 +9,7 @@ const CHANGE = 'lemma:tutor-writing-aid-preferences';
 const DEFAULT_MASK = 15;
 const SURFACE_BITS: Readonly<Record<WritingAidSurface, number>> = {words: 1, replace: 2, correction: 4, ghost: 8};
 export const WRITING_AID_MODES = ['balanced', 'fast', 'strict', 'off'] as const;
-type Stored = Readonly<{mode: WritingAidMode; mask: number}>;
+type Stored = Readonly<{mode: WritingAidMode; mask: number; fasterTyping: boolean}>;
 export type WritingAidScope = Readonly<{
   id: string;
   key: string | null;
@@ -35,18 +35,18 @@ export function currentWritingAidScope(): WritingAidScope {
 function read(scope: WritingAidScope): Stored {
   try {
     const stored = scope.key && localStorage.getItem(scope.key);
-    const match = stored && /^(balanced|fast|strict|off):([0-9]|1[0-5])$/u.exec(stored);
-    if (match) return {mode: match[1] as WritingAidMode, mask: Number(match[2])};
+    const match = stored && /^(balanced|fast|strict|off):([0-9]|1[0-5])(:experiment)?$/u.exec(stored);
+    if (match) return {mode: match[1] as WritingAidMode, mask: Number(match[2]), fasterTyping: Boolean(match[3])};
   } catch {
     // Storage can be restricted in a private window. Keep the relevant default.
   }
-  return {mode: scope.defaultMode, mask: DEFAULT_MASK};
+  return {mode: scope.defaultMode, mask: DEFAULT_MASK, fasterTyping: false};
 }
 
 function snapshot(): string {
   const scope = currentWritingAidScope();
-  const {mode, mask} = read(scope);
-  return JSON.stringify([scope.id, Boolean(scope.key), mode, mask]);
+  const {mode, mask, fasterTyping} = read(scope);
+  return JSON.stringify([scope.id, Boolean(scope.key), mode, mask, fasterTyping]);
 }
 
 function subscribe(update: () => void): () => void {
@@ -65,8 +65,8 @@ function subscribe(update: () => void): () => void {
 function write(change: (current: Stored) => Stored, expectedScopeKey?: string): boolean {
   const scope = currentWritingAidScope();
   if (!scope.key || (expectedScopeKey !== undefined && scope.id !== expectedScopeKey)) return false;
-  const {mode, mask} = change(read(scope));
-  const value = mode + ':' + mask;
+  const {mode, mask, fasterTyping} = change(read(scope));
+  const value = mode + ':' + mask + (fasterTyping ? ':experiment' : '');
   try {
     if (scope.ownerId) writeTutorLocal({ownerId: scope.ownerId, generation: scope.generation}, scope.key, value);
     else localStorage.setItem(scope.key, value);
@@ -86,22 +86,29 @@ export function setWritingAidSurface(surface: WritingAidSurface, enabled: boolea
   return Boolean(bit) && write(current => ({...current, mask: enabled ? current.mask | bit : current.mask & ~bit}), scopeKey);
 }
 
-const serverSnapshot = () => '["",false,"off",15]';
+export function setFasterWritingAid(enabled: boolean, scopeKey: string): boolean {
+  return write(current => ({...current, fasterTyping: enabled}), scopeKey);
+}
+
+const serverSnapshot = () => '["",false,"off",15,false]';
 export function useWritingAidPreferences(): {
-  scopeKey: string; available: boolean; mode: WritingAidMode; surfaces: WritingAidSurfaces;
+  scopeKey: string; available: boolean; mode: WritingAidMode; surfaces: WritingAidSurfaces; fasterTyping: boolean;
 } {
   const stored = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
-  const [scopeKey, available, mode, mask] = JSON.parse(stored) as [string, boolean, WritingAidMode, number];
+  const [scopeKey, available, mode, mask, optedIn] = JSON.parse(stored) as [string, boolean, WritingAidMode, number, boolean];
+  const fasterTyping = available && optedIn;
   // N223 (Owner: "These will default and no settings are needed for them as they are non-intrusive"): suggestions are
   // on in every account, live included, whatever was stored, unless the old settings are back behind their flag. The
   // grey-text continuation is off either way until the proof assist brings it back.
   const ghost = isFlagOn('proofAssistGhost');
-  if (!isFlagOn('writingAidSettings')) return {scopeKey, available, mode: 'balanced', surfaces: {...ALL_WRITING_AID_SURFACES, ghost}};
+  if (!isFlagOn('writingAidSettings')) return {
+    scopeKey, available, fasterTyping, mode: 'balanced', surfaces: {...ALL_WRITING_AID_SURFACES, ghost},
+  };
   const surfaces = mask === DEFAULT_MASK ? {...ALL_WRITING_AID_SURFACES, ghost} : {
     words: Boolean(mask & SURFACE_BITS.words),
     replace: Boolean(mask & SURFACE_BITS.replace),
     correction: Boolean(mask & SURFACE_BITS.correction),
     ghost: ghost && Boolean(mask & SURFACE_BITS.ghost),
   };
-  return {scopeKey, available, mode, surfaces};
+  return {scopeKey, available, fasterTyping, mode, surfaces};
 }

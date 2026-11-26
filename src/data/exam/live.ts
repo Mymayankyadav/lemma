@@ -1,0 +1,239 @@
+import {LemmaError} from '../api'
+import {authGeneration} from '../authBoundary'
+import {createCommandRunner, requireOnline} from './commands'
+import type {CardIdea, CommandReceipt, ConceptEvidence, ExamApi, ExamAttempt, ExamSetup, SittingChange, SittingRecord} from './contract'
+
+const sittingFields = 'id,project_id,title,starts_at,time_zone,duration_minutes,study_minutes,study_minutes_set_at,activation_study_minutes,last_study_at,objective,pass_marks,total_marks,format,sources,blueprint,blueprint_version,ledger,status,phase,card_mode,bookmark,plan_note,next_question,happened,updated_at,finished_at,activated_at,paused_at,version'
+const attemptFields = 'id,delivery_ref,learner_confirmed,row_key,occurred_at,outcome,independence,hint_level,novelty,marks_awarded,marks_possible,confidence,timed,seconds'
+
+function checked<T>(result:{data:T;error:{message:string}|null}):T {
+ if(result.error)throw new LemmaError('server',result.error.message)
+ return result.data
+}
+async function ownerClient(){
+ const db=(await import('../live/client')).liveClient()
+ const generation=authGeneration()
+ const {data:{session},error}=await db.auth.getSession()
+ if(error||generation!==authGeneration())throw new LemmaError('auth','The signed-in account changed or is unavailable.')
+ if(!session)throw new LemmaError('auth','Sign in to access exam prep.')
+ return {db,owner:session.user.id}
+}
+function successful(receipt:CommandReceipt){
+ if(receipt.status==='conflict')throw new LemmaError('conflict',receipt.conflict?.reason??'Exam prep changed. Refresh and try again.')
+ return receipt
+}
+type Page<T> = (from:number,to:number)=>PromiseLike<{data:T[]|null;error:{message:string}|null}>
+async function allRows<T>(read:Page<T>):Promise<T[]>{
+ const rows:T[]=[]
+ const size=500
+ for(let offset=0;offset<20000;offset+=size){
+  const page=checked(await read(offset,offset+size-1))??[]
+  rows.push(...page)
+  if(page.length<size)return rows
+ }
+ throw new LemmaError('server','Too many records to load the exam ledger.')
+}
+interface SetupProgress {sittingId:string; operationId:string; deadlineOperationId:string; input:ExamSetup; committed:boolean}
+interface CalendarProgress {sittingId:string; date:string}
+function stored<T>(key:string):T|undefined{
+ try{return JSON.parse(sessionStorage.getItem(key)??'null') as T??undefined}
+ catch{return undefined}
+}
+function openWork<T>(name:string){
+ const pending=new Map<string,T>()
+ const keyFor=(owner:string,project:string)=>'lemma.exam-'+name+':'+owner+':'+project
+ return {
+  read:(owner:string,project:string)=>{
+   const key=keyFor(owner,project)
+   return pending.get(key)??stored<T>(key)
+  },
+  set:(owner:string,project:string,value?:T)=>{
+   const key=keyFor(owner,project)
+   if(value)pending.set(key,value)
+   else pending.delete(key)
+   try{
+    if(value)sessionStorage.setItem(key,JSON.stringify(value))
+    else sessionStorage.removeItem(key)
+   }catch{/* Retry in memory when session storage is unavailable. */}
+  },
+ }
+}
+export function createLiveExamApi():ExamApi {
+ const run=createCommandRunner(async (name,body)=>{
+  const {db}=await ownerClient()
+  return db.rpc(name,{p:body})
+ })
+ const pendingSetup=openWork<SetupProgress>('setup')
+ const pendingCalendar=openWork<CalendarProgress>('calendar')
+ async function readSitting(id:string){
+  const {db,owner}=await ownerClient()
+  return checked(await db.from('exam_sittings').select(sittingFields).eq('user_id',owner)
+   .eq('id',id).maybeSingle()) as SittingRecord|null
+ }
+ async function readDeadline(sitting:SittingRecord){
+  const {db,owner}=await ownerClient()
+  return checked(await db.from('deadlines').select('id,title,due_at,version').eq('user_id',owner)
+   .eq('id',sitting.id).eq('kind','exam').eq('project_id',sitting.project_id).maybeSingle())
+ }
+ function matchesDeadline(sitting:SittingRecord,deadline:{title:string;due_at:string|null}){
+  return deadline.title===sitting.title&&deadline.due_at!==null&&
+   Date.parse(deadline.due_at)===Date.parse(sitting.starts_at??'')
+ }
+ async function updateDeadline(sitting:SittingRecord,expectedVersion:number){
+  return run({
+   resource:'deadlines',operation:'update',target:{id:sitting.id},expectedVersion,
+   patch:{title:sitting.title,due_kind:'instant',due_at:sitting.starts_at},
+  })
+ }
+ async function syncDeadline(sitting:SittingRecord){
+  if(!sitting.starts_at)return
+  const existing=await readDeadline(sitting)
+  if(existing&&!matchesDeadline(sitting,existing))successful(await updateDeadline(sitting,existing.version))
+ }
+ async function changeAtVersion(sitting:SittingRecord,change:SittingChange){
+  return run({resource:'exam_sittings',...change,target:{id:sitting.id},expectedVersion:sitting.version})
+ }
+ return {
+  mode:'live',
+  async read(projectId){
+   const {db,owner}=await ownerClient()
+   const visible=checked(await db.from('exam_sittings').select(sittingFields).eq('user_id',owner)
+    .eq('project_id',projectId).neq('status','cancelled').order('finished_at',{ascending:false,nullsFirst:true})
+    .order('status').order('starts_at').order('id').limit(50)) as SittingRecord[]
+   const calendar=pendingCalendar.read(owner,projectId)
+   const pendingDate=visible.find(sitting=>sitting.id===calendar?.sittingId&&sitting.starts_at&&
+    Date.parse(sitting.starts_at)===Date.parse(calendar.date))
+   return {sittings:visible,pendingSetup:!!pendingSetup.read(owner,projectId),pendingCalendar:pendingDate?.id}
+  },
+  async readEvidence(sitting,asOf=new Date().toISOString()){
+   const {db,owner}=await ownerClient()
+   const [attempts,evidence]=await Promise.all([
+    db.from('exam_attempts').select(attemptFields).eq('user_id',owner)
+     .eq('sitting_id',sitting.id).is('voided_at',null).lte('occurred_at',asOf)
+     .order('occurred_at',{ascending:false}).order('id',{ascending:false}).limit(500),
+    sitting.blueprint.some(row=>row.concepts?.length)?db.rpc('exam_row_evidence',{p_owner:owner,p_sitting:sitting.id,p_as_of:asOf}):{data:[],error:null},
+   ])
+   return {attempts:(checked(attempts)??[]) as ExamAttempt[],evidence:(checked(evidence)??[]) as ConceptEvidence[]}
+  },
+  async readIdeas(projectId){
+   const {db,owner}=await ownerClient()
+   const rows=await allRows<CardIdea&{proposals?:{status:string}|{status:string}[]|null;notes?:{no:number}|{no:number}[]|null}>((from,to)=>db.from('card_ideas')
+    .select('id,project_id,sitting_id,target,reason,status,sightings,version,concept,level,front,back,created_at,evidence,proposal_id,note_id,proposals(status),notes(no)')
+    .eq('user_id',owner).eq('project_id',projectId).order('id').range(from,to))
+   return rows.map(({proposals,notes,...idea})=>({...idea,proposal_status:(Array.isArray(proposals)?proposals[0]:proposals)?.status,note_no:(Array.isArray(notes)?notes[0]:notes)?.no}))
+  },
+  async setup(input){
+   requireOnline()
+   const {owner}=await ownerClient()
+   const projectId=input.project_id
+   const generation=authGeneration()
+   let setup=pendingSetup.read(owner,projectId)
+   if(setup&&JSON.stringify(setup.input)!==JSON.stringify(input))
+    throw new LemmaError('conflict','Retry the original exam setup before changing its details.')
+   if(!setup){
+    setup={sittingId:crypto.randomUUID(),operationId:crypto.randomUUID(),deadlineOperationId:crypto.randomUUID(),input:structuredClone(input),committed:false}
+    pendingSetup.set(owner,projectId,setup)
+   }
+   if(!setup.committed){
+    try{
+     successful(await run({resource:'exam_sittings',operation:'create',target:{id:setup.sittingId},patch:setup.input},setup.operationId))
+     setup.committed=true
+     pendingSetup.set(owner,projectId,setup)
+    }catch(error){
+     if(error instanceof LemmaError&&error.code!=='server'&&error.code!=='auth'){
+      pendingSetup.set(owner,projectId)
+     }
+     throw error
+    }
+   }
+   if(generation!==authGeneration())throw new LemmaError('auth','The signed-in account changed.')
+   try{
+    let reconcileCreate=false
+    for(let attempt=0;attempt<4;attempt++){
+     const sitting=await readSitting(setup.sittingId)
+     if(!sitting?.starts_at||sitting.project_id!==projectId||generation!==authGeneration())
+      throw new LemmaError('not_found','This sitting or its exam date is no longer available.')
+     const deadline=await readDeadline(sitting)
+     if(generation!==authGeneration())throw new LemmaError('auth','The signed-in account changed.')
+     if(deadline&&matchesDeadline(sitting,deadline)){
+      pendingSetup.set(owner,projectId)
+      return setup.sittingId
+     }
+     if(attempt===3)break
+     if(deadline){
+      await updateDeadline(sitting,deadline.version)
+     }else{
+      if(reconcileCreate){
+       // The earlier operation resolved but its target is absent. Give the
+       // replacement create a fresh receipt ID and keep the same linked row ID.
+       setup.deadlineOperationId=crypto.randomUUID()
+       pendingSetup.set(owner,projectId,setup)
+      }
+      // Keep the original receipt ID on the first retry. The database lock
+      // serializes an in-flight create, even if the current payload differs.
+      await run({
+       resource:'deadlines',operation:'create',target:{id:sitting.id},
+       patch:{kind:'exam',title:sitting.title,project_id:projectId,due_kind:'instant',due_at:sitting.starts_at},
+      },setup.deadlineOperationId)
+      reconcileCreate=true
+     }
+    }
+   }catch{/* Keep setup recoverable if a read or write fails. */}
+   throw new LemmaError('server','Exam was saved. Retry to link its calendar deadline.')
+  },
+  async resumeSetup(projectId){
+   const {owner}=await ownerClient()
+   const setup=pendingSetup.read(owner,projectId)
+   if(!setup||setup.input.project_id!==projectId)throw new LemmaError('not_found','There is no saved setup to retry.')
+   return this.setup(setup.input)
+  },
+  async resumeCalendar(projectId,sittingId){
+   requireOnline()
+   const {owner}=await ownerClient()
+   const generation=authGeneration()
+   const fresh=await readSitting(sittingId)
+   if(generation!==authGeneration()||!fresh||fresh.project_id!==projectId)
+    throw new LemmaError('not_found','This sitting is no longer available.')
+   await syncDeadline(fresh)
+   pendingCalendar.set(owner,projectId)
+  },
+  async change(sitting,change){
+   requireOnline()
+   const {owner}=await ownerClient()
+   const date=(change.operation==='update'||change.operation==='reopen')&&change.patch.starts_at
+   if(date)pendingCalendar.set(owner,sitting.project_id,{sittingId:sitting.id,date})
+   const generation=authGeneration()
+   let receipt=await changeAtVersion(sitting,change)
+   if(receipt.status==='conflict'){
+    const fresh=await readSitting(sitting.id)
+    if(!fresh||generation!==authGeneration())throw new LemmaError('conflict','This sitting is no longer available.')
+    // A full-blueprint patch must not overwrite concurrent edits. Replay the
+    // requested row delta on the fresh blueprint if the touched rows survived.
+    if(change.operation==='update'&&change.patch.blueprint){
+     const previous=new Map(sitting.blueprint.map(row=>[row.key,JSON.stringify(row)]))
+     const proposed=new Map(change.patch.blueprint.map(row=>[row.key,row]))
+     const current=new Map(fresh.blueprint.map(row=>[row.key,row]))
+     for(const [key,row] of proposed){
+      if(previous.get(key)===JSON.stringify(row))continue
+      if(previous.get(key)!==(current.has(key)?JSON.stringify(current.get(key)):undefined))
+       throw new LemmaError('conflict','This blueprint row changed. Open it again to edit the latest version.')
+      current.set(key,row)
+     }
+     change={...change,patch:{...change.patch,blueprint:[...current.values()]}}
+    }
+    receipt=await changeAtVersion(fresh,change)
+   }
+   successful(receipt)
+   if(date&&generation===authGeneration()){
+    try{await this.resumeCalendar(sitting.project_id,sitting.id)}
+    catch{throw new LemmaError('server','Exam date saved. Retry to update its calendar deadline.')}
+   }
+  },
+  command:run,
+  async undo(actionNo){
+   requireOnline()
+   const {db,owner}=await ownerClient()
+   checked(await db.rpc('undo_action',{p_user:owner,p_no:actionNo}))
+  },
+ }
+}

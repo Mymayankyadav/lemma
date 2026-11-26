@@ -17,7 +17,7 @@ const typed:Record<string,Record<string,string>>={
   long_session_guard_minutes:'int:30:720'},
  planning:{window_start:'time',window_end:'time',gap_minutes:'int:0:120',
   max_consecutive_minutes:'int:15:600',daily_minimum_minutes:'int:0:600',
-  daily_intention:'bool'},
+  daily_intention:'bool',exam_card_mode:'exam_card_mode'},
  review_budget:{cards:'int:0:2000',minutes:'int:0:720',reserve_in_plans:'bool'},
  attention:{drift_prompt:'bool',urge_prompt:'bool'},
  flags:{time_block:'bool',recheck_v2:'bool',scheduler_v2:'bool',proficiency:'bool',items:'bool',atlas_memory:'bool',workers:'bool'},
@@ -76,6 +76,9 @@ function checkTyped(section:string,part:Record<string,unknown>):void{
   }else if(kind==='time'){
    if(typeof value!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(value))
     bad(section+'.'+name+' must be HH:MM');
+  }else if(kind==='exam_card_mode'){
+   if(value!=='later'&&value!=='now'&&value!=='quiet')
+    bad(section+'.'+name+' must be later, now or quiet');
   }else if(kind==='mode'){
    if(!['pomodoro','flowtime','open'].includes(String(value)))
     bad(section+'.'+name+' invalid mode');

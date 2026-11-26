@@ -1,8 +1,7 @@
 import {Disclosure} from '../../../ui/v7/Disclosure';
-import {StudyModelDetails} from '../../adaptive/panels/LearningDetails';
 import {formatShortDate} from '../../../lib/format';
 import {NextStep,TodayFirstRun} from './NextStep';
-import {lazy,Suspense,useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
+import {lazy,Suspense,useEffect,useMemo,useState,type CSSProperties} from 'react';
 import {haptic} from '../../../ui/v7/haptics';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,ChevronRight,Pause,Play} from 'lucide-react';
@@ -10,28 +9,22 @@ import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {readWeekdayMinutes,weekdayOwner} from '../../../data/study-weekdays';
 import {useQuery} from '@tanstack/react-query';
 import {useHome,useSettings} from '../../../data/hooks';
-import {getApi} from '../../../data';
-import {authGeneration} from '../../../data/authBoundary';
 import {getMode} from '../../../data/mode';
 import {getStudyApi} from '../../../data/study';
-import {getTaskApi} from '../../../data/tasks';
-import type {TaskRecord} from '../../../data/tasks/contract';
-import type {PracticeTopicRecord} from '../../../data/practice-topics/contract';
+import {getTaskApi,type TaskRecord} from '../../../data/tasks';
 import type {PresetRecord} from '../../../data/presets/contract';
 import {useToast} from '../../../ui/Toast';
 import {loadActiveFocusPresets} from '../../focus/PresetPicker';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
-import {dayBounds,loggedMinutes} from '../../../lib/effort';
 import {Button,Sheet} from '../../../ui/v7/components';
 import {LiveChip,MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {AsOf} from '../../../ui/v7/AsOf';
 import {useOnline,useSavedCopyAt} from '../../../ui/v7/savedCopy';
-import {overdueSummary} from '../../calendar/v7/overdue';
-import {readTasks} from '../../planner/readTasks';
 import {DEFAULT_PLANNING} from '../../planner/model';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';
 import {HubHeader} from '../../../app/v7/V7Shell';
+import {useReadingIntent} from '../../../app/v7/readingIntent';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';
 import {kitSubject} from '../../atlas/v7/model';
@@ -41,59 +34,33 @@ import {QUICK_NO_TIMER,needsRows,offerClose,practiceToday,presetLine,targetDone,
 import {isFlagOn} from '../../../flags';
 import {Ruler} from './Ruler';
 import {clockTime,heroState,localDay,localMinute,minutesLabel,nextStudyBlock,startsIn,stripSegment,stripTicks,stripWindow,todayBriefing,todayGreeting,type HeroState} from './todayModel';
+import {useTodayDay} from './useTodayDay';
 import './today.css';
 
+const StudyDetails=lazy(()=>import('../../adaptive/panels/LearningDetails').then(module=>({default:module.StudyModelDetailsContent})));
+const TodayExams=lazy(()=>import('../../exam/TodayExams').then(module=>({default:module.TodayExams})));
 const DesktopDayGrid=lazy(()=>import('../../calendar/v7/DayGrid'));
-interface DayData{blocks:CalendarBlockRecord[];entries:StudyEntryRecord[];logged:number;closed:boolean;overdue:number;tasks:TaskRecord[];topics:PracticeTopicRecord[];answered:number}
-/** N151: the last day Today loaded, so a load that fails (offline, or the server is down) shows it with "as of". */
-let savedDay:{key:string;data:DayData;at:number}|null=null;
 function SubjectChip({subject,name}:{subject:Subject;name:string}){
  return <span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{name}</span></span>;
 }
 /** PLAN §6.2: Today decides what to do now, in one glance. */
 export default function V7Today(){
  const home=useHome(),settings=useSettings(),navigate=useNavigate(),notify=useToast();
+ const readingIntent=useReadingIntent();
  const online=useOnline(),canLoad=online||getMode()==='demo';
  const desktop=useMinWidth(1100),nextStepEnabled=isFlagOn('todayNextStep');
- const {entry,refresh:refreshFocus}=useActiveFocus();
+ const {entry}=useActiveFocus();
  const now=useNow(30_000),date=new Date(now);
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const day=localDay(zone,date);
- const dayKey=authGeneration()+'|'+day+'|'+zone;
- const [data,setData]=useState<DayData|null>(null),[dataAt,setDataAt]=useState(0),[error,setError]=useState(false),[version,setVersion]=useState(0);
  const [busy,setBusy]=useState(false),[actionError,setActionError]=useState(''),[quick,setQuick]=useState(false);
  const [intention,setIntention]=useState(''),[pathId,setPathId]=useState<string|null>(null);
  const [presets,setPresets]=useState<PresetRecord[]>([]),[presetId,setPresetId]=useState<string|null>(null),[showAll,setShowAll]=useState(false);
- const reload=useCallback(()=>setVersion(value=>value+1),[]);
  const [params,setParams]=useSearchParams();
  useEffect(()=>{if(params.get('quick')!=='1')return;setQuick(true);const next=new URLSearchParams(params);next.delete('quick');setParams(next,{replace:true});},[params,setParams]);
  useEffect(()=>{if(!quick)return;let live=true;void loadActiveFocusPresets().then(rows=>{if(live)setPresets(rows);}).catch(()=>{});return()=>{live=false;};},[quick]);
- useEffect(()=>{
-  if(!canLoad)return;
-  let live=true;setError(false);
-  const study=getStudyApi(),range=dayBounds(day,zone);
-  const closed=import('../V6TodayPlan').then(module=>module.readTodayPlan(day,zone)).then(plan=>plan.plan?.status==='closed').catch(()=>false);
-  const tasks=readTasks().catch(()=>[] as TaskRecord[]);
-  const dues=Promise.all([import('../../calendar/deadlines/load'),tasks])
-   .then(async([load,taskRows])=>{const all=await load.loadCalendarDues();return {overdue:overdueSummary({tasks:taskRows,dues:all},zone).total,topics:all.topics as PracticeTopicRecord[]};})
-   .catch(()=>({overdue:0,topics:[] as PracticeTopicRecord[]}));
-  const answered=getApi().getInsightData(7).then(insight=>insight.reviews.filter(review=>Date.parse(review.reviewedAt)>=Date.parse(range.start)&&Date.parse(review.reviewedAt)<Date.parse(range.end)).length).catch(()=>0);
-  Promise.all([study.listCalendarBlocks(range),study.listStudyEntries(range),closed,dues,tasks,answered]).then(([blocks,entries,isClosed,dueInfo,taskRows,answeredCount])=>{
-   if(!live)return;
-   const saved=entries.filter(item=>item.status==='saved').map(item=>({id:item.id,status:'saved' as const,subjectId:item.subjectId,
-    intervals:item.intervals.filter(interval=>interval.end!==null).map(interval=>({start:interval.start,end:interval.end!,kind:interval.kind}))}));
-   const loaded={blocks:blocks.filter(block=>block.status!=='cancelled'),entries,logged:Math.max(0,loggedMinutes(saved,range,zone,new Date().toISOString()).minutes),closed:isClosed,overdue:dueInfo.overdue,tasks:taskRows,topics:dueInfo.topics,answered:answeredCount};
-   const at=Date.now();savedDay={key:dayKey,data:loaded,at};
-   setData(loaded);setDataAt(at);
-  },()=>{
-   if(!live)return;
-   setError(true);
-   // N151: with nothing on screen yet, show the saved copy of this day (it carries its "as of" time).
-   const copy=savedDay?.key===dayKey?savedDay:null;
-   if(copy){setData(current=>current??copy.data);setDataAt(current=>current||copy.at);}
-  });
-  return ()=>{live=false;};
- },[day,dayKey,zone,version,canLoad]);
+ const dayQuery=useTodayDay(day,zone,canLoad);
+ const {data,isError:error,refetch:reload}=dayQuery;
  const projects=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system&&project.status!=='archived'),[home.data]);
  const projectOf=(id:string|null|undefined)=>projects.find(project=>project.id===id);
  const subjectOf=(id:string|null|undefined)=>{const project=projectOf(id);return {subject:kitSubject(project?.subject.name??''),name:project?.subject.name??''};};
@@ -103,7 +70,7 @@ export default function V7Today(){
  const due=home.data?.due??0,pending=home.data?.pendingProposals??0;
  const ready=!!home.data&&!!data;
  // N151 · AN3: "as of HH:MM" beside the briefing when any of its numbers come from the saved copy, not the server.
- const asOf=useSavedCopyAt([home,settings,{data,dataUpdatedAt:dataAt,isError:error}]);
+ const asOf=useSavedCopyAt([home,settings,dayQuery]);
  // V03: the same estimate the Review hub prints ("About n min at your pace"); asked for after first paint.
  const reviewMinutes=useReviewEstimate(due,ready);
  const state:HeroState=heroState({session:!!entry,next,now,closed:!!data?.closed,hasPaths:projects.length>0});
@@ -116,8 +83,8 @@ export default function V7Today(){
  const heroLink=entry?.projectId??next?.projectId??null,hero=subjectOf(heroLink);
  async function act(action:()=>Promise<unknown>,after?:()=>void){
   if(busy)return;setBusy(true);setActionError('');
-  try{await action();announceFocusChange();refreshFocus();reload();after?.();}
-  catch(reason){setActionError(reason instanceof Error?reason.message:'That did not work. Try again.');reload();}
+  try{await action();announceFocusChange();void reload();after?.();}
+  catch(reason){setActionError(reason instanceof Error?reason.message:'That did not work. Try again.');void reload();}
   finally{setBusy(false);}
  }
  // One tap from a cold open: start the next block (verified against the latest plan) and open Focus.
@@ -152,10 +119,10 @@ export default function V7Today(){
  async function completeTask(task:TaskRecord){
   if(busy)return;setBusy(true);
   try{
-   const receipt=await getTaskApi().updateTask(task.id,task.version,{status:'completed'});reload();
+   const receipt=await getTaskApi().updateTask(task.id,task.version,{status:'completed'});void reload();
    haptic('check');
-   notify('Task completed',{tone:'success',action:{label:'Undo',onClick:()=>{void getTaskApi().updateTask(task.id,receipt.record.version,{status:task.status}).then(reload).catch(()=>notify('Could not undo that',{tone:'danger'}));}}});
-  }catch{notify('Could not complete that task. Try again.',{tone:'danger'});reload();}finally{setBusy(false);}
+   notify('Task completed',{tone:'success',action:{label:'Undo',onClick:()=>{void getTaskApi().updateTask(task.id,receipt.record.version,{status:task.status}).then(()=>reload()).catch(()=>notify('Could not undo that',{tone:'danger'}));}}});
+  }catch{notify('Could not complete that task. Try again.',{tone:'danger'});void reload();}finally{setBusy(false);}
  }
  const clock=entry?focusClock(entry,Date.now()):null;
  const briefing=todayBriefing({session:word,nextIn:next&&state==='upcoming'?startsIn(next.startsAt,now):null,studyBlocksLeft:left,due,overdue:data?.overdue??0});
@@ -179,7 +146,7 @@ export default function V7Today(){
  const continuePaths=projects.length>0&&<section className="v7-today-continue" aria-label="Continue">
   <div className="v7-card-heading"><h2>Continue</h2><Link to="/projects">All paths<ChevronRight aria-hidden="true"/></Link></div>
   <div className="v7-today-tiles">{projects.slice(0,nextStepEnabled?3:6).map(project=>{const subject=kitSubject(project.subject.name);
-   return <Link key={project.id} className={'v7-today-tile '+subjectClass(subject)} to={'/p/'+encodeURIComponent(project.slug)}>
+   return <Link key={project.id} className={'v7-today-tile '+subjectClass(subject)} to={'/p/'+encodeURIComponent(project.slug)} {...readingIntent(project.slug)}>
     <span className="v7-today-tile-cover"><Emblem subject={subject} seed={project.id} size={96} tier="tile" animate={false}/></span>
     <strong>{project.title}</strong><small>{project.current?'Now: '+project.current.title:'Explore the next checkpoint'}</small>
     <span className="v7-today-tile-meter" role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,project.total)} aria-valuenow={project.done}>
@@ -190,6 +157,7 @@ export default function V7Today(){
   <HubHeader title={firstRun?'Welcome to Lemma':nextStepEnabled&&localMinute(date,zone)<240?'Still up?':todayGreeting(date,zone)} date={nextStepEnabled?formatShortDate(day,{zone}):todayLabel} settings display>
    {!nextStepEnabled&&<p className="v7-today-briefing">{ready?briefing:' '}{ready&&asOf!==null&&<> <AsOf at={asOf} zone={zone}/></>}</p>}
   </HubHeader>
+  {isFlagOn('examMode')&&!!home.data?.exam?.sittings.length&&<Suspense fallback={<p role="status">Loading exams…</p>}><TodayExams home={home.data} now={now}/></Suspense>}
   {!ready?<>
    {home.data&&<>
     <p className="v7-today-briefing">{home.data.due} {home.data.due===1?'card':'cards'} due{home.dataUpdatedAt>0&&<> <AsOf at={home.dataUpdatedAt} zone={zone}/></>}</p>
@@ -197,7 +165,7 @@ export default function V7Today(){
    </>}
    {!canLoad?<p className="v7-subhead">{home.data?'Connect to load today’s schedule.':'Connect once to save Today on this device.'}</p>
     :error||home.error?<div className="v7-alert" role="alert">Couldn't load Today. Your study data is safe.
-     <Button small onClick={()=>{void home.refetch();reload();}}>Retry</Button></div>
+     <Button small onClick={()=>{void home.refetch();void reload();}}>Retry</Button></div>
     :!home.data&&<div className="v7-today-skeleton" role="status" aria-label="Today loading"><span/><span/><span/></div>}
   </>:<>
    {nextStepEnabled?firstRun?<TodayFirstRun configured={Boolean(typeof weekday.data==='number'?weekday.data:weekday.data?.some(value=>value>0))} tutor={Boolean(settings.data?.connectorLastSeenAt)} onFocus={()=>setQuick(true)}/>
@@ -234,7 +202,7 @@ export default function V7Today(){
      {state==='first'&&<Link className="v7-button v7-primary" to="/projects/new"><span>Start a path</span></Link>}
     </div>
    </section>}
-   {!!actionError&&<p className="v7-alert" role="alert">{actionError} <Button small onClick={reload}>Refresh</Button></p>}
+   {!!actionError&&<p className="v7-alert" role="alert">{actionError} <Button small onClick={()=>{void reload();}}>Refresh</Button></p>}
   {state==='first'?!firstRun&&<section className="v7-card v7-today-tips" aria-label="Getting started">
     <h2>Three ways to begin</h2>
     <ol><li>Start a path for what you want to prove.</li><li>Connect your tutor and approve its plan in the Inbox.</li><li>Put a study block on today's calendar.</li></ol>
@@ -280,7 +248,9 @@ export default function V7Today(){
     {pending>0&&<Link className="v7-today-need" to="/proposals"><span className="v7-today-fan" aria-hidden="true"><i/><i/><i/></span><span><strong>{pending} {pending===1?'proposal':'proposals'} from your tutor</strong><small>Decide in the Inbox.</small></span><ChevronRight aria-hidden="true"/></Link>}
    </section>}
    {continuePaths}
-   <StudyModelDetails/>
+   <Disclosure label="Study details" mountWhenOpen>
+    <Suspense fallback={<p role="status">Loading study details…</p>}><StudyDetails/></Suspense>
+   </Disclosure>
    {!nextStepEnabled&&offerClose(hourNow,!!data?.closed)&&<section className="v7-card v7-today-close" aria-label="Close the day">
     <span><strong>{minutesLabel(logged)} studied today</strong><small>Look back and set up tomorrow.</small></span>
     <Link className="v7-button v7-secondary" to="/today/close"><span>Close the day</span></Link></section>}

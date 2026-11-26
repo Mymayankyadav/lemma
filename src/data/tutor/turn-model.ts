@@ -1,3 +1,4 @@
+import {readTutorAcceptedSpans,type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer'
 import {IMAGE_ONLY_ANSWER,unresolvedTutorImageIds,type TutorAttachment} from './attachment-types'
 import {freezeLocalTutorExcerpt,type LocalTutorExcerpt} from './local-excerpt'
 
@@ -20,18 +21,24 @@ export type TutorThreadHead = Readonly<{
   pendingTurnId: string | null
 }>
 
+export type TutorAnswerMeta = Readonly<{seconds:number;overtime:boolean}>
+
 export type TutorComposerDraft = Readonly<{
   question: string
+  acceptedSpans?: readonly TutorAcceptedSpan[]
   selectedContext: readonly TutorContextSelection[]
   localExcerpt?: LocalTutorExcerpt
   attachments?: readonly TutorAttachment[]
+  answerMeta?: TutorAnswerMeta
 }>
 
 type TutorQuestionSnapshot = Readonly<{
   question: string
+  acceptedSpans?: readonly TutorAcceptedSpan[]
   selectedContext: readonly TutorContextSelection[]
   localExcerpt?: LocalTutorExcerpt
   attachments?: readonly TutorAttachment[]
+  answerMeta?: TutorAnswerMeta
 }>
 
 type TurnIdentity = Readonly<{
@@ -69,6 +76,7 @@ export type TutorReplyDraft = Readonly<{
   messageId: string
   body: string
   provenance: TutorReplyProvenance
+  timedSeconds?: number
   citations: readonly TutorCitation[]
   suggestions: readonly SuggestedActionIntent[]
 }>
@@ -95,10 +103,15 @@ export function submitTutorTurn(
   if (draft.localExcerpt && !localExcerpt) return { kind: 'invalid-local-excerpt' }
   const sequence = head.lastSequence + 1
   // Copy selected scalar fields only. Never retain a pointer into the editor's draft.
+  const question = draft.question.trim() || IMAGE_ONLY_ANSWER
+  const offset = draft.question.length - draft.question.trimStart().length
+  const spans = readTutorAcceptedSpans(question, draft.acceptedSpans?.map(span=>({...span,start:span.start-offset,end:span.end-offset})))
   const snapshot: TutorQuestionSnapshot = Object.freeze({
-    question: draft.question.trim() || IMAGE_ONLY_ANSWER,
+    question,
+    ...(spans.length?{acceptedSpans:Object.freeze(spans.map(span=>Object.freeze(span)))}:{}),
     ...(draft.attachments?.length ? {attachments: Object.freeze(draft.attachments.map(attachment=>Object.freeze({...attachment})))} : {}),
     ...(localExcerpt ? {localExcerpt} : {}),
+    ...(draft.answerMeta?{answerMeta:Object.freeze({...draft.answerMeta})}:{}),
     selectedContext: Object.freeze(draft.selectedContext.map(({ kind, refId, version, excerpt, page }) =>
       Object.freeze({ kind, refId, version, excerpt, ...(kind==='source'&&page!==undefined?{page}:{}) }))),
   })
@@ -121,9 +134,9 @@ export function previewManualTutorImport(turnId: string, messageId: string, body
 }
 
 function copyReplyDraft(draft: TutorReplyDraft): TutorReplyDraft {
-  const { turnId, messageId, body, provenance, citations, suggestions } = draft
+  const { turnId, messageId, body, provenance, citations, suggestions,timedSeconds } = draft
   return Object.freeze({
-    turnId, messageId, body,
+    turnId, messageId, body,...(timedSeconds?{timedSeconds}:{}),
     provenance: provenance.kind === 'manual-import'
       ? Object.freeze({ kind: 'manual-import' as const, label: 'Imported by you' as const })
       : Object.freeze({ kind: 'connector' as const, reportedHost: provenance.reportedHost, hostVerified: false as const }),

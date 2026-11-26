@@ -1,0 +1,48 @@
+{
+  "finalSelection": "40 publisher-disjoint groups with previously inspected cohorts excluded",
+  "manifest": {
+    "answerCodepoints": 3059,
+    "answers": 40,
+    "dataSha256": "b42bb97b183c136dfe3c23f62f39c605f4f17448640d66e3d2bf61c1e0a5ba3c",
+    "documentGroupsSha256": "8d525804449627bcf74a538c71ce9e803f1764612d067c78ed8387d791e6ee37",
+    "events": 419,
+    "excludedSchedulesSha256": [
+      "6067f62ac571c94c53cb30da0711a5de1d3812fe17b9d754295144dd290ec5ce"
+    ],
+    "legacyHoldoutOnly": false,
+    "pilot": true,
+    "questionContext": "source question available separately from reply",
+    "sampling": "Notation-enriched complete sentence excerpts. No population estimate.",
+    "sha256": {
+      "answers": "2b7a5589870b474baf18789538983ec02340843554675f62ad9eec27f759e77c",
+      "events": "908842ad1812a7cbe4faad4a9e4c7bc7a0f97b6ab9d076036026b8e81c59ecf1",
+      "gold": "155f6f56fa3d4cfb37da3d6e4e27e10477865cbba970bc9ba0a0ba1b452bbd97"
+    },
+    "source": "Math StackExchange through hoskinson-center/proof-pile, CC BY-SA",
+    "sourceCoverage": {
+      "hoskinson-center/proof-pile": 40
+    },
+    "split": "test",
+    "strata": {
+      "math-rich": 24,
+      "prose": 16
+    },
+    "subjects": {
+      "algebra": 3,
+      "analysis": 4,
+      "geometry": 1,
+      "linear-algebra": 5,
+      "other": 17,
+      "probability": 3,
+      "topology": 7
+    },
+    "targetCounts": {
+      "equation-command": 27,
+      "plainOrInline": 392,
+      "symbol": 55,
+      "word": 364
+    },
+    "version": 1
+  },
+  "status": "pilot rehearsal, not final test"
+}

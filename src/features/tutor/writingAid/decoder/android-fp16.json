@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "kind": "neural",
+  "precision": "fp16",
+  "context": 512,
+  "layers": 8,
+  "heads": 8,
+  "headDim": 64,
+  "vocabSize": 16384,
+  "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+  "qualification": {
+    "parity": true,
+    "replay": false
+  },
+  "files": {
+    "tokenizer": {
+      "path": "tokenizer.json",
+      "bytes": 170720,
+      "sha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc"
+    },
+    "prefill": {
+      "path": "prefill.onnx",
+      "bytes": 135928,
+      "sha256": "a1f99f59c41b9f5b211d0d6607c67e79bee86e556f24146aedec62f497f21a4d"
+    },
+    "incremental": {
+      "path": "incremental.onnx",
+      "bytes": 110774,
+      "sha256": "730aef72a38ec0684d128be4643e141a355a75fbc073799c27272070142855a4"
+    },
+    "weights": {
+      "path": "weights.bin",
+      "bytes": 67776512,
+      "sha256": "dacc57563c9350a34ce53ec38ba60975c12bfd8fe2621536febfd2e85c09fd2f"
+    }
+  },
+  "packageSha256": "559aca41468361c5d007d3918f7e3611e26d4a91b9bc7f7d38d31e2bd82cb93b"
+}

@@ -1,3 +1,6 @@
+import {isFlagOn} from '../../../flags';
+import {TopicReview} from '../../exam/TopicReview';
+import '../../exam/exam.css';
 import {AdaptivePractice} from '../../adaptive/panels/LearningDetails';
 import {Disclosure} from '../../../ui/v7/Disclosure';
 import {useStudyUi} from '../../../data/StudyUiRelease';
@@ -53,6 +56,10 @@ export default function PracticeV7(){
   <HubHeader title="Review">
    <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review">Due</Link><Link to="/practice" aria-current="page">Practice</Link></nav>
   </HubHeader>
+  {isFlagOn('examMode')&&home.data?.exam?.sittings.filter(sitting=>sitting.status==='active').map(sitting=><section className="v7-exam-ledger" aria-label={'Short topic reviews for '+sitting.title} key={sitting.id}>
+   <h2 className="v7-subhead">Short topic reviews · {sitting.title}</h2>
+   {(sitting.topRows??[]).slice(0,5).map(({row,exposure})=><TopicReview quiet key={row.key} slug={sitting.slug} sittingId={sitting.id} row={row} exposure={exposure}/>)}
+  </section>)}
   <AdaptivePractice/>
   {loading&&<p role="status" className="v7-pr-note">Loading practice topics…</p>}
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}

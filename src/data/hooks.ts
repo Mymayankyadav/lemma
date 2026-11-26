@@ -15,11 +15,17 @@ export function useProjects(...args: Parameters<LemmaApi['listProjects']>) {
 export function usePlanRevisions(...args: Parameters<LemmaApi['listPlanRevisions']>) {
  return useQuery({ ...queryDefaults, queryKey: ['plan-revisions', args[0]], queryFn: () => getApi().listPlanRevisions(args[0]) })
 }
-export function useProject(...args: Parameters<LemmaApi['getProject']>) {
- return useQuery({ ...queryDefaults, queryKey: ['project', args[0]], queryFn: () => getApi().getProject(args[0]) })
+export function projectQuery(slug:string) {
+ return {...queryDefaults,queryKey:['project',slug],queryFn:()=>getApi().getProject(slug)}
 }
-export function useCheckpoint(...args: Parameters<LemmaApi['getCheckpoint']>) {
- return useQuery({ ...queryDefaults, queryKey: ['checkpoint', args[0], args[1]], queryFn: () => getApi().getCheckpoint(args[0], args[1]) })
+export function useProject(slug:string) {
+ return useQuery(projectQuery(slug))
+}
+export function checkpointQuery(slug:string,code:string) {
+ return {...queryDefaults,queryKey:['checkpoint',slug,code],queryFn:()=>getApi().getCheckpoint(slug,code)}
+}
+export function useCheckpoint(slug:string,code:string) {
+ return useQuery({...checkpointQuery(slug,code),enabled:!!slug&&!!code&&!authSignedOut()})
 }
 export function useSessions(...args: Parameters<LemmaApi['listSessions']>) {
  return useQuery({ ...queryDefaults, queryKey: ['sessions', args[0] ?? 'all'], queryFn: () => getApi().listSessions(args[0]) })
@@ -163,13 +169,13 @@ export function useDeleteSource() {
  return useWrite((api, value: Parameters<LemmaApi['deleteSource']>[0]) => api.deleteSource(value), ['project', 'projects', 'home'])
 }
 export function useApproveProposal() {
- return useWrite((api, value: { id: Parameters<LemmaApi['approveProposal']>[0]; edit?: Parameters<LemmaApi['approveProposal']>[1] }) => api.approveProposal(value.id, value.edit), ['proposals', 'proposal', 'home', 'decks', 'project', 'projects', 'session', 'sessions', 'atlas', 'cards', 'card'])
+ return useWrite((api, value: { id: Parameters<LemmaApi['approveProposal']>[0]; edit?: Parameters<LemmaApi['approveProposal']>[1] }) => api.approveProposal(value.id, value.edit), ['card-ideas', 'proposals', 'proposal', 'home', 'decks', 'project', 'projects', 'session', 'sessions', 'atlas', 'cards', 'card'])
 }
 export function useRejectProposal() {
- return useWrite((api, value: Parameters<LemmaApi['rejectProposal']>[0]) => api.rejectProposal(value), ['proposals', 'proposal', 'home', 'project', 'session'])
+ return useWrite((api, value: Parameters<LemmaApi['rejectProposal']>[0]) => api.rejectProposal(value), ['card-ideas', 'proposals', 'proposal', 'home', 'project', 'session'])
 }
 export function useApproveAllCards() {
- return useWrite((api, _value: void) => api.approveAllCards(), ['proposals', 'proposal', 'home', 'decks', 'project', 'projects', 'session', 'sessions', 'atlas', 'cards', 'card'])
+ return useWrite((api, _value: void) => api.approveAllCards(), ['card-ideas', 'proposals', 'proposal', 'home', 'decks', 'project', 'projects', 'session', 'sessions', 'atlas', 'cards', 'card'])
 }
 export function useRecordReview() {
  return useWrite((api, value: Parameters<LemmaApi['recordReview']>[0]) => api.recordReview(value), ['card', 'cards', 'card-history-page', 'decks', 'home', 'insights', 'review-log'])

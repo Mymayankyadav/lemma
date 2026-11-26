@@ -1,3 +1,6 @@
+import {isFlagOn} from '../../../flags';
+import {recentExamReturn} from '../../../../supabase/functions/_shared/exam/return';
+import '../../exam/exam.css';
 import {MoreActions} from '../../../ui/v7/ActionSheet';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {formatShortDate} from '../../../lib/format';
@@ -88,6 +91,10 @@ export default function ReviewHubV7(){
   if(project.children.filter(node=>node.due>0).every(node=>next.has(node.key)))next.add(project.key);else next.delete(project.key);
   setSelected(next);
  }
+ const afterExam=isFlagOn('examMode')&&home.data?.exam?.sittings.some(sitting=>sitting.status==='finished'&&recentExamReturn(sitting,Date.now()));
+ const secondsPerCard=minutes&&result.batch.length?Math.max(10,Math.ceil(minutes*60/result.batch.length)):45;
+ const roundMinutes=settings.data?.reviewBudget?.minutes??10, roundCards=settings.data?.reviewBudget?.cards??20;
+ const manageable=result.batch.slice(0,Math.min(roundCards,Math.floor(roundMinutes*60/secondsPerCard)));
  const count=result.batch.length,totalDue=result.allDue,fresh=result.batch.filter(card=>card.state.state===0).length;
  const nextDue=useQuery({queryKey:['next-study-due',decks.dataUpdatedAt,settings.dataUpdatedAt],
   enabled:repair&&!pathSlug&&!loading&&!failed&&totalDue===0,queryFn:async()=>await getApi().getNextStudyDue?.()??null});
@@ -129,6 +136,11 @@ export default function ReviewHubV7(){
    {/* PA1/RV6: "Cards" means only the library under Paths, so the hub's tabs are Due and Practice. */}
    <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review" aria-current="page">Due</Link><Link to="/practice">Practice</Link></nav>
   </HubHeader>
+  {afterExam&&!active&&manageable.length>0&&<section className="v7-exam-panel" aria-label="After-exam review">
+   <h2 className="v7-subhead">A manageable round</h2>
+   <p>{manageable.length} cards · about {Math.max(1,Math.ceil(manageable.length*secondsPerCard/60))} min</p>
+   <div className="v7-exam-actions"><Button disabled={busy} onClick={()=>{void start(manageable,[...enabled])}}>Start manageable round</Button></div>
+  </section>}
   {empty&&!checkingLibrary&&(!hasCards?<FirstCardPanel reviewEmpty fallback={<EmptyMoment art="review" title="No cards yet"
    action={{label:'Create your first card',to:'/cards?new=1'}}/>}/>
    :<EmptyMoment art="review" title="Nothing due" action={{label:'Practice instead',to:'/practice'}}>

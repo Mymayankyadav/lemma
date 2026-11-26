@@ -59,7 +59,17 @@ try{
    'values($1,$2,$3,1)',[card,user,note]);
   await q('insert into public.reviews(user_id,card_id,rating,state_before,duration_ms,prev) '+
    "values($1,$2,3,0,100,'{}'::jsonb)",[user,card]);
+  const [{id:sitting}]=await q(`insert into public.exam_sittings
+   (user_id,project_id,title,time_zone,objective,sources,blueprint,status,phase,card_mode)
+   values($1,$2,'Final','UTC','expected_marks','[]','[]','planned','map','later') returning id`,[user,project]);
+  await db.exec('set role service_role');
+  await q('select public.log_exam_decision($1,$2,now(),$3)',[user,sitting,{
+   inputs_hash:'a'.repeat(64),inputs:{},candidates:[{action:'teach'}],
+   chosen:{action:'teach',rationale:'Timed lesson'},qualitative:{},predictions:[],policy:'selector-v1',shadow:true,
+  }]);
+  await db.exec('reset role');
  }
+ await assert.rejects(q('delete from public.exam_decisions where user_id=$1',[A]),/append-only/);
  // Audit details do not carry user_id. Their FK to owner actions must be
  // removed before the parent action; another owner's audit remains intact.
  const actionA=(await q("insert into public.actions(user_id,txid,source,summary) "+
@@ -114,6 +124,8 @@ try{
      values(p_user,90000009,'chatgpt','mcp write during deletion');
    elsif p_kind='delete' then
     delete from public.notes where user_id=p_user;
+   elsif p_kind='delete_forecast' then
+    delete from public.exam_decisions where user_id=p_user;
    elsif p_kind='seen' then
     update public.settings set connector_last_seen_at=pg_catalog.now()
      where user_id=p_user;
@@ -128,6 +140,8 @@ try{
  for(const kind of ['action','seen','subject','delete'])
   await assert.rejects(q('select public.test_mcp_owner_write($1::uuid,$2)',[A,kind]),
    /Account deletion is in progress/,'MCP-style '+kind+' write for marked A');
+ await assert.rejects(q('select public.test_mcp_owner_write($1,$2)',[A,'delete_forecast']),/append-only/,
+  'a deletion request alone must not authorize a forecast delete');
  // A service-role write for an owner without a marker is unaffected.
  await q('select public.test_mcp_owner_write($1::uuid,$2)',[B,'seen']);
  await db.exec('reset role');
@@ -186,7 +200,7 @@ try{
   1,'owner B audit details must be retained');
  checkEqual((await q('select count(*)::int n from public.actions where no=$1 and user_id=$2',[actionB,B]))[0].n,
   1,'owner B audit action must be retained');
- for(const table of ['subjects','projects','notes','cards','reviews']){
+ for(const table of ['subjects','projects','notes','cards','reviews','exam_decisions','exam_sittings']){
   checkEqual((await q('select count(*)::int n from public.'+table+' where user_id=$1',[A]))[0].n,
    0,'owner A still has '+table);
   checkEqual((await q('select count(*)::int n from public.'+table+' where user_id=$1',[B]))[0].n,

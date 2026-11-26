@@ -335,6 +335,32 @@ try {
  assert.equal(afterQuestion.questionDeleted,true);
  assert.equal(afterQuestion.replyDeleted,undefined,'the paired tutor reply stays visible');
  assert.deepEqual(await ownerReceipt(firstQuestion),first,'deleting messages preserves the saved turn receipt');
+ await as();
+ await db.exec("update public.tutor_release_controls set enabled=true where capability='manual'");
+ const spanProject=await seedForAssistedStart();
+ async function seedForAssistedStart(){
+  const assistedSlug=slug+'-assisted';
+  const path=await one("insert into public.projects(user_id,slug,title,goal,status) values($1,$2,'Assist','Review','active') returning id result",[owner,assistedSlug]);
+  const assistedCheckpoint=await one("insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps) values($1,$2,'CP1',1,'Assist',$3,'Explain',jsonb_build_array('Explain')) returning id result",[owner,path,objective]);
+  return {assistedSlug,assistedCheckpoint};
+ }
+ const assisted=cmd('start',{expectedVersion:0,question:'𝒰 is open'});
+ const acceptedSpans=[{start:3,end:5,text:'is',source:'word'}];
+ const assist=(spans)=>one('select public.tutor_owner_assisted_start($1,$2,$3,$4::jsonb,null,$5::jsonb) result',
+  [owner,spanProject.assistedSlug,spanProject.assistedCheckpoint,JSON.stringify(assisted),JSON.stringify(spans)]);
+ await as('authenticated',other);await denied(assist(acceptedSpans));
+ await as('authenticated',owner);await denied(assist([{...acceptedSpans[0],start:2}]),'22023');
+ const savedAssist=await assist(acceptedSpans);
+ assert.equal(savedAssist.status,'submitted');
+ assert.deepEqual(await assist(acceptedSpans),savedAssist);
+ await denied(assist([{...acceptedSpans[0],source:'phrase'}]),'22023');
+ const assistedState=await one('select public.tutor_thread_state($1,$2,$3,null) result',[owner,spanProject.assistedSlug,spanProject.assistedCheckpoint]);
+ assert.deepEqual(assistedState.turns[0].snapshot.acceptedSpans,acceptedSpans);
+ assert.equal(assistedState.turns[0].snapshot.question,assisted.question);
+ await as();
+ if(await one("select to_regprocedure('extensions.hmac(bytea,bytea,text)') is not null result")){
+  await db.exec(await readFile(new URL('../../../supabase/tests/tutor_aid_ranking.sql',import.meta.url),'utf8'));
+ }
  await as('service_role');await q('select public.lemma_begin_account_delete($1)',[owner]);
  await as('authenticated',owner);await denied(state());await denied(remove(selected));
  await as('service_role');await q('select public.lemma_purge_account_rows($1)',[owner]);

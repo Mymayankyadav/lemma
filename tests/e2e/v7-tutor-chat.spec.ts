@@ -260,6 +260,46 @@ test('demo chat warns when context or an excerpt cannot be saved with an already
  )
 })
 
+for(const action of ['objective','local excerpt'] as const){
+ test('demo chat saves the pending question before a quota-rejected '+action,async({page})=>{
+  await page.goto(path('real-analysis',true,'/cp/CP4/tutor'),{waitUntil:'domcontentloaded'})
+  await openComposer(page)
+  const now=Date.now()
+  await page.clock.install({time:now})
+  await page.clock.pauseAt(now+1000)
+
+  const text='How do I show this cover is finite?'
+  const excerpt='Start with the interval [0, 1].'
+  const draftKey='lemma.demo-tutor:'+JSON.stringify(['default','real-analysis','project-analysis-cp-4'])
+  const stored=()=>page.evaluate(key=>['question','context','attached-local'].map(part=>sessionStorage.getItem(key+':'+part)),draftKey)
+  await answer(page).fill(text)
+  expect(await stored()).toEqual([null,null,null])
+  await page.evaluate(draftKeys=>{
+   const setItem=Storage.prototype.setItem
+   Storage.prototype.setItem=function(key,value){
+    if(this===sessionStorage&&draftKeys.includes(key))throw new DOMException('Storage full','QuotaExceededError')
+    setItem.call(this,key,value)
+   }
+  },[draftKey+':context',draftKey+':attached-local'])
+
+  await tutor(page).getByRole('button',{name:'Attach context',exact:true}).click()
+  const context=page.getByRole('dialog',{name:'Context for your tutor'})
+  if(action==='objective'){
+   const objective=context.getByRole('checkbox',{name:'Include this checkpoint’s objective'})
+   await objective.check()
+   await expect(objective).toBeChecked()
+  }else{
+   await context.getByText('Add an excerpt',{exact:true}).click()
+   await context.getByLabel('Excerpt',{exact:true}).fill(excerpt)
+   await context.getByRole('button',{name:'Preview excerpt'}).click()
+   await context.getByRole('button',{name:'Add local excerpt'}).click()
+   await expect(context.getByRole('region',{name:'Attached local excerpt'})).toContainText(excerpt)
+  }
+  await expect(context.getByRole('alert').filter({hasText:/draft.*may be lost on reload/i})).toBeVisible()
+  expect(await stored()).toEqual([text,null,null])
+ })
+}
+
 test('Continue with tutor lets the learner choose a checkpoint when the path has no current checkpoint',async({page})=>{
  const {payload}=await prepareLiveTutor(page)
  const checkpoint=(payload.checkpoints as Record<string,unknown>[])[0]

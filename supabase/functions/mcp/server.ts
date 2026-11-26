@@ -35,12 +35,13 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
   const register=(n:string,description:string,schema:any,readOnly:boolean,fn:(a:any,ctx:Context)=>Promise<string>)=>{
     m.registerTool(n,{description,inputSchema:lean(schema),annotations:readOnly?noop:write},async(a:any,toolContext)=>{
       try{
-        if(n==='get'&&(a.what==='tutor_turn'||a.what==='tutor_next'||a.what==='tutor_attachment'||a.what==='tutor_questionnaires'||a.what==='tutor_followups')){
+        if(n==='get'&&(a.what==='tutor_turn'||a.what==='tutor_next'||a.what==='tutor_attachment'||a.what==='tutor_questionnaires'||a.what==='tutor_followups'||a.what==='tutor_answer_aids')){
           if(!tutor)throw Error('Tutor connector unavailable.');
           if(a.what==='tutor_followups')return {content:[{type:'text' as const,text:await tutor.followups(a.id)}]};
           if(a.what==='tutor_questionnaires')return {content:[{type:'text' as const,text:await tutor.questionnaires(a.id)}]};
+          if(a.what==='tutor_answer_aids')return {content:[{type:'text' as const,text:await tutor.answerAidList(a.id)}]};
           if(a.what==='tutor_attachment')return {content:await tutor.attachment(a.id)};
-          if(a.what==='tutor_turn')return {content:await tutor.content(a.id)};
+          if(a.what==='tutor_turn')return {content:await tutor.content(a.id,a.cursor)};
           return {content:[{type:'text' as const,text:await tutor.next(a.id,toolContext.mcpReq.signal)}]};
         }
         const ctx:Context=readOnly?c:{...c,batch:[]};
@@ -84,6 +85,9 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
       if(args.command.resource==='tutor_turns'){
         if(!tutor)throw Error('Tutor connector unavailable.');
         receipt=await tutor.write(args);
+      }else if(args.command.resource==='tutor_answer_aids'){
+        if(!tutor)throw Error('Tutor connector unavailable.');
+        receipt=await tutor.setAnswerAids(args);
       }else if(args.command.resource==='tutor_questionnaires'){
         if(!tutor)throw Error('Tutor connector unavailable.');
         receipt=await tutor.attachQuestionnaire(args);

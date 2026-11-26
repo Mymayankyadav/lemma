@@ -11,9 +11,10 @@ function selectedDemo():DemoProfile|null{
  if(typeof window==='undefined')return null
  const query=new URLSearchParams(window.location.search).get('demo'),profile=explicit(query)
  try{
-  if(query==='0'){sessionStorage.removeItem(DEMO_KEY);return null}
-  if(profile&&query){sessionStorage.setItem(DEMO_KEY,query);return profile}
-  return explicit(sessionStorage.getItem(DEMO_KEY))
+  const stored=sessionStorage.getItem(DEMO_KEY)
+  if(query==='0'){if(stored!==null)sessionStorage.removeItem(DEMO_KEY);return null}
+  if(profile&&query){if(stored!==query)sessionStorage.setItem(DEMO_KEY,query);return profile}
+  return explicit(stored)
  }catch{return profile}
 }
 /** Remember the chosen demo profile only for this browser tab. */

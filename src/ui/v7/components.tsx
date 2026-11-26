@@ -264,6 +264,7 @@ export function Sheet({
   children,
   footer,
   full = false,
+  className,
   hideTitle = false,
   focusTitle = false,
   containFocus = false,
@@ -276,6 +277,7 @@ export function Sheet({
   footer?: ReactNode;
   /** Full height on phones (Search, §6.1 G). */
   full?: boolean;
+  className?: string;
   /** The body's first field is the header (SE3); the title stays for assistive technology. */
   hideTitle?: boolean;
   focusTitle?: boolean;
@@ -303,7 +305,7 @@ export function Sheet({
   return (
     <dialog
       ref={ref}
-      className={`v7-sheet${full ? " v7-sheet-full" : ""}`}
+      className={`v7-sheet${full ? " v7-sheet-full" : ""}${className ? " " + className : ""}`}
       aria-labelledby={id}
       onKeyDown={containFocus ? (event) => {
         const dialog = event.currentTarget;

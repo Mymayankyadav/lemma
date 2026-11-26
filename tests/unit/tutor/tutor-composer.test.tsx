@@ -6,6 +6,7 @@ import type {TutorInkState} from '../../../src/features/tutor/TutorInk';
 import {imageReference} from '../../../supabase/functions/_shared/tutor-answer';
 import {clearToasts} from '../../../src/ui/Toast';
 import {setHapticsEnabled} from '../../../src/ui/v7/haptics';
+import {WritingAidSettings} from '../../../src/features/tutor/writingAid/WritingAidSettings';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -45,9 +46,9 @@ afterEach(async () => {
   setHapticsEnabled(true);
 });
 function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = () => {},
-  hintLevel, pending = false, ink}: {
+  hintLevel, pending = false, ink, suspended = false, inputScopeKey}: {
   initial?: string; onSend?: (text: string) => void; onAsk?: (kind: 'hint' | 'stuck' | 'notation') => void;
-  onChange?: (value: string) => void; hintLevel?: number; pending?: boolean; ink?: TutorInkState;
+  onChange?: (value: string) => void; hintLevel?: number; pending?: boolean; ink?: TutorInkState; suspended?: boolean; inputScopeKey?: string;
 }) {
   const [value, setValue] = useState(initial);
   const [sessionActionsOpen, setSessionActionsOpen] = useState(false);
@@ -56,7 +57,7 @@ function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = 
     <button onClick={() => setSessionActionsOpen(true)}>Session actions</button>
     <dialog open={sessionActionsOpen}><div ref={setAnswerActions}/></dialog>
     <TutorComposer value={value} onChange={text => {setValue(text); onChange(text);}} onSend={onSend} onAsk={onAsk}
-    canSend={!pending} ink={ink} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
+    canSend={!pending} ink={ink} suspended={suspended} inputScopeKey={inputScopeKey} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
     onContext={() => {}} sessionActionsOpen={sessionActionsOpen} onCloseActions={() => setSessionActionsOpen(false)}
     answerActions={answerActions} notationContext={['What is the preimage f⁻¹(B)?']}/>
   </>;
@@ -70,6 +71,44 @@ const answerAction = async (name: string) => {
   await click(name, host.querySelector('dialog[open]')!);
 };
 const keyboard = () => host.querySelector('.rows')!;
+
+test('publishes explicit page surface state through keyboard suspension and close', async () => {
+  host.className = 'lemma-tutor';
+  await act(async () => root.render(<Harness/>));
+  expect(host.hasAttribute('data-tutor-composer')).toBe(true);
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(false);
+  await click('Keys');
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(true);
+  await click('Maths symbols', keyboard());
+  expect(host.hasAttribute('data-tutor-symbol-keys')).toBe(true);
+  await act(async () => root.render(<Harness suspended/>));
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(false);
+  expect(host.hasAttribute('data-tutor-symbol-keys')).toBe(false);
+  await act(async () => root.render(<Harness/>));
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(true);
+  await click('Hide keyboard');
+  expect(host.hasAttribute('data-tutor-keyboard')).toBe(false);
+  await act(async () => root.render(null));
+  expect(host.hasAttribute('data-tutor-composer')).toBe(false);
+});
+
+test('closes the writing settings sheet on suspension and scope changes', async () => {
+  const closed = () => expect(host.querySelector('dialog.v7-sheet')).toBeNull();
+  await act(async () => root.render(<Harness inputScopeKey="first"/>));
+  closed();
+  await answerAction('Writing assistance');
+  expect(host.querySelector('dialog.v7-sheet[open]')).not.toBeNull();
+  await act(async () => root.render(<Harness inputScopeKey="first" suspended/>));
+  closed();
+  expect(document.body.style.overflow).toBe('');
+  await act(async () => root.render(<Harness inputScopeKey="first"/>));
+  closed();
+  await answerAction('Writing assistance');
+  await act(async () => root.render(<Harness inputScopeKey="second"/>));
+  closed();
+  expect(document.body.style.overflow).toBe('');
+});
+
 // N223: the word slots when the strip shows words; otherwise the whole strip (its slots then hold symbols or ∀ ∈ ⇒).
 const suggestion = () => host.querySelector('.writing-aid-words') ?? host.querySelector('.kb .strip')!;
 const key = (name: string, modifiers: KeyboardEventInit = {}) => act(async () => {
@@ -141,6 +180,74 @@ test('completes proof notation and asks for help without consuming a draft', asy
   expect(onAsk.mock.calls).toEqual([['hint'], ['stuck'], ['notation']]);
   expect(onSend).not.toHaveBeenCalled();
   expect(field().value).toBe('Let eps');
+});
+
+test('blocks covered offers while allowing an explicit refresh of the current slate', async () => {
+  await act(async () => root.render(<Harness/>));
+  await act(async () => field().focus());
+  await input('nota');
+  await awaitAid('Insert notation');
+  await click('Session actions');
+  await click('Insert notation', suggestion());
+  expect(field().value).toBe('nota');
+  expect(localStorage.getItem(writingModelKey)).toBeNull();
+  await click('Refresh suggestions', host.querySelector('dialog[open]')!);
+  expect(field().value).toBe('nota');
+  expect(localStorage.getItem(writingModelKey)).toContain('item:word:notation');
+});
+
+test.each([
+  {flag: false, optedIn: false, learns: false},
+  {flag: false, optedIn: true, learns: true},
+  {flag: true, optedIn: false, learns: true},
+])('learns expanded transitions and choices through the composer (flag=$flag, opt-in=$optedIn)', async ({flag, optedIn, learns}) => {
+  window.history.replaceState(null, '', '/?flags=' + (flag ? 'writingAidSettings,typeaheadV2' : '-writingAidSettings,-typeaheadV2'));
+  const settings = () => host.querySelector('[aria-label="Writing aid settings"]')!;
+  const settingsSwitch = (label: string) => [...settings().querySelectorAll<HTMLInputElement>('input[role="switch"]')]
+    .find(node => node.labels?.[0].textContent === label);
+  if (optedIn) {
+    await act(async () => root.render(<WritingAidSettings/>));
+    const toggle = settingsSwitch('Try faster typing')!;
+    await act(async () => toggle.click());
+    expect(toggle.checked).toBe(true);
+  }
+  await act(async () => root.render(<Harness/>));
+  await act(async () => field().focus());
+  await input('Please clarify');
+  await input('Please clarify ');
+  await input('Please clarify nota');
+  await awaitAid('Insert notation');
+  await click('Insert notation', suggestion());
+  expect(field().value).toBe('Please clarify notation ');
+  const {model: {adaptation}} = JSON.parse(localStorage.getItem(writingModelKey)!);
+  expect(adaptation.context['*:please']?.clarify).toBe(learns ? 1 : undefined);
+  expect(adaptation.context['*:clarify']?.notation).toBeUndefined();
+  expect(adaptation.weeks[0]?.accepts).toBe(learns ? 1 : undefined);
+
+  await act(async () => root.render(<WritingAidSettings/>));
+  expect(settings().textContent?.includes('This week on this device')).toBe(learns);
+  if (learns) {
+    const {model: {adaptation}} = JSON.parse(localStorage.getItem(writingModelKey)!);
+    expect(adaptation.weeks[0].impressions).toBeGreaterThan(0);
+  }
+  const personalize = settingsSwitch('Personalize suggestions');
+  expect(Boolean(personalize)).toBe(flag || optedIn);
+  if (optedIn) {
+    await act(async () => personalize!.click());
+    expect(personalize!.checked).toBe(false);
+    const paused = localStorage.getItem(writingModelKey);
+    await act(async () => root.render(<Harness/>));
+    await input('Please repeat');
+    await input('Please repeat ');
+    expect(localStorage.getItem(writingModelKey)).toBe(paused);
+    await act(async () => root.render(<WritingAidSettings/>));
+    await click('Forget learned writing preferences', settings());
+    const reset = JSON.parse(localStorage.getItem(writingModelKey)!);
+    expect(reset.enabled).toBe(false);
+    expect(reset.model.adaptation.context).toEqual({});
+    await act(async () => settingsSwitch('Try faster typing')!.click());
+    expect(settingsSwitch('Personalize suggestions')).toBeUndefined();
+  }
 });
 
 test.each(['forget', 'pause and resume'] as const)('does not retain writing feedback after %s in settings', async action => {
@@ -400,8 +507,8 @@ test('previews a correction with a strike-through and keeps the original without
   await act(async () => field().focus());
   await input('teh');
   await awaitAid('Replace teh with the');
-  // The three slots stay in place under the fix (N223: ∀ ∈ ⇒ when there are no words).
-  expect(host.querySelector('.kb .strip .sugg')!.querySelectorAll('button')).toHaveLength(3);
+  expect(host.querySelector('.kb .strip .sugg')).toBeTruthy();
+  expect(host.querySelector('[aria-label="Quick math symbols"]')).toBeNull();
   expect(host.querySelector('[data-writing-aid-edit] del')?.textContent).toBe('teh');
   expect(host.querySelector('[data-writing-aid-source]')?.textContent).toBe('teh');
   await click('Dismiss suggestion');
@@ -424,16 +531,29 @@ test.each(['Teh', 'Cacuhy', 'x=teh', 'f(teh', 'f( teh', 'f.teh', '$teh', 'Let te
   },
 );
 
-test('quick math keys insert at the caret without changing the alphabet layout', async () => {
+test('quick math keys insert at the caret after explicitly opening maths', async () => {
   await act(async () => root.render(<Harness initial="x y"/>));
   await act(async () => {field().focus(); field().setSelectionRange(1, 2);});
-  // N220 (Owner report): the one-tap symbols moved from the bottom row to the suggestion strip (Gboard's wide space bar).
-  expect(keyboard().querySelector('[aria-label="Quick math symbols"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Quick math symbols"]')).toBeNull();
+  await click('Maths symbols', keyboard());
   await click('∈', host.querySelector<HTMLElement>('[role="group"][aria-label="Quick math symbols"]')!);
   expect(field().value).toBe('x∈y');
+  await click('ABC', keyboard());
   expect(button('q', keyboard())).toBeDefined();
   expect([field().selectionStart, field().selectionEnd]).toEqual([2, 2]);
 });
+
+test.each(['', 'I see. ', 'I see! ', 'I see? ', 'I see\n'])(
+  'keeps alphabet keys and removes idle math symbols after %j', async text => {
+    await act(async () => root.render(<Harness/>));
+    await act(async () => field().focus());
+    await input(text + 'x');
+    await click('Delete', keyboard());
+    expect(field().value).toBe(text);
+    expect(host.querySelector('[aria-label="Quick math symbols"]')).toBeNull();
+    expect(button('q', keyboard())).toBeDefined();
+  },
+);
 
 test('does not use restored draft names as newly authored completion evidence', async () => {
   await act(async () => root.render(<Harness initial="Čech says Če"/>));

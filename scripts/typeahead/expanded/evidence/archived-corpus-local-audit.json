@@ -1,0 +1,47 @@
+{
+  "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+  "counts": {
+    "archiveRecovery": {
+      "canonicalGroupCounts": {
+        "calibration": 17526,
+        "test": 17345,
+        "train": 571641,
+        "validation": 17326
+      },
+      "canonicalTrainGroupMapping": {
+        "8abb91fa786231e8fe62044833ec69a44c7d7de3f34333814ba2bb44e07cc23f": "7ff2895ef7512345f1e1abcb53b4c4e56e7c3a9dc7385c7bb780e9eb1b329d82"
+      },
+      "canonicalTrainGroupMappingSha256": "672cc837f8d2fac0121a4070e05ac58a30311c123c9c0f9151dc3f87026d250c",
+      "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+      "developmentSha256": "cf2e81d637fb54af5ea092b796dcd98d506c6bd16c5d8d7f57e7724e07fcc099",
+      "physicalGroupCounts": {
+        "calibration": 17526,
+        "test": 17345,
+        "train": 571642,
+        "validation": 17326
+      },
+      "policy": "FineMath qualified-or-DNS-host, canonical DNS root dot, archived query omission, train-only union",
+      "sourceArchiveSha256": "98eb804bf6c3c2870f401d367caf823c357938c6bd4ba104533979b35c1ec223"
+    },
+    "archivedTrainPublisherAliases": 1,
+    "documents:calibration": 18297,
+    "documents:test": 18158,
+    "documents:train": 613502,
+    "documents:validation": 18212,
+    "fineMathBarePublisherRefs": 5307,
+    "fineMathQualifiedPublisherRefs": 418658,
+    "groups:calibration": 17526,
+    "groups:test": 17345,
+    "groups:train": 571642,
+    "groups:validation": 17326,
+    "nestedDevelopment:calibration": 18297,
+    "nestedDevelopment:test": 18158,
+    "nestedDevelopment:train": 122559,
+    "nestedDevelopment:validation": 18212,
+    "publisherIdentityVerified:EleutherAI/proof-pile-2": 22012,
+    "publisherIdentityVerified:HuggingFaceTB/finemath": 423965,
+    "publisherIdentityVerified:hoskinson-center/proof-pile": 222192
+  },
+  "developmentSha256": "cf2e81d637fb54af5ea092b796dcd98d506c6bd16c5d8d7f57e7724e07fcc099",
+  "passed": true
+}

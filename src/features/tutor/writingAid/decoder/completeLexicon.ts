@@ -26,7 +26,7 @@ export function parseLexiconTsv(text: string): DecoderLexicon {
   return Object.freeze({version: 1, entries: Object.freeze(entries)});
 }
 
-export async function loadCompleteLexicon(): Promise<DecoderLexicon> {
+async function completeLexiconBytes(offlineInstall?: AbortSignal): Promise<Uint8Array> {
   const {readVerifiedDecoderAsset} = await import('./assets');
   const file = manifest.file;
   const url = new URL(`${import.meta.env.BASE_URL}models/writing-decoder/${manifest.assetSetVersion}/${file.path}`,
@@ -35,6 +35,7 @@ export async function loadCompleteLexicon(): Promise<DecoderLexicon> {
   try {
     if (import.meta.env.MODE !== 'android') cache = await self.caches?.open(`lemma-writing-decoder-${file.sha256}`);
   } catch {/* Storage denial still permits a verified network or packaged load. */}
+  if (offlineInstall && !cache) throw new Error('Could not open offline model storage');
   let bytes: Uint8Array | undefined;
   const cached = await cache?.match(url).catch(() => undefined);
   if (cached) {
@@ -43,13 +44,26 @@ export async function loadCompleteLexicon(): Promise<DecoderLexicon> {
   }
   if (!bytes) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
+    const timer = offlineInstall ? undefined : setTimeout(() => controller.abort(), 8000);
     try {
       const response = await fetch(url, {mode: 'same-origin', credentials: 'omit', redirect: 'error', cache: 'no-store',
-        signal: controller.signal});
+        signal: offlineInstall ?? controller.signal});
       bytes = await readVerifiedDecoderAsset(response, file);
     } finally {clearTimeout(timer);}
-    await cache?.put(url, new Response(bytes.slice().buffer)).catch(() => undefined);
+    if (offlineInstall) {
+      offlineInstall.throwIfAborted();
+      await cache!.put(url, new Response(bytes.slice().buffer));
+    } else {
+      await cache?.put(url, new Response(bytes.slice().buffer)).catch(() => undefined);
+    }
   }
-  return parseLexiconTsv(new TextDecoder('utf-8', {fatal: true}).decode(bytes));
+  return bytes;
+}
+
+export async function loadCompleteLexicon(): Promise<DecoderLexicon> {
+  return parseLexiconTsv(new TextDecoder('utf-8', {fatal: true}).decode(await completeLexiconBytes()));
+}
+
+export async function saveCompleteLexiconForOffline(signal: AbortSignal): Promise<void> {
+  await completeLexiconBytes(signal);
 }

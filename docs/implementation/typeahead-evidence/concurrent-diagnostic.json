@@ -1,0 +1,244 @@
+{
+  "version": 1,
+  "context": "concurrent diagnostic, trace-recovered, not qualification",
+  "goldSha256": "0045bc707dd43dae5b246d1920385d42573db862a2277e1ccd268abad3e2a690",
+  "neural": {
+    "status": "fixture-startup-failure",
+    "usedInComparison": false
+  },
+  "commonCompletedAnswers": 10,
+  "runs": {
+    "corrected-v1": {
+      "fixedCaret": {
+        "all": {
+          "hits": 65,
+          "events": 283,
+          "rate": 0.22968197879858657
+        },
+        "word": {
+          "hits": 65,
+          "events": 280,
+          "rate": 0.23214285714285715
+        },
+        "other": {
+          "hits": 44,
+          "events": 182,
+          "rate": 0.24175824175824176
+        },
+        "symbol": {
+          "hits": 0,
+          "events": 3,
+          "rate": 0.0
+        },
+        "topology": {
+          "hits": 4,
+          "events": 30,
+          "rate": 0.13333333333333333
+        },
+        "analysis": {
+          "hits": 7,
+          "events": 34,
+          "rate": 0.20588235294117646
+        },
+        "linear-algebra": {
+          "hits": 1,
+          "events": 8,
+          "rate": 0.125
+        },
+        "geometry": {
+          "hits": 2,
+          "events": 7,
+          "rate": 0.2857142857142857
+        },
+        "probability": {
+          "hits": 7,
+          "events": 22,
+          "rate": 0.3181818181818182
+        }
+      },
+      "duplicateFamilyRows": 1,
+      "slateSha256": "e19977a016ef7b6fd6dfa5a0138ad5410eb9a62b97b819fe3b4650071d3f3e85",
+      "completedAnswers": 10,
+      "commonSubsetKeys": {
+        "manual": 876,
+        "assisted": 610,
+        "saved": 266,
+        "rate": 0.3036529680365297
+      }
+    },
+    "expanded-kn": {
+      "fixedCaret": {
+        "all": {
+          "hits": 63,
+          "events": 283,
+          "rate": 0.2226148409893993
+        },
+        "word": {
+          "hits": 63,
+          "events": 280,
+          "rate": 0.225
+        },
+        "other": {
+          "hits": 41,
+          "events": 182,
+          "rate": 0.22527472527472528
+        },
+        "symbol": {
+          "hits": 0,
+          "events": 3,
+          "rate": 0.0
+        },
+        "topology": {
+          "hits": 5,
+          "events": 30,
+          "rate": 0.16666666666666666
+        },
+        "analysis": {
+          "hits": 10,
+          "events": 34,
+          "rate": 0.29411764705882354
+        },
+        "linear-algebra": {
+          "hits": 1,
+          "events": 8,
+          "rate": 0.125
+        },
+        "geometry": {
+          "hits": 2,
+          "events": 7,
+          "rate": 0.2857142857142857
+        },
+        "probability": {
+          "hits": 4,
+          "events": 22,
+          "rate": 0.18181818181818182
+        }
+      },
+      "duplicateFamilyRows": 1,
+      "slateSha256": "a7d8ce0e4e2cb1c8569374792c3bf53a39cd3f0cb0a0432c4588960b582415b5",
+      "completedAnswers": 11,
+      "commonSubsetKeys": {
+        "manual": 876,
+        "assisted": 613,
+        "saved": 263,
+        "rate": 0.3002283105022831
+      }
+    },
+    "tutor": {
+      "fixedCaret": {
+        "all": {
+          "hits": 62,
+          "events": 283,
+          "rate": 0.21908127208480566
+        },
+        "word": {
+          "hits": 62,
+          "events": 280,
+          "rate": 0.22142857142857142
+        },
+        "other": {
+          "hits": 40,
+          "events": 182,
+          "rate": 0.21978021978021978
+        },
+        "symbol": {
+          "hits": 0,
+          "events": 3,
+          "rate": 0.0
+        },
+        "topology": {
+          "hits": 5,
+          "events": 30,
+          "rate": 0.16666666666666666
+        },
+        "analysis": {
+          "hits": 10,
+          "events": 34,
+          "rate": 0.29411764705882354
+        },
+        "linear-algebra": {
+          "hits": 1,
+          "events": 8,
+          "rate": 0.125
+        },
+        "geometry": {
+          "hits": 2,
+          "events": 7,
+          "rate": 0.2857142857142857
+        },
+        "probability": {
+          "hits": 4,
+          "events": 22,
+          "rate": 0.18181818181818182
+        }
+      },
+      "duplicateFamilyRows": 0,
+      "slateSha256": "5baa406ee47f4158dc3ebdd09d8d56972a19a0342f7e032ca160b27271ffad50",
+      "completedAnswers": 10,
+      "commonSubsetKeys": {
+        "manual": 876,
+        "assisted": 620,
+        "saved": 256,
+        "rate": 0.2922374429223744
+      }
+    },
+    "personal": {
+      "fixedCaret": {
+        "all": {
+          "hits": 63,
+          "events": 283,
+          "rate": 0.2226148409893993
+        },
+        "word": {
+          "hits": 63,
+          "events": 280,
+          "rate": 0.225
+        },
+        "other": {
+          "hits": 41,
+          "events": 182,
+          "rate": 0.22527472527472528
+        },
+        "symbol": {
+          "hits": 0,
+          "events": 3,
+          "rate": 0.0
+        },
+        "topology": {
+          "hits": 5,
+          "events": 30,
+          "rate": 0.16666666666666666
+        },
+        "analysis": {
+          "hits": 10,
+          "events": 34,
+          "rate": 0.29411764705882354
+        },
+        "linear-algebra": {
+          "hits": 1,
+          "events": 8,
+          "rate": 0.125
+        },
+        "geometry": {
+          "hits": 2,
+          "events": 7,
+          "rate": 0.2857142857142857
+        },
+        "probability": {
+          "hits": 4,
+          "events": 22,
+          "rate": 0.18181818181818182
+        }
+      },
+      "duplicateFamilyRows": 0,
+      "slateSha256": "4347cd00a5cd581cee8fd6398da7df375228d86ff871a0b61f5090e0c934f16f",
+      "completedAnswers": 10,
+      "commonSubsetKeys": {
+        "manual": 876,
+        "assisted": 615,
+        "saved": 261,
+        "rate": 0.2979452054794521
+      }
+    }
+  }
+}

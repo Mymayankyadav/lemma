@@ -99,6 +99,13 @@
       "mcpPath": "N90 corrections (planned)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "provenance retained until owner purge"
+    },
+    "learning_context": {
+      "classification": "command-managed",
+      "appPath": "Mode and assistance badges in Evidence and session history",
+      "mcpPath": "Context validated by save_progress and preserved by event corrections",
+      "exportPolicy": "Included in owner export",
+      "deletionPolicy": "Removed with its event"
     }
   }
 }

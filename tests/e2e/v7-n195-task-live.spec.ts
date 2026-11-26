@@ -40,7 +40,7 @@ test('Signed-in Calendar refreshes its placed row after the action-number Undo',
    :reply(req.headers().accept?.includes('vnd.pgrst.object')?records[0]??null:records);
   if(table==='rpc/lemma_plan_released')return reply(true);
   if(table==='rpc/bootstrap'||table==='settings')return reply(settings);
-  if(table==='rpc/home_summary')return reply({projects:[],current:null,proposals:0,activeSession:null});
+  if(table==='rpc/home_summary'||table==='rpc/exam_home_summary')return reply({projects:[],current:null,proposals:0,activeSession:null,...(table==='rpc/exam_home_summary'?{exam:{sittings:[]}}:{})});
   if(table==='rpc/home_review_outlook')return reply({decks:[],forecast:[]});
   if(table==='tasks')return rows([row]);
   if(table==='calendar_blocks')return rows(placed?[protectedBlock,placed]:[protectedBlock]);
@@ -87,7 +87,7 @@ test('Signed-in task creation recovers a lost acknowledgement using the original
   const reply=(json:unknown)=>route.fulfill({json});
   if(table==='rpc/lemma_plan_released')return reply(true);
   if(table==='rpc/bootstrap'||table==='settings')return reply(settings);
-  if(table==='rpc/home_summary')return reply({projects:[],current:null,proposals:0,activeSession:null});
+  if(table==='rpc/home_summary'||table==='rpc/exam_home_summary')return reply({projects:[],current:null,proposals:0,activeSession:null,...(table==='rpc/exam_home_summary'?{exam:{sittings:[]}}:{})});
   if(table==='rpc/home_review_outlook')return reply({decks:[],forecast:[]});
   if(table==='rpc/task_command'){
    const p=req.postDataJSON().p;

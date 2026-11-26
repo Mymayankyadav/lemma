@@ -44,6 +44,15 @@ export function fallbackTutor(read: AgendaRead | null | undefined, projects: rea
 function scheduledStep(read: AgendaRead, input: NextStepInput, outcome: Extract<AgendaRead['decision']['outcome'],{kind:'action'}>): NextStep {
   const minutes = Math.max(1,Math.round(outcome.end-outcome.start));
   const label = read.label ?? 'Study';
+  const exam=read.decision.exam;
+  if(exam){
+    const project=input.projects.find(p=>p.id===exam.projectId);
+    if(project){
+      const question=`Use this ${exam.slotMinutes}-minute exam block. ${exam.next.kind} ${exam.next.keys.join(', ')}. ${read.decision.reason}`;
+      const query=new URLSearchParams({exam:exam.sittingId,question});
+      return {part:'Practice',title:label,action:'Prep now',href:tutorHref(project.slug)+'?'+query.toString(),minutes,why:read.decision.reason};
+    }
+  }
   const taskId = /^task\/([^/]+)$/.exec(outcome.taskId)?.[1];
   if (taskId) {
     const task = input.tasks.find(item=>item.id===taskId);

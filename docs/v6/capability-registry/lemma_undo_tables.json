@@ -137,6 +137,15 @@
     },
     {
       "table_name": "calendar_occurrence_changes"
+    },
+    {
+      "table_name": "exam_sittings"
+    },
+    {
+      "table_name": "exam_attempts"
+    },
+    {
+      "table_name": "card_ideas"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",

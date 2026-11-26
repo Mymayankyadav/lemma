@@ -107,13 +107,13 @@ export interface BlockSheetProps {
  /** v7 shell: the same form, drawn with the kit's sheet and controls. */
  v7?:boolean;
  /** Hand-over from quick-add: keep the typed title, the linked task and the chosen length. */
- initialTitle?:string;initialTaskId?:string;initialMinutes?:number;draft?:CalendarBlockDraft;
+ initialTitle?:string;initialTaskId?:string;initialProjectId?:string;initialMinutes?:number;draft?:CalendarBlockDraft;
  block:CalendarBlockRecord|null;
  date:string;zone:string;initialStart?:string;onClose:()=>void;onRefresh:()=>void;
 }
 type Frame=(props:{title:string;eyebrow:string;onClose:()=>void;busy:boolean;footer:ReactNode;children:ReactNode})=>ReactElement;
 const V6Frame:Frame=props=><Dialog {...props}/>;
-export default function BlockSheet({block,date,zone:pageZone,initialStart,onClose,onRefresh,v7=false,initialTitle,initialTaskId,initialMinutes,draft}:BlockSheetProps) {
+export default function BlockSheet({block,date,zone:pageZone,initialStart,onClose,onRefresh,v7=false,initialTitle,initialTaskId,initialMinutes,draft,initialProjectId}:BlockSheetProps) {
  const zone=draft?.zone??pageZone;
  const Frame=V6Frame;
  const look={field,action,primary:action+' bg-amber text-amber-ink',danger:action+' lemma-destructive',label:'text-label',error:'text-label text-again',note:'text-label text-ink-2',
@@ -133,7 +133,7 @@ export default function BlockSheet({block,date,zone:pageZone,initialStart,onClos
  const [projects,setProjects]=useState<ProjectSummary[]>([]);
  const [tasks,setTasks]=useState<TaskRecord[]>([]);
  const [checkpoints,setCheckpoints]=useState<CheckpointView[]>([]);
- const [projectId,setProjectId]=useState(block?.projectId??draft?.projectId??'');
+ const [projectId,setProjectId]=useState(block?.projectId??draft?.projectId??initialProjectId??'');
  const [checkpointId,setCheckpointId]=useState(block?.checkpointId??'');
  const [taskId,setTaskId]=useState(block?.taskId??(draft?draft.taskId:initialTaskId)??'');
  const [linksError,setLinksError]=useState('');

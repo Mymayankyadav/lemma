@@ -1,0 +1,44 @@
+{
+  "bytes": 4194300,
+  "corpusSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+  "countsSha256": "8339be66dd2bee269cef77809836af692d1aed2ea76318a47a3988ec9c38b376",
+  "file": "model.bin",
+  "kind": "ngram",
+  "metrics": {
+    "discounts": {
+      "2": [
+        0.6987808668277473,
+        1.1222938320853364,
+        1.4315829882201032
+      ],
+      "3": [
+        0.811931054855814,
+        1.1673162270973898,
+        1.4187197759245225
+      ],
+      "4": [
+        0.8114673243607013,
+        1.2847289109121163,
+        1.3648759101811827
+      ]
+    },
+    "maxRowMassError": 2.9793482791973247e-08,
+    "targetTrainTokens": null,
+    "trainTokens": 12317545,
+    "validation": {
+      "outOfVocabulary": 5245,
+      "perplexity": 166.08885383609004,
+      "referencePerplexity": 133.64630392153822,
+      "targets": 360049,
+      "wordOovRate": 0.015371720137979139,
+      "wordTargets": 341211
+    }
+  },
+  "order": 4,
+  "pruning": "entropy",
+  "sha256": "b17432f69d47712a4b6ea1eff7ee8e5d31acbbb166132ccc38d89e95dc4383d0",
+  "subject": "topology",
+  "version": 2,
+  "vocabSha256": "7f3bca81800228b69c6e9f58e9cf426f325e5d107cd2ad676f86154b55f029ba",
+  "vocabSize": 60005
+}

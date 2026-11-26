@@ -1,0 +1,62 @@
+{
+  "table": "tutor_questionnaire_rows",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "Private rubric omitted from learner state",
+      "mcpPath": "Exam-only grant-bound examRows and examQuestionnaireAnswers",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "questionnaire_id": {
+      "classification": "command-managed",
+      "appPath": "Private rubric omitted from learner state",
+      "mcpPath": "Exam-only grant-bound examRows and examQuestionnaireAnswers",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "question_id": {
+      "classification": "command-managed",
+      "appPath": "Private rubric omitted from learner state",
+      "mcpPath": "Exam-only grant-bound examRows and examQuestionnaireAnswers",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "sitting_id": {
+      "classification": "command-managed",
+      "appPath": "Private rubric omitted from learner state",
+      "mcpPath": "Exam-only grant-bound examRows and examQuestionnaireAnswers",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "row_key": {
+      "classification": "command-managed",
+      "appPath": "Private rubric omitted from learner state",
+      "mcpPath": "Exam-only grant-bound examRows and examQuestionnaireAnswers",
+      "exportPolicy": "Redacted from authenticated owner export",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "blueprint_version": {
+      "classification": "command-managed",
+      "appPath": "Private rubric omitted from learner state",
+      "mcpPath": "Exam-only grant-bound examRows and examQuestionnaireAnswers",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "scoring_key": {
+      "classification": "command-managed",
+      "appPath": "Private rubric omitted from learner state",
+      "mcpPath": "Exam-only grant-bound examRows and examQuestionnaireAnswers",
+      "exportPolicy": "Redacted from authenticated owner export",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    },
+    "rubric_steps": {
+      "classification": "command-managed",
+      "appPath": "Private rubric omitted from learner state",
+      "mcpPath": "Exam-only grant-bound examRows and examQuestionnaireAnswers",
+      "exportPolicy": "Redacted from authenticated owner export",
+      "deletionPolicy": "Removed with the owner or sitting thread"
+    }
+  }
+}

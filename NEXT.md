@@ -6,6 +6,33 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N251 Exam mode on by default in the app, with its screens polished
+
+Owner task: "Turn on exam mode in the app"
+Owner follow-up: "Fix the screens and tests and then create pr"
+Stage: Build · Status: done · Needs: — · Assigned: chat-697888#xr09
+Done = `examMode` defaults on (Owner), so production shows the Path's exam setup and ledger, Today's exam card, the exam tutor, return to study and card ideas. The exam tutor's header matches the checkpoint tutor's title; an empty exam conversation opens with a start card; the exam controls share one text size; the course tutor's exam banner, the setup and row sheets and the Ideas tab use the app's buttons, labels, checkboxes, disclosures and empty-state text; coverage conflicts read like the ledger; Today and Practice keep one primary button per view; the return card opens the Plan tab, so the Path's tabs follow its header. Only the v7 shell reads Home's exam block (exam_home_summary); the demo adapter builds it from the demo exam store whatever the page's mode. Recorded in docs/current/N251.md.
+Tests: tests/unit/flags.test.ts; tests/unit/data/st5-live-reads.test.ts; tests/unit/exam/demo-home.test.ts; the full unit suite; the full browser suite, with v7 live mocks that answer exam_home_summary and the new Exam label and tab.
+Scope: src/flags.ts; src/data/exam/{queries,home-demo}.ts; src/features/exam/{TutorExamTools,ExamSetupSheet,BlueprintRowSheet,IdeaItem,IdeasList,LedgerTab,TopicReview}.tsx and exam.css; src/data/{live,demo}/adapter.ts; src/features/exam/{ReturnCard,CountdownCard}.tsx; src/features/project/v7/V7Path.tsx; src/features/tutor/{TutorChat,TutorLayout}.tsx; src/features/practice/v7/PracticeV7.tsx; the tests above and the live browser mocks; docs/current/N251.md; NEXT.md.
+Not: server, MCP or migration changes; the numeric exam policy (it stays in shadow); new dependencies.
+
+## N250 Faster return navigation, tutor typing and a custom PWA model download
+
+Stage: Harden · Status: done · Needs: — · Assigned: chat-631904#ouou
+
+Done = Returning to a study screen preserves usable data, actions give immediate feedback, navigation respects reduced motion, the text keyboard opens with prose suggestions and Settings can install the optional suggestion model from a custom download.
+Scope: Study navigation, focus reads, motion, Tutor, keyboard, PWA model installation and their regression tests.
+
+## N249 Draw one symbol over the tutor's keys (N248 moved from the Pad page)
+
+Owner task: "Ok now you remove the lemma pad shit whatever you made and shift the logic to the keyboard there. Don't change anything in the layout it should be same as before"
+Owner follow-up: "Keep the flag on by default."
+Stage: Build · Status: done · Needs: — · Assigned: chat-517093#w3kd
+Done = The Pad page is back as before N248, and padLatentInk is gone. Behind tutorKeyInk (on by default, Owner), a stroke over the tutor's keys draws one symbol while a tap stays a key. The readings take the strip's three slots and N248's policy decides when one goes in. Delete and the Space slide keep their gestures. With nothing drawn, the keyboard's markup is unchanged. Recorded in docs/current/N249.md.
+Tests: tests/unit/tutor/key-ink.test.tsx; tests/unit/tutor/latent-ink-{model,policy}.test.ts; tests/unit/flags.test.ts; the tutor keyboard, strip and writing-aid e2e specs.
+Scope: src/features/pad/{PadMathKeyboard,LocalPadEditor}.tsx and pad-math-keyboard.css (restored); src/features/pad/latentInk/** (removed); src/features/tutor/input/latentInk/**; src/features/tutor/{TutorKeyboard,TutorComposer}.tsx; src/features/tutor/keyboard.css; src/flags.ts; scripts/latent-ink-grids.ts; tests/unit/{pad,tutor}/latent-ink-*; tests/unit/tutor/key-ink.test.tsx; tests/unit/flags.test.ts; docs/current/{N248,N249}.md; NEXT.md.
+Not: any change to the keyboard's layout; new dependencies; claiming physical-device validation.
+
 ## N248 The Pad's math keys as a latent scratch pad for one drawn symbol at a time
 
 Owner task: "I think switching back and forth between keyboard in lemma pad can be little hectic. I feel that we can use keyboard as latent scratch pad for short symbol drawings like just one symbol. This would allow user to insert symbols in quick successions. You can use known roc curves of the detexify and using simulations to determine when auto insertion is worse than tapping in the 3 options. You auto insert if user taps on different key or start drawing another symbol. Determining when user is moving to different symbol and completing his previous symbol can be difficult. My suggestion would to be map each symbol to n*n matrix and then match entries this avoid similar looking symbols from getting distinguished but n should be precisely be chosen such that two different symbols are not mapped to each other. Auto insert when the high confidence and user doesn't need to carry further as no symbol can be subset of the suggested symbol where you have to balance probability and logic. Handle edge cases and gains should be bigger than the cost."
@@ -18,11 +45,20 @@ Not: new dependencies; turning the flag on; the tutor's keyboard; claiming physi
 ## N239 Resolve critical known data and privacy issues
 
 Owner task: "Start working on resolving known issues of the lemma repo and fix all the critical in one run."
-Stage: Harden · Status: done · Needs: — · Assigned: chat-582901#q8n7
+Owner follow-up: "What model are you. Answer this then fix critical issues in lemma repo"
+Stage: Harden · Status: done · Needs: — · Assigned: chat-742#q8m2
 Done = All open P1 reports are reproduced or verified already protected, remaining defects receive tested fixes, and directly related silent data-loss and mathematical-identity regressions are covered in one reviewable PR. Record precise results and remaining release gates.
 Tests: focused unit regressions, full migrated SQL owner/isolation/undo/retry cases, typecheck, repository lint, build and affected browser checks where supported.
 Scope: src app/data/features/platform; supabase/functions; additive supabase/migrations; tests/unit; tests/mcp; tests/e2e; relevant capability documentation; docs/current/N239.md; NEXT.md.
 Not: modifying protected CI or existing migrations, production data curation, merging held PRs, or unreviewed production deployment.
+
+## N240 Exam preparation and return to study (includes N241–N247)
+
+Owner task: "Implement every thing remaining in this plan in one pr."
+Stage: Build and Harden · Status: implemented in one PR, pending independent review and observed outcomes · Needs: — · Assigned: chat-642810#r8mz
+Done = Owner-scoped sittings, exam tutor, scored attempts, card ideas, return to study, a shared legal agenda slot, and prospective shadow replay. Numeric decisions and the default-on release remain gated by observed outcomes.
+Tests: exam command and tutor SQL, shared planner, app and connector scenarios, browser round trips, deterministic replay and paired evaluation.
+Scope: N240–N247 from the supplied exam-mode plan, the R0 transition, and their feature notes.
 
 ## N231 Restore Lemma promptly on offline launch
 

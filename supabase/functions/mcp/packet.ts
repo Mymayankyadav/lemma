@@ -3,7 +3,8 @@ import { project, checkpoints } from './resolve.ts';
 import { cut, capped, date } from './text.ts';
 import { day, display, ui, goalEta } from './derive.ts';
 import { STUDY, PLANNING, MIX, studyRules } from './rules.ts';
-import { readAgenda, agendaQueue } from './agenda.ts';
+import {resumeExam} from './exam.ts';
+import { readAgenda, agendaQueue,type AgendaRead } from './agenda.ts';
 import { stateOf, flagOn, resumeBlocks, timeLine, flagLines, tokens, briefNodes } from './adaptive.ts';
 import { renderQueue } from '../_shared/adaptive/queue.ts';
 import { sourceLine, visibleProjects, scheduleHint } from './v3.ts';
@@ -98,13 +99,12 @@ async function basePacket(c:Context,args:{project?:string;mix?:boolean;brief?:bo
 }
 /** Resume v2 (flag time_block): OWNER, RULES, TIME, QUEUE, BRIEF, FLAGS; the server adds NEXT. Budget ≤ 1500 tokens excl. OWNER. */
 const RESUME_BUDGET_CHARS=4300;
-async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:boolean},st:any,adapt?:string):Promise<string>{
+async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:boolean},st:any,agenda:AgendaRead|null,adapt?:string):Promise<string>{
   const {state,rows}=await stateOf(c);
   c.next='start_session; work the QUEUE top first, then teach';
   const rules=st.tutor_rules||studyRules(st.flags||{});
   const ps=visibleProjects(await all(c,'projects','*'));
   if(!args.project&&!args.mix){
-    const {agenda}=await readAgenda(c,st.scheduling_algorithm);
     const lines=[timeLine(state),agenda?agendaQueue(agenda):renderQueue(state.queue,8)];
     const f=flagLines(state);if(f.length)lines.push('FLAGS\n'+f.slice(0,8).map(x=>'- '+x).join('\n'));
     const l=await list(c,st);
@@ -114,7 +114,7 @@ async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:bool
     const active=ps.filter((x:any)=>x.status==='active');
     const now=[];
     for(const p of active){const cps=await checkpoints(c,p),cp=cps.find((x:any)=>x.status==='in_progress')||cps.find((x:any)=>x.status==='not_started'&&x.plan_state!=='deferred');if(cp)now.push(p.slug+' '+cp.code+' '+cut(cp.title,40)+' step '+(cp.current_step||1)+'/'+cp.steps.length)}
-    const body=resumeBlocks(state,rows,undefined,args.brief?'(rules as in the last resume)':rules+'\n'+MIX,{now:now.length?'NOW '+now.join(' | '):undefined},(await readAgenda(c,st.scheduling_algorithm)).agenda);
+    const body=resumeBlocks(state,rows,undefined,args.brief?'(rules as in the last resume)':rules+'\n'+MIX,{now:now.length?'NOW '+now.join(' | '):undefined},agenda);
     return capped(body,RESUME_BUDGET_CHARS);
   }
   const p=await project(c,args.project);
@@ -139,7 +139,7 @@ async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:bool
     now:cp?'NOW '+cp.code+' '+cut(cp.title,60)+', step '+(open?.resume_step||cp.current_step||1)+'/'+(cp.steps||[]).length+(step?': '+cut(step,100):'')+'\nCRIT '+cut(cp.criterion,300):'NOW all checkpoints done',
     last:latest?'LAST S'+latest.number+' '+date(latest.last_activity_at)+' '+display(latest)+(latest.goal_met?' goal '+latest.goal_met:'')+(latest.state==='ended'&&latest.summary?': '+cut(latest.summary,140):latest.resume_note?': '+cut(latest.resume_note,140):'')+(latest.state==='open'&&latest.resume_question?' | ask: '+cut(latest.resume_question,250):''):undefined,
     fix:fix.length?'FIX '+cut(fix.map((x:any)=>x.label+' ('+x.times+'x)').join('; '),200):undefined,
-    cards:'CARDS '+n.due+' due; '+n.pending+' proposals waiting; '+n.comments+' card notes',src,adapt,mandatory:mandatory.slice(0,3),nodes:briefNodes(state,rows,cp?.id)},(await readAgenda(c,st.scheduling_algorithm)).agenda);
+    cards:'CARDS '+n.due+' due; '+n.pending+' proposals waiting; '+n.comments+' card notes',src,adapt,mandatory:mandatory.slice(0,3),nodes:briefNodes(state,rows,cp?.id)},agenda);
   return capped(body,RESUME_BUDGET_CHARS);
 }
 export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?:boolean}):Promise<string>{
@@ -154,8 +154,19 @@ export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?
  const {ADAPT}=await import('./rules.ts');
  // Fixture (system) projects are outside the adaptive state (visibleProjects), so v2 has no TIME or QUEUE for them:
  // they keep the legacy packet. Real projects get v2 with the same ADAPT data line the legacy packet carries.
- if(v2&&!p?.system)return [owner,await packetV2(c,args,st,adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),300):undefined)].filter(Boolean).join('\n');
+ const agenda=p?.system?null:(await readAgenda(c,st.scheduling_algorithm)).agenda;
+ const exam = await resumeExam(c,p,!!args.brief,undefined,agenda).catch(() => ({text:'',activeSlugs:[],next:''}));
+ function withExam(body:string) {
+   if (exam.next) c.next = exam.next;
+   const annotated = body.split('\n').map(line => {
+     const match = /^- (.+?): deadline passed\b/.exec(line);
+     return match && exam.activeSlugs.includes(match[1]) ? line+' (exam prep active: follow EXAM)' : line;
+   }).join('\n');
+   return [owner,exam.text,annotated].filter(Boolean).join('\n');
+ }
+ if(v2&&!p?.system)return withExam(await packetV2(c,args,st,agenda,adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),300):undefined));
  let body=await basePacket(c,args);
- if(!p?.system){const {agenda}=await readAgenda(c,st.scheduling_algorithm);if(agenda)body=agendaQueue(agenda)+'\n'+body;}
- const extra=[...(adapt.length||fresh.length?['ADAPT '+cut([...adapt,...fresh].join('; '),300)]:[]),args.brief?'':ADAPT].filter(Boolean).join('\n');body=body.replace('RULES\n','RULES\n'+(args.brief?'':ADAPT+'\n'));const budget=2340;const line=adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),Math.max(50,budget-body.length-1)):'';return [owner,capped(body+(line?'\n'+line:''),budget)].filter(Boolean).join('\n');
+ if(agenda)body=agendaQueue(agenda)+'\n'+body;
+ body=body.replace('RULES\n','RULES\n'+(args.brief?'':ADAPT+'\n'));const budget=2340;const line=adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),Math.max(50,budget-body.length-1)):'';
+ return withExam(capped(body+(line?'\n'+line:''),budget));
 }

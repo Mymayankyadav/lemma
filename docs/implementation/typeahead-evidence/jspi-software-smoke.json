@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "features": {
+    "webVersion": "1.27.0",
+    "supportsJSPI": true,
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "fallback": true
+    }
+  },
+  "graphSha256": "887619b518a03e500ef6337327fd7a94f6af422ba8c463b2e8b4c3888ba44366",
+  "sessionsMs": 1143.9000000003725,
+  "prefillMs": 3838.5999999996275,
+  "incrementalMs": 4024.2999999988824,
+  "gpuResidentKV": true,
+  "maxLogitDifference": 0.000003814697265625,
+  "topThreeAgreement": true,
+  "logits": 16384,
+  "responses": [
+    {
+      "path": "/ort-wasm-simd-threaded.jspi.wasm",
+      "code": 200,
+      "bytes": 15046878
+    }
+  ]
+}

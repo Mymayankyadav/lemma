@@ -1,0 +1,157 @@
+.v7-exam-mode,.v7-exam-panel,.v7-exam-summary,.v7-exam-form,.v7-exam-row-detail {
+ display:grid;
+ gap:var(--v7-space-2);
+ min-width:0;
+ overflow-wrap:anywhere;
+}
+.v7-exam-mode,.v7-exam-panel,.v7-exam-summary,.v7-exam-row {
+ background:var(--v7-role-surface-raised);
+ border:1px solid var(--v7-role-border-subtle);
+ border-radius:var(--v7-radius-3);
+}
+.v7-exam-mode,.v7-exam-panel,.v7-exam-summary,.v7-exam-row-detail {
+ padding:var(--v7-space-3);
+}
+.v7-exam-mode>p,.v7-exam-panel p,.v7-exam-summary p,.v7-exam-row-detail p {
+ margin:0;
+}
+.v7-exam-mode small {
+ display:block;
+ color:var(--v7-role-text-secondary);
+ font-size:var(--v7-type-supporting);
+}
+.v7-exam-mode p,.v7-exam-summary p,.v7-exam-row-detail p {
+ font-size:var(--v7-type-supporting);
+}
+.v7-exam-actions,.v7-exam-ledger-heading,.v7-exam-metrics {
+ display:flex;
+ align-items:center;
+ flex-wrap:wrap;
+ gap:var(--v7-space-2);
+}
+.v7-exam-ledger-heading {justify-content:space-between;margin-block-end:var(--v7-space-2);}
+.v7-exam-actions>.v7-button,.v7-exam-ledger-heading>.v7-button,.v7-exam-setup-rows .v7-button {
+ min-height:44px;
+ max-width:100%;
+ white-space:normal;
+}
+.v7-exam-switch {
+ display:inline-flex;
+ border:1px solid var(--v7-role-border-subtle);
+ border-radius:var(--v7-round);
+ overflow:hidden;
+}
+.v7-exam-switch button {
+ min-height:44px;
+ padding-inline:var(--v7-space-3);
+ color:var(--v7-role-text-secondary);
+}
+.v7-exam-switch button[aria-pressed="true"] {
+ background:var(--v7-role-selection-subtle);
+ color:var(--v7-role-selection-fg);
+ font-weight:600;
+}
+.v7-exam-ledger,.v7-exam-rows,.v7-exam-setup-rows,.v7-exam-options {
+ display:grid;
+ gap:var(--v7-space-2);
+ min-width:0;
+}
+.v7-exam-metrics,.v7-exam-rows,.v7-exam-setup-rows {
+ padding:0;
+ margin:0;
+ list-style:none;
+}
+.v7-exam-metrics li,.v7-exam-chip {
+ border:1px solid var(--v7-role-border-subtle);
+ border-radius:var(--v7-round);
+ padding:var(--v7-space-1) var(--v7-space-2);
+ font-size:var(--v7-type-caption);
+}
+.v7-exam-callout {
+ border-color:var(--v7-role-status-warning);
+ background:var(--v7-role-status-warning-subtle);
+}
+.v7-exam-callout ul {margin:0;padding:0;list-style:none;display:grid;gap:var(--v7-space-1);}
+.v7-exam-empty {margin:0;font-size:var(--v7-type-supporting);color:var(--v7-role-text-secondary);max-width:var(--v7-reading);}
+.v7-exam-row-toggle {
+ text-align:start;
+ min-height:56px;
+ width:100%;
+ padding:var(--v7-space-3);
+ display:grid;
+ grid-template-columns:minmax(0,1fr) auto;
+ align-items:center;
+ gap:var(--v7-space-2);
+}
+.v7-exam-row-toggle>span:nth-child(2),.v7-exam-row-toggle>small {
+ text-align:end;
+ color:var(--v7-role-text-secondary);
+}
+.v7-exam-row-toggle>small {font-size:var(--v7-type-caption);}
+.v7-exam-row-chips {display:flex;gap:var(--v7-space-1);flex-wrap:wrap;}
+.v7-exam-chip[data-status="secure"] {
+ color:var(--v7-role-status-success);
+ background:var(--v7-role-status-success-subtle);
+}
+.v7-exam-chip[data-status="gap"] {
+ color:var(--v7-role-status-danger);
+ background:var(--v7-role-status-danger-subtle);
+}
+.v7-exam-chip[data-status="shaky"],.v7-exam-chip[data-status="stale"],.v7-exam-chip[data-status="conflicting"] {
+ color:var(--v7-role-status-warning);
+ background-color:var(--v7-role-status-warning-subtle);
+}
+.v7-exam-chip[data-status="stale"] {background:none;}
+.v7-exam-chip[data-status="conflicting"] {
+ background-image:repeating-linear-gradient(120deg,transparent 0 4px,var(--v7-role-surface-raised) 4px 6px);
+}
+.v7-exam-row-detail {border-top:1px solid var(--v7-role-border-subtle);}
+.v7-exam-form fieldset {
+ min-width:0;
+ margin:0;
+ padding:var(--v7-space-3) 0;
+ border:0;
+ border-top:1px solid var(--v7-role-border-subtle);
+}
+.v7-exam-form legend {font-weight:600;}
+.v7-exam-form-pair {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--v7-space-2);}
+.v7-exam-form .v7-field {width:100%;min-width:0;min-height:44px;}
+.v7-exam-check,.v7-exam-form summary {
+ min-height:44px;
+ padding-block:var(--v7-space-2);
+ display:flex;
+ align-items:center;
+ gap:var(--v7-space-2);
+}
+/* N251: the app's disclosure look (Disclosure.tsx): a bold Supporting label and a chevron, no native marker. */
+.v7-exam-disclosure > summary {display:flex;justify-content:space-between;list-style:none;cursor:pointer;font-size:var(--v7-type-supporting);font-weight:600;}
+.v7-exam-disclosure > summary::-webkit-details-marker {display:none;}
+.v7-exam-disclosure > summary > svg {flex:none;}
+.v7-exam-disclosure[open] > summary > svg {transform:rotate(180deg);}
+.v7-exam-options {max-height:16rem;overflow:auto;}
+.v7-exam-setup-rows li {display:flex;justify-content:space-between;flex-wrap:wrap;gap:var(--v7-space-2);}
+#exam-ledger-rows {scroll-margin-top:8rem;}
+.v7-exam-picker .v7-field {min-height:44px;}
+@media(min-height:680px) {
+ .v7-exam-summary {
+  position:sticky;
+  top:calc(108px + var(--v7-safe-top,env(safe-area-inset-top)));
+  z-index:6;
+ }
+ #exam-ledger-rows {scroll-margin-top:15rem;}
+}
+/* N251: the exam tutor's title matches the checkpoint tutor's (tutor.css .tutor-header-title strong); the phase
+   colours only the status line. */
+.lemma-tutor .v7-exam-tutor-title {display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;max-width:100%;
+ min-height:var(--v7-touch);padding:0 var(--v7-space-2);border:0;border-radius:var(--v7-radius-xs);background:none;color:var(--v7-role-text-primary);cursor:pointer;text-align:center;}
+.lemma-tutor .v7-exam-tutor-title > :is(strong,small) {display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lemma-tutor .v7-exam-tutor-title > strong {font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
+.lemma-tutor .v7-exam-tutor-title > small {font:600 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);color:var(--v7-role-text-secondary);}
+.lemma-tutor .v7-exam-tutor-title[data-phase="map"] > small {color:var(--v7-role-selection-fg);}
+.lemma-tutor .v7-exam-tutor-title[data-phase="screen"] > small {color:var(--v7-role-status-warning);}
+.lemma-tutor .v7-exam-tutor-title[data-phase="teach"] > small {color:var(--v7-role-action-bg);}
+.lemma-tutor .v7-exam-tutor-title[data-phase="verify"] > small {color:var(--v7-role-status-success);}
+.lemma-tutor .v7-exam-chat-notice {margin:var(--v7-space-3) var(--v7-space-1) 0;}
+.lemma-tutor .v7-exam-composer-actions {flex:none;padding:var(--v7-space-1) var(--v7-space-2);gap:var(--v7-space-1);}
+.lemma-tutor .v7-exam-composer-actions>.v7-button {padding-inline:var(--v7-space-2);}
+.lemma-tutor [data-saved="true"] {color:var(--v7-role-status-success);}

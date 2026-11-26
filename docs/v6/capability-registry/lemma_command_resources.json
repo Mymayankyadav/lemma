@@ -837,6 +837,137 @@
           "end_fold"
         ]
       }
+    },
+    {
+      "resource": "exam_sittings",
+      "command_fn": "exam_sitting_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "set_disposition",
+          "activate",
+          "pause",
+          "finish",
+          "reopen",
+          "cancel"
+        ],
+        "fields": [
+          "project",
+          "project_id",
+          "title",
+          "starts_at",
+          "time_zone",
+          "duration_minutes",
+          "study_minutes",
+          "last_study_at",
+          "objective",
+          "pass_marks",
+          "total_marks",
+          "format",
+          "sources",
+          "blueprint",
+          "blueprint_version",
+          "ledger",
+          "rows",
+          "activate",
+          "status",
+          "phase",
+          "card_mode",
+          "bookmark",
+          "plan_note",
+          "next_question",
+          "activated_at",
+          "paused_at",
+          "finished_at",
+          "happened",
+          "result_marks",
+          "result_note"
+        ]
+      }
+    },
+    {
+      "resource": "exam_attempts",
+      "command_fn": "exam_attempt_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "record",
+          "correct",
+          "void",
+          "restore"
+        ],
+        "fields": [
+          "sitting_id",
+          "project_id",
+          "row_key",
+          "blueprint_version",
+          "kind",
+          "prompt",
+          "delivery",
+          "delivery_ref",
+          "outcome",
+          "marks_awarded",
+          "marks_possible",
+          "independence",
+          "hint_level",
+          "novelty",
+          "timed",
+          "seconds",
+          "scoring",
+          "confidence",
+          "learner_confirmed",
+          "concept",
+          "level",
+          "session",
+          "session_id",
+          "note",
+          "occurred_at",
+          "reason",
+          "corrected_at",
+          "corrected_reason",
+          "voided_at",
+          "void_reason"
+        ]
+      }
+    },
+    {
+      "resource": "card_ideas",
+      "command_fn": "card_idea_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "save",
+          "update",
+          "draft",
+          "link",
+          "dismiss",
+          "restore"
+        ],
+        "fields": [
+          "project",
+          "project_id",
+          "sitting_id",
+          "target",
+          "concept",
+          "level",
+          "reason",
+          "front",
+          "back",
+          "type",
+          "kind",
+          "checkpoint",
+          "card",
+          "proposal",
+          "evidence",
+          "sightings",
+          "status",
+          "proposal_id",
+          "note_id",
+          "resolved_at"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

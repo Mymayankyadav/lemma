@@ -1,0 +1,69 @@
+{
+  "buildIndexSha256": "a553e7af3670a0136d8c8a16a187ab0e0a3b545a51448482c38c4a32f1d4a98f",
+  "cpuThrottleRate": 4,
+  "decision": "Keep the existing selection path. Both arms had 34.6 ms combined frame p95, and there was no repeatable benefit between batches. The empty-editor 32 ms target remains open.",
+  "interleavedABBA": {
+    "arms": {
+      "baseline": {
+        "firstHalf": {
+          "domP95": 27,
+          "frameP95": 27.899999998509884,
+          "samples": 25,
+          "workerP95": 3.300000000745058
+        },
+        "pooled": {
+          "domP95": 30.199999999254942,
+          "frameP95": 34.599999997764826,
+          "samples": 50,
+          "workerP95": 6
+        },
+        "secondHalf": {
+          "domP95": 102.19999999925494,
+          "frameP95": 108.30000000074506,
+          "samples": 25,
+          "workerP95": 8.399999998509884
+        }
+      },
+      "collapse": {
+        "firstHalf": {
+          "domP95": 26.199999999254942,
+          "frameP95": 28.5,
+          "samples": 25,
+          "workerP95": 3.199999999254942
+        },
+        "pooled": {
+          "domP95": 31.300000000745058,
+          "frameP95": 34.600000001490116,
+          "samples": 50,
+          "workerP95": 4.199999999254942
+        },
+        "secondHalf": {
+          "domP95": 64.40000000223517,
+          "frameP95": 65.5,
+          "samples": 25,
+          "workerP95": 6.199999999254942
+        }
+      }
+    },
+    "candidate": "Swap native setBaseAndExtent for native collapse only for a collapsed Tutor rich-answer caret.",
+    "matchedCaretCount": 100,
+    "protocol": "Same previous editor path and refreshed empty draft, one cold warmup excluded, 50 warm virtual key taps per arm, unchanged scroll measurement and backward range paths. Each tap asserts the collapsed caret after the q. Each arm has one pooled 50-tap result. The 25-tap halves partition that pooled result and are not additional observations.",
+    "resultSha256": "5cf218874558be973d162322d4014400462cb2fe1a1f3361043e434eba27ebab"
+  },
+  "scope": "Diagnostic profiling and interleaved DOM caret experiment on the unchanged local production bundle. This is not the final timing gate or a physical phone result.",
+  "sourceCommit": "0e64b7750406f957f8beb4960fb3d2e3082f4519",
+  "trace": {
+    "cpuProfileSha256": "fb8eaaeeff46d07d5077f553e61fd1bbd743d2bd73572bd057f06e9b5cd1a40e",
+    "nativeCaretSetterCpuSampledMsAcrossSlowestSix": 49.58,
+    "rafP95Ms": 38.8,
+    "rendererSource": "TutorComposer selectField \u2192 TutorAnswerEditor setTutorAnswerSelection \u2192 Selection.setBaseAndExtent.",
+    "topSixClickToDomRangeMs": [
+      13.8,
+      19.9
+    ],
+    "traceSha256": "9cdd3f90825182e5ee051a1a29157ce655217a74f33b1fe1d25b36a8799945a6",
+    "warmTaps": 20
+  },
+  "version": 1,
+  "workerAssetSha256": "29bf9d0984c5eed95226c3d99d3e4ea53a8081ca279cd1c2262d1604151e6c56"
+}

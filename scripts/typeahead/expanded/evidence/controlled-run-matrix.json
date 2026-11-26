@@ -1,0 +1,77 @@
+{
+  "common": {
+    "accumulate": 1,
+    "globalSequencesPerUpdate": 64,
+    "learningRate": 0.0004,
+    "logitChunk": 4096,
+    "microbatch": 32,
+    "ranks": 2,
+    "scheduleTokens": 1000000000,
+    "seed": 7,
+    "sequenceLength": 512,
+    "tokenizer": "frozen nested-development training documents only, one SHA-256 for all three pools",
+    "validationAndTest": "byte-identical group, document and token manifests across controlled pools"
+  },
+  "engineeringAllocatedUpperBoundHours": 1.7,
+  "finalReplay": "Disjoint held-out group schedule frozen before model evaluation, with previously inspected diagnostics excluded.",
+  "largerAllocatedReservedHours": 0,
+  "matchedControls": "Compare all data-size and capacity controls to the exact 100M large-primary checkpoint.",
+  "plannedPrimaryAllocatedUpperBoundHours": 9.77,
+  "runs": [
+    {
+      "arm": "large-primary",
+      "candidate": "primary",
+      "pool": "prepared",
+      "processedTargets": 500000000,
+      "reservedGpuHours": 5.0,
+      "retainTargetCheckpoints": [
+        100000000,
+        500000000
+      ]
+    },
+    {
+      "arm": "development-primary",
+      "candidate": "primary",
+      "pool": "prepared-dev",
+      "processedTargets": 100000000,
+      "reservedGpuHours": 0.96,
+      "retainTargetCheckpoints": [
+        100000000
+      ]
+    },
+    {
+      "arm": "current-sized-primary",
+      "candidate": "primary",
+      "pool": "prepared-reference",
+      "processedTargets": 100000000,
+      "reservedGpuHours": 0.96,
+      "retainTargetCheckpoints": [
+        100000000
+      ],
+      "targetUniqueWords": 8489412
+    },
+    {
+      "arm": "capacity-reference",
+      "candidate": "capacity-reference",
+      "pool": "prepared",
+      "processedTargets": 100000000,
+      "reservedGpuHours": 0.65,
+      "retainTargetCheckpoints": [
+        100000000
+      ]
+    },
+    {
+      "arm": "role-adaptation",
+      "candidate": "primary",
+      "initializeFrom": "large-primary validation-selected checkpoint",
+      "learningRate": 0.0001,
+      "lossTargets": "reply only",
+      "pool": "prepared",
+      "processedTargets": 20000000,
+      "reservedGpuHours": 0.5,
+      "separateOptimizerScheduleTokens": 20000000
+    }
+  ],
+  "selection": "Keep the exact exposure checkpoints separate from validation-selected product weights. Choose quantization on validation only.",
+  "status": "planned, pending corrected corpus and encoded-membership audit"
+}

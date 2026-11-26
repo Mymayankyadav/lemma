@@ -1,9 +1,12 @@
-import {downloadTutorImage,tutorFollowupFields,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
+import {downloadTutorImage,examTutorImageRows,tutorFollowupFields,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
 import {setTimeout as delay} from 'node:timers/promises'
 import {tutorGrantHash, tutorHandoffIds} from '../_shared/tutor-connector.ts'
+import {handoffExam} from './exam.ts'
+import {EXAM_HANDOFF_NOTE} from './rules.ts'
 import type {Context} from './db.ts'
 import {tutorInputSchemas} from './tutor-profile.ts'
 import {QUESTIONNAIRE_PURPOSES,questionnaireIssues} from '../_shared/tutor-questionnaire.ts'
+import {answerAidIssues} from '../_shared/tutor-answer-aids.ts'
 import type {StudyInput} from './tools/study.ts'
 
 export const TUTOR_NEXT_WAIT_MS = 25_000
@@ -21,6 +24,23 @@ export const QUESTIONNAIRE_NOTE=[
   'Say in the reply that a quick questionnaire is attached. The learner sees it under your reply and can answer later; nothing they type is lost.',
   'Read the answers with get(what=tutor_questionnaires, id=<handoff ID>): each has state unseen, started or complete, and its answers (text, an option index, or option indices).',
   'Use them to judge the learner: choose the next question, decide what to reteach, and record what they showed with save_progress. Do not grade unanswered questions.',
+].join(' ')
+
+/**
+ * N234 (Owner: "tutor is aware of questions he can provide lot safe phrases that can act like boiler plate"): what the
+ * tutor is told about answer aids with every handoff.
+ */
+export const ANSWER_AID_NOTE=[
+  'Answer aids (optional): with your reply you may attach aids for the learner\'s next answer: wording the keyboard may suggest, the terms and symbols of your question, and terms to withhold.',
+  'Use study with command {schemaVersion:1,resource:"tutor_answer_aids",target:{id:<same handoff ID>},operationId:<fresh UUID>,operation:"set",patch:{level,wording,terms,symbols,withhold,ranking}}. Setting again replaces the earlier aids.',
+  'level: scaffold (openers, connectives between given facts, closing lines), light (terms and symbols only) or none. Lower it as the learner masters the concept; Lemma also fades it with their mastery.',
+  'wording: up to 24 phrases of up to 80 characters of plain prose, no maths markup, for example "Let U be an open set in Y." or "which is what we wanted to show." terms: up to 40 words or short noun phrases of the question. symbols: up to 16 variables or short expressions of the question.',
+  'withhold: up to 24 words or phrases that would reveal the method, a witness or the conclusion (for example complement, finite subcover). They are never suggested, at any prefix, and wording or terms may not contain them.',
+  'Never put a step of the solution, the key idea or the conclusion in wording. Accepted wording is tagged in the learner\'s answer so you can tell scaffolding from their reasoning.',
+  'Optional ranking: {version:1,hints:[{id,entry,kind,aliases?,priority,role,scope?}],declaredSymbols:[{symbol,role,ambient?,domain?,codomain?,binder?:{id,parent?}}]}. Kind is word, phrase or symbol; priority is prefer, neutral or deemphasize; role is given, learner, neutral, alternative or goal. Use one stable ID per entry. Scope may specify subject, step, mode (prose or equation), prefixes and phraseStates.',
+  'Declare symbol roles set, map, ambient, bound or unknown. Use an existing binder ID as parent for a nested scope. Leave uncertain relations unspecified and identify alternatives explicitly. Priorities only rank eligible suggestions. Withhold always overrides priority.',
+  'For an uncertain acknowledgement retry the identical operationId and payload. To undo the latest changed set on this handoff, use a fresh operationId with operation:"undo", expectedVersion from the current aid, and patch:{operationId:<original set operation ID>}.',
+  'Read the aids and the current subject and step scope IDs with get(what=tutor_answer_aids, id=<handoff ID>).',
 ].join(' ')
 
 /**
@@ -43,6 +63,7 @@ const studyInstructions = [
   'After a completed receipt, immediately call get(what=tutor_next, id=<same handoff ID>) to wait up to 25 seconds for the learner to answer in Lemma.',
   'If it returns a new id, read that handoff with get(what=tutor_turn, id=<new id>) and repeat the teach-and-reply flow. If id is null, call tutor_next again using the same id. Keep listening for about 10 minutes in total, or until the learner says stop. Then tell them where to find the question.',
   QUESTIONNAIRE_NOTE,
+  ANSWER_AID_NOTE,
   FOLLOWUP_NOTE,
 ].join(' ')
 
@@ -71,6 +92,20 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     '22023': 'Invalid questionnaire, or a reply already carries two questionnaires.',
     '23505': 'This questionnaire ID is already used for a different questionnaire. Use a fresh operationId.',
   }
+  const answerAidErrors: Record<string, string> = {
+    '40001': 'Reply before attaching aids, or read the current aid before retrying a version conflict.',
+    '22023': 'Invalid answer aids.',
+    '23505': 'This answer aid operationId is already used. Retry an identical request or use a fresh operationId.',
+  }
+  async function answerAids(id: unknown, command: Record<string, unknown>) {
+    const {turnId, grantOperationId} = tutorHandoffIds(id)
+    const {data, error} = await c.db.rpc('tutor_answer_aid_connector', {
+      p_owner: c.userId, p_connector_hash: await tutorGrantHash(connectorSecret),
+      p_grant_operation_id: grantOperationId, p_command: {...command, turnId},
+    })
+    if (error) throw new Error(answerAidErrors[String(error.code)] ?? unavailable)
+    return data
+  }
   async function questionnaires(id: unknown, command: Record<string, unknown>) {
     const {turnId, grantOperationId} = tutorHandoffIds(id)
     const {data, error} = await c.db.rpc('tutor_questionnaire_connector', {
@@ -92,25 +127,38 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     return data as {followups: {id: string; body: string; createdAt: string}[]; unseen: number}
   }
 
-  async function followupFields(id: unknown) {
-    const extra = await readFollowups(id).catch(()=>null)
+  async function followupFields(id: unknown, turn:{examSittingId?:string;examProjectId?:string;sittingStatus?:string;examQuestionnaireCursor?:string}) {
+    const [extra, exam] = await Promise.all([readFollowups(id).catch(()=>null), handoffExam(c, tutorHandoffIds(id).turnId, undefined, turn.examSittingId).catch(()=>null)])
+    const instructions = extra ? studyInstructions : studyInstructions+' The follow-ups could not be loaded. Retry get(what=tutor_followups, id=<handoff ID>) before replying.'
+    const examStatus=exam&&'status' in exam?exam.status:turn.sittingStatus
+    const dedicated=!!turn.examProjectId
+    const examInstructions=examStatus==='planned'
+      ? ' The sitting is planned. Help draft its scored blueprint from the learner’s sources and ask before activating.'
+      : examStatus==='paused'
+      ? ' The sitting is paused. Answer in ordinary-study style and ask whether the learner wants to resume exam prep. If the learner submitted a bound questionnaire, grade only answers they actually gave and use the original deliveryRef. Never score missing answers or an expired timer as incorrect.'
+      : examStatus&&examStatus!=='active'
+      ? ' The sitting is '+examStatus+'. Acknowledge any late questionnaire answers as saved. Leave them unscored unless the learner reopens the sitting. Answer in ordinary-study style.'
+      : exam ? ' '+EXAM_HANDOFF_NOTE+(dedicated?' In this exam thread you may set timedSeconds on a reply. Read answerMeta.seconds and overtime when provided. A paused or expired timer is never a failure. To bind a diagnose or check questionnaire, put examRows next to questions: [{questionId,rowKey,scoringKey,rubricSteps}]. Keep every scoring key outside learner-visible questions. Grade the private examQuestionnaireAnswers on the next handoff.':'') : ''
     return {
+      ...(exam ? {exam} : {}),
       ...tutorFollowupFields(extra?.followups),
-      instructions:extra ? studyInstructions : studyInstructions+' The follow-ups could not be loaded. Retry get(what=tutor_followups, id=<handoff ID>) before replying.',
+      instructions:instructions+examInstructions+(turn.examQuestionnaireCursor
+        ? ' More unscored questionnaire answers are available. Read the next page with get(what=tutor_turn, id=<this handoff ID>, cursor=<examQuestionnaireCursor>).'
+        : ''),
     }
   }
 
   return {
-    async content(id:unknown) {
+    async content(id:unknown, cursor?:string) {
       if(id===undefined) {
         const pending=await request(null,null)
         return [{type:'text' as const,text:JSON.stringify({pending,instructions:'Read the pending handoff with get(what=tutor_turn, id=<returned id>).'})}]
       }
-      const turn=await execute(id,'get')
+      const turn=await execute(id,'get',cursor===undefined?{}:{cursor})
       const rows=turn?.status==='pending'&&turn.hasAttachments===true
-        ?await tutorImageRows(c.db,{turnId:tutorHandoffIds(id).turnId,ownerId:c.userId}):[]
+        ?turn.examProjectId ? examTutorImageRows(turn,c.userId) : await tutorImageRows(c.db,{turnId:tutorHandoffIds(id).turnId,ownerId:c.userId}):[]
       return tutorTurnContent(c.db,turn,rows,attachmentId=>String(id)+'.'+attachmentId,
-        turn?.status==='pending'?()=>followupFields(id):undefined)
+        turn?.status==='pending'?()=>followupFields(id,turn):undefined)
     },
     async attachment(id:unknown) {
       if(typeof id!=='string')throw new Error('Tutor image is unavailable.')
@@ -119,7 +167,8 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
       const turn=await execute(handoff,'get')
       if(turn?.status!=='pending'&&turn?.status!=='completed')throw new Error('Tutor image is unavailable.')
       const {turnId}=tutorHandoffIds(handoff)
-      const [row]=await tutorImageRows(c.db,{turnId,ownerId:c.userId,attachmentId})
+      const [row]=turn.examProjectId ? examTutorImageRows(turn,c.userId,attachmentId)
+        : await tutorImageRows(c.db,{turnId,ownerId:c.userId,attachmentId})
       if(!row)throw new Error('Tutor image is unavailable.')
       return [{type:'text' as const,text:JSON.stringify({id,kind:row.kind})},await downloadTutorImage(c.db,row)]
     },
@@ -144,7 +193,7 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
           instructions: 'If one handoff is pending, read it with get(what=tutor_turn, id=<returned id>). If several are pending, ask the learner for the handoff ID shown in Lemma.'})
       }
       const turn=await execute(id,'get')
-      return JSON.stringify(turn?.status==='pending'?{...turn,...await followupFields(id)}:turn)
+      return JSON.stringify(turn?.status==='pending'?{...turn,...await followupFields(id,turn)}:turn)
     },
     /** N228: the follow-up messages on the handoff's turn (marks them seen). */
     async followups(id: unknown) {
@@ -154,13 +203,37 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     async questionnaires(id: unknown) {
       return JSON.stringify(await questionnaires(id, {operation: 'list'}))
     },
+    /** N234: the aids the tutor set on this thread's replies. */
+    async answerAidList(id: unknown) {
+      return JSON.stringify(await answerAids(id, {operation: 'list'}))
+    },
+    async setAnswerAids(input: StudyInput) {
+      const cmd = input.command
+      const patch = cmd.patch ?? {}
+      if (cmd.operation === 'undo') {
+        if (Object.keys(patch).length !== 1 || typeof patch.operationId !== 'string' ||
+            !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(patch.operationId) || !cmd.expectedVersion) {
+          throw new Error('Undo needs the original set operationId in the patch and the current expectedVersion.')
+        }
+        return answerAids(cmd.target?.id, {operation: 'undo', aidId: cmd.operationId,
+          undoOperationId: patch.operationId, expectedVersion: cmd.expectedVersion})
+      }
+      if (cmd.operation !== 'set') throw new Error('Use set or undo for tutor answer aids.')
+      const issues = answerAidIssues(patch)
+      if (issues.length) throw new Error('Invalid answer aids: ' + issues.join('; ').slice(0, 300))
+      return answerAids(cmd.target?.id, {operation: 'set', aidId: cmd.operationId, ...patch,
+        ...(cmd.expectedVersion === undefined ? {} : {expectedVersion: cmd.expectedVersion})})
+    },
     async attachQuestionnaire(input: StudyInput) {
       const cmd = input.command
       if (cmd.operation !== 'create') throw new Error('Use create for tutor questionnaires.')
-      const patch = cmd.patch ?? {}
+      const {examRows,...patch} = cmd.patch ?? {}
       const issues = questionnaireIssues(patch)
       if (issues.length) throw new Error('Invalid questionnaire: ' + issues.join('; ').slice(0, 300))
-      return questionnaires(cmd.target?.id, {operation: 'create', questionnaireId: cmd.operationId, ...patch})
+      if(examRows!==undefined&&(!Array.isArray(examRows)||examRows.length<1||examRows.length>10))
+        throw new Error('examRows must contain 1–10 private question bindings')
+      return questionnaires(cmd.target?.id, {operation: 'create', questionnaireId: cmd.operationId, ...patch,
+        ...(examRows===undefined?{}:{examRows})})
     },
     async write(input: StudyInput) {
       const cmd = input.command

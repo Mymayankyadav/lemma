@@ -72,6 +72,25 @@ describe('N239 MCP integrity',()=>{
   await saveProgress(c,{project:'proofs',session:'S1',operationId,events:[{kind:'recheck',text:'Proof',outcome:'demonstrated'}]});
   expect(c.batch[0]).toMatchObject({fn:'save_progress',args:{operation_id:operationId,p_user_id:OWNER}});
  });
+ it('returns the complete review correction snapshot as parseable JSON through the server',async()=>{
+  const c=ctx({lemma_command_resources:[{resource:'review_corrections',mcp_ok:true,
+   schema:{operations:['correct','void'],fields:['reason','replacementState']}}]});
+  const snapshot={review:{id:'42',cardId:'card',rating:3},card:{id:'card',version:7,
+   schedule:{state:2,due:'2026-12-01T00:00:00Z',stability:5,difficulty:4,
+    last_review:'2026-11-25T08:00:00Z',step:0,reps:3,lapses:0}},expectedVersion:7,readAt:'2026-11-25T09:00:00Z'};
+  c.db.rpc=vi.fn(async(name,args)=>{
+   if(name==='mcp_seen')return {data:null,error:null};
+   expect(name).toBe('n239_mcp_review_correction_snapshot');
+   expect(args).toEqual({p_user:OWNER,p_review:'42'});
+   return {data:snapshot,error:null};
+  });
+  buildServer(c);
+  const reply=await callbacks.get('get')!({what:'review_corrections',id:'42'},{mcpReq:{signal:new AbortController().signal}});
+  expect(reply.isError).not.toBe(true);
+  const parsed=JSON.parse(reply.content[0].text);
+  expect(parsed).toMatchObject({resource:'review_corrections',items:[snapshot],total:1,nextCursor:null});
+  expect(parsed.guidance).toContain('expectedVersion');
+ });
  it('uses the committed progress receipt even when the session has advanced since the original call (#1819)',async()=>{
   const c=ctx({sessions:[{id:'s',project_id:'p',number:1,resume_step:8}]});
   c.db.rpc=vi.fn(async()=>({data:{action:42,result:{step:3,events:2}},error:null}));

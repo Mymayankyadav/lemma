@@ -1,0 +1,69 @@
+{
+  "baselineCommit": "5b0b140f3153e62fb9b73bb75b5396560bc55e94",
+  "benchmarkScriptSha256": "ca6f649496bf1db5081ebc0f15616838a375654d0df2ab7965a7e7b4faeb2d1e",
+  "countsBytes": 72921088,
+  "countsSha256": "2ff32d155f7d4e33a0bf7c9bf87b6c50901dcda1ca35e70d62d399e04032586e",
+  "developmentCorpusSha256": "cf2e81d637fb54af5ea092b796dcd98d506c6bd16c5d8d7f57e7724e07fcc099",
+  "fixture": {
+    "train": {
+      "documents": 2166,
+      "words": 2001087
+    },
+    "validation": {
+      "documents": 25,
+      "words": 20263
+    }
+  },
+  "fixtureCorpusSha256": "7f0f9dd57a4c92093e1b047671e5ca9769c876d52773c4008d33e1b70c0d3166",
+  "implementationSha256": {
+    "baselineSha256": "499790c9ca76c62626ea9d790e32e7cc088f318ee72322c19ab60b8d4b18c38c",
+    "candidateSha256": "61f2cc7a116f06a5cc6fbe3c70e7ab07fa61d976357e71705cf40a2e447f89c4"
+  },
+  "outputs": {
+    "ngram5-count": {
+      "manifestSha256": "ce55b7c7ce498bc8d1837f36c0ef3956dd92b0aa8d5b9bafdae07b2da015c822",
+      "modelBytes": 20971520,
+      "modelSha256": "96de0781a86cd258ef042e827d204fc8c9247ad772feb1c56e188cf237748571",
+      "orderedVocabularySha256": "7f3bca81800228b69c6e9f58e9cf426f325e5d107cd2ad676f86154b55f029ba",
+      "validationTargets": 18173,
+      "vocabularyFileSha256": "01fddfc6c4659d21fe22e2cb890289c4a93d728f6b1da8a7e1d142c3d9fef6e2"
+    },
+    "ngram5-entropy": {
+      "manifestSha256": "2dfb70df2070195aefc4671b06368811369eb5b992804b12cf2ba6698c49641d",
+      "modelBytes": 20971516,
+      "modelSha256": "495cd51464ce162ebe0249c12cebf6692aa8c74f009d225f5831376b5bec5f24",
+      "orderedVocabularySha256": "7f3bca81800228b69c6e9f58e9cf426f325e5d107cd2ad676f86154b55f029ba",
+      "validationTargets": 18173,
+      "vocabularyFileSha256": "01fddfc6c4659d21fe22e2cb890289c4a93d728f6b1da8a7e1d142c3d9fef6e2"
+    }
+  },
+  "packers": {
+    "baseline": {
+      "cachePolicy": {
+        "countsCacheKiB": 262144,
+        "rowsCacheKiB": 262144
+      },
+      "elapsedSeconds": 149.256735914998,
+      "peakRssBytes": 1789259776
+    },
+    "candidate": {
+      "cachePolicy": {
+        "countsCacheKiB": 2097152,
+        "observedCgroupLimitBytes": 17179869184,
+        "rowsCacheKiB": 2097152
+      },
+      "elapsedSeconds": 161.4565622959999,
+      "peakRssBytes": 1793310720
+    }
+  },
+  "rawPairedReportSha256": "651f78e4f0944e70dda51c6a382b54f312088fcb29c70e922f5a2df363ff9920",
+  "result": "Equal model, ordered vocabulary and manifest bytes with identical numeric metrics. The 72,921,088-byte count DB fits the old cache, so this verifies equivalence and does not show a speedup.",
+  "runOrder": [
+    "baseline",
+    "candidate"
+  ],
+  "scope": "Paired local order-five packing on audited development train and validation subsets; no final test data.",
+  "sqliteVersion": "3.53.1",
+  "timingConditions": "Both ran serially on the same local host while the independent full count was active. Paired timings are local diagnostics only.",
+  "version": 1
+}

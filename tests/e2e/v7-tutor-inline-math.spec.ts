@@ -70,11 +70,11 @@ test('the words before a typed equation order its readings', async ({page}) => {
     .toHaveAccessibleName('Insert equation x^{2}+y^{2}=1');
 });
 
-test('symbol names, commands and short forms take the slots; next words come without the idle symbols', async ({page}) => {
+test('symbol names can take the slots while idle prose keeps the strip clear of symbols', async ({page}) => {
   const {keyboard} = await openAnswer(page);
   const symbols = keyboard.getByRole('group', {name: 'Symbol suggestions', exact: true});
   const quick = keyboard.getByRole('group', {name: 'Quick math symbols', exact: true});
-  await expect(quick).toBeVisible();
+  await expect(quick).toHaveCount(0);
   await page.keyboard.type('For eps');
   await expect(symbols.getByRole('button', {name: 'Insert ε (Epsilon)', exact: true})).toBeVisible();
   await expect(quick).toHaveCount(0);
@@ -84,9 +84,7 @@ test('symbol names, commands and short forms take the slots; next words come wit
   await page.keyboard.press('Backspace');
   await page.keyboard.type('x ');
   // At a word boundary with next words, the words have the slots and ∀ ∈ ⇒ are not squeezed beside them.
-  const words = keyboard.getByRole('group', {name: 'Word suggestions', exact: true});
-  await expect(words.or(quick).first()).toBeVisible();
-  await expect.poll(async () => await words.count() + await quick.count()).toBe(1);
+  await expect(quick).toHaveCount(0);
 });
 
 test('equation mode is paper in the keys\' place: symbols as they are drawn, the equation on Read', async ({page, context}) => {

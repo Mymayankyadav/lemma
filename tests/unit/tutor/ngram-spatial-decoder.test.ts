@@ -2,6 +2,7 @@ import {readFileSync} from 'node:fs';
 import {afterEach, beforeAll, describe, expect, test} from 'vitest';
 import {padEdit} from '../../../src/features/pad/padEdit';
 import {parseLexiconTsv} from '../../../src/features/tutor/writingAid/decoder/completeLexicon';
+import {createDecoderLexicon, searchDecoderLexicon} from '../../../src/features/tutor/writingAid/decoder/lexicon';
 import {
   clearKeyTouches, decodeWord, keyCentre, languageLog, recordKeyTouch, setDecoderContext, setDecoderLexicon, spatialLog,
   touchesFor, writingDecoderReady,
@@ -140,6 +141,18 @@ describe('proof-steering words', () => {
 });
 
 describe('complete lexicon', () => {
+  test('indexed top completions match a stable full scan for literal Unicode and compound prefixes', () => {
+    const spellings = ['a', 'apple', 'apt', 'aé', 'a𐐨', 'bother', 'école', 'étale', 'e\u0301cole', 'e\u0301tale',
+      "can't", "can’t", "can’tfail", "can’tstop", 'pre-image', 'pre-ordered', 'pre−image', 'pre−ordered'];
+    const entries = [...spellings].sort().map((word, index) => ({word, frequency: index % 3 === 0 ? 9 : 5}));
+    const index = createDecoderLexicon({version: 1, entries});
+    for (const prefix of ['a', 'aé', 'a𐐨', 'é', 'e\u0301', 'can', "can'", 'can’t', 'pre-', 'pre−', 'absent']) {
+      const reference = entries.filter(row => row.word !== prefix && row.word.startsWith(prefix))
+        .sort((a, b) => b.frequency - a.frequency);
+      for (const limit of [1, 2, 24]) expect(searchDecoderLexicon(index, prefix, limit)).toEqual(reference.slice(0, limit));
+    }
+  });
+
   test('has the ordinary words v1 missed, keeps logic tags and rejects malformed files', () => {
     const words = new Set(lexicon.entries.map(entry => entry.word));
     for (const word of ['restate', 'restated', 'preimage', 'the', 'because']) expect(words.has(word)).toBe(true);

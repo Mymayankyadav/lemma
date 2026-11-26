@@ -8,6 +8,7 @@ import {readdir,readFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {tsImport} from 'tsx/esm/api';
 import {checkSessionProgressParity} from './fixtures/n191-session-progress-parity.mjs';
+import {checkExamParity} from './fixtures/n240-exam-parity.mjs';
 const {readRegisteredResource}=await tsImport('../../../supabase/functions/mcp/tools/registry.ts',import.meta.url);
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
 const db=new PGlite();
@@ -2242,6 +2243,7 @@ try{
 
  await checkSessionProgressParity(db,{owner,other});
  mark('session_progress','save');
+ await checkExamParity({q,role,as,owner,other,command,mcp,app,mcpPage,undo,status,mark});
  await role('service_role');
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.

@@ -1,3 +1,4 @@
+import {BackToStudy,ExamTutorStart,type TutorExamPanel} from '../exam/TutorExamTools';
 import {authGeneration,authOwner} from '../../data/authBoundary';
 import {getDemoProfile,getMode} from '../../data/mode';
 import {useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
@@ -7,12 +8,13 @@ import {MathText} from '../../ui/MathText';
 import {Button, IconButton, Sheet} from '../../ui/v7/components';
 import {useToast} from '../../ui/Toast';
 import type {TutorInkState} from './TutorInk';
-import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
+import {referencedImageIds, type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer';
 import {TutorComposer} from './TutorComposer';
+import type {TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids';
 import {TutorLayout, TutorOverview, type TutorPageContext} from './TutorLayout';
 import {TutorSelection, type TutorSelectedMessage} from './TutorMessageSelection';
 
-export type SendOptions = {includeObjective?: boolean; keepDraft?: boolean};
+export type SendOptions = {includeObjective?: boolean; keepDraft?: boolean; acceptedSpans?: readonly TutorAcceptedSpan[]};
 const hints = [
   'Hint 1 of 4. Give me a small nudge on the current question.',
   'Hint 2 of 4. Which definition or result should I use next?',
@@ -24,7 +26,8 @@ type Props = {
   page: TutorPageContext;
   turns: readonly SavedTutorTurn[];
   draft: string;
-  onChange: (text: string) => void;
+  onChange: (text: string, acceptedSpans?: readonly TutorAcceptedSpan[], persistImmediately?: boolean) => void;
+  acceptedSpans?: readonly TutorAcceptedSpan[];
   onSend: (text: string, options?: SendOptions) => Promise<void>;
   canSend: boolean;
   readOnly: boolean;
@@ -34,6 +37,7 @@ type Props = {
   hasContext: boolean;
   status: ReactNode;
   pendingStatus: ReactNode;
+  sendingText?: string;
   listenerSeenAt?: string | null;
   resumePrompt: string;
   ink?: TutorInkState;
@@ -41,6 +45,10 @@ type Props = {
   context: ReactNode;
   connection: ReactNode;
   transcript: ReactNode;
+  /** N234: the tutor's answer aids for the next answer, and the learner's mastery of the concept (0 to 1). */
+  answerAid?: TutorAnswerAid;
+  mastery?: number;
+  timedLabel?:string;
   onDeleteMessages?: (messages: readonly TutorMessageRef[]) => Promise<void>;
 };
 
@@ -50,8 +58,9 @@ function questionPreview(body: string) {
   return (paragraphs.filter(p => p.includes('?')).at(-1) || paragraphs.at(-1) || '').trim();
 }
 
-export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOnly, pending, offline,
-  status, pendingStatus, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage, onDeleteMessages}: Props) {
+export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, canSend, readOnly, pending, offline,
+  status, pendingStatus, sendingText, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage, onDeleteMessages, answerAid, mastery, timedLabel}: Props) {
+  const [examPanel,setExamPanel]=useState<TutorExamPanel>();
   const [view, setView] = useState<'overview' | 'chat'>();
   const [panel, setPanel] = useState<'context' | 'connection' | 'close' | 'question'>();
   const [headerHidden, setHeaderHidden] = useState(false);
@@ -74,7 +83,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
   const hasInk=Boolean(inkDraft?.strokes.length||inkDraft?.queuedText!==undefined||
     (refs?inkDraft?.photos.some(image=>refs.has(image.id))||inkDraft?.editingDrawing&&refs.has(inkDraft.editingDrawing.id)
       :inkDraft?.photos.length));
-  const overview = (view ?? (last || draft || hasInk ? 'chat' : 'overview')) === 'overview';
+  const overview = (view ?? (last || draft || hasInk || page.exam ? 'chat' : 'overview')) === 'overview';
   const latestCompleted = turns.filter(turn => turn.status === 'completed').at(-1);
   const latestReply = latestCompleted?.replyDeleted ? undefined : latestCompleted;
   const question = latestReply?.status === 'completed' ? latestReply.finalReply.nextQuestion || questionPreview(latestReply.finalReply.body) : '';
@@ -97,7 +106,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
     previousHeight.current = element.scrollHeight;
     previousFirst.current = first;
     previousReply.current = latestReply?.id;
-  }, [first, last?.id, last?.version, latestReply?.id, overview]);
+  }, [first, last?.id, last?.version, latestReply?.id, overview,sendingText]);
   useLayoutEffect(() => {
     const element = chat.current;
     if (!element || overview || typeof ResizeObserver === 'undefined') return;
@@ -175,6 +184,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
   const hideHeader = !overview && headerHidden;
   return <TutorLayout page={page} sequence={latestCompleted?.sequence ?? 0} offline={offline} overview={overview} headerHidden={hideHeader} listenerSeenAt={listenerSeenAt} resumePrompt={resumePrompt}
     onContext={overview?()=>setPanel('context'):undefined} claimExpiresAt={last?.status==='awaiting-tutor'?last.claimExpiresAt:undefined}
+    examPanel={examPanel} onExamPanel={setExamPanel}
     sessionActionsOpen={sessionActionsOpen} onSessionActions={setSessionActionsOpen} answerActions={setAnswerActions}
     onOverview={!overview ? () => {setSelected(new Map()); setView('overview');} : undefined}
     onQuestion={!overview && question ? () => {
@@ -194,18 +204,32 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
         onWrite={!first && !readOnly ? () => setView('chat') : undefined}
         onBegin={() => send('Let’s study ' + page.detail.view.title + '. Start with one short question to check what I understand.', {includeObjective:true, keepDraft:true})}/>
         : <>
-          {!first && !readOnly && <div className="turn"><div className="msg a">
+          {!first && !readOnly && !sendingText && (page.exam
+            ? <ExamTutorStart sitting={page.exam} disabled={!canSend} onSend={text=>send(text,{keepDraft:true})}/>
+            : <div className="turn"><div className="msg a">
             <div className="bd"><MathText source={step || page.detail.view.title}/></div>
-          </div></div>}
+          </div></div>)}
           <TutorSelection.Provider value={{selected, select}}>{transcript}</TutorSelection.Provider>
+          {sendingText&&<div className="ans" aria-label="Outgoing message">
+            <div className="msg u"><div className="bd">{sendingText}</div></div><span className="ctag">Sending…</span>
+          </div>}
           {pending && <div className="tutor-message-status" role="status">
             {pendingStatus}
           </div>}
         </>}
     </div>
     {panel !== 'context' && draftWarning && <p className="composer-status" role="alert">{draftWarning}</p>}
+    {!overview&&page.exam&&<div className="v7-exam-actions v7-exam-composer-actions" aria-label="Exam actions">
+     {timedLabel&&<span className="v7-exam-chip" aria-live="off">{timedLabel}</span>}
+     <Button small disabled={!canSend||readOnly} onClick={()=>send('Give me the next hint for this question.',{keepDraft:true})}>Hint</Button>
+     <Button small disabled={!canSend||readOnly} onClick={()=>send('Skip this item and record it as unknown. Give me the next question.',{keepDraft:true})}>Skip</Button>
+     {page.exam.status!=='finished'&&<>
+      <Button small disabled={offline} onClick={()=>setExamPanel('budget')}>I have {page.exam.study_minutes??0} min</Button>
+      <BackToStudy project={page.project} sitting={page.exam}/>
+     </>}
+    </div>}
     {!overview &&
-      <TutorComposer inputScopeKey={inputScopeKey} ink={ink} canQueueImage={canQueueImage} value={draft} onChange={onChange} onSend={send} canSend={canSend} suspended={selecting}
+      <TutorComposer inputScopeKey={inputScopeKey} ink={ink} canQueueImage={canQueueImage} value={draft} acceptedSpans={acceptedSpans} onChange={onChange} onSend={(text, acceptedSpans) => send(text, {acceptedSpans})} canSend={canSend} suspended={selecting}
         headerHidden={hideHeader} onToggleHeader={()=>setHeaderHidden(hidden=>!hidden)}
         sessionActionsOpen={sessionActionsOpen} onCloseActions={()=>setSessionActionsOpen(false)} answerActions={answerActions}
         hintLevel={hintIndex + 1}
@@ -215,7 +239,9 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
             'Which symbols or proof phrases would help me write my answer to the current question?';
           send(request, {keepDraft:true});
         }}
-        notationContext={[page.detail.view.title, step, question]} readOnly={readOnly} pending={pending} hasContext={hasContext}
+        notationContext={[question, page.detail.view.title, step]} aidTurnId={latestReply?.id}
+        aidSubject={page.project.subject.name.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '')}
+        aidStep={page.detail.view.code + ':' + page.detail.view.currentStep} answerAid={answerAid} mastery={mastery} readOnly={readOnly} pending={pending} hasContext={hasContext}
         onContext={() => setPanel('context')}/>
     }
     {!overview && selecting && <div className="tutor-selection-bar" role="group" aria-label="Selected messages">

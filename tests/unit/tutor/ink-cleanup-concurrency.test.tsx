@@ -4,6 +4,7 @@ import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {useTutorInk} from '../../../src/features/tutor/TutorInk';
 import {authGeneration,publishAuth} from '../../../src/data/authBoundary';
 import {emptyInk,imageData,readInkDraft,removeSubmittedInk,writeInkDraft,type InkDraft,type TutorInkScope} from '../../../src/data/tutor/ink-storage';
+import {imageReference} from '../../../supabase/functions/_shared/tutor-answer';
 
 // A transaction-shaped store: reads see the last completed write, and each
 // readwrite transaction commits atomically. Separate hook instances model tabs.
@@ -67,6 +68,51 @@ describe('submitted-image cleanup (#1751)',()=>{
   await act(async()=>{await tabs[1].update(current=>({...current,strokes,drawingId:'new-drawing'}));});
   await act(async()=>{await (tabs[0].update as any)((current:InkDraft)=>removeSubmittedInk(current,new Set(['A'])),{latestStored:true});});
   expect(await readInkDraft(scope)).toMatchObject({photos:[],strokes,drawingId:'new-drawing'});
+ });
+ it('retains a newer queued answer and accepted wording until its own image is submitted',async()=>{
+  const first='11111111-1111-4111-8111-111111111111',second='22222222-2222-4222-8222-222222222222';
+  const queuedText='Let '+imageReference(second);
+  const queuedAcceptedSpans=[{start:0,end:3,text:'Let',source:'tutor' as const}];
+  await writeInkDraft(scope,{...emptyInk,inlineImages:true,photos:[photo(first)]});
+  await act(async()=>root.render(<><Tab index={0}/><Tab index={1}/></>));
+  await vi.waitFor(()=>expect(tabs.every(tab=>tab.ready)).toBe(true));
+  await act(async()=>{await tabs[1].update(current=>({...current,photos:[...current.photos,photo(second)],queuedText,queuedAcceptedSpans}));});
+  await act(async()=>{await tabs[0].update(current=>removeSubmittedInk(current,new Set([first])),{latestStored:true});});
+  const saved=await readInkDraft(scope);
+  expect(saved.photos.map(item=>item.id)).toEqual([second]);
+  expect(saved.queuedText).toBe(queuedText);
+  expect(saved.queuedAcceptedSpans).toEqual(queuedAcceptedSpans);
+  expect(tabs[0].draft.queuedText).toBe(queuedText);
+  await act(async()=>{await tabs[0].update(current=>removeSubmittedInk(current,new Set([second]),{question:queuedText,acceptedSpans:queuedAcceptedSpans}),{latestStored:true});});
+  expect(await readInkDraft(scope)).toMatchObject({photos:[],queuedText:undefined,queuedAcceptedSpans:undefined});
+ });
+ it.each(['text','provenance'])('preserves a newer queued answer that reuses the sent image but changes its %s',async change=>{
+  const id='11111111-1111-4111-8111-111111111111',original='Let '+imageReference(id);
+  const queuedText=(change==='text'?'New ':'Let ')+imageReference(id);
+  const queuedAcceptedSpans=[{start:0,end:3,text:queuedText.slice(0,3),source:'tutor' as const}];
+  const submitted={question:original,acceptedSpans:[{start:0,end:3,text:'Let',source:'word' as const}]};
+  await writeInkDraft(scope,{...emptyInk,inlineImages:true,photos:[photo(id)]});
+  await act(async()=>root.render(<><Tab index={0}/><Tab index={1}/></>));
+  await vi.waitFor(()=>expect(tabs.every(tab=>tab.ready)).toBe(true));
+  await act(async()=>{await tabs[1].update(current=>({...current,queuedText,queuedAcceptedSpans}));});
+  await act(async()=>{await tabs[0].update(current=>removeSubmittedInk(current,new Set([id]),submitted),{latestStored:true});});
+  const saved=await readInkDraft(scope);
+  expect(saved.photos.map(item=>item.id)).toEqual([id]);
+  expect(saved.queuedText).toBe(queuedText);
+  expect(saved.queuedAcceptedSpans).toEqual(queuedAcceptedSpans);
+  expect(await imageData(saved.photos[0].blob)).toBe(await imageData(photo(id).blob));
+  await act(async()=>{await tabs[0].update(current=>removeSubmittedInk(current,new Set([id]),
+   {question:queuedText,acceptedSpans:queuedAcceptedSpans}),{latestStored:true});});
+  expect(await readInkDraft(scope)).toMatchObject({photos:[],queuedText:undefined,queuedAcceptedSpans:undefined});
+ });
+ it('recognizes the confirmed answer after transcript whitespace and accepted-span normalization',()=>{
+  const id='11111111-1111-4111-8111-111111111111',question='Let '+imageReference(id);
+  const draft={...emptyInk,inlineImages:true as const,photos:[photo(id)],queuedText:'  '+question+'  ',
+   queuedAcceptedSpans:[{start:2,end:5,text:'Let',source:'tutor' as const}]};
+  expect(removeSubmittedInk(draft,new Set([id]),{question,
+   acceptedSpans:[{start:0,end:3,text:'Let',source:'tutor'}]})).toMatchObject({
+   photos:[],queuedText:undefined,queuedAcceptedSpans:undefined,
+  });
  });
  it('rejects cleanup after an account generation changes',async()=>{
   await writeInkDraft(scope,{...emptyInk,photos:[photo('A')]});

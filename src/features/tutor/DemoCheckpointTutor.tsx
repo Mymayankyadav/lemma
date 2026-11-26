@@ -1,7 +1,13 @@
+import {importedExamAttempt} from '../../data/exam/demo-assessment'
+import {getExamApi,useExamEvidence,useExamIdeas,useRefreshExam} from '../../data/exam/queries'
+import {TutorIdeaAction} from '../exam/TutorExamTools'
+import {AttemptBadge} from '../exam/AttemptBadge'
+import {TopicReview} from '../exam/TopicReview'
+import {useTimedAnswer} from '../exam/timedAnswer'
 import {Disclosure} from '../../ui/v7/Disclosure';
 import {useTutorInk} from './TutorInk';
 import {TutorAnswer,tutorAnswerText} from './TutorAnswer';
-import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
+import {referencedImageIds, type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer';
 import {rasterizeInk} from '../../ui/v7/ink/images';
 import {assertTutorInkScope,emptyInk,inkIssueText,removeSubmittedInk,tutorInkIssue,uploadTutorImage,type TutorInkScope} from '../../data/tutor/ink-storage';
 import {IMAGE_ONLY_ANSWER,removeTutorImageReferences,type TutorImageDraft} from '../../data/tutor/attachment-types';
@@ -20,16 +26,18 @@ import {Button,IconButton,Sheet} from '../../ui/v7/components'
 import {SquarePlus} from 'lucide-react'
 import {MathText} from '../../ui/MathText'
 import {chatLink,studyPrompt} from '../../lib/chat'
+import {decodeAuthoredDraft,encodeAuthoredDraft} from './writingAid/authorship'
 import {TutorChat,type SendOptions} from './TutorChat'
 import {TutorChatMessage} from './TutorMessageSelection'
 import type {TutorPageContext} from './TutorLayout'
 import {ReplyActions} from './ReplyActions'
 import {QuestionnaireButton,type QuestionnaireBackup} from './TutorQuestionnaire'
 import type {TutorQuestionnaire} from '../../../supabase/functions/_shared/tutor-questionnaire'
+import type {TutorAnswerAid} from '../../../supabase/functions/_shared/tutor-answer-aids'
 import type {TutorFollowUp} from '../../data/tutor/manual-api'
 import './replyActions.css'
 
-type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
+type Scope = {pathId:string;checkpointId:string;sittingId?:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
 type Handoff = {text:string;requestId:string}
 type FollowupDraft = {id:string;turnId:string;body:string}
 type EntryProps = {initialQuestion?:string;page?:TutorPageContext;connectorUrl?:string;connectorLoading?:boolean;scope:Scope;handoff?:Handoff;onHandoffConsumed?:(id:string)=>void}
@@ -39,39 +47,79 @@ const subscribe=(refresh:()=>void)=>{
 }
 const authKey=()=>JSON.stringify([authOwner(),authGeneration(),Boolean(authOwner()&&tutorOwnerDeleted(authOwner()!))])
 
-function useDraft(key:string,live=false) {
+function useDraft(key:string,live=false,authorship=false) {
   const storage=()=>live?localStorage:sessionStorage
   const captured=useRef({key,ownerId:live?tutorStorageOwner(key):null,generation:authGeneration()}).current
   const active=()=>!live||(captured.key===key&&captured.ownerId!==null&&tutorLocalScopeActive({ownerId:captured.ownerId,generation:captured.generation}))
+  const unpack=(raw:string)=>authorship?decodeAuthoredDraft(raw):{text:raw,spans:[] as TutorAcceptedSpan[]}
   const [draft,setDraft] = useState(() => {
     let text=''
     try { if(active())text=storage().getItem(key) ?? '' } catch {/* No stored draft is available. */}
-    return {text,unsaved:false}
+    return {...unpack(text),unsaved:false}
   })
-  function change(value: string) {
-    if(!active())return false
+  function persist(text: string, spans?: readonly TutorAcceptedSpan[]) {
+    const value=authorship?encodeAuthoredDraft(text,spans):text
     try {
       if (value&&live)writeTutorLocal({ownerId:captured.ownerId!,generation:captured.generation},key,value)
       else if (value) storage().setItem(key,value)
       else storage().removeItem(key)
-      setDraft({text:value,unsaved:false})
       return true
-    } catch {setDraft({text:value,unsaved:true});return false}
+    } catch {return false}
+  }
+  /** N232: a keystroke's draft is saved when typing pauses (and when the page is hidden or the tutor closes), not on every tap. */
+  const waiting=useRef<{value:string;spans:readonly TutorAcceptedSpan[];timer:number}|null>(null)
+  function flush() {
+    const held=waiting.current
+    if(!held)return
+    window.clearTimeout(held.timer)
+    waiting.current=null
+    if(active()&&!persist(held.value,held.spans))setDraft(current=>current.text===held.value?{...current,unsaved:true}:current)
+  }
+  const flushRef=useRef(flush);flushRef.current=flush
+  useEffect(()=>{
+    const hide=()=>{if(document.visibilityState==='hidden')flushRef.current()}
+    const leave=()=>flushRef.current()
+    document.addEventListener('visibilitychange',hide)
+    window.addEventListener('pagehide',leave)
+    return ()=>{document.removeEventListener('visibilitychange',hide);window.removeEventListener('pagehide',leave);flushRef.current()}
+  },[])
+  /** `change` saves at once (the result says whether it was saved); `typed` is for keystrokes and saves after a short pause. */
+  function change(value: string, typed=false, spans:readonly TutorAcceptedSpan[]=[]) {
+    if(!active())return false
+    if(typed){
+      setDraft({text:value,spans:[...spans],unsaved:false})
+      if(waiting.current)window.clearTimeout(waiting.current.timer)
+      waiting.current={value,spans,timer:window.setTimeout(()=>flushRef.current(),600)}
+      return true
+    }
+    if(waiting.current){window.clearTimeout(waiting.current.timer);waiting.current=null}
+    const saved=persist(value,spans)
+    setDraft({text:value,spans:[...spans],unsaved:!saved})
+    return saved
   }
   function clearIfUnchanged(expected: string) {
     if(!active())return
+    flush()
     let cleared=false,failed=false
     try {
       const saved=storage().getItem(key)
-      if(saved===expected)storage().removeItem(key)
-      cleared=saved===null||saved===expected
+      const matches=saved!==null&&unpack(saved).text===expected
+      if(matches)storage().removeItem(key)
+      cleared=saved===null||matches
     } catch {failed=true}
     setDraft(current=>{
       if(current.text!==expected)return current
-      return {text:'',unsaved:failed||(!cleared&&current.unsaved)}
+      return {text:'',spans:[],unsaved:failed||(!cleared&&current.unsaved)}
     })
   }
-  return {...draft,change,clearIfUnchanged}
+  return {...draft,change,clearIfUnchanged,flush}
+}
+
+/** N234: the demo tutor's sample answer aids (a real tutor sets its own over MCP; see docs/current/N234.md). */
+const DEMO_ANSWER_AID:TutorAnswerAid={
+  id:'00000000-0000-4000-8000-000000000234',turnId:'00000000-0000-4000-8000-000000000235',level:'scaffold',version:1,
+  wording:['Let U be an open set in Y.','By the definition of continuity,','which is what we wanted to show.'],
+  terms:['preimage','open set','continuous','topological space'],symbols:['f','X','Y','U'],withhold:['complement','finite subcover'],
 }
 
 export function CheckpointTutor(props:EntryProps) {
@@ -113,11 +161,11 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const inkScope=useMemo<TutorInkScope>(()=>({pathId,checkpointId,...(live?{ownerId:ownerId!,generation:generation!}:{profile:profile!})}),
     [live,ownerId,generation,profile,pathId,checkpointId]);
   const ink=useTutorInk(inkScope,scratchEnabled);
-  const question=useDraft(draftKey+':question',live), context=useDraft(draftKey+':context',live)
+  const question=useDraft(draftKey+':question',live,true), context=useDraft(draftKey+':context',live)
   const followupDraft=useDraft(draftKey+':followup',live)
-  function editQuestion(text:string) {
+  function editQuestion(text:string,spans?:readonly TutorAcceptedSpan[],persistImmediately=false) {
     if(followupDraft.text&&text.trim()!==question.text.trim())followupDraft.clearIfUnchanged(followupDraft.text)
-    return question.change(text)
+    return question.change(text,Boolean(page)&&!persistImmediately,spans)
   }
   const capturedQuestion=useRef(false);
   useEffect(()=>{
@@ -138,6 +186,8 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     ?'Some draft changes could not be saved on this device and may be lost on reload.':undefined
   const [preview,setPreview]=useState<ReturnType<typeof previewLocalTutorExcerpt>>()
   const [session,setSession]=useState<{api:ManualTutor; thread:TutorThreadView}>()
+  const [savedThread,setSavedThread]=useState<TutorThreadView>()
+  const [sending,setSending]=useState<{text:string;after:number;followupId?:string}>()
   // N228: the tutor's quick questionnaires on this thread, shown in each reply's row.
   const questionnaireApi=session?.api.questionnaires
   const [questionnaires,setQuestionnaires]=useState<readonly TutorQuestionnaire[]>([])
@@ -150,11 +200,28 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   // N228 (Owner: "allow posting of messages even when tutor is not"): extra messages on the turn waiting for the tutor.
   const followupApi=session?.api.followups
   const [followups,setFollowups]=useState<readonly TutorFollowUp[]>([])
+  const followupRead=useRef(0)
   const loadFollowups=useCallback(async()=>{
+    const request=++followupRead.current
     if(!followupApi){setFollowups([]);return}
-    try{setFollowups(await followupApi.list())}catch{/* They are shown when the thread reloads. */}
+    try{
+      const items=await followupApi.list()
+      if(request===followupRead.current)setFollowups(items)
+    }catch{/* They are shown when the thread reloads. */}
   },[followupApi])
   useEffect(()=>{void loadFollowups()},[loadFollowups,session?.thread.readAt])
+  // N234: the tutor's answer aids (behind tutorAnswerAids): the latest set on this thread shapes the strip while the learner
+  // writes the next answer. The demo tutor has a sample bank, so the feature can be tried without a connected tutor.
+  const answerAidApi=session?.api.answerAids
+  const [threadAids,setThreadAids]=useState<readonly TutorAnswerAid[]>([])
+  useEffect(()=>{
+    if(!answerAidApi||!isFlagOn('tutorAnswerAids')){setThreadAids([]);return}
+    let current=true
+    void answerAidApi.list().then(list=>{if(current)setThreadAids(list)},()=>undefined)
+    return ()=>{current=false}
+  },[answerAidApi,session?.thread.readAt])
+  // A stand-in for the Atlas's evidence until it is wired in: a demonstrated checkpoint is well known, an open one grows with its steps.
+  const mastery=page?(page.detail.view.demonstratedAt?.9:Math.min(.6,page.detail.view.currentStep/Math.max(1,page.detail.view.stepsTotal)*.6)):undefined
   const replaceQuestionnaire=useCallback((next:TutorQuestionnaire)=>setQuestionnaires(list=>list.map(item=>item.id===next.id&&item.version<=next.version?next:item)),[])
   const questionnaireBackup=useMemo<QuestionnaireBackup>(()=>{
     const key=(id:string)=>draftKey+':questionnaire:'+id
@@ -232,11 +299,13 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     async function connect() {
       try {
         api=live?(await import('../../data/tutor/live-manual')).openLiveManualTutor({
-          pathId,checkpointId,ownerId:ownerId!,generation:generation!,readOnly,
+          pathId,checkpointId,sittingId:scope.sittingId,ownerId:ownerId!,generation:generation!,readOnly,
         }):await openDemoManualTutor({pathId,checkpointId})
         if(!active){api.close();return}
+        setSavedThread(api.readSaved?.())
         await refresh(api,true)
-      } catch {if(active)setError('Could not open the saved conversation. Try again.')}
+        if(active)setSavedThread(undefined)
+      } catch {if(active){setSavedThread(undefined);setError('Could not open the saved conversation. Try again.')}}
     }
     void connect()
     return ()=>{active=false;readVersion.current++;api?.close()}
@@ -265,8 +334,9 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   useEffect(()=>{setGrant(undefined)},[pendingId])
   useEffect(()=>{
     if(!scratchEnabled||!ink.ready||!session)return;
-    const submitted=new Set(session.thread.turns.flatMap(turn=>turn.snapshot.attachments?.map(image=>image.id)??[]));
-    if(submitted.size)void ink.update(current=>removeSubmittedInk(current,submitted),{latestStored:true}).catch(()=>{});
+    const submitted=session.thread.turns.map(turn=>turn.snapshot).filter(snapshot=>snapshot.attachments?.length);
+    if(submitted.length)void ink.update(current=>submitted.reduce((draft,snapshot)=>
+      removeSubmittedInk(draft,new Set(snapshot.attachments!.map(image=>image.id)),snapshot),current),{latestStored:true}).catch(()=>{});
   },[scratchEnabled,session,ink.ready,ink.draft]);
   useEffect(()=>{
     if(!live||!activeApi)return
@@ -292,12 +362,12 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     if((session?.thread.offline||session?.thread.head.pendingTurnId)&&hasImages&&!readOnly&&!busy&&!options.keepDraft) {
       setBusy(true);setQueueSaving(true);setError('');
       try {
-        await ink.update(current=>current===inkDraft?{...current,queuedText:text}:current);
+        await ink.update(current=>current===inkDraft?{...current,queuedText:text,queuedAcceptedSpans:options.acceptedSpans}:current);
         if(ink.snapshot().draft.queuedText!==text)throw new Error('The answer changed before it could be queued.');
       } catch {
-        if(text!==question.text)question.change(text);
+        if(text!==question.text)question.change(text,false,options.acceptedSpans);
         setError('Could not queue this answer. Your answer and images are still here.');
-        await ink.update(current=>current.queuedText===text?{...current,queuedText:undefined}:current).catch(()=>{});
+        await ink.update(current=>current.queuedText===text?{...current,queuedText:undefined,queuedAcceptedSpans:undefined}:current).catch(()=>{});
       } finally {setQueueSaving(false);setBusy(false);}
       return;
     }
@@ -317,22 +387,26 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       const stored=JSON.stringify(attempt)
       // A failed write still leaves the ID in memory. Require a durable ID before every send.
       if(!followupDraft.change(stored)){setError('');return}
+      setSending({text:body,followupId:attempt.id,after:session.thread.head.lastSequence})
       setBusy(true);setError('')
       try {
         const saved=await followupApi.add(attempt.turnId,attempt.id,attempt.body)
+        ++followupRead.current
         setFollowups(list=>list.some(item=>item.id===saved.id)?list:[...list,saved])
         question.clearIfUnchanged(text)
         followupDraft.clearIfUnchanged(stored)
       } catch (err) {
         if(err instanceof Error&&'code' in err&&err.code==='40001')followupDraft.clearIfUnchanged(stored)
+        setSending(undefined)
         await refresh(session.api).catch(()=>{})
         setError(err instanceof Error?err.message:'Your message was not saved. It is still in the box.')
-      } finally {setBusy(false)}
+      } finally {setSending(undefined);setBusy(false)}
       return
     }
     if (!session || busy || readOnly || session.thread.offline || session.thread.canSubmit===false ||
       session.thread.head.pendingTurnId || session.thread.outbox?.length || !text.trim()&&!hasImages || text.length>2000 ||
       (page && !options.keepDraft && text.includes('□')) || connectorLoading) return
+    setSending({text:hasImages?'Answer with attachment':body,after:session.thread.head.lastSequence})
     setBusy(true);setError('');setCopyStatus('')
     try {
       const local=!options.keepDraft && attachedLocal.text ? previewLocalTutorExcerpt(attachedLocal.text) : undefined
@@ -349,10 +423,13 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       assertCurrent();
       const draft:TutorComposerDraft={
         question:text.trim()?text:IMAGE_ONLY_ANSWER,
+        ...((options.acceptedSpans ?? (text===question.text?question.spans:undefined))?.length &&
+          {acceptedSpans:options.acceptedSpans ?? question.spans}),
+        ...(!options.keepDraft&&timer?{answerMeta:timer.answer()}:{}),
         ...(attachments.length&&{attachments}),
         ...(local?.kind==='preview' ? {localExcerpt:addLocalTutorExcerpt(local)} : {}),
-        selectedContext:[...(includeObjective && excerpt ? [{kind:'checkpoint' as const,refId:checkpointId,version:'demo',excerpt}] : []),
-          ...(!options.keepDraft && attachedSource?[attachedSource]:[])],
+        selectedContext:[...(!scope.sittingId && includeObjective && excerpt ? [{kind:'checkpoint' as const,refId:checkpointId,version:'demo',excerpt}] : []),
+          ...(!scope.sittingId && !options.keepDraft && attachedSource?[attachedSource]:[])],
       }
       const id=crypto.randomUUID(),sequence=session.thread.head.lastSequence
       const result=session.thread.canConnect && connectorUrl && session.api.submitToConnector
@@ -360,15 +437,16 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         : await session.api.submit(id,draft,sequence)
       if(result.kind==='submitted' && !options.keepDraft) {
         question.clearIfUnchanged(text);attachedLocal.clearIfUnchanged(attachedLocal.text);sourceDraft.clearIfUnchanged(sourceDraft.text)
-        if(hasImages)await ink.update(current=>removeSubmittedInk(current,new Set(attachments.map(image=>image.id))),{latestStored:true}).catch(()=>{})
+        if(hasImages)await ink.update(current=>removeSubmittedInk(current,new Set(attachments.map(image=>image.id)),draft),{latestStored:true}).catch(()=>{})
       }
       await refresh(session.api).catch(()=>setError('Question confirmed. Reconnect to refresh the conversation.'))
       if(result.kind!=='submitted')setError('The question was not saved. Your draft was kept.')
     } catch (err) {
+      setSending(undefined)
       await refresh(session.api).catch(()=>{})
       setError(err instanceof Error?err.message:'Could not confirm the saved question. Check its pending submission.')
     }
-    finally {setBusy(false)}
+    finally {setSending(undefined);setBusy(false)}
   }
 
   async function confirm(body:string,turnId:string,version:number,draftId:string) {
@@ -377,7 +455,15 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     try {
       const result=await session.api.confirmImport(turnId,version,draftId,body)
       await refresh(session.api).catch(()=>setError('Reply confirmed. Reconnect to refresh the conversation.'))
-      if (result.kind==='completed') return true
+      if (result.kind==='completed'){
+        const sitting=page?.exam
+        if(!live&&sitting){
+         const previous=session.thread.turns.find(turn=>turn.id===turnId)?.snapshot
+         const patch=previous&&importedExamAttempt(sitting,turnId,previous.question,body,previous.answerMeta)
+         if(patch)await getExamApi().command({resource:'exam_attempts',operation:'record',patch}).then(refreshExam).catch(()=>{})
+        }
+        return true
+      }
       if (result.kind==='already-completed') {
         setError('Another reply was already imported. Your paste was kept under Recoverable replies.')
         return true
@@ -392,21 +478,38 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     finally {setBusy(false)}
   }
 
-  const thread=session?.thread,last=thread?.turns.at(-1)
-  const recoveryOnly=readOnly||Boolean(thread?.offline)
-  const allTurns=withTutorMessageDeletions(
+  const thread=session?.thread??savedThread,last=thread?.turns.at(-1)
+  const recoveryOnly=readOnly||Boolean(thread?.offline)||(!session&&!!savedThread)
+  const allTurns=useMemo(()=>withTutorMessageDeletions(
     Array.from(new Map([...history,...(thread?.turns??[])].map(t=>[t.id,t])).values()).sort((a,b)=>a.sequence-b.sequence),
     deletedMessages,
-  )
+  ),[history,thread?.turns,deletedMessages])
+  const sendingText=sending&&(sending.followupId
+    ? !followups.some(item=>item.id===sending.followupId)
+    : !allTurns.some(turn=>turn.sequence>sending.after&&turn.snapshot.question.trim()===sending.text))?sending.text:undefined
+  // Aids belong to the visible reply the learner is answering.
+  const activeTurn=allTurns.at(-1)
+  const answerAid=!isFlagOn('tutorAnswerAids')?undefined:!live?DEMO_ANSWER_AID:
+    activeTurn?.status==='completed'&&!activeTurn.replyDeleted?threadAids.find(aid=>aid.turnId===activeTurn.id):undefined
   const visibleFollowups=followups.filter(item=>!deletedMessages.has(tutorMessageKey({kind:'followup',id:item.id})))
   const recovered=Array.from(new Map([...historyDrafts,...(thread?.recoveredDrafts??[])].map(d=>[d.draftId??d.messageId,d])).values())
   const pending=last?.status==='awaiting-tutor'?last:null
+  const sitting=page?.exam,examOwner=live?ownerId??null:'demo'
+  const examIdeas=useExamIdeas(sitting?.project_id??'',examOwner,!!sitting)
+  const examEvidence=useExamEvidence(sitting,examOwner,pathId,!!sitting)
+  const refreshExam=useRefreshExam()
+  const timedTurn=last?.status==='completed'&&!last.replyDeleted&&last.finalReply.timedSeconds?last:undefined
+  const examCanPost=!sitting||sitting.status==='active'||sitting.status==='planned'
+  const timer=useTimedAnswer(timedTurn?.id,timedTurn?.finalReply.timedSeconds,!!sitting&&sitting.status==='active'&&!busy&&!recoveryOnly)
+  const linkedAttempt=(reference:string)=>examEvidence.data?.attempts.find(item=>item.delivery_ref===reference)
+  const askExam=(text:string)=>{editQuestion(text)}
+
   useEffect(()=>{
     const queued=ink.draft.queuedText;
     if(!scratchEnabled||!ink.ready||queued===undefined||tutorInkIssue(queued,ink)||!session||session.thread.offline||
       session.thread.head.pendingTurnId||session.thread.outbox?.length||readOnly||busy||connectorLoading)return;
     // Send the queued answer when the tutor is ready and the network is available.
-    if(!error)void saveQuestion(queued);
+    if(!error)void saveQuestion(queued,{acceptedSpans:ink.draft.queuedAcceptedSpans});
   },[scratchEnabled,ink.status,ink.draft,session?.thread.offline,session?.thread.head.pendingTurnId,session?.thread.outbox?.length,busy,readOnly,error,connectorLoading])
   const localExcerpt=pending?.snapshot.localExcerpt
   const handoff=pending?[tutorAnswerText(pending.snapshot.question,pending.snapshot.attachments),...pending.snapshot.selectedContext.map(x=>x.excerpt),
@@ -462,7 +565,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const contextControls=<div className="tutor-context">
       {excerpt&&<label className="tutor-context-check">
         <input type="checkbox" checked={Boolean(context.text)} disabled={busy}
-          onChange={e=>context.change(e.currentTarget.checked?'yes':'')}/> Include this checkpoint’s objective
+          onChange={e=>{question.flush();context.change(e.currentTarget.checked?'yes':'')}}/> Include this checkpoint’s objective
       </label>}
       {Boolean(context.text)&&excerpt&&<p>{excerpt}</p>}
       {scope.sourceShort&&session?.api.previewSource&&<Disclosure label={'Add a page from '+scope.sourceShort}>
@@ -473,7 +576,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
             onClick={()=>void action(async()=>setSourcePreview(await session?.api.previewSource!(Number(sourcePage))))}>Preview page</Button>
         </div>
         {sourcePreview&&<section aria-label="Source excerpt preview"><p style={{whiteSpace:'pre-wrap'}}>{sourcePreview.excerpt}</p>
-          <Button disabled={busy} onClick={()=>{sourceDraft.change(JSON.stringify(sourcePreview));setSourcePreview(undefined)}}>Add source excerpt</Button>
+          <Button disabled={busy} onClick={()=>{question.flush();sourceDraft.change(JSON.stringify(sourcePreview));setSourcePreview(undefined)}}>Add source excerpt</Button>
         </section>}
       </Disclosure>}
       {attachedSource&&<section aria-label="Attached source excerpt"><p>{scope.sourceShort}, page {attachedSource.page}</p>
@@ -491,6 +594,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
           <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{preview.text}</p>
           <Button disabled={busy} onClick={()=>setPreview(undefined)}>Cancel excerpt preview</Button>
           <Button disabled={busy} onClick={()=>{
+            question.flush()
             attachedLocal.change(addLocalTutorExcerpt(preview).text)
             setSelectedLocal('');setPreview(undefined)
           }}>Add local excerpt</Button>
@@ -571,6 +675,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       {extra.map(item=><TutorChatMessage key={item.id} message={{kind:'followup',id:item.id}} text={item.body}>
         <TutorAnswer question={item.body} owner={ownerId??''}/>
       </TutorChatMessage>)}
+      {!turn.questionDeleted&&sitting&&<AttemptBadge attempt={linkedAttempt('turn:'+turn.id)} sitting={sitting} onChallenge={recoveryOnly?undefined:askExam}/>}
       {turn.status!=='completed'&&<span className="ctag">{turn.status==='cancelled'?'Cancelled':extra.some(item=>item.seen)?'Tutor has read your messages':'Saved'}</span>}
     </div>
   }
@@ -604,9 +709,14 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       {/* N227 (Owner): under a reply, one quiet row of icons for this chat: Copy, Good and Bad reply, Make a card, then
           what the tutor suggested (a card, a change) as small chips. The row is where chat-specific things go later. */}
       <ReplyActions id={turn.id} body={turn.finalReply.body}>
-        {session?.api.proposeCard&&!recoveryOnly&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
-        {questionnaireApi&&questionnaires.filter(item=>item.turnId===turn.id).map(item=><QuestionnaireButton key={item.id} questionnaire={item}
-          api={questionnaireApi} backup={questionnaireBackup} onChange={replaceQuestionnaire}/>)}
+        {session?.api.proposeCard&&!recoveryOnly&&<CardSuggestion label={sitting?.card_mode==='later'?'Draft now':undefined} disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
+        {sitting&&<TutorIdeaAction sitting={sitting} slug={pathId} turnId={turn.id} body={turn.finalReply.body}
+          ideas={examIdeas.data??[]} disabled={busy||recoveryOnly}/>}
+        {questionnaireApi&&questionnaires.filter(item=>item.turnId===turn.id).map(item=><span key={item.id}>
+          <QuestionnaireButton questionnaire={item} api={questionnaireApi} backup={questionnaireBackup} onChange={replaceQuestionnaire}/>
+          {sitting&&item.state==='complete'&&Object.keys(item.answers).map(key=><AttemptBadge key={key}
+            attempt={linkedAttempt(item.id+':'+key)} sitting={sitting} showUnknown onChallenge={recoveryOnly?undefined:askExam}/>)}
+        </span>)}
         {turn.finalReply.suggestions.filter(suggestion=>suggestion.status!=='rejected').map(suggestion=><span key={suggestion.intentId} className="tutor-reply-chip" data-status={suggestion.status}>
           <span className="tutor-reply-chip-text">{suggestion.summary}</span>
           {suggestion.proposalId&&(suggestion.status==='pending'
@@ -614,6 +724,11 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
             :<small>{suggestion.status}</small>)}
         </span>)}
       </ReplyActions>
+      {sitting&&!recoveryOnly&&(()=>{
+       const suggested=/Review row ([a-z0-9_-]+)/i.exec(turn.finalReply.body)?.[1]??/^Review row ([a-z0-9_-]+)/.exec(turn.snapshot.question)?.[1]
+       const row=sitting.blueprint.find(item=>item.key===suggested)
+       return row&&<TopicReview slug={pathId} sittingId={sitting.id} row={row} onRequest={askExam}/>
+      })()}
       {live&&!!scope.linkedSessions?.length&&<Disclosure label="Linked study sessions">
         <p>Open the session to record your own evidence or summary.</p>
         <ul>{scope.linkedSessions.map(study=><li key={study.number}><Link to={'/s/'+encodeURIComponent(scope.pathId)+'/'+study.number}>
@@ -630,24 +745,25 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         <textarea className="v7-field" aria-label={'Recoverable reply '+(i+1)} readOnly value={item.body}/>
       </div>)}
     </Disclosure>}  </>
-  if(page)return <TutorChat page={page} turns={allTurns} draft={ink.draft.queuedText??question.text} onChange={editQuestion}
+  if(page)return <TutorChat sendingText={sendingText} timedLabel={sitting?.status==='active'?timer?.label:undefined} page={page} turns={allTurns} draft={ink.draft.queuedText??question.text}
+    acceptedSpans={ink.draft.queuedText!==undefined?ink.draft.queuedAcceptedSpans:question.spans} onChange={editQuestion} answerAid={answerAid} mastery={mastery}
     onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread&&!readOnly&&!busy&&!connectorLoading&&!thread.outbox?.length&&
       (pending&&thread.canSubmit!==false||thread.offline&&!pending))} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
     draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
-    canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&(!pending||!!followupApi)&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
+    canSend={examCanPost&&!!session&&!recoveryOnly&&!busy&&!connectorLoading&&(!pending||!!followupApi)&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
     listenerSeenAt={thread?.listenerSeenAt} resumePrompt={delivery
       ? 'Continue my Lemma tutor session. Use get(what=tutor_turn, id='+delivery.reference+').'
       : 'Continue my Lemma tutor session. Use get(what=tutor_turn) to find my answer.'}
-    pendingStatus={recoveryOnly?'Offline · Saved conversation':!live?'Demo: import a reply to continue':claimed?'Replying…':'Waiting for '+clientName}
+    pendingStatus={!session&&savedThread?'Refreshing saved conversation…':recoveryOnly?'Offline · Saved conversation':!live?'Demo: import a reply to continue':claimed?'Replying…':'Waiting for '+clientName}
     status={<>{queueSaving?<p role="status">Saving queued answer…</p>:ink.draft.queuedText!==undefined&&<p role="status">{tutorInkIssue(ink.draft.queuedText,ink)?'Queued answer needs its images.':
       pending?'Answer queued. It will send after the tutor replies.':thread?.offline?'Answer queued. It will send when you reconnect.':'Answer queued.'}
       <Button small disabled={readOnly||busy||!ink.ready} onClick={()=>{
         const queued=ink.snapshot().draft.queuedText;
-        if(queued===undefined||!question.change(queued))return;
-        void ink.update(current=>({...current,queuedText:undefined})).catch(()=>{});
+        if(queued===undefined||!question.change(queued,false,ink.snapshot().draft.queuedAcceptedSpans))return;
+        void ink.update(current=>({...current,queuedText:undefined,queuedAcceptedSpans:undefined})).catch(()=>{});
       }}>Keep as draft</Button>
-    </p>}{statusControls}{thread?.canSubmit===false&&!thread.offline&&!readOnly&&<p role="status">New tutor questions are currently paused.</p>}
-      {live&&thread&&!thread.offline&&(readOnly||!thread.canSubmit)&&!pending&&
+    </p>}{statusControls}{session&&thread?.canSubmit===false&&!thread.offline&&!readOnly&&<p role="status">New tutor questions are currently paused.</p>}
+      {live&&session&&thread&&!thread.offline&&(readOnly||!thread.canSubmit)&&!pending&&
         <a href={chatLink(page.client,studyPrompt(page.project.project.title,page.detail.view.code,page.detail.view.title))}
           className="v7-button v7-secondary v7-small" rel="noopener noreferrer" target="_blank">Study in {clientName}</a>}
       {live&&thread?.canSubmit&&!recoveryOnly&&!connectorLoading&&!canConnect&&
@@ -688,12 +804,12 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   </>
 }
 
-function CardSuggestion({disabled,onPropose}:{disabled:boolean;onPropose:(front:string,back:string)=>Promise<boolean>}) {
+function CardSuggestion({disabled,onPropose,label}:{disabled:boolean;label?:string;onPropose:(front:string,back:string)=>Promise<boolean>}) {
   const [front,setFront]=useState(''),[back,setBack]=useState(''),[open,setOpen]=useState(false)
   // N227 (Owner: "just use an icon for making cards"): a flashcard from this reply, proposed for review like the tutor's
   // own, written in a sheet.
   return <>
-    <IconButton label="Make a card" title="Make a card from this reply" disabled={disabled} onClick={()=>setOpen(true)}><SquarePlus aria-hidden="true"/></IconButton>
+    <IconButton label={label??"Make a card"} title={label??"Make a card from this reply"} disabled={disabled} onClick={()=>setOpen(true)}><SquarePlus aria-hidden="true"/></IconButton>
     <Sheet open={open} onClose={()=>setOpen(false)} title="Make a card">
       <div className="tutor-card-draft">
         <label>Front<textarea className="v7-field" rows={2} disabled={disabled} value={front} maxLength={1500} onChange={e=>setFront(e.target.value)}/></label>

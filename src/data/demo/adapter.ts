@@ -1,8 +1,10 @@
+import {currentEffectiveShell,isFlagOn} from '../../flags';
 import {AuthoredCards} from './authored-cards';
 import {authGeneration,authOwner} from '../authBoundary';
 import {firstUseStore,type FirstCardInput,type FirstCardReceipt} from './first-card';
 import {pathForecast} from '../path-review-forecast';
 import {demoConversionProposal} from '../adaptive/demo-conversion';
+import {examIdeaKey} from '../exam/contract';
 import type {
   LemmaApi,
   SettingsPatch,
@@ -253,6 +255,12 @@ export class DemoAdapter implements LemmaApi {
   }
   private store: DemoStore;
   private readonly authoredCards?:AuthoredCards;
+  private readonly examProposalStorage?:Pick<Storage,'getItem'|'setItem'>;
+  private examProposalKey(){return 'lemma.demo-exam-proposals:'+(this.firstUse?'first-use':'default');}
+  private saveExamProposals(){
+    try{this.examProposalStorage?.setItem(this.examProposalKey(),JSON.stringify(this.store.proposals.filter(row=>row.examDraft)));}
+    catch{/* Demo drafts remain in the open tab. */}
+  }
   private readonly firstUse:boolean;
   private stressSourceSeedTitles:Map<string,string[]>|null=null;
   private stressSourceSeedRows:DemoSource[]|null=null;
@@ -397,6 +405,14 @@ export class DemoAdapter implements LemmaApi {
     );
     if(options.authoredCardStorage&&!options.fixture)this.authoredCards=new AuthoredCards(options.authoredCardStorage,this.store,
       this.firstUse?'lemma.demo.first-use.authored.v1':undefined);
+    this.examProposalStorage=isFlagOn('examMode')?options.authoredCardStorage:undefined;
+    try{
+      const savedDrafts=this.examProposalStorage?.getItem(this.examProposalKey());
+      if(savedDrafts){
+        const drafts=JSON.parse(savedDrafts) as DemoProposal[];
+        this.store.proposals.push(...drafts.filter(row=>row.examDraft));
+      }
+    }catch{/* The fixture remains available. */}
     // Snapshot before installing either lazy getter: spreading an accessor
     // from its own materialization path would recursively invoke itself.
     const original={...this.store};
@@ -951,6 +967,7 @@ export class DemoAdapter implements LemmaApi {
       pinned: p.pinned ?? false,
       system: p.system ?? false,
       targetDate: p.targetDate ?? null,
+      deadlineAt:p.deadlineAt,lastStudyOn:p.lastStudyOn,timeConfirmed:p.timeConfirmed,
       targetLabel: p.targetLabel ?? null,
       done: progress.done,
       total: progress.total,
@@ -1387,7 +1404,7 @@ export class DemoAdapter implements LemmaApi {
   }
   async updateProject(id: string, patch: ProjectPatch) {
     return this.transaction(() => {
-      keys(patch, ["title", "goal", "style", "status", "subjectId", "pinned"]);
+      keys(patch, ["title", "goal", "style", "status", "subjectId", "pinned", "deadlineAt", "lastStudyOn", "timeConfirmed"]);
       const p = this.projectById(id);
       if (patch.title !== undefined) text(patch.title, 1, 80, "Title");
       if (patch.goal !== undefined) text(patch.goal, 1, 1200, "Goal");
@@ -1513,6 +1530,7 @@ export class DemoAdapter implements LemmaApi {
         .map(cp=>({
           ...this.cpView(cp,[],cp.proposed?'proposed':uiById?.get(cp.id)),
           dueCards:dueByCode.get(cp.code)??0,
+          currentStepText:cp.steps[Math.max(0,cp.currentStep)]??null,
         })),
       done,
       total,
@@ -1598,7 +1616,13 @@ export class DemoAdapter implements LemmaApi {
     // from browser navigation, React commit and screenshot readiness waits.
     if(this.virtualStressDue)performance.measure('lemma-stress-home-query',
       {start:queryStarted,end:performance.now()});
+    // N251: only the v7 Today and Practice read the exam block; other shells skip loading the planner for it.
+    const exam=isFlagOn('examMode')&&currentEffectiveShell()==='v7'?await (await import('../exam/home-demo')).demoExamHome(
+      projects.filter(project=>['linear-algebra','topology','real-analysis'].includes(project.slug)||
+       this.store.projects.some(row=>row.id===project.id&&!row.id.startsWith('project-stress-'))),
+    ):undefined
     return {
+      exam,
       resume:
         p && cp
           ? {
@@ -1713,6 +1737,32 @@ export class DemoAdapter implements LemmaApi {
       }
     }
     return value;
+  }
+  examStudyBookmark(projectId:string,capturedAt:string) {
+    const checkpoints=this.store.checkpoints.filter(row=>row.projectId===projectId);
+    const current=checkpoints.filter(row=>row.status==='in_progress').sort((a,b)=>a.position-b.position)[0];
+    const session=this.store.sessions.filter(row=>row.projectId===projectId&&(!current||row.checkpointCode===current.code))
+      .sort((a,b)=>Date.parse(b.lastActivityAt)-Date.parse(a.lastActivityAt))[0];
+    const checkpoint=current??checkpoints.find(row=>row.code===session?.checkpointCode);
+    return checkpoint?{checkpoint:checkpoint.code,title:checkpoint.title,step:checkpoint.currentStep+1,
+      steps:checkpoint.steps.length,session:session?.number,question:session?.resumeQuestion??undefined,capturedAt}:{capturedAt};
+  }
+  examIdeaProposalState(id:string) {
+    const proposal=this.store.proposals.find(row=>row.id===id)
+    return proposal?{status:proposal.status,noteNo:proposal.examDraft?.noteNo}:undefined
+  }
+  async makeExamIdeaProposal(projectId:string,front:string,back:string,reason:string|null) {
+    const project=this.store.projects.find(row=>row.id===projectId)
+    if(!project)throw new Error('Path unavailable.')
+    const key=examIdeaKey(front)
+    const existing=this.store.proposals.find(row=>row.status==='pending'&&row.projectSlug===project.slug&&row.card&&examIdeaKey(row.card.front)===key)
+    if(existing)return existing.id
+    const id=crypto.randomUUID()
+    this.store.proposals.push({id,kind:'card',projectSlug:project.slug,projectGlyph:'Σ',sessionNumber:null,
+      origin:'other',status:'pending',examDraft:{},reason,createdAt:new Date().toISOString(),card:{front,back,type:'basic',kind:'other'},
+      cardEdit:null,plan:null,planChange:null})
+    this.saveExamProposals()
+    return id
   }
   async listProposals() {
     return this.store.proposals
@@ -2003,7 +2053,7 @@ export class DemoAdapter implements LemmaApi {
       if (proposal.kind === "card") {
         const payload = found(proposal.card ?? undefined, "Card payload");
         if (edit) keys(edit, ["front", "back", "type"]);
-        this.insertNote(project, {
+        const added=this.insertNote(project, {
           front: payload.front,
           back: payload.back,
           type: payload.type,
@@ -2017,6 +2067,10 @@ export class DemoAdapter implements LemmaApi {
           sessionNumber: proposal.sessionNumber,
           origin: proposal.origin,
         });
+        if(proposal.examDraft){
+          proposal.examDraft.noteNo=added.note.noteNo;
+          this.authoredCards?.add(added.note.noteNo);
+        }
       } else if (proposal.kind === "card_edit") {
         const payload = found(proposal.cardEdit ?? undefined, "Card edit"),
           note = this.note(payload.note_no);
@@ -2127,6 +2181,10 @@ export class DemoAdapter implements LemmaApi {
           source.planCheckedAt = proposal.approvedAt;
       }
     });
+    if(this.store.proposals.some(item=>item.id===id&&item.examDraft)){
+      this.authoredCards?.save(this.store);
+      this.saveExamProposals();
+    }
   }
   async rejectProposal(id: string) {
     this.transaction(() => {
@@ -2134,6 +2192,7 @@ export class DemoAdapter implements LemmaApi {
       if (p.status !== "pending") conflict("Proposal is not pending");
       p.status = "rejected";
     });
+    if(this.store.proposals.some(item=>item.id===id&&item.examDraft))this.saveExamProposals();
   }
   async approveAllCards() {
     let count = 0;

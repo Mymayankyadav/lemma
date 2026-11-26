@@ -1,0 +1,153 @@
+{
+  "table": "card_ideas",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "project_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "sitting_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "target": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "target_key": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "concept": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "level": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "reason": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "front": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "back": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "evidence": {
+      "classification": "owner-editable",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "sightings": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "proposal_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "note_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "conversion_key": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "resolved_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/exam via owner reads and command RPCs",
+      "mcpPath": "study card_ideas (save, update, draft, link, dismiss, restore), get(what=card_ideas), get(what=exam)",
+      "exportPolicy": "Owner export through the undo registry",
+      "deletionPolicy": "Owner cascade on purge and versioned domain undo"
+    }
+  }
+}

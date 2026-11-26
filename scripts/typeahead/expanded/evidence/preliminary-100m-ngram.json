@@ -1,0 +1,182 @@
+{
+  "build": {
+    "commit": "1444b245593b7d0bc372e3351025a26dfeead3a6",
+    "sourceArchiveSha256": "452e56918993d8f9e8895095be51b68945659fcc74c8393f5d28fac8b4360b55"
+  },
+  "cpuProbe": {
+    "affinityCores": 4,
+    "cgroupLimits": {
+      "cpu.max": "400000 100000",
+      "memory.max": "32212254720"
+    },
+    "freeBytes": {
+      "/kaggle/working": 20940562432,
+      "/tmp": 2698407636992
+    },
+    "tools": {
+      "g++": true,
+      "lmplz": false,
+      "zstd": false
+    }
+  },
+  "cpuProbeNotebook": "mayankyadav9432/lemma-typeahead-cpu-resource-probe-20261124/1",
+  "firstGeneralAssetAtSeconds": 5560.627118035,
+  "lastLogAtSeconds": 6497.650314048,
+  "notebook": "mayankyadav9432/lemma-typeahead-ngram-100m-20261124/1",
+  "purpose": "Provisional CPU sizing and artifact diagnostic. Not audited or eligible for final selection.",
+  "sanitizedLogSha256": "09c472d083bdb913f69d278b0080c66956db5fbb74f54b468df11d0bba58088d",
+  "verifiedAssets": {
+    "latex-v2": {
+      "bytes": 2097152,
+      "corpusSha256": "b009fb88ac310a4aaf82d7aa3bb3d6bd1d56af753add612abdca707467e84d40",
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.5590399176336843,
+            1.0102725536435657,
+            1.4716257840360993
+          ],
+          "3": [
+            0.6372490441302803,
+            1.0732233500343966,
+            1.4625586232316463
+          ],
+          "4": [
+            0.5556128050497748,
+            1.1956635834456322,
+            1.4869447513249623
+          ]
+        },
+        "maxRowMassError": 3.335896492373536e-08,
+        "trainTokens": 48382613,
+        "validation": {
+          "outOfVocabulary": 6188,
+          "perplexity": 7.95673827226374,
+          "referencePerplexity": 7.771742874950465,
+          "targets": 2586128,
+          "wordOovRate": 0.0025319780894695,
+          "wordTargets": 2443939
+        }
+      },
+      "order": 4,
+      "pruning": "count",
+      "sha256": "11a19752fe9356a9fa3e59fae398f079d1dec48844be2c36b5671529bf0f2876",
+      "vocabSha256": "ad39c1c64ee3fa32cb969b75c0154703ffaf778606e9ae2472d326e7f0a640c5",
+      "vocabSize": 1505
+    },
+    "ngram4-count": {
+      "bytes": 20971520,
+      "corpusSha256": "b009fb88ac310a4aaf82d7aa3bb3d6bd1d56af753add612abdca707467e84d40",
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.6848761371276735,
+            1.0970657933016565,
+            1.4511347784822066
+          ],
+          "3": [
+            0.7986138146490589,
+            1.1469717633710512,
+            1.4031794440671448
+          ],
+          "4": [
+            0.7826691498919025,
+            1.2761487357817551,
+            1.3358348628776964
+          ]
+        },
+        "maxRowMassError": 5.1711245951935325e-08,
+        "trainTokens": 100009440,
+        "validation": {
+          "outOfVocabulary": 68280,
+          "perplexity": 167.44910854982976,
+          "referencePerplexity": 123.92293917823176,
+          "targets": 5172127,
+          "wordOovRate": 0.01402599163329468,
+          "wordTargets": 4868105
+        }
+      },
+      "order": 4,
+      "pruning": "count",
+      "sha256": "9c88f9e9986097f7dc076bf7628da81e15192417ba3101baeaf53a4aadfe42a7",
+      "vocabSha256": "42e5ddfde7bcbbe53843c35c5ff06c18bd608629b5abd6afa59874bbaf959219",
+      "vocabSize": 60005
+    },
+    "subject-linear-algebra": {
+      "bytes": 4194304,
+      "corpusSha256": "b009fb88ac310a4aaf82d7aa3bb3d6bd1d56af753add612abdca707467e84d40",
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.7051398280772492,
+            1.1230201398636437,
+            1.4578878543623848
+          ],
+          "3": [
+            0.8180849059448698,
+            1.183134465884664,
+            1.41566352175612
+          ],
+          "4": [
+            0.796850634947484,
+            1.3528316078225813,
+            1.2803726354050524
+          ]
+        },
+        "maxRowMassError": 3.825826033754254e-08,
+        "trainTokens": 10917793,
+        "validation": {
+          "outOfVocabulary": 10059,
+          "perplexity": 231.36791884251005,
+          "referencePerplexity": 186.63955571800324,
+          "targets": 619223,
+          "wordOovRate": 0.017109703493039776,
+          "wordTargets": 587912
+        }
+      },
+      "order": 4,
+      "pruning": "count",
+      "sha256": "76eca1117883de8022e5a58664053d7e4d8bcc22fdb7cb46679bc4315da20bb8",
+      "vocabSha256": "42e5ddfde7bcbbe53843c35c5ff06c18bd608629b5abd6afa59874bbaf959219",
+      "vocabSize": 60005
+    },
+    "subject-topology": {
+      "bytes": 4194304,
+      "corpusSha256": "b009fb88ac310a4aaf82d7aa3bb3d6bd1d56af753add612abdca707467e84d40",
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.7187817880420451,
+            1.1248592497764902,
+            1.451927616726116
+          ],
+          "3": [
+            0.8319893288579707,
+            1.2074994432506196,
+            1.4350689602130717
+          ],
+          "4": [
+            0.8213116240993893,
+            1.3383627677347016,
+            1.3334921562961985
+          ]
+        },
+        "maxRowMassError": 4.0914794441349045e-08,
+        "trainTokens": 2629082,
+        "validation": {
+          "outOfVocabulary": 2321,
+          "perplexity": 214.05249351800254,
+          "referencePerplexity": 189.8607739520485,
+          "targets": 144623,
+          "wordOovRate": 0.016934189406099517,
+          "wordTargets": 137060
+        }
+      },
+      "order": 4,
+      "pruning": "count",
+      "sha256": "068ed349c4933cbb2bfdd4f6c39039ad82a3412f9e3a6677fdff2676b45a8c7c",
+      "vocabSha256": "42e5ddfde7bcbbe53843c35c5ff06c18bd608629b5abd6afa59874bbaf959219",
+      "vocabSize": 60005
+    }
+  }
+}
