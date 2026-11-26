@@ -69,19 +69,26 @@ export default function CaptureSheet({onClose,initialKind=null,picker=false}:{on
  const [blockKind,setBlockKind]=useState<'study'|'busy'>('study');
  const field=useRef<HTMLTextAreaElement>(null),panel=useRef<HTMLDivElement>(null);
  const caret=useRef<[number,number,'forward'|'backward'|'none']|null>(null);
- const outgoing=useRef<{height:number;copy:HTMLElement}|null>(null);
- const heightMotion=useRef<Animation|null>(null);
+ const outgoing=useRef<{height:number;copy:HTMLElement;easing:string;layoutMs:number;fadeMs:number}|null>(null);
+ const heightMotion=useRef<Animation|null>(null),observedHeight=useRef(0);
+ useLayoutEffect(()=>{
+  const node=panel.current;
+  if(!beta||!node||typeof ResizeObserver==='undefined')return;
+  const observer=new ResizeObserver(([entry])=>{observedHeight.current=entry.borderBoxSize?.[0]?.blockSize??entry.contentRect.height;});
+  observer.observe(node);return ()=>observer.disconnect();
+ },[beta]);
  function showDetails(next:Details|null){
   const node=panel.current,content=node?.firstElementChild;
-  if(beta&&node)node.dataset.stepTransition='';
   if(beta&&node&&content instanceof HTMLElement&&!motionReduced()&&typeof node.animate==='function'){
    const copy=content.cloneNode(true) as HTMLElement;
    copy.inert=true;copy.setAttribute('aria-hidden','true');copy.classList.add('v7-capture-step-exit');
    copy.querySelectorAll('[id], [name], [autofocus]').forEach(element=>{
     element.removeAttribute('id');element.removeAttribute('name');element.removeAttribute('autofocus');
    });
-   outgoing.current={height:node.offsetHeight,copy};
+   outgoing.current={height:observedHeight.current||node.offsetHeight,copy,easing:'cubic-bezier('+easings.standard.join(',')+')',
+    layoutMs:durations.layout*1000,fadeMs:durations.instant*1000};
   }
+  if(beta&&node)node.dataset.stepTransition='';
   setDetails(next);
  }
  useLayoutEffect(()=>{
@@ -92,21 +99,28 @@ export default function CaptureSheet({onClose,initialKind=null,picker=false}:{on
   heightMotion.current?.cancel();
   if(details){
    const target=node.querySelector<HTMLElement>('input:not([type=hidden]),textarea');
-   target?.focus({preventScroll:true});
+   if(target&&!target.closest('dialog:not([open])')&&document.activeElement!==target)target.focus({preventScroll:true});
   }else if(field.current){
-   field.current.focus({preventScroll:true});
+   if(!field.current.closest('dialog:not([open])')&&document.activeElement!==field.current)field.current.focus({preventScroll:true});
    if(caret.current)field.current.setSelectionRange(...caret.current);
   }
   if(!previous)return;
-  const height=node.offsetHeight,easing='cubic-bezier('+easings.standard.join(',')+')';
-  if(Math.abs(previous.height-height)>1){
-   heightMotion.current=node.animate([{height:previous.height+'px'},{height:height+'px'}],{duration:durations.layout*1000,easing});
-  }
+  const {height:oldHeight,easing,layoutMs,fadeMs}=previous;
+  const morph=(height:number)=>{
+   if(Math.abs(oldHeight-height)>1&&!motionReduced())
+    heightMotion.current=node.animate([{height:oldHeight+'px'},{height:height+'px'}],{duration:layoutMs,easing});
+  };
+  // The browser supplies the incoming size after its normal layout, before paint.
+  // Measuring immediately after replacing the form would synchronously lay out the whole dialog again.
+  const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(([entry])=>{
+   observer?.disconnect();morph(entry.borderBoxSize?.[0]?.blockSize??entry.contentRect.height);
+  });
+  if(observer)observer.observe(node);else morph(node.offsetHeight);
   node.append(previous.copy);
-  const fade=previous.copy.animate([{opacity:1},{opacity:0}],{duration:durations.instant*1000,easing});
+  const fade=previous.copy.animate([{opacity:1},{opacity:0}],{duration:fadeMs,easing});
   const remove=()=>previous.copy.remove();
   void fade.finished.then(remove,remove);
-  return ()=>{fade.cancel();remove();heightMotion.current?.cancel();};
+  return ()=>{observer?.disconnect();fade.cancel();remove();heightMotion.current?.cancel();};
  },[details]);
  const saving=useRef(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const paths=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system&&project.status!=='archived').map(project=>({id:project.id,slug:project.slug,title:project.title})),[home.data]);

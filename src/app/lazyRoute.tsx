@@ -2,6 +2,7 @@ import {lazy,Suspense,useState,type ComponentType} from 'react';
 import {useLoaderData,useRevalidator,type RouteObject} from 'react-router';
 import RouteError,{RouteErrorScreen,RouteFallback} from './RouteError';
 import {surfaceBetaEnabled} from './surfaceBeta';
+import {isFlagOn} from '../flags';
 
 type RouteModule={default:ComponentType};
 type RouteChunk={read:()=>Promise<RouteModule>};
@@ -41,8 +42,9 @@ export function lazyRoute(path:string,chunk:RouteChunk,prepare?:()=>Promise<unkn
   if(result?.routeChunkFailed&&!loaded)return <RetryRoute/>;
   return <Suspense fallback={<RouteFallback/>}><Body/></Suspense>;
  }
+ // Beta testing changes v7 navigation only. Legacy waits for its module as before.
  return {path,errorElement:<RouteError/>,Component:Screen,
-  loader:():LoadResult|Promise<LoadResult>=>surfaceBetaEnabled()
+  loader:():LoadResult|Promise<LoadResult>=>!isFlagOn('v7Shell')||surfaceBetaEnabled()
    ?load().then(()=>null,()=>failed)
    :null};
 }

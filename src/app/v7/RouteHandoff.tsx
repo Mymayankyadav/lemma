@@ -11,19 +11,23 @@ type ScrollPosition=[Element,number,number];
 type Snapshot={visual:HTMLElement;positions:ScrollPosition[];cap:number};
 type Props={children:ReactNode;path:string;beta:boolean};
 const scrollable='textarea,.overflow-auto,.overflow-y-auto,.overflow-x-auto,[class*="-scroll"],[class*="-thread"],.v7-library-list,.v7-dock';
+const stateful=scrollable+',canvas';
+const liveAttributes=['id','autofocus','form','data-testid','data-surface-role','data-loading-surface','data-layer-active'];
+const liveSelectors=liveAttributes.map(attribute=>'['+attribute+']').join(',');
 
-function copyVisual(source:HTMLElement,positions:ScrollPosition[]){
- const bounds=source.getBoundingClientRect();
+function copyVisual(source:HTMLElement,bounds:DOMRect,positions:ScrollPosition[]){
  const copy=source.cloneNode(true) as HTMLElement;
  Object.assign(copy.style,{
   position:'absolute',inset:'auto',left:bounds.left+'px',top:bounds.top+'px',
   width:bounds.width+'px',height:bounds.height+'px',maxWidth:'none',margin:'0',
  });
- const originalElements=[source,...source.querySelectorAll('*')];
- const copiedElements=[copy,...copy.querySelectorAll('*')];
+ for(const element of [copy,...copy.querySelectorAll(liveSelectors)]){
+  for(const attribute of liveAttributes)element.removeAttribute(attribute);
+ }
+ copy.querySelectorAll('input[type="radio"][name]').forEach(element=>element.removeAttribute('name'));
+ const originalElements=[source,...source.querySelectorAll(stateful)];
+ const copiedElements=[copy,...copy.querySelectorAll(stateful)];
  copiedElements.forEach((element,index)=>{
-  for(const attr of ['id','autofocus','form','data-testid','data-surface-role','data-loading-surface','data-layer-active'])element.removeAttribute(attr);
-  if(element instanceof HTMLInputElement&&element.type==='radio')element.removeAttribute('name');
   const original=originalElements[index];
   if(original.matches(scrollable)){
    const {scrollLeft,scrollTop}=original;
@@ -50,11 +54,12 @@ class RouteVisual extends Component<Props,unknown,Snapshot|null>{
   const oldPage=shell?.querySelector<HTMLElement>(':scope > :is(main,.v7-library-split)')??root?.querySelector<HTMLElement>('.local-pad-page');
   const rail=V7_DETAIL_SCREENS.has(screen)?shell?.querySelector<HTMLElement>(':scope > .v7-dock'):null;
   // The bottom dock stays anchored to the phone; only the wide rail fades with the old page.
-  const wideRail=rail&&rail.getBoundingClientRect().height>=window.innerHeight/2;
+  const railBounds=rail?.getBoundingClientRect();
+  const wideRail=railBounds&&railBounds.height>=window.innerHeight/2;
   const kind:Kind|null=isImmersiveWorkspace(previous.path)?'workspace':wideRail?'rail':isImmersiveWorkspace(this.props.path)?'page':null;
   const source=kind==='rail'?rail:oldPage;
   if(!kind||!source||getComputedStyle(source).visibility==='hidden')return null;
-  const bounds=source.getBoundingClientRect();
+  const bounds=(kind==='rail'?railBounds:undefined)??source.getBoundingClientRect();
   if(!bounds.width||!bounds.height)return null;
 
   const visual=document.createElement('div');
@@ -70,8 +75,8 @@ class RouteVisual extends Component<Props,unknown,Snapshot|null>{
    plane.dataset.session=shell.dataset.session;
   }
   const positions:ScrollPosition[]=[];
-  if(kind==='rail'&&oldPage)plane.append(copyVisual(oldPage,positions));
-  plane.append(copyVisual(source,positions));
+  if(kind==='rail'&&oldPage)plane.append(copyVisual(oldPage,oldPage.getBoundingClientRect(),positions));
+  plane.append(copyVisual(source,bounds,positions));
   visual.append(plane);
   return {visual,positions,cap:kind==='page'?durations.base+durations.instant:durations.dismissMax};
  }

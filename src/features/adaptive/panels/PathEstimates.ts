@@ -7,7 +7,7 @@ export function usePathEstimates(checkpoints: readonly CheckpointView[]) {
     if (checkpoint.ui === 'done') return total;
     return total + (data?.durations[checkpoint.id]?.mean ?? 0);
   }, 0);
-  return {minutes, total: minutes(checkpoints), hasCapacity: data?.capacity != null, cardQuota:data?.capacity!=null?data.budget?.quota:undefined};
+  return {model:data, minutes, total: minutes(checkpoints), hasCapacity: data?.capacity != null, cardQuota:data?.capacity!=null?data.budget?.quota:undefined};
 }
 
 export function hoursEstimate(minutes: number) {

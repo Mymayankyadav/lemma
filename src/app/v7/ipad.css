@@ -7,8 +7,9 @@
    header starts 20 pt below the page top (or the safe area), so even the hubs' large titles begin about 30 pt down, as
    the Claude app's bar sits clear of the status bar. */
 html[data-ipad] {--v7-ipad-top: calc(var(--v7-safe-top, 0px) + 20px);}
-html[data-ipad] .v7-hub-header {padding-top: var(--v7-ipad-top);}
-html[data-ipad] .v7-hub-bar {padding-top: calc(var(--v7-ipad-top) + var(--v7-space-1));}
+html[data-ipad] :is(.v7-hub-header, .v7-hub-bar) {padding-top: var(--v7-ipad-top);}
+/* Keep the glyphs clear of the status bar through a font swap, with the actions centred on the 44 pt row midpoint. */
+html[data-ipad] .v7-hub-bar .v7-hub-title {position: relative; inset-block-start: var(--v7-space-1);}
 html[data-ipad] :is(.v7-detail-header, .v7-immersive-header) {padding-top: var(--v7-ipad-top); min-height: calc(var(--v7-ipad-top) + 48px);}
 html[data-ipad] .lemma-tutor.v7-page {padding-top: calc(var(--tutor-safe-top, 0px) + 20px);}
 html[data-ipad] .v7-atlas {--atlas-bar-top-padding: var(--v7-ipad-top);}

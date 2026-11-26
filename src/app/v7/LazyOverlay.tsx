@@ -20,12 +20,12 @@ class BodyBoundary extends Component<{children:ReactNode;fallback:ReactNode},{fa
 }
 
 export default function LazyOverlay<P extends object>({title,onClose,source,bodyProps,full,hideTitle,className,returnTarget}:{
- title:string;onClose:()=>void;source:{read:()=>Promise<{default:ComponentType<P>}>};bodyProps:P;
+ title:string;onClose:()=>void;source:{read:()=>Promise<{default:ComponentType<P>}>;peek?:()=>{default:ComponentType<P>}|undefined};bodyProps:P;
  full?:boolean;hideTitle?:boolean;className?:string;returnTarget?:()=>HTMLElement|null;
 }){
  const [frame,setFrame]=useState<Omit<OverlayFrameProps,'children'>>({title});
  const [version,setVersion]=useState(0);
- const [Body,setBody]=useState(()=>lazy(source.read));
+ const [Body,setBody]=useState<ComponentType<P>>(()=>source.peek?.()?.default??lazy(source.read));
  // Frame updates refresh header/footer props without rendering the loaded editor again.
  const body=useMemo(()=> <FrameContext.Provider value={setFrame}><Body {...bodyProps}/></FrameContext.Provider>,[Body,bodyProps]);
  const retry=()=>{setFrame({title});setBody(lazy(source.read));setVersion(value=>value+1);};

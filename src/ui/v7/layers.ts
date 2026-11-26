@@ -67,13 +67,15 @@ export function restoreLayerFocus(trigger: Target, fallback?: Target | (() => Ta
   const owner = top(doc)?.element;
   const root = owner ?? doc;
   const requested = typeof fallback === 'function' ? fallback() : fallback;
-  const candidates = [trigger, requested, ...ancestors, ...root.querySelectorAll<HTMLElement>('[data-return-anchor]'),
-    ...root.querySelectorAll<HTMLElement>(owner ? '[data-v7-autofocus],button:not(:disabled),input,h2' : 'main h1,h1,main[tabindex]')];
-  for (const el of candidates) {
-    if (!visible(el) || (owner && !owner.contains(el))) continue;
+  const focus=(el:Target)=>{
+    if (!visible(el) || (owner && !owner.contains(el))) return false;
     if (el.tabIndex < 0 && !el.hasAttribute('tabindex')) el.tabIndex = -1;
-    el.focus({preventScroll: true});
-    if (doc.activeElement === el) return;
+    if(doc.activeElement!==el)el.focus({preventScroll: true});
+    return doc.activeElement === el;
+  };
+  for(const el of [trigger,requested??null,...ancestors])if(focus(el))return;
+  for(const selector of ['[data-return-anchor]',owner?'[data-v7-autofocus],button:not(:disabled),input,h2':'main h1,h1,main[tabindex]']){
+    for(const el of root.querySelectorAll<HTMLElement>(selector))if(focus(el))return;
   }
 }
 
@@ -91,7 +93,7 @@ export function registerLayer(layer: Layer) {
   element.dataset.layer = element.id || 'v7-'+(++sequence);
   if (modal) {
     const lock = locks.get(doc) ?? {count: 0, overflow: doc.body.style.overflow};
-    if (!lock.count++) doc.body.style.overflow = 'hidden';
+    if (!lock.count++) {doc.body.style.overflow = 'hidden';doc.body.dataset.v7Modal='';}
     locks.set(doc, lock);
   }
   notify();
@@ -106,6 +108,7 @@ export function registerLayer(layer: Layer) {
       const lock = locks.get(doc)!;
       if (--lock.count === 0) {
         doc.body.style.overflow = lock.overflow;
+        delete doc.body.dataset.v7Modal;
         locks.delete(doc);
       }
     }
@@ -121,7 +124,7 @@ export function registerLayer(layer: Layer) {
           && (!previousTop || previousTop.element.contains(active))) return;
         // A guard can return to a different step. Its launcher was removed, and the step
         // has already focused its replacement row during the same layout commit.
-        if (!visible(layer.trigger) && previousTop && visible(active)
+        if (previousTop && !visible(layer.trigger) && visible(active)
           && active !== previousTop.element && previousTop.element.contains(active) && !element.contains(active)) return;
         restoreLayerFocus(layer.trigger, layer.returnTarget, launchers);
       });

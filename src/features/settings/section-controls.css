@@ -22,6 +22,10 @@
 .settings-section-accent {accent-color:var(--v7-role-action-bg,var(--accent));}
 .settings-section-radio:hover {background:var(--v7-role-state-hover,var(--bg-hover));}
 .settings-section-radio:focus-visible {outline-color:var(--v7-role-focus-ring,var(--accent));}
+:where(html[data-v7]) .settings-section-radio[aria-checked="true"] {
+  background:var(--v7-role-selection-subtle);
+  color:var(--v7-role-selection-fg);
+}
 .settings-section-radio-mark {border-color:var(--v7-role-border-default,var(--text-muted));}
 .settings-section-radio[aria-checked="true"] .settings-section-radio-mark {
   border-color:var(--v7-role-action-bg,var(--accent));

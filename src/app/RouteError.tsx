@@ -4,6 +4,7 @@ import {Link,useLocation,useNavigate} from 'react-router';
 import {v7ScreenFor} from './v7Kit';
 import BootReady from './BootReady';
 import {useSurfaceBeta} from './surfaceBeta';
+import {isFlagOn} from '../flags';
 
 export default function RouteError(){
  const location=useLocation(),navigate=useNavigate();
@@ -11,12 +12,13 @@ export default function RouteError(){
 }
 
 export function RouteErrorScreen({onRetry,busy=false}:{onRetry:()=>void;busy?:boolean}){
- return <main id="main-content" className="v7-page lemma-route-error" role="alert">
+ const v7=isFlagOn('v7Shell');
+ return <main id="main-content" className={v7?'v7-page lemma-route-error':'lemma-route-error'} role="alert">
   <BootReady/>
   <h1>Couldn’t open this screen</h1>
   <p>Try opening this screen again.</p>
   <div>
-   <button type="button" className="v7-button v7-primary" disabled={busy} aria-busy={busy} onClick={onRetry}><span>Retry</span></button>
+   <button type="button" className={v7?'v7-button v7-primary':'lit min-h-11 px-4'} disabled={busy} aria-busy={busy} onClick={onRetry}><span>Retry</span></button>
    <Link to="/">Back to Today</Link>
   </div>
  </main>;
@@ -36,14 +38,15 @@ export function markLoadingSurface(element:HTMLElement|null){
 }
 
 export function RouteFallback(){
- const {pathname}=useLocation(),beta=useSurfaceBeta();
+ const {pathname}=useLocation(),preference=useSurfaceBeta(),v7=isFlagOn('v7Shell');
+ const beta=v7&&preference;
  const [visible,setVisible]=useState(false);
  useEffect(()=>{
   if(!beta)return;
   const timer=window.setTimeout(()=>setVisible(true),durations.skeletonDelay*1000);
   return()=>window.clearTimeout(timer);
  },[beta]);
- if(!beta)return <main className="v7-page lemma-route-fallback" role="status" data-loading-surface="route-generic"><h1>Loading screen…</h1></main>;
+ if(!beta)return <main className={v7?'v7-page lemma-route-fallback':'lemma-route-fallback'} role="status" data-loading-surface="route-generic"><h1>Loading screen…</h1></main>;
  return <main className="v7-page lemma-route-fallback" aria-label="Opening screen" aria-busy="true">
   {visible&&<div ref={markLoadingSurface} data-loading-surface="route-skeleton"><RouteSkeleton path={pathname}/></div>}
  </main>;

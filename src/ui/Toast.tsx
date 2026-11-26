@@ -146,11 +146,14 @@ function V7ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
  useLayoutEffect(()=>{
   const line=countdown.current;
   if(!line)return;
+  const start=performance.now();
   const left=deadline===null?remaining:Math.max(0,deadline-Date.now());
   const scale='scaleX('+Math.min(1,left/Math.max(1,total))+')';
   line.style.transform=scale;
   if(deadline===null||!left||typeof line.animate!=='function')return;
   const motion=line.animate([{transform:scale},{transform:'scaleX(0)'}],{duration:left,fill:'forwards'});
+  // A busy first paint must not move the countdown past the Undo deadline.
+  if(typeof line.ownerDocument.timeline?.currentTime==='number')motion.startTime=start;
   return ()=>motion.cancel();
  },[deadline,remaining,total,reduce]);
  return <motion.div role={item.tone==='danger'?'alert':'status'} className="v7-app-toast" data-surface-role="S6" data-v7-lifted="" data-tone={item.tone??'normal'}

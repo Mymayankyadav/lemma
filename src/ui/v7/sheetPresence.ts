@@ -16,6 +16,7 @@ export function retainSheetExit(dialog: HTMLDialogElement) {
   if (motionReduced() || !dialog.open || !dialog.isConnected) return;
   const box = dialog.getBoundingClientRect();
   if (!box.width || !box.height) return;
+  const timeoutMs=durations.dismissMax*1000;
   const curtain = doc.createElement('div');
   curtain.className = 'v7-layer-exit';
   curtain.setAttribute('data-layer-exit', '');
@@ -23,7 +24,7 @@ export function retainSheetExit(dialog: HTMLDialogElement) {
   curtain.addEventListener('pointerdown', event => event.preventDefault());
   curtain.addEventListener('click', event => {event.stopPropagation(); event.preventDefault();});
   // A manual popover can cover the remaining parent dialog but never takes modal focus.
-  const native = typeof curtain.showPopover === 'function';
+  const native = dialog.hasAttribute('data-v7-lifted') && typeof curtain.showPopover === 'function';
   if (native) curtain.popover = 'manual';
   const panel = doc.createElement('div');
   panel.className = dialog.className + ' v7-exiting-panel';
@@ -49,7 +50,7 @@ export function retainSheetExit(dialog: HTMLDialogElement) {
   curtain.append(panel);
   doc.body.append(curtain);
   if (native) curtain.showPopover();
-  const timer = window.setTimeout(finish, durations.dismissMax * 1000);
+  const timer = window.setTimeout(finish, timeoutMs);
   function finish() {
     window.clearTimeout(timer);
     curtain.remove();
@@ -66,6 +67,7 @@ export function retainChoiceExit(panel: HTMLElement) {
   if (motionReduced() || !panel.isConnected) return;
   const box = panel.getBoundingClientRect();
   if (!box.width || !box.height) return;
+  const timeoutMs=durations.dismissMax*1000;
   const copy = panel.cloneNode(true) as HTMLElement;
   copy.removeAttribute('data-surface-role'); copy.removeAttribute('data-layer-active'); copy.removeAttribute('role');
   copy.removeAttribute('id'); copy.removeAttribute('tabindex');
@@ -78,7 +80,7 @@ export function retainChoiceExit(panel: HTMLElement) {
   if (native) copy.popover='manual';
   doc.body.append(copy);
   if (native) copy.showPopover();
-  const timeout = setTimeout(finish, durations.dismissMax*1000);
+  const timeout = setTimeout(finish,timeoutMs);
   function finish() {
     clearTimeout(timeout); copy.remove(); fadingChoices.delete(doc);
   }

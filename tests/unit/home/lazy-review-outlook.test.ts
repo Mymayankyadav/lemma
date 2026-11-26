@@ -9,7 +9,7 @@ describe('FIX #507 defer below-the-fold review outlook',()=>{
  it('code-splits ReviewOutlook but keeps a labelled nonblank fallback',()=>{
   const page=readFileSync('src/features/home/Page.tsx','utf8')
   expect(page).not.toMatch(/import\s*\{\s*ReviewOutlook\s*\}\s*from\s*['"]\.\/ReviewOutlook['"]/)
-  expect(page).toMatch(/lazy\(\(\)\s*=>\s*import\(['"]\.\/ReviewOutlook['"]\)/)
+  expect(page).toMatch(/retryNamed\(\(\)\s*=>\s*import\(['"]\.\/ReviewOutlook['"]\)/)
   expect(page).toContain('aria-label="Seven-day review forecast"')
   expect(page).toContain('<ReviewOutlook/>')
   // Deferral must not strand a pulsing skeleton below the fold. There is a

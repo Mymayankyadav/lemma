@@ -12,9 +12,16 @@ export function updatePendingTab(bar:HTMLElement|null|undefined,index:number,cha
  bar.querySelectorAll('.v7-tab').forEach((link,position)=>link.toggleAttribute('data-tab-destination',position===intended));
 }
 
-export default function RoutePending({shell,tabs}:{shell:RefObject<HTMLDivElement|null>;tabs:readonly {to:string}[]}){
+export default function RoutePending({shell,trigger,tabs}:{shell:RefObject<HTMLDivElement|null>;trigger:RefObject<HTMLAnchorElement|null>;tabs:readonly {to:string}[]}){
  const navigation=useNavigation(),{pathname}=useLocation();
  const path=navigation.location?.pathname,key=navigation.location?.key;
+ useLayoutEffect(()=>{
+  const link=trigger.current;
+  if(!key){trigger.current=null;return;}
+  if(!link?.isConnected||link.classList.contains('v7-tab')||link.hash.split('?')[0]!=='#'+path)return;
+  link.dataset.routeDestination='';
+  return ()=>{delete link.dataset.routeDestination;if(trigger.current===link)trigger.current=null;};
+ },[trigger,path,key]);
  useLayoutEffect(()=>{
   const bar=shell.current?.querySelector<HTMLElement>('.v7-tabbar');
   const index=tabs.findIndex(tab=>tab.to===path);

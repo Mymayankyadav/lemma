@@ -94,13 +94,14 @@ test('rapid review grade keys are accepted once per revealed card',async({page})
  const progress=page.getByRole('progressbar',{name:'Review progress',exact:true});
  await expect(progress).toHaveAttribute('aria-valuenow','0');
  for(let number=1;number<=5;number++){
+  await expect(page.getByRole('button',{name:'Show answer'})).toBeVisible();
   await page.keyboard.press('Space');
   await expect(page.getByRole('group',{name:'Answer',exact:true})).toBeFocused();
   await expect(page.getByRole('group',{name:'Grade answer',exact:true})).toBeVisible();
   for(let repeat=0;repeat<5;repeat++)await page.keyboard.press('3');
   await expect(progress).toHaveAttribute('aria-valuenow',String(number));
-  await expect(page.getByRole('button',{name:'Show answer'})).toBeVisible();
  }
+ await expect(page.getByRole('button',{name:'Show answer'})).toBeVisible();
 });
 
 test('Undo waits for a grade in flight and restores the same question',async({page})=>{
@@ -219,17 +220,24 @@ test('the undo countdown and commit stay together after hovering',async({page})=
  expect(await line.evaluate(node=>getComputedStyle(node).transform)).toBe(paused);
  const measured=toast.evaluate(node=>new Promise<number>((resolve,reject)=>{
   const line=node.querySelector('.v7-app-toast-countdown')!;
-  let end:number|null=null;
-  const limit=setTimeout(()=>reject(Error('Toast did not expire after resuming')),8000);
-  const sample=()=>{
+  let end:number|null=null,frame=0;
+  const observer=new MutationObserver(()=>{
+   if(node.isConnected&&!node.hasAttribute('aria-hidden'))return;
+   cleanUp();
+   if(end===null)reject(Error('The countdown did not resume'));
+   else resolve(Math.abs(performance.now()-end));
+  });
+  // Presence changes at commit. Sampling it on the next paint also counts an unrelated late frame.
+  observer.observe(node,{attributes:true,attributeFilter:['aria-hidden']});
+  observer.observe(node.parentElement!,{childList:true});
+  const limit=setTimeout(()=>{cleanUp();reject(Error('Toast did not expire after resuming'));},8000);
+  function cleanUp(){clearTimeout(limit);cancelAnimationFrame(frame);observer.disconnect();}
+  function readDeadline(){
    const animation=line.getAnimations()[0],duration=animation?.effect?.getTiming().duration;
    if(animation&&typeof animation.startTime==='number'&&typeof duration==='number')end=animation.startTime+duration;
-   if(node.isConnected&&!node.hasAttribute('aria-hidden')){requestAnimationFrame(sample);return;}
-   clearTimeout(limit);
-   if(end===null){reject(Error('The countdown did not resume'));return;}
-   resolve(Math.abs(performance.now()-end));
-  };
-  requestAnimationFrame(sample);
+   else frame=requestAnimationFrame(readDeadline);
+  }
+  frame=requestAnimationFrame(readDeadline);
  }));
  await page.mouse.move(0,0);
  expect(await measured).toBeLessThanOrEqual(50);

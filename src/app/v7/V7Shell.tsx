@@ -158,7 +158,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  }),[]);
  useEffect(()=>{if(beta)return afterPaintOnIdle(()=>{for(const {to} of tabs)warm.current(to);});},[beta]);
  useFocusChangeListener();
- const shell=useRef<HTMLDivElement>(null);
+ const shell=useRef<HTMLDivElement>(null),routeTrigger=useRef<HTMLAnchorElement|null>(null);
  const presentation=useRoutePresentation(shell,location.pathname,location.key,navigation,beta);
  const {announcement,remember,prepareKeyboardNavigation}=useRouteLinkFocus(shell,location.pathname,location.key,navigation,beta);
  const [searching,setSearching]=useState<SearchVisit|null>(null),[shortcuts,setShortcuts]=useState(false);
@@ -275,14 +275,26 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   onPointerDownCapture={event=>{if(event.button===0)intent.warmLink(event.target);}}
   onFocusCapture={event=>intent.warmLink(event.target)} onClickCapture={event=>{
    const link=remember(event);
+   const previous=routeTrigger.current;
+   if(previous)delete previous.dataset.routeDestination;
+   routeTrigger.current=link??null;
    if(link?.classList.contains('v7-tab'))indicateTab(link.hash.slice(1));
+   else if(link && dataRouter && link.hash!==window.location.hash){
+    // The activated control can acknowledge the click before loading or mounting the destination.
+    link.dataset.routeDestination='';
+    requestAnimationFrame(()=>{
+     if(dataRouter.router.state.navigation.state==='idle'&&routeTrigger.current===link){
+      delete link.dataset.routeDestination;routeTrigger.current=null;
+     }
+    });
+   }
   }}
   data-session={entry?'true':'false'} data-route-motion={presentation.motion}
   data-route-alternate={presentation.alternate&&beta?'':undefined} data-travel={presentation.travel}>
   <BootReady/>
   <OfflineBanner/>
   {beta&&<div ref={announcement} className="v7-sr-only" aria-live="polite"/>}
-  {dataRouter&&<><LayerBack/>{beta&&<RoutePending shell={shell} tabs={tabs}/>}</>}
+  {dataRouter&&<><LayerBack/>{beta&&<RoutePending shell={shell} trigger={routeTrigger} tabs={tabs}/>}</>}
   <Fragment key={colours}>{children}</Fragment>
   {searching?.key===key&&<LazyOverlay key={key} title="Search" full className="v7-search-dialog"
    onClose={()=>setSearching(null)} returnTarget={searchOpener} source={searchModule}

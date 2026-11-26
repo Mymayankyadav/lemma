@@ -146,7 +146,7 @@
 :where(html[data-v7]):has(:where(#root) .v7-shell[data-session="true"]) .v7-toast-host {--v7-toast-dock:calc(112px + var(--v7-space-3) + var(--v7-safe-bottom));}
 :where(html[data-v7]):has(:where(#root) .v7-shell[data-immersive="true"]) .v7-toast-host {--v7-toast-dock:calc(var(--v7-space-6) + var(--v7-safe-bottom));}
 :where(html[data-v7]):has(:where(#root) :is(.v7-learn-bar,.v7-path-bar,.v7-sticky-actions)) .v7-toast-host {--v7-toast-dock:calc(64px + 64px + var(--v7-space-5) + var(--v7-safe-bottom));}
-:where(html[data-v7]):has(dialog[open]) .v7-toast-host {--v7-toast-dock:var(--v7-space-4);}
+:where(html[data-v7] body[data-v7-modal], html[data-v7]:has(dialog[open]:not(.v7-sheet))) .v7-toast-host {--v7-toast-dock:var(--v7-space-4);}
 @media(min-width:700px){:where(html[data-v7]) .v7-toast-host {--v7-toast-dock:var(--v7-space-4);}}
 :where(html[data-v7]) .v7-toast-host {--v7-toast-clearance:0px;bottom:calc(max(var(--v7-toast-dock),var(--v7-toast-clearance)) + var(--v7-space-3));}
 :where(html[data-v7]) .v7-app-toast {position:relative;pointer-events:auto;display:flex;align-items:center;gap:var(--v7-space-2);min-height:48px;padding:var(--v7-space-1) var(--v7-space-1) var(--v7-space-1) var(--v7-space-4);border-radius:var(--v7-round);overflow:hidden;

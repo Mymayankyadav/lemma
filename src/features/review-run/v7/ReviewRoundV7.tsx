@@ -9,7 +9,7 @@ import {GradeGlyph,type GradeKey} from '../../../ui/v7/grades';
 import {fromEdge} from '../../../ui/v7/edges';
 import {haptic} from '../../../ui/v7/haptics';
 import {useToast} from '../../../ui/Toast';
-import {useCallback,useEffect,useId,useLayoutEffect,useMemo,useRef,useState,useSyncExternalStore,type PointerEvent as ReactPointerEvent} from 'react';
+import {memo,useCallback,useEffect,useId,useLayoutEffect,useMemo,useRef,useState,useSyncExternalStore,type PointerEvent as ReactPointerEvent} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Undo2,X} from 'lucide-react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -41,6 +41,7 @@ import {distances,durations,easings} from '../../../ui/v7/motion';
 
 const filter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 export const gradeNames=['Again','Hard','Good','Easy'] as const;
+const ReviewMath=memo(MathText);
 /** Swipe: right is Good, left is Again, up is Easy (PLAN §6.4 B). */
 export function swipeGrade(dx:number,dy:number,threshold=96):Rating|null{
  if(-dy>threshold&&Math.abs(dy)>Math.abs(dx))return 4;
@@ -81,6 +82,9 @@ export default function ReviewRoundV7(){
  const [message,setMessage]=useState<string|null>(null),[revealed,setRevealed]=useState(false),[confidence,setConfidence]=useState<Confidence>(null);
  const [startTime,setStartTime]=useState(Date.now()),[pending,setPending]=useState<PendingGrade|null>(null);
  const [grades,setGrades]=useState<Record<string,Rating>>({});
+ const items=run?.items;
+ const progressMarks=useMemo(()=>items?.map(entry=><li key={entry.id}
+  data-grade={grades[entry.id]?gradeNames[grades[entry.id]-1].toLowerCase():entry.state==='graded'?'answered':entry.state==='stale'?'stale':undefined}/>),[grades,items]);
  const [redo,setRedo]=useState<{runId:string;version:number;itemId:string;rating:Rating}|null>(null);
  const [drag,setDrag]=useState<SwipeOffset|null>(null),[tracking,setTracking]=useState(false);
  const dragStart=useRef<{x:number;y:number;id:number;lastX:number;lastY:number;at:number;velocity:SwipeOffset}|null>(null);
@@ -191,7 +195,8 @@ export default function ReviewRoundV7(){
   const motion=pendingRef.current,node=cardNode.current;
   let exit:Animation|undefined;
   if(reviewMotion&&!reduced&&!queuedUndo.current&&motion&&motion.itemId===item?.id&&node&&typeof node.animate==='function'){
-   const extent=Math.max(node.offsetWidth,node.offsetHeight)+24;
+   // Keyboard and button grades use a fixed nudge without measuring the card.
+   const extent=motion.swipe?Math.max(node.offsetWidth,node.offsetHeight)+24:0;
    const from=motion.swipe?dragTransform(motion.swipe):'none';
    const to=motion.swipe?dragTransform(swipeExit(motion.swipe,motion.rating,extent)):shifted(gradeDirection(motion.rating),distances.rise);
    const duration=1000*(motion.swipe?durations.baseExit:durations.quickExit);
@@ -368,12 +373,13 @@ export default function ReviewRoundV7(){
    <Button variant="primary" onClick={()=>navigate('/review')}>Start review</Button></div>
  </main>;
  const total=Math.max(1,run.progress.total),shown=Math.min(run.progress.total,run.progress.position+1);
- const canQueueUndo=busy&&!!pendingRef.current;
+ const savingGrade=busy?pendingRef.current:null;
+ const canQueueUndo=!!savingGrade;
  return <main id="main-content" className="v7-review" aria-label="Review round" data-revealed={revealed?'true':'false'} data-review-motion={reviewMotion||undefined} data-spread={isFlagOn('v7Spread')?'':undefined}>
   <ImmersiveHeader leave={<button type="button" className="v7-icon-button" aria-label="Leave" onClick={()=>{void leave();}}><X aria-hidden="true"/></button>}
    center={<p className="v7-review-count" role="progressbar" aria-label="Review progress" aria-valuemin={0} aria-valuemax={total} aria-valuenow={run.progress.position}>{shown} of {run.progress.total}</p>}
    more={<button type="button" className="v7-icon-button" aria-label="Undo last answer" title="Undo last answer (U)" disabled={!canQueueUndo&&(busy||!!pending||!!frozen||!lastGraded(run))} onClick={()=>{void undo();}}><Undo2 aria-hidden="true"/></button>}/>
-  <ol className="v7-review-progress" aria-hidden="true">{run.items.map(entry=><li key={entry.id} data-grade={grades[entry.id]?gradeNames[grades[entry.id]-1].toLowerCase():entry.state==='graded'?'answered':entry.state==='stale'?'stale':undefined}/>)}</ol>
+  <ol className="v7-review-progress" aria-hidden="true">{progressMarks}</ol>
   {run.scopeLabel&&<p className="v7-review-message">{run.scopeLabel}</p>}
   {message&&<p role="alert" className="v7-review-message">{message}</p>}
   {failedGrade!==null&&!pending&&!frozen&&<Button small disabled={busy} onClick={()=>{void grade(failedGrade);}}>Retry saving answer</Button>}
@@ -395,7 +401,7 @@ export default function ReviewRoundV7(){
     <Button disabled={busy||lookup.isError} onClick={()=>{void skip();}}>Skip stale card</Button><Button onClick={()=>{void lookup.refetch();}}>Retry card lookup</Button></section>
    :card?<section className="v7-review-stage">
     <AnimatePresence initial={false}>
-    <ReviewCard key={item.id} ref={attachCard} softExit={reviewMotion&&reduced} className={'v7-review-card '+subjectClass(subject)} aria-label="Review card" aria-busy={busy&&!!pendingRef.current}
+    <ReviewCard key={item.id} ref={attachCard} softExit={reviewMotion&&reduced} className={'v7-review-card '+subjectClass(subject)} aria-label="Review card" aria-busy={!!savingGrade}
      data-tracking={tracking||drag?true:undefined} onPointerDown={down} onPointerMove={move} onPointerUp={up}
      onPointerCancel={()=>{dragStart.current=null;setTracking(false);setDrag(null);}}
      style={drag&&!reduced?{transform:dragTransform(drag)}:undefined} data-swipe={swiping?gradeNames[swiping-1].toLowerCase():undefined}>
@@ -403,15 +409,15 @@ export default function ReviewRoundV7(){
       {project&&<><span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{subject==='Other'?project.subject.name:subject}</span></span><span className="v7-meta">{project.title}{card.checkpointTitle?' · '+card.checkpointTitle:''}</span></>}
       <p className="v7-eyebrow">{noteKindText(card.kind)}</p>
      </div>
-     <div className="v7-review-front" tabIndex={-1} role="group" aria-label="Question"><MathText source={faces.front} variant="card" interactiveMath/></div>
+     <div className="v7-review-front" tabIndex={-1} role="group" aria-label="Question"><ReviewMath source={faces.front} variant="card" interactiveMath/></div>
      {!revealed?<div className="v7-review-confidence"><p>How sure? <span className="v7-meta">Optional</span></p>
       <div role="radiogroup" aria-label="How sure?">{(['sure','unsure','guess'] as const).map(value=><button key={value} type="button" role="radio" aria-checked={confidence===value}
        className="v7-filter-chip" onClick={()=>setConfidence(confidence===value?null:value)}>{value[0].toUpperCase()+value.slice(1)}</button>)}</div></div>
      :<div className="v7-review-back" tabIndex={-1} role="group" aria-labelledby={answerHeading}>
-      <p className="v7-eyebrow" id={answerHeading}>Answer</p><MathText source={faces.back} variant="answer" interactiveMath/>
+      <p className="v7-eyebrow" id={answerHeading}>Answer</p><ReviewMath source={faces.back} variant="answer" interactiveMath/>
       <p className="v7-review-source">{card.sourceShort&&<span className="v7-meta">{card.sourceShort}{card.pageLabel?' p. '+card.pageLabel:''}</span>}
        {confidence&&<span className="v7-meta">You: {confidence[0].toUpperCase()+confidence.slice(1)}</span>}</p></div>}
-     {busy&&pendingRef.current&&<span className="v7-review-pending" role="status">{frozen?'Confirming your grade…':'Saving answer…'}</span>}
+     {savingGrade&&<span className="v7-review-pending" role="status">{frozen?'Confirming your grade…':'Saving answer…'}</span>}
      {swiping&&choices&&<p className="v7-review-swipe-label" aria-hidden="true">{gradeNames[swiping-1]} · {formatInterval(choices[swiping].delay/86_400_000)}</p>}
     </ReviewCard>
     </AnimatePresence>
@@ -422,7 +428,8 @@ export default function ReviewRoundV7(){
   {item&&card&&changedItem!==item.id&&(!(pending||frozen)||busy)&&run.status==='running'&&!run.progress.done&&<Dock className="v7-review-dock">
    {!revealed?<Button variant="primary" onClick={reveal}>Show answer<kbd className="v7-review-key" aria-hidden="true">Space</kbd></Button>
    :<div className="v7-review-grades" role="group" aria-label="Grade answer">{gradeNames.map((label,index)=>{const choice=choices?.[(index+1) as Rating];
-    return <button key={label} type="button" data-grade={label.toLowerCase()} disabled={busy||!choices} onClick={()=>{void grade((index+1) as Rating);}}
+    return <button key={label} type="button" data-grade={label.toLowerCase()} data-pending={savingGrade?.rating===index+1||undefined}
+     disabled={busy||!choices} onClick={()=>{void grade((index+1) as Rating);}}
      aria-label={label+(choice?', next in '+formatInterval(choice.delay/86_400_000):'')+' ('+(index+1)+')'}>
      <span><GradeGlyph grade={label.toLowerCase() as GradeKey} size={14}/>{label}</span><small>{choice?formatInterval(choice.delay/86_400_000):'—'}</small><kbd className="v7-review-key" aria-hidden="true">{index+1}</kbd></button>;})}</div>}
   </Dock>}

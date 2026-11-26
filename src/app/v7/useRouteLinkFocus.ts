@@ -3,7 +3,7 @@ import {hasOpenLayer,restoreLayerFocus} from '../../ui/v7/layers';
 import {routeLink} from './routeIntent';
 import {v7ScreenFor,V7_DETAIL_SCREENS} from '../v7Kit';
 
-type Origin={url:string;label:string;link:WeakRef<HTMLAnchorElement>;tab:boolean;keyboard:boolean};
+type Origin={url:string;label:string;link?:WeakRef<HTMLAnchorElement>;tab:boolean;keyboard:boolean};
 const labelFor=(link:HTMLAnchorElement)=>link.getAttribute('aria-label')??link.textContent?.trim()??'';
 
 export function useRouteLinkFocus(root:RefObject<HTMLDivElement|null>,path:string,key:string,navigation:string,beta:boolean){
@@ -26,7 +26,7 @@ export function useRouteLinkFocus(root:RefObject<HTMLDivElement|null>,path:strin
    const shell=root.current;
    const restore=()=>{
     if(hasOpenLayer())return false;
-    const known=saved.link.deref();
+    const known=saved.link?.deref();
     const link=known?.isConnected?known:[...shell.querySelectorAll<HTMLAnchorElement>('a[href]')]
      .find(candidate=>candidate.hash===saved.url&&labelFor(candidate)===saved.label&&candidate.getClientRects().length>0);
     if(!link?.getClientRects().length)return false;
@@ -50,7 +50,7 @@ export function useRouteLinkFocus(root:RefObject<HTMLDivElement|null>,path:strin
   if(entries.size>24)entries.delete(entries.keys().next().value!);
   const screen=v7ScreenFor(path);
   const detail=screen&&V7_DETAIL_SCREENS.has(screen);
-  const trigger=origin.link.deref();
+  const trigger=origin.link?.deref();
   if((detail||origin.tab&&origin.keyboard)&&trigger===document.activeElement)trigger?.blur();
   else if(origin.tab&&!origin.keyboard)announce(origin.label);
  },[root,path,key,navigation,beta]);
@@ -59,7 +59,7 @@ export function useRouteLinkFocus(root:RefObject<HTMLDivElement|null>,path:strin
   remember(event:MouseEvent){
    if(!beta||event.button!==0||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
    const link=routeLink(event.target);
-   if(link)pending.current={url:link.hash,label:labelFor(link),link:new WeakRef(link),tab:link.classList.contains('v7-tab'),keyboard:event.detail===0};
+   if(link)pending.current={url:link.hash,label:labelFor(link),link:typeof WeakRef==='function'?new WeakRef(link):undefined,tab:link.classList.contains('v7-tab'),keyboard:event.detail===0};
    return link;
   },
   prepareKeyboardNavigation,

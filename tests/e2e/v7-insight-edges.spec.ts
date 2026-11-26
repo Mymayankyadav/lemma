@@ -1,5 +1,6 @@
 import {test,expect,type Page} from "@playwright/test";
 import {NOW,at} from "./v7-scenes";
+import {enableSurfaceBeta} from "./helpers/surface-preview";
 // Part 10 acceptance: PLAN §6.13–6.15 "Done when", on the audit seed with the clock frozen.
 test.use({locale:"en-IN",timezoneId:"Asia/Kolkata",colorScheme:"dark"});
 async function open(page:Page,hash:string){
@@ -22,6 +23,28 @@ test("§6.13 one range control changes every figure on the tab",async({page})=>{
  await expect(points).toHaveCount(7);
  expect(before).not.toBe(7);
  await expect(page.getByRole("radiogroup",{name:"Range"})).toHaveCount(1);
+});
+
+test("returning to Progress paints the saved chart on its first frame",async({page})=>{
+ await enableSurfaceBeta(page);
+ await open(page,"/insights");
+ const figure=page.locator("main.v7-progress .v7-progress-figure");
+ await expect(figure).toBeVisible();
+ const expected=await figure.innerText();
+ const nav=page.getByRole("navigation",{name:"Main navigation"});
+ await nav.getByRole("link",{name:"Paths"}).click();
+ await expect(page.getByRole("heading",{level:1,name:"Paths"})).toBeVisible();
+ // Observe the first paintable Progress frame, including one that contains only a loading indicator.
+ const firstFigure=page.evaluate(()=>new Promise<string|null>(resolve=>{
+  function frame(){
+   const main=document.querySelector("#root main.v7-progress");
+   if(main){resolve(main.querySelector(".v7-progress-figure")?.textContent??null);return;}
+   requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+ }));
+ await page.goBack();
+ expect(await firstFigure).toBe(expected);
 });
 
 // N220 (Owner report): charts answer a tap with a tip; the data table is for screen readers, not a visible Table switch.
@@ -88,7 +111,9 @@ test("Recall chart labels stay readable at 160% text",async({page})=>{
 test("§6.13 the hero equals the sum of the Focus by day columns",async({page})=>{
  await open(page,"/insights?tab=time&range=7");
  const chart=page.locator("section.v7-chart",{hasText:"Focus by day"}).first();
- const cells=await chart.locator(".v7-sr-only table tbody tr td:last-child").allTextContents();
+ const values=chart.locator(".v7-sr-only table tbody tr td:last-child");
+ await expect(values.first()).toHaveText(/\d/);
+ const cells=await values.allTextContents();
  expect(cells.length).toBeGreaterThan(0);
  const minutes=(text:string)=>{const h=/([\d.]+)\s*h/.exec(text),m=/(\d+)\s*min/.exec(text);return (h?Number(h[1])*60:0)+(m&&!h?Number(m[1]):0);};
  const sum=cells.reduce((total,text)=>total+minutes(text),0);
@@ -101,7 +126,9 @@ test("§6.14 each Settings row shows its current value, and a theme change updat
  await open(page,"/settings");
  const rows=page.locator("a.v7-settings-row");
  await expect(rows).toHaveCount(8);
- await expect(rows.filter({hasText:"Advanced"})).toContainText("Diagnostics");
+ const advancedSummary=page.getByRole("link",{name:/^Advanced\b/i}).locator("small");
+ await expect(advancedSummary).toContainText(/\bBeta testing\b/i);
+ await expect(advancedSummary).toContainText(/\bdiagnostics\b/i);
  for(const row of await rows.all())expect(((await row.locator("small").textContent())??"").trim().length).toBeGreaterThan(0);
  await rows.filter({hasText:"Appearance"}).click();
  await page.getByRole("radio",{name:/^Day/}).click();

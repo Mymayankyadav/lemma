@@ -1,7 +1,7 @@
 /** Civil study days, independent of the device zone and 23/25-hour DST days. */
 export const DAY = 86_400_000;
 const formatters = new Map<string, Intl.DateTimeFormat>();
-function parts(at: number, timeZone: string) {
+export function civilTimeParts(at: number, timeZone: string) {
   let formatter = formatters.get(timeZone);
   if (!formatter) {
     formatter = new Intl.DateTimeFormat("en-GB", {
@@ -14,6 +14,7 @@ function parts(at: number, timeZone: string) {
       second: "2-digit",
       hourCycle: "h23",
     });
+    if (formatters.size >= 16) formatters.delete(formatters.keys().next().value!);
     formatters.set(timeZone, formatter);
   }
   const p = Object.fromEntries(
@@ -29,7 +30,7 @@ function parts(at: number, timeZone: string) {
   };
 }
 function civilStamp(at: number, zone: string) {
-  const p = parts(at, zone);
+  const p = civilTimeParts(at, zone);
   return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
 }
 function wallTimeCandidates(target: number, zone: string): number[] {
@@ -57,11 +58,11 @@ export function studyClock(rolloverHour = 4, timeZone = "UTC"): StudyClock {
   if (!Number.isInteger(rolloverHour) || rolloverHour < 0 || rolloverHour > 23)
     throw new RangeError("Invalid rollover hour");
   // Validate the zone immediately, including on an empty dataset.
-  parts(0, timeZone);
+  civilTimeParts(0, timeZone);
   return {
     rolloverHour,
     dayIndex(at) {
-      const p = parts(at, timeZone);
+      const p = civilTimeParts(at, timeZone);
       return (
         Math.floor(Date.UTC(p.year, p.month - 1, p.day) / DAY) -
         (p.hour < rolloverHour ? 1 : 0)

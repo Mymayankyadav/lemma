@@ -65,8 +65,7 @@ export function CheckpointReadiness({checkpointId}:{checkpointId:string}){
  </li>)}</ul></Disclosure>;
 }
 
-export function PathEstimateDetails({projectId}:{projectId:string}){
- const {data}=useAtlasModel();
+export function PathEstimateDetails({projectId,data}:{projectId:string;data:ReturnType<typeof useAtlasModel>['data']}){
  if(!isFlagOn('atlasV3')||!data)return null;
  const checkpoints=data.checkpoints.filter(checkpoint=>checkpoint.project_id===projectId&&data.durations[checkpoint.id]);
  if(!checkpoints.length&&!data.fits[projectId])return null;

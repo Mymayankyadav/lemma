@@ -64,7 +64,12 @@ export function useRouteIntent(beta:boolean){
     }));
     break;
    case '/settings':speculative(settings());break;
-   case '/insights':void cache.prefetchQuery({queryKey:['insights',30],queryFn:()=>api.getInsightData(30)});break;
+   case '/insights':{
+    speculative(Promise.all([v7Modules.progress.read(),settings()]).then(([module,preferences])=>{
+     if(current())return module.warmProgress(cache,calendarOwner,search,ownerZone(preferences));
+    }));
+    break;
+   }
    case '/cards':speculative(v7Modules.cards.read().then(module=>{if(current())return module.warmCards(cache);}));break;
    case '/practice':speculative(v7Modules.practice.read().then(module=>{if(current())module.warmPractice();}));break;
    case '/tasks':speculative(v7Modules.tasks.read().then(module=>{if(current())module.warmTasks();}));break;

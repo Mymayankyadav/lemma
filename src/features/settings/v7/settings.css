@@ -38,7 +38,6 @@
  :where(html[data-v7]) .v7-settings-danger h2 {margin:0;color:var(--v7-role-status-danger);font:600 var(--v7-type-subhead)/1.25 var(--v7-sans);}
  /* The shared section forms use the kit fields and semantic colours. */
  :where(html[data-v7]) .v7-settings-embedded {padding:var(--v7-space-4);}
- :where(html[data-v7]) .v7-settings-embedded [data-teaching-styles] [aria-checked="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
  /* R1 · F03 grouped lists: an overline per group, rows of 56 px with the label, the current value and a chevron, or a switch. */
  :where(html[data-v7]) .v7-set-group {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-set-group > h2 {margin:0 0 0 var(--v7-space-1);}

@@ -52,7 +52,7 @@ function draw(drag:Drag,y:number){
 export function installSheetDrag(doc:Document=document):()=>void{
  let drag:Drag|null=null;
  const settling=new Map<HTMLDialogElement,number>();
- const pending=new Set<number>();
+ const pending=new Map<number,HTMLDialogElement>();
  function clear(dialog:HTMLDialogElement){
   window.clearTimeout(settling.get(dialog));settling.delete(dialog);
   resetDrag(dialog);
@@ -103,7 +103,7 @@ export function installSheetDrag(doc:Document=document):()=>void{
    else dialog.dispatchEvent(new Event('cancel',{cancelable:true}));
    // A dirty guard keeps this dialog open. Restore it below the guard; a dismissed one has already yielded its pixels.
    const frame=requestAnimationFrame(()=>{pending.delete(frame);if(dialog.open)settle(dialog);else clear(dialog);});
-   pending.add(frame);
+   pending.set(frame,dialog);
   }else if(distance>0)settle(current.dialog);
   else clear(current.dialog);
  };
@@ -121,6 +121,7 @@ export function installSheetDrag(doc:Document=document):()=>void{
   doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',cancel);
   if(drag)clear(drag.dialog);
   settling.forEach((_,dialog)=>clear(dialog));
-  pending.forEach(frame=>cancelAnimationFrame(frame));
+  pending.forEach((dialog,frame)=>{cancelAnimationFrame(frame);clear(dialog);});
+  pending.clear();
  };
 }

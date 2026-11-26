@@ -26,19 +26,26 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
 }){
  const scroll=useRef<HTMLDivElement>(null);
  const cells=useMemo(()=>weekCells(weekStart),[weekStart]);
- const columns=useMemo(()=>cells.map(cell=>{
-  const range=calendarRange(cell.day,zone);
-  const visible=blocks.filter(block=>block.status!=='cancelled');
-  // N168: one bar per saved session, its pauses and breaks drawn inside.
-  const sessions=loggedSessions(entries,range);
-  const inputs=[...visible.map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt})),...sessions.map(session=>({id:session.id,start:session.start,end:session.end}))]
-   .filter(item=>Date.parse(item.end)>Date.parse(range.start)&&Date.parse(item.start)<Date.parse(range.end));
-  return {cell,range,whole:dayMinutes(range),items:layoutDayIntervals(inputs,range,WEEK_HOUR_PX),sessions:new Map(sessions.map(session=>[session.id,session])),capacity:dayCapacity(cell.day,zone,entries,blocks)};
- }),[cells,zone,blocks,entries]);
+ const columns=useMemo(()=>{
+  const planned=blocks.filter(block=>block.status!=='cancelled')
+   .map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt}));
+  // Group pauses and breaks once for the week, then place each session in
+  // every civil day it overlaps, including intervals that span midnight.
+  const sessionGroups=loggedSessions(entries,calendarRange(weekStart,zone,7));
+  return cells.map(cell=>{
+   const range=calendarRange(cell.day,zone),start=Date.parse(range.start),end=Date.parse(range.end);
+   // N168: one bar per saved session, its pauses and breaks drawn inside.
+   const within=(item:{start:string;end:string})=>Date.parse(item.end)>start&&Date.parse(item.start)<end;
+   const sessions=sessionGroups.filter(within);
+   const inputs=[...planned.filter(within),
+    ...sessions.map(session=>({id:session.id,start:session.start,end:session.end}))];
+   return {cell,range,whole:dayMinutes(range),items:layoutDayIntervals(inputs,range,WEEK_HOUR_PX),sessions:new Map(sessions.map(session=>[session.id,session])),capacity:dayCapacity(cell.day,zone,entries,blocks)};
+  });
+ },[weekStart,cells,zone,blocks,entries]);
  const anchor=columns.find(column=>column.cell.day===date)?.range.start??columns[0].range.start;
  const from=Date.parse(anchor);
- const openingAnchor=useRef(timeAnchor?.current),programmaticScroll=useRef<number|null>(null);
- const anchored=openingAnchor.current!=null?elapsedMinuteAt(date,zone,from,openingAnchor.current):null;
+ const openingAnchor=useRef(timeAnchor?.current).current,programmaticScroll=useRef<number|null>(null);
+ const anchored=useMemo(()=>openingAnchor!=null?elapsedMinuteAt(date,zone,from,openingAnchor):null,[date,zone,from,openingAnchor]);
  const first=Math.min(anchored===null?360:Math.floor(anchored/60)*60,360,...columns.flatMap(column=>column.items.map(item=>Math.floor(item.startMinute/60)*60)));
  const whole=Math.max(...columns.map(column=>column.whole));
  const height=(whole-first)*WEEK_HOUR_PX/60;
@@ -46,11 +53,13 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
  const byId=useMemo(()=>new Map(blocks.map(block=>[block.id,block])),[blocks]);
  useLayoutEffect(()=>{
   const node=scroll.current;if(!node)return;
-  const minute=timeAnchor?.current!=null?elapsedMinuteAt(date,zone,from,timeAnchor.current):450;
+  const current=timeAnchor?.current;
+  const minute=current==null?450:current===openingAnchor&&anchored!==null?anchored:elapsedMinuteAt(date,zone,from,current);
   node.scrollTop=Math.max(0,(minute-first)*WEEK_HOUR_PX/60);
-  programmaticScroll.current=node.scrollTop;
-  if(timeAnchor&&timeAnchor.current==null)timeAnchor.current=wallMinuteAt(from+(first+node.scrollTop*60/WEEK_HOUR_PX)*MINUTE,zone);
- },[weekStart,date,zone,from,first,timeAnchor]);
+  const applied=node.scrollTop;
+  programmaticScroll.current=applied;
+  if(timeAnchor&&timeAnchor.current==null)timeAnchor.current=wallMinuteAt(from+(first+applied*60/WEEK_HOUR_PX)*MINUTE,zone);
+ },[weekStart,date,zone,from,first,timeAnchor,openingAnchor,anchored]);
  return <section className="v7-wk" aria-label="Week calendar">
   <div className="v7-wk-head" role="group" aria-label="Week">
    <span aria-hidden="true"/>

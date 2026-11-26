@@ -63,8 +63,11 @@ export function useCardCommentsPage(...args: Parameters<LemmaApi['getCardComment
 export function useAtlas(...args: Parameters<LemmaApi['getAtlas']>) {
  return useQuery({ ...queryDefaults, queryKey: ['atlas'], queryFn: () => getApi().getAtlas() })
 }
+export function insightQuery(days:Parameters<LemmaApi['getInsightData']>[0]) {
+ return {...queryDefaults,queryKey:['insights',days],queryFn:()=>getApi().getInsightData(days)}
+}
 export function useInsightData(...args: Parameters<LemmaApi['getInsightData']>) {
- return useQuery({ ...queryDefaults, queryKey: ['insights', args[0]], queryFn: () => getApi().getInsightData(args[0]) })
+ return useQuery(insightQuery(args[0]))
 }
 export function useSettings(...args: Parameters<LemmaApi['getSettings']>) {
  return useQuery({ ...queryDefaults, queryKey: ['settings'], queryFn: () => getApi().getSettings() })

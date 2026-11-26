@@ -46,6 +46,7 @@
  :where(html[data-v7]) .v7-review-grades {display:grid;grid-template-columns:repeat(4,1fr);gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-review-grades button {min-height:64px;min-width:0;display:grid;justify-items:center;align-content:center;gap:2px;border:var(--v7-hairline) solid var(--v7-role-border-default);border-top:3px solid var(--v7-grade);
   border-radius:14px;background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ :where(html[data-v7]) .v7-review-grades button[data-pending] {border-color:var(--v7-grade);}
  :where(html[data-v7]) .v7-review-grades small {color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);font-variant-numeric:tabular-nums;}
  /* N157 · V09: the card is a page at the reading measure (34 em of its text), centred, never the window's width. */
  :where(html[data-v7]) .v7-review-key {display:none;}

@@ -16,9 +16,9 @@ function moduleUrl(error:unknown):URL|null {
 
 /** Cache a successful import and share the same retry budget across intent and rendering. */
 export function createLazyModule<T>(load:()=>Promise<T>){
- let pending:Promise<T>|undefined;
+ let pending:Promise<T>|undefined, resolved:T|undefined;
  let failedUrl:URL|null=null;
- const read=()=>pending??=retry().catch(error=>{pending=undefined;throw error;});
+ const read=()=>pending??=retry().then(module=>{resolved=module;return module;}).catch(error=>{pending=undefined;throw error;});
  async function retry():Promise<T>{
   for(let attempt=0;;attempt++){
    try{
@@ -36,7 +36,7 @@ export function createLazyModule<T>(load:()=>Promise<T>){
    }
   }
  }
- return {read,warm:()=>{void read().catch(()=>undefined);}};
+ return {read,peek:()=>resolved,warm:()=>{void read().catch(()=>undefined);}};
 }
 
 export function retryLazy<P>(load:()=>Promise<{default:ComponentType<P>}>){

@@ -1,3 +1,4 @@
+import {civilTimeParts,DAY} from '../calendar';
 import {effectiveFocusSpans} from '../studyTime';
 import type { ActiveEffort, Occupied, Range, StudyEntry } from './types';
 export type { ActiveEffort, Occupied, Range, StudyEntry } from './types';
@@ -88,30 +89,43 @@ export function subjectPartition(entries: StudyEntry[], range: Range, zone: stri
   }
   return result;
 }
-function midnight(date:string,formatter:Intl.DateTimeFormat) {
+// A six-month chart uses adjacent civil days repeatedly. Cache only their UTC boundaries.
+const midnightCache=new Map<string,string>();
+function midnight(date:string,zone:string):string {
+  const key=zone+'|'+date;
+  const saved=midnightCache.get(key);
+  if(saved!==undefined)return saved;
   const [y,m,d]=date.split('-').map(Number);
   const target=Date.UTC(y,m-1,d);
-  const localDate=(instant:number) => {
-    const parts=formatter.formatToParts(new Date(instant));
-    const get=(type:string)=>Number(parts.find(part=>part.type===type)?.value);
-    return Date.UTC(get('year'),get('month')-1,get('day'));
+  const civilDate=(instant:number)=>{
+    const parts=civilTimeParts(instant,zone);
+    return Date.UTC(parts.year,parts.month-1,parts.day);
   };
-  // Find the first instant in this civil date, not a hypothetical 00:00.
-  // Some zones (e.g. America/Santiago) skip midnight during a DST jump.
-  // The 48-hour bracket covers all current IANA offsets and skipped dates.
-  let before=target-48*60*60*1000, after=target+48*60*60*1000;
-  while (after-before>1) {
-    const mid=before+Math.floor((after-before)/2);
-    if (localDate(mid)>=target) after=mid;
-    else before=mid;
+  const offsetAt=(instant:number)=>{
+    const p=civilTimeParts(instant,zone);
+    return Date.UTC(p.year,p.month-1,p.day,p.hour,p.minute,p.second)-instant;
+  };
+  const offset=offsetAt(target-DAY);
+  let first=target-offset;
+  // A constant offset across both sides of the date gives midnight directly.
+  // Retain the original boundary search around offset changes, including changes
+  // just after midnight which briefly return to the previous civil date.
+  if(offset!==offsetAt(target+DAY)){
+    let before=target-2*DAY,after=target+2*DAY;
+    while(after-before>1){
+      const mid=before+Math.floor((after-before)/2);
+      if(civilDate(mid)>=target)after=mid;
+      else before=mid;
+    }
+    first=after;
   }
-  return new Date(after).toISOString();
+  const value=new Date(first).toISOString();
+  if(midnightCache.size>=512)midnightCache.delete(midnightCache.keys().next().value!);
+  midnightCache.set(key,value);
+  return value;
 }
 export function dayBounds(date:string,zone:string): Range {
   const [y,m,d]=date.split('-').map(Number);
   const next=new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10);
-  const formatter=new Intl.DateTimeFormat('en-US',{
-    timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'
-  });
-  return {start:midnight(date,formatter),end:midnight(next,formatter)};
+  return {start:midnight(date,zone),end:midnight(next,zone)};
 }

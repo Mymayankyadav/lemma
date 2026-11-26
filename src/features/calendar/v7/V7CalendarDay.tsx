@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState,type ReactNode} from 'react';
+import {startTransition,useCallback,useEffect,useLayoutEffect,useMemo,useOptimistic,useRef,useState,type ReactNode} from 'react';
 import {AnimatePresence,motion,useIsPresent} from 'motion/react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {authSignedOut} from '../../../data/authBoundary';
@@ -155,14 +155,17 @@ export default function V7CalendarDay(){
  const dayBlocks=useMemo(()=>blocks.filter(block=>block.status!=='cancelled'&&Date.parse(block.endsAt)>Date.parse(dayRange.start)&&Date.parse(block.startsAt)<Date.parse(dayRange.end)),[blocks,dayRange]);
  // B3: one shared overdue count — tasks, deadlines and practice topics together, the same number Today and Tasks show.
  const overdueCount=useOverdueSummary(zone,reload).total;
- const dueToday=dueForDay(date,date,zone,dues);
- const displayedDues=dueForDay(shownDay,date,zone,dues);
+ const dueToday=useMemo(()=>dueForDay(date,date,zone,dues),[date,zone,dues]);
+ const displayedDues=useMemo(()=>shownDay===date?dueToday:dueForDay(shownDay,date,zone,dues),[shownDay,date,zone,dues,dueToday]);
  const currentPage=useRef({date,view,params});currentPage.current={date,view,params};
- const dueRows=dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>);
+ const dueRows=useMemo(()=>dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>),[dueToday,zone,projects]);
  function go(key:'view'|'date',value:string){
   const next=new URLSearchParams(params);next.set('view',view);next.set('date',date);next.set(key,value);setParams(next);
  }
- const chooseView=(value:string)=>go('view',value.toLowerCase());
+ function chooseView(value:string){
+  const next=new URLSearchParams(params);next.set('view',value.toLowerCase());next.set('date',date);
+  return navigate({search:'?'+next.toString()});
+ }
  function openDay(day:string){
   const next=new URLSearchParams(params);next.set('view','day');next.set('date',day);next.delete('new');next.delete('edit');next.delete('start');setParams(next);
  }
@@ -307,8 +310,7 @@ export default function V7CalendarDay(){
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
   </HubHeader>
   <div className="v7-cal-toolbar" role="group" aria-label="Calendar navigation">
-   {wideControls?<Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={chooseView}/>
-    :<ViewMenu value={viewLabel(view)} options={views} onChange={chooseView}/>}
+   <CalendarViewControls value={viewLabel(view)} onChange={chooseView} wide={wideControls} continuity={continuity}/>
    {loadingAt!==null&&shown&&!showSkeleton&&<span className="v7-cal-updating v7-meta" role="status">Updating…</span>}
    <span className="v7-cal-toolbar-gap" aria-hidden="true"/>
    {view==='day'&&<IconButton label="Browse day" onClick={()=>setBrowse(true)}><Clock aria-hidden="true"/></IconButton>}
@@ -393,6 +395,18 @@ export default function V7CalendarDay(){
 }
 
 type PaneMotion={swap:'earlier'|'later'|'view';reduced:boolean;continuity:boolean};
+function CalendarViewControls({value,onChange,wide,continuity}:{value:string;onChange:(value:string)=>void|Promise<void>;wide:boolean;continuity:boolean}){
+ const [choice,setChoice]=useOptimistic(value);
+ const choose=(next:string)=>{
+  if(next===choice)return;
+  if(!continuity){void onChange(next);return;}
+  // Commit only the control's selection at input priority. The grid follows
+  // the actual navigation, so Back, cancellation and saved query state agree.
+  startTransition(async()=>{setChoice(next);await onChange(next);});
+ };
+ return wide?<Segmented label="Calendar view" options={[...views]} value={choice} onChange={choose}/>
+  :<ViewMenu value={choice} options={views} onChange={choose}/>;
+}
 const paneVariants={
  enter:({swap,reduced}:PaneMotion)=>({opacity:0,x:reduced||swap==='view'?0:(swap==='later'?1:-1)*distances.swapShift}),
  ready:({reduced}:PaneMotion)=>({opacity:1,x:0,transition:{duration:reduced?durations.reduced:durations.quick,ease:easings.enter}}),

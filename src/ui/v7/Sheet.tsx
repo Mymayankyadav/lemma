@@ -152,11 +152,14 @@ function DialogSheet(props: SheetProps & {beta: boolean}) {
     const release = registerLayer({element:dialog, role:surfaceRole, owner:parent, trigger,
       dirty:() => !!latest.current.dirty, historyEntry:() => !!latest.current.historyEntry,
       returnTarget:() => latest.current.returnTarget?.() ?? null, dismiss});
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open','');
     const focus = dialog.querySelector<HTMLElement>('[data-v7-autofocus="true"]') ??
       (surfaceRole === 'S5' ? dialog.querySelector<HTMLElement>('.v7-sheet-footer button:not(.v7-danger)') : null);
-    focus?.focus({preventScroll:true});
+    const nativeFocus=focus&&!focus.hasAttribute('autofocus');
+    if(nativeFocus)focus.setAttribute('autofocus','');
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open','');
+    if(nativeFocus)focus.removeAttribute('autofocus');
+    if(focus&&doc.activeElement!==focus)focus.focus({preventScroll:true});
     setHost(dialog);
     return () => {
       if (props.beta && topLayerElement(doc) === dialog && !isLayerHandoff(doc)) retainSheetExit(dialog);
