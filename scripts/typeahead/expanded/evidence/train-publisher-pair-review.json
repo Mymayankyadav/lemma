@@ -1,0 +1,12 @@
+{
+  "findings": [
+    "Different calculus derivative and precalculus summation problems.",
+    "Different topic-search pages, with shared navigation-style text.",
+    "Different forum discussions, one on a relativity puzzle and one on mixed partials."
+  ],
+  "interpretation": "Same publisher is a conservative split link, not proof of duplicate documents. These pairs must not be discarded solely for publisher membership. This small review does not estimate false merge or miss rates.",
+  "pairIdsSha256": "97ee6e53cdc77b0a3d7d0e7932589331e2793e7a7b410c3822017c87707b059a",
+  "pairsReviewed": 3,
+  "reviewer": "Assistant inspection only; not an independent human annotation.",
+  "scope": "Manual, nonrepresentative review of first three same-publisher pairs in first 1000 archived train documents; no held-out inputs."
+}

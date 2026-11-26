@@ -1,0 +1,57 @@
+{
+  "status": "Synthetic implementation fixtures authored for this pipeline; not learner traces, commissioned benchmark cases, reviewer labels, or evaluation evidence.",
+  "families": [
+    {
+      "id": "neutral-wording",
+      "split": "fit",
+      "question": "Describe this example.",
+      "draft": "in this ",
+      "scope": {"subject": "algebra", "step": "explanation", "mode": "prose"},
+      "candidates": ["example", "case"],
+      "variants": [
+        {"hint": "none", "expected": "no_preference"},
+        {"hint": "prefer example", "expected": "example"},
+        {"hint": "prefer case", "expected": "case"}
+      ]
+    },
+    {
+      "id": "proof-choice",
+      "split": "fit",
+      "question": "Discuss the map.",
+      "draft": "therefore the map is ",
+      "scope": {"subject": "algebra", "step": "proof", "mode": "prose"},
+      "candidates": ["injective", "surjective"],
+      "variants": [
+        {"hint": "none", "expected": "withhold_both"},
+        {"hint": "prefer injective", "expected": "withhold_both"},
+        {"hint": "prefer surjective", "expected": "withhold_both"}
+      ]
+    },
+    {
+      "id": "scoped-symbol",
+      "split": "calibration",
+      "question": "Let R be a ring, and r an element of R.",
+      "draft": "the element ",
+      "scope": {"subject": "algebra", "step": "notation", "mode": "prose"},
+      "candidates": ["r", "R"],
+      "variants": [
+        {"hint": "none", "expected": "no_preference"},
+        {"hint": "prefer r", "expected": "r"},
+        {"hint": "conflicting r and R", "expected": "no_preference"}
+      ]
+    },
+    {
+      "id": "alternate-proof",
+      "split": "challenge",
+      "question": "Prove the result by any valid method.",
+      "draft": "we proceed by ",
+      "scope": {"subject": "analysis", "step": "proof", "mode": "prose"},
+      "candidates": ["induction", "contradiction"],
+      "variants": [
+        {"hint": "none", "expected": "withhold_both"},
+        {"hint": "prefer induction", "expected": "withhold_both"},
+        {"hint": "prefer contradiction", "expected": "withhold_both"}
+      ]
+    }
+  ]
+}

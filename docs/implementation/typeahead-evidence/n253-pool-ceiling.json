@@ -1,0 +1,44 @@
+{
+  "arms": {
+    "m2": {
+      "captureSha256": "937d7c57b1c826637bb9d38b0318c212dcdce7feca435796b791d7fdd6f23e84",
+      "lanes": {
+        "boundary": {
+          "eligible": 788,
+          "eligibleOrVisible": 788,
+          "opportunities": 1884,
+          "visible": 411,
+          "visibleOnly": 0
+        },
+        "started": {
+          "eligible": 671,
+          "eligibleOrVisible": 671,
+          "opportunities": 1060,
+          "visible": 524,
+          "visibleOnly": 0
+        }
+      }
+    },
+    "shipping": {
+      "captureSha256": "90f953990725c37b42fd0929e01312fdd96f23e8c21cb7c938d8ed1470124994",
+      "lanes": {
+        "boundary": {
+          "eligible": 766,
+          "eligibleOrVisible": 766,
+          "opportunities": 1884,
+          "visible": 402,
+          "visibleOnly": 0
+        },
+        "started": {
+          "eligible": 669,
+          "eligibleOrVisible": 669,
+          "opportunities": 1060,
+          "visible": 518,
+          "visibleOnly": 0
+        }
+      }
+    }
+  },
+  "definition": "Union of exact eligible edits and visible edits at the recorded observation. This bounds reranking on these fixed pools only.",
+  "referenceSha256": "3af4d03282d3e854b087f413ab332c7e3716dfbf67c70e99cea4a8217c2c3de9"
+}

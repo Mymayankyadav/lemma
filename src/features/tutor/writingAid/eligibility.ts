@@ -4,6 +4,9 @@ const CHOICE = /^(?:no|not|or|if|only|all|some|any|neither|never|contradiction|c
 const STEERING = /^(?:because|by|as|since|so|hence|thus|therefore|then|consequently|implies|implying|whence|thereby|follows|clearly|obviously|trivially|suppose|assume|assuming|wlog)$/iu;
 const OPERAND = /(?:\b(?:take|choose|witness|there exists|equals?|by|implies|belongs to|is a subset of)|[=<>≤≥∈∉⊆⊂≠∀∃⇒⇔¬]|\\(?:in|notin|subset|subseteq|supset|supseteq|neq|ne|eq|le|leq|ge|geq|lt|gt|approx|sim|equiv|implies|Rightarrow|to|mapsto|forall|exists))\s*$/u;
 const CHOICE_WORDS = CHOICE.source.slice(4, -2).split('|').filter(word => /^\p{L}+$/u.test(word));
+const PROOF_GAP = /(?:\b(?:by|because|since|if|then|not|or|and|only|all|for every|witness|choose|let|take|assume|suppose|given|denote|define|equals?|implies|therefore|hence|thus|consequently|belongs to|is a subset of)|[=<>≤≥∈∉⊆⊂≠∀∃⇒⇔¬])\s*$/iu;
+
+export const hasProofChoiceGap = (text: string): boolean => PROOF_GAP.test(text);
 
 export const aidWords = (value: string): string[] =>
   value.normalize('NFKC').toLowerCase().match(/[\p{L}\p{M}\p{N}]+/gu) ?? [];

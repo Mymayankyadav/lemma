@@ -1,0 +1,30 @@
+{
+  "target": "desktop Chromium",
+  "trained": false,
+  "status": "measured",
+  "browser": "156.0.8078.79",
+  "parameters": 2307328,
+  "bytes": 2311168,
+  "initMs": 448.5,
+  "coldWorkerMs": 513.9000000003725,
+  "warmup": 32,
+  "samples": 256,
+  "shortlist": 32,
+  "cachedStepMs": {
+    "p50": 0.2999999998137355,
+    "p95": 1.400000000372529,
+    "p99": 2.8999999994412065
+  },
+  "shortlistTotalMs": {
+    "p50": 0.2999999998137355,
+    "p95": 1.400000000372529,
+    "p99": 2.8999999994412065
+  },
+  "workerRoundTripMs": {
+    "p50": 1,
+    "p95": 7.1000000005587935,
+    "p99": 25
+  },
+  "scoreChecksum": "f7a72eed79739bf380c3c52ddfd592bfb11e16e861174bfe51a12e38c8d76d08",
+  "scriptSha256": "e1b21a167b39287a9eae7c4ad7e6c24d98ea17d7121e78c77cc349b5fd038c63"
+}

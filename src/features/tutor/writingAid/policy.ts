@@ -3,6 +3,8 @@ import {type PadEdit} from '../../pad/padEdit';
 import {sameEditTarget} from '../input/recognitionPolicy';
 import {wordAtCaret} from '../input/completionPolicy';
 import type {TypeaheadArm} from './replayArm';
+import type {PhraseGhostMode} from './phraseGhostConfig';
+import type {MenuTrial} from './menuTrial';
 import {tutorHint} from './answerAids';
 import {tutorMathContext} from '../input/symbolEdit';
 import {hasOpenLiteral, insertionEligible} from './eligibility';
@@ -35,8 +37,11 @@ export interface WritingAidRequest {
   readonly surfaces?: WritingAidSurfaces;
   readonly contextKey?: string;
   readonly arm?: TypeaheadArm;
+  readonly menuTrial?: MenuTrial;
   readonly expanded?: boolean;
   readonly fasterTyping?: boolean;
+  readonly phraseGhost?: PhraseGhostMode;
+  readonly phraseGhostStartedAt?: number;
   readonly replayDiagnostics?: boolean;
   readonly tracePool?: boolean;
   /** Differential test oracle for the eligible pool. */
@@ -61,7 +66,10 @@ export interface WritingAidProposal {
   readonly label: string;
   readonly snapshot: WritingAidRequest;
   /** N221: offered by the n-gram and touch decoder rather than the existing engine. */
-  readonly source?: 'decoder' | 'bank' | 'personal' | 'symbol' | 'neural' | 'notation' | 'equation';
+  readonly source?: 'decoder' | 'bank' | 'personal' | 'symbol' | 'neural' | 'notation' | 'equation' | 'question' | 'paragraph' | 'literal' | 'declared' | 'phrase';
+  readonly rightContextGain?: number;
+  readonly contextRecurrence?: readonly [question: number, paragraph: number];
+  readonly menuBase?: number;
   readonly caret?: number;
   readonly menuPosition?: number;
   readonly score?: number;
@@ -144,6 +152,8 @@ export function sameWritingAidRequest(left: WritingAidRequest, right: WritingAid
   return a.text === b.text && a.start === b.start && a.end === b.end && a.direction === b.direction &&
     x?.caret === y?.caret && left.middleEdits === right.middleEdits && x?.text === y?.text && x?.start === y?.start && x?.continuation === y?.continuation &&
     left.expanded === right.expanded && left.fasterTyping === right.fasterTyping &&
+    left.phraseGhost === right.phraseGhost &&
+    left.menuTrial === right.menuTrial &&
     left.arm === right.arm && left.contextKey === right.contextKey && left.mode === right.mode && left.readOnly === right.readOnly && left.composing === right.composing &&
     l.words === r.words && l.replace === r.replace && l.correction === r.correction && l.ghost === r.ghost &&
     sameEditTarget(left.target, right.target);
@@ -192,14 +202,15 @@ export function proposalEligible(request: WritingAidRequest, proposal: WritingAi
   }
   const role = hints.includes('goal') ? 'goal' : hints.includes('alternative') ? 'alternative' : proposal.role;
   return insertionEligible({text: cursor.text, start, end, insert, mode: 'prose', aid: request.aid,
-    authoredPrefix: prefix, role, tagged: proposal.logic, notation: proposal.source === 'symbol'});
+    authoredPrefix: prefix, role, tagged: proposal.logic, notation: proposal.source === 'symbol' || proposal.source === 'declared'});
 }
 
 /** A tap can spend the second word slot, but it cannot add learner-written evidence. */
 export function continueWritingAidAnchor(
   anchor: WritingAidAnchor | null, proposal: WritingAidProposal, result: PadEdit,
 ): WritingAidAnchor | null {
-  if (!anchor || anchor.continuation || proposal.kind !== 'word' || proposal.source === 'bank' && /\S\s+\S/u.test(proposal.insert) ||
+  if (!anchor || anchor.continuation || proposal.kind !== 'word' ||
+      (proposal.source === 'bank' || proposal.source === 'literal') && /\S\s+\S/u.test(proposal.insert) ||
       proposal.snapshot.anchor?.text !== anchor.text || proposal.snapshot.anchor.start !== anchor.start ||
       !atEnd(result) || !result.text.startsWith(anchor.text) || result.text === anchor.text) return null;
   const expected = applyWritingAidProposal(proposal.snapshot, proposal);

@@ -93,6 +93,7 @@ export function setFasterWritingAid(enabled: boolean, scopeKey: string): boolean
 const serverSnapshot = () => '["",false,"off",15,false]';
 export function useWritingAidPreferences(): {
   scopeKey: string; available: boolean; mode: WritingAidMode; surfaces: WritingAidSurfaces; fasterTyping: boolean;
+  phraseGhostAllowed: boolean;
 } {
   const stored = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   const [scopeKey, available, mode, mask, optedIn] = JSON.parse(stored) as [string, boolean, WritingAidMode, number, boolean];
@@ -102,7 +103,7 @@ export function useWritingAidPreferences(): {
   // grey-text continuation is off either way until the proof assist brings it back.
   const ghost = isFlagOn('proofAssistGhost');
   if (!isFlagOn('writingAidSettings')) return {
-    scopeKey, available, fasterTyping, mode: 'balanced', surfaces: {...ALL_WRITING_AID_SURFACES, ghost},
+    scopeKey, available, fasterTyping, phraseGhostAllowed: fasterTyping, mode: 'balanced', surfaces: {...ALL_WRITING_AID_SURFACES, ghost},
   };
   const surfaces = mask === DEFAULT_MASK ? {...ALL_WRITING_AID_SURFACES, ghost} : {
     words: Boolean(mask & SURFACE_BITS.words),
@@ -110,5 +111,5 @@ export function useWritingAidPreferences(): {
     correction: Boolean(mask & SURFACE_BITS.correction),
     ghost: ghost && Boolean(mask & SURFACE_BITS.ghost),
   };
-  return {scopeKey, available, fasterTyping, mode, surfaces};
+  return {scopeKey, available, fasterTyping, phraseGhostAllowed: fasterTyping && Boolean(mask & SURFACE_BITS.ghost), mode, surfaces};
 }

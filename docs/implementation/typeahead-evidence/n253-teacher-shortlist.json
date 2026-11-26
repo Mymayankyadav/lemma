@@ -1,0 +1,65 @@
+{
+  "bootstrapDraws": 10000,
+  "captureSha256": "74fc822048601628b611206bf01a4ae30bf49fbd771532ed1a0bc7150d456060",
+  "checkpointSha256": "b5ff62b315695b32b2f85e51f9ddffc2abdd64f25c17d68bd35a2d0712983687",
+  "cohortSha256": {
+    "allocation.jsonl": "2edd959a350b909dea18ea67a0f7219b7ce2efd6b2ca20e69566b26a7cfdfdfa",
+    "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+    "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+    "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+  },
+  "comparison": "Full exact sequence likelihood within matching spans, original order elsewhere; four-gram M1 neutral vs native teacher; no tutor hints",
+  "countSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+  "maxTeacherEdits": 32,
+  "metrics": {
+    "all": {
+      "controlHits": 114,
+      "gained": 34,
+      "lost": 7,
+      "opportunities": 350,
+      "paired95": [
+        0.03939393939393939,
+        0.12302839116719243
+      ],
+      "rerankedEvents": 270,
+      "scoredPaths": 7695,
+      "teacherHits": 141
+    },
+    "boundary": {
+      "controlHits": 43,
+      "gained": 24,
+      "lost": 4,
+      "opportunities": 221,
+      "paired95": [
+        0.045454545454545456,
+        0.14146456511734926
+      ],
+      "rerankedEvents": 158,
+      "scoredPaths": 4853,
+      "teacherHits": 63
+    },
+    "started": {
+      "controlHits": 71,
+      "gained": 10,
+      "lost": 3,
+      "opportunities": 129,
+      "paired95": [
+        0.014084507042253521,
+        0.10576923076923077
+      ],
+      "rerankedEvents": 112,
+      "scoredPaths": 2842,
+      "teacherHits": 78
+    }
+  },
+  "seed": 253,
+  "strata": {
+    "math.stackexchange.com/long": 3,
+    "math.stackexchange.com/short": 3,
+    "mathoverflow.net/long": 3,
+    "mathoverflow.net/short": 3
+  },
+  "study": "Same-pool offline exact edit top-three before UI slot persistence",
+  "threads": 12,
+  "tokenizerSha256": "d0badb33606fb1d365c5a9129aa9e2caf4cab30ecfb39a8f8aeabb420dacbefc"
+}

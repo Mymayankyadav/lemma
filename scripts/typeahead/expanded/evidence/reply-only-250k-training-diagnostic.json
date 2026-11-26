@@ -1,0 +1,173 @@
+{
+  "arms": {
+    "D2": {
+      "bytes": 5801368,
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.7569369864382227,
+            1.1280291250555985,
+            1.527041539903999
+          ],
+          "3": [
+            0.8710009467470661,
+            1.2908262412703673,
+            1.5317864258826226
+          ],
+          "4": [
+            0.859545564393803,
+            1.3663856536596275,
+            1.3075455633151816
+          ]
+        },
+        "maxRowMassError": 2.97875160093497e-08,
+        "targetTrainTokens": 250000,
+        "trainTokens": 250000,
+        "validation": {
+          "outOfVocabulary": 2315,
+          "perplexity": 434.3273569201503,
+          "referencePerplexity": 434.32735828572595,
+          "targets": 45213,
+          "wordOovRate": 0.05419641812009832,
+          "wordTargets": 42715
+        }
+      },
+      "mix": {
+        "explanation": {
+          "connectedGroups": 141,
+          "documents": 147,
+          "duplicateComponents": 147,
+          "publisherGroups": 141,
+          "tokens": 100000
+        },
+        "learner": {
+          "connectedGroups": 412,
+          "documents": 412,
+          "duplicateComponents": 412,
+          "publisherGroups": 412,
+          "tokens": 100000
+        },
+        "proof": {
+          "connectedGroups": 10,
+          "documents": 10,
+          "duplicateComponents": 10,
+          "publisherGroups": 10,
+          "tokens": 50000
+        }
+      },
+      "seconds": 14.508,
+      "sha256": "ad1d04c65ec415f9f06a47df15d725c9de69b472a013abc461396d14ae2ed565",
+      "vocabSha256": "ab82c9d0888ffabc30e01295126b170dfce6eeefe53d48ac17bb5e9b33faabf9"
+    },
+    "D2-reply": {
+      "bytes": 5843936,
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.7536348649553156,
+            1.1648439557503631,
+            1.4914985051234926
+          ],
+          "3": [
+            0.8710666044470229,
+            1.283498085024453,
+            1.553090934603875
+          ],
+          "4": [
+            0.8649094743705998,
+            1.3508775790435297,
+            1.3249386604290825
+          ]
+        },
+        "maxRowMassError": 2.9778105203881466e-08,
+        "targetTrainTokens": 250000,
+        "trainTokens": 250000,
+        "validation": {
+          "outOfVocabulary": 2315,
+          "perplexity": 423.51325472160516,
+          "referencePerplexity": 423.51325560721926,
+          "targets": 45213,
+          "wordOovRate": 0.05419641812009832,
+          "wordTargets": 42715
+        }
+      },
+      "mix": {
+        "explanation": {
+          "connectedGroups": 141,
+          "documents": 147,
+          "duplicateComponents": 147,
+          "publisherGroups": 141,
+          "tokens": 100000
+        },
+        "learner": {
+          "availableMatchedTrainDocuments": 1022,
+          "connectedGroups": 841,
+          "documents": 841,
+          "duplicateComponents": 841,
+          "fallbackDocuments": 10,
+          "matchedReplyDocuments": 831,
+          "publisherGroups": 841,
+          "refillDocumentsOutsideBaseline": 429,
+          "tokens": 100000
+        },
+        "proof": {
+          "connectedGroups": 10,
+          "documents": 10,
+          "duplicateComponents": 10,
+          "publisherGroups": 10,
+          "tokens": 50000
+        }
+      },
+      "seconds": 11.952,
+      "sha256": "a60aab358bba846035bcbdd0dc712ca74bfe74042bdc8dfdc4afbc4dca0de9a3",
+      "vocabSha256": "ab82c9d0888ffabc30e01295126b170dfce6eeefe53d48ac17bb5e9b33faabf9"
+    }
+  },
+  "codeSha256": {
+    "corpus.py": "d90f88c7bf0376be3c266a5deb5acee5f5cd8c3d30018943ca40816286c6d4e8",
+    "data_audit.py": "494c39c959ee0df6a5c3bec475fd2cd42df31fa0cbbb8ffab46922d3d2dd92ad",
+    "kn_matched_data.py": "71fc51405c120e61d83ff3abd948db8a9ab658559891e6da7fbc12deb8d8f54a",
+    "ngram.py": "18179f73314f9684a9dee79dff2431745754836a237236b9ef35f2af5c025af9",
+    "reply_ablation.py": "aa108d771caf944dd5bac971eae8204df706d1a5bcdf01289695a8483657364a"
+  },
+  "diagnosticDocuments": 62,
+  "diagnosticTokens": 50000,
+  "duplicateCandidateLinks": 0,
+  "intervention": "Strict known-wrapper first answer only, with fallback on nonmatches; questions, comments and later replies are removed, and the same grouped sample refills the quota.",
+  "limitations": "Exploratory training-only diagnostic. Grouped 4500-document sample; equal 250k exposure, not the requested 500k. Changes combine answer selection, removal of questions and later posts, and refilling; no independent human or sealed evaluation.",
+  "order": 4,
+  "packing": "shipping KN v2 encoder, count pruning, 20 MiB ceiling; shared pinned vocabulary",
+  "sameDiagnosticAndVocabulary": {
+    "diagnostic.jsonl.gz": {
+      "match": true,
+      "originalSha256": "2c412dcb1cf6cc9842c046109bf9dd620cc3a68b39b6c2fdb4749e591f65e559",
+      "regeneratedSha256": "2c412dcb1cf6cc9842c046109bf9dd620cc3a68b39b6c2fdb4749e591f65e559"
+    },
+    "shared-vocab.json": {
+      "match": true,
+      "originalSha256": "8b4f756c92959d04a42e59fda70faef1121fe8e3fdd62d4cf4c8d02a264ebf4c",
+      "regeneratedSha256": "8b4f756c92959d04a42e59fda70faef1121fe8e3fdd62d4cf4c8d02a264ebf4c"
+    }
+  },
+  "sameExplanationAndProof": {
+    "documents": 157,
+    "identical": true,
+    "tokenLinesSha256": "f82e7f3581cd27e5477b83757e2c280b7e755e85f0f85d9951e66fd51674f72f"
+  },
+  "sampleDocuments": 4500,
+  "scope": "train-only grouped diagnostic; no independent validation",
+  "sourceManifest": {
+    "diagnosticSha256": "2c412dcb1cf6cc9842c046109bf9dd620cc3a68b39b6c2fdb4749e591f65e559",
+    "sampleIdDigest": "8801458f0ef3919635b67d2359f7a28e82de033db7b1b60db92aca152b31e6b4",
+    "sharedVocabularyFileSha256": "8b4f756c92959d04a42e59fda70faef1121fe8e3fdd62d4cf4c8d02a264ebf4c",
+    "sourceManifestSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+    "streamSha256": {
+      "D0": "b5b1b6ba7643f3fda90ec6ccc5e64f99a1fe6c56dc4adea73961effbc32e8e38",
+      "D1": "b5b1b6ba7643f3fda90ec6ccc5e64f99a1fe6c56dc4adea73961effbc32e8e38",
+      "D2": "5f9a0de7022230128c76bea989cbf6688d12bd499c950d84a09827c2d44b1d37",
+      "D2-reply": "33f757fada65878b44d67d5c676ecbcc18c55584da5eb84d1ed989deed033f78"
+    }
+  },
+  "timeSeconds": 150.568,
+  "tokenBudgetPerArm": 250000
+}

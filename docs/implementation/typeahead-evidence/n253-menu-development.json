@@ -1,0 +1,1098 @@
+{
+  "status": "exploratory-development",
+  "enrollment": {
+    "fit": 40,
+    "fitOpportunities": 1263,
+    "dev": 12,
+    "devOpportunities": 350,
+    "fitSelectionSha256": "581b2bddf5a270ad56bbc05631b0656266acd0e933272748f9202761bcaee6db",
+    "devAllocationSha256": "2edd959a350b909dea18ea67a0f7219b7ce2efd6b2ca20e69566b26a7cfdfdfa",
+    "devGoldSha256": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+  },
+  "decision": {
+    "qualifiedMenuTrial": null,
+    "reservedOpened": 0,
+    "requirement": "at least +2 pp saved actions and +1 pp exact boundary with positive paired lower bounds",
+    "retained": "shipping faster typing"
+  },
+  "sourceRecallDefinition": "At the scheduled browser observation. Duplicate admissible sources can overlap.",
+  "caveats": [
+    "Worker metrics describe traced runs on a shared Chromium host.",
+    "The 40-thread fitting subset included simulated Tutor wording. The development cohort used the shipping faster-typing preference with rollout flags off.",
+    "The fit and masked development runs measured scripted browser actions on desktop Chromium.",
+    "Independently labeled Tutor contrast data were unavailable. The fitted group weights remain empty; signed behavior is covered by the matched contract checks."
+  ],
+  "actionRanker": {
+    "modelSha256": "bae7c7d82d1c11ccd44ff062428cd93a10cc2a44e525cac33bf3d8ce09fb40b1",
+    "ngramSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+    "evidence": {
+      "controlNll": 1.7754610414089647,
+      "learnedNll": 1.6698953130404848,
+      "controlFamilyTop3Proxy": 114,
+      "learnedFamilyTop3Proxy": 115,
+      "rightFitThreads": 20,
+      "training": {
+        "opportunities": 1263,
+        "supported": 639,
+        "severalValid": 0,
+        "withoutCandidates": 271
+      },
+      "development": {
+        "opportunities": 350,
+        "supported": 183,
+        "severalValid": 0,
+        "withoutCandidates": 78
+      },
+      "fitCaptureSha256": "5506fe15b58d512e5617ddfd96f1c3c3ef7428668469c393d1a555db70e8770a",
+      "devCaptureSha256": "74fc822048601628b611206bf01a4ae30bf49fbd771532ed1a0bc7150d456060"
+    },
+    "rightWeight": 0.41158109816156674,
+    "tutorGroupWeights": {},
+    "rightFitCaptureSha256": "fe4a8988c1ab73295d3887c18dd5b09168b9c7eda55364366fffd8cf6c339c01",
+    "rightFitGoldSha256": "1f3111dbfa5980466eb596fd86b8f1d4fefa70d097e88bcd09767581ca6f646f"
+  },
+  "controls": {
+    "shippingA": {
+      "threads": 12,
+      "totals": {
+        "boundaryOpportunities": 221,
+        "boundaryHits": 45,
+        "boundaryIndeterminate": 0,
+        "wordOpportunities": 335,
+        "wordHits": 110,
+        "symbolOpportunities": 15,
+        "symbolHits": 4,
+        "prefixOpportunities": 129,
+        "prefixHits": 69,
+        "prefixIndeterminate": 0
+      },
+      "topThreeCi95": {
+        "prefix": [
+          0.42857142857142855,
+          0.6181877990430622
+        ],
+        "boundary": [
+          0.14736842105263157,
+          0.24899785013660589
+        ],
+        "word": [
+          0.26711851225236044,
+          0.38066032393249516
+        ],
+        "symbol": [
+          0.0,
+          0.3333333333333333
+        ]
+      },
+      "firstLoss": {
+        "unobserved-or-unproposed": 142,
+        "outside-visible-three": 69,
+        "policy": 18,
+        "visible": 114,
+        "eligible-pool-limit": 7
+      },
+      "firstLossDetailed": {
+        "no-current-model-at-observation": 43,
+        "literal-unobserved-retrieval-or-late": 78,
+        "trailing-space-mismatch": 21,
+        "outside-visible-three": 69,
+        "policy": 18,
+        "visible": 114,
+        "eligible-pool-limit": 7
+      },
+      "visibleGhost": {},
+      "neural": {
+        "eligible": 319,
+        "deliveredAtObservation": 0
+      },
+      "input": {
+        "arm": "default",
+        "config": "46b018a482c6ff7377547dbc85d13fe456c3edf5e5017f0dc24224e3d7f9ad58",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": null,
+        "phase": "capture",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+          "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+          "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+          "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+        },
+        "static": "87a282f5f222bb6365ab1ed767e582e7365e82f119efe0854e7ad3f6929b01f3"
+      },
+      "impressionSha256": "d8771a3dca64c2c12669da9b1e9118f079f395f67329c7a0e5aff426fd45afb3",
+      "sourceRecallAtObservation": {
+        "equation": {
+          "enumerated": 2,
+          "admissible": 2
+        },
+        "notation": {
+          "enumerated": 579,
+          "admissible": 526,
+          "exactEnumeratedEvents": 9,
+          "exactAdmissibleEvents": 8,
+          "exactVisibleFromAnySourceEvents": 4
+        },
+        "symbol": {
+          "enumerated": 702,
+          "admissible": 702
+        },
+        "word": {
+          "enumerated": 26078,
+          "admissible": 23447,
+          "exactEnumeratedEvents": 199,
+          "exactAdmissibleEvents": 182,
+          "exactVisibleFromAnySourceEvents": 110
+        }
+      },
+      "tracedWorkerDiagnosticSharedHost": {
+        "samples": 295,
+        "p95Ms": 75.02999999993483
+      }
+    },
+    "shippingACost": {
+      "threads": 12,
+      "manual": 1531,
+      "assisted": 992,
+      "ksr": 0.3520574787720444,
+      "keysSha256": "053983404c49b3865c9b2fcc465400bda25940222ba79f556adaf4c5339dd25b",
+      "input": {
+        "arm": "default",
+        "config": "46b018a482c6ff7377547dbc85d13fe456c3edf5e5017f0dc24224e3d7f9ad58",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": null,
+        "phase": "cost",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+          "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+          "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+          "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+        },
+        "static": "87a282f5f222bb6365ab1ed767e582e7365e82f119efe0854e7ad3f6929b01f3"
+      }
+    },
+    "shippingB": {
+      "threads": 12,
+      "totals": {
+        "boundaryOpportunities": 221,
+        "boundaryHits": 42,
+        "boundaryIndeterminate": 0,
+        "wordOpportunities": 335,
+        "wordHits": 106,
+        "symbolOpportunities": 15,
+        "symbolHits": 4,
+        "prefixOpportunities": 129,
+        "prefixHits": 68,
+        "prefixIndeterminate": 0
+      },
+      "topThreeCi95": {
+        "prefix": [
+          0.422680412371134,
+          0.6033655590219836
+        ],
+        "boundary": [
+          0.15121909311876625,
+          0.23009715275105813
+        ],
+        "word": [
+          0.2700401886701641,
+          0.3509771528477449
+        ],
+        "symbol": [
+          0.0,
+          0.3333333333333333
+        ]
+      },
+      "firstLoss": {
+        "unobserved-or-unproposed": 146,
+        "policy": 18,
+        "outside-visible-three": 67,
+        "visible": 110,
+        "eligible-pool-limit": 9
+      },
+      "firstLossDetailed": {
+        "no-current-model-at-observation": 46,
+        "literal-unobserved-retrieval-or-late": 80,
+        "policy": 18,
+        "outside-visible-three": 67,
+        "visible": 110,
+        "trailing-space-mismatch": 20,
+        "eligible-pool-limit": 9
+      },
+      "visibleGhost": {},
+      "neural": {
+        "eligible": 319,
+        "deliveredAtObservation": 0
+      },
+      "input": {
+        "arm": "default",
+        "config": "46b018a482c6ff7377547dbc85d13fe456c3edf5e5017f0dc24224e3d7f9ad58",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": null,
+        "phase": "capture",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+          "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+          "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+          "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+        },
+        "static": "87a282f5f222bb6365ab1ed767e582e7365e82f119efe0854e7ad3f6929b01f3"
+      },
+      "impressionSha256": "0dc4452858effaef117e1b47c8059e34213bc0ed55c5a9045353384d92706d2b",
+      "sourceRecallAtObservation": {
+        "equation": {
+          "enumerated": 2,
+          "admissible": 2
+        },
+        "notation": {
+          "enumerated": 515,
+          "admissible": 462,
+          "exactEnumeratedEvents": 8,
+          "exactAdmissibleEvents": 7,
+          "exactVisibleFromAnySourceEvents": 4
+        },
+        "symbol": {
+          "enumerated": 657,
+          "admissible": 657
+        },
+        "word": {
+          "enumerated": 25429,
+          "admissible": 22879,
+          "exactEnumeratedEvents": 196,
+          "exactAdmissibleEvents": 179,
+          "exactVisibleFromAnySourceEvents": 106
+        }
+      },
+      "tracedWorkerDiagnosticSharedHost": {
+        "samples": 258,
+        "p95Ms": 116.79499999966936
+      }
+    },
+    "shippingBCost": {
+      "threads": 12,
+      "manual": 1531,
+      "assisted": 993,
+      "ksr": 0.35140431090790336,
+      "keysSha256": "657f1c66dc69ee62dfb588572c5380fbec43aa32cf204a4ca69c9f67c52ce655",
+      "input": {
+        "arm": "default",
+        "config": "46b018a482c6ff7377547dbc85d13fe456c3edf5e5017f0dc24224e3d7f9ad58",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": null,
+        "phase": "cost",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+          "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+          "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+          "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+        },
+        "static": "87a282f5f222bb6365ab1ed767e582e7365e82f119efe0854e7ad3f6929b01f3"
+      }
+    },
+    "regular": {
+      "threads": 12,
+      "totals": {
+        "boundaryOpportunities": 221,
+        "boundaryHits": 8,
+        "boundaryIndeterminate": 0,
+        "wordOpportunities": 335,
+        "wordHits": 58,
+        "symbolOpportunities": 15,
+        "symbolHits": 0,
+        "prefixOpportunities": 129,
+        "prefixHits": 50,
+        "prefixIndeterminate": 0
+      },
+      "topThreeCi95": {
+        "prefix": [
+          0.2708333333333333,
+          0.47657151442307694
+        ],
+        "boundary": [
+          0.011764705882352941,
+          0.05405649331642113
+        ],
+        "word": [
+          0.1213283151475374,
+          0.21025672371638143
+        ],
+        "symbol": [
+          0.0,
+          0.0
+        ]
+      },
+      "firstLoss": {
+        "unobserved-or-unproposed": 265,
+        "eligible-pool-limit": 22,
+        "visible": 58,
+        "policy": 5
+      },
+      "firstLossDetailed": {
+        "no-current-model-at-observation": 265,
+        "eligible-pool-limit": 22,
+        "visible": 58,
+        "policy": 5
+      },
+      "visibleGhost": {},
+      "neural": {
+        "eligible": 319,
+        "deliveredAtObservation": 0
+      },
+      "input": {
+        "arm": "default",
+        "config": "a5aada59a46ca75abb7fe55a8c9e6f38efc5f157088f80193ba1162b73e6e090",
+        "fasterTyping": false,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": null,
+        "phase": "capture",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "none",
+        "split": {
+          "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+          "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+          "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+          "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+        },
+        "static": "e393b72b162fc9631a73d03f3d71e49cfcd429641c3359eae270fc49150351a2"
+      },
+      "impressionSha256": "e683e24bf20d2d66a6e4728bcdb140c6e3133324fc36733163ab1f019e6feb56",
+      "sourceRecallAtObservation": {
+        "equation": {
+          "enumerated": 2,
+          "admissible": 2
+        },
+        "notation": {
+          "enumerated": 1,
+          "admissible": 1
+        },
+        "word": {
+          "enumerated": 1758,
+          "admissible": 1642,
+          "exactEnumeratedEvents": 85,
+          "exactAdmissibleEvents": 80,
+          "exactVisibleFromAnySourceEvents": 58
+        }
+      },
+      "tracedWorkerDiagnosticSharedHost": {
+        "samples": 0,
+        "p95Ms": null
+      }
+    },
+    "regularCost": {
+      "threads": 12,
+      "manual": 1531,
+      "assisted": 1212,
+      "ksr": 0.20836054866100584,
+      "keysSha256": "c20a977218eeb6dbe2c69ac14dbb03b0b86ccfe286e8dc1244d015576865bca8",
+      "input": {
+        "arm": "default",
+        "config": "46b018a482c6ff7377547dbc85d13fe456c3edf5e5017f0dc24224e3d7f9ad58",
+        "fasterTyping": false,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": null,
+        "phase": "cost",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "none",
+        "split": {
+          "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+          "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+          "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+          "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+        },
+        "static": "87a282f5f222bb6365ab1ed767e582e7365e82f119efe0854e7ad3f6929b01f3"
+      }
+    }
+  },
+  "m1": {
+    "threads": 12,
+    "totals": {
+      "boundaryOpportunities": 221,
+      "boundaryHits": 43,
+      "boundaryIndeterminate": 0,
+      "wordOpportunities": 335,
+      "wordHits": 110,
+      "prefixOpportunities": 129,
+      "prefixHits": 71,
+      "prefixIndeterminate": 0,
+      "symbolOpportunities": 15,
+      "symbolHits": 4
+    },
+    "topThreeCi95": {
+      "prefix": [
+        0.4537037037037037,
+        0.6287456015803444
+      ],
+      "boundary": [
+        0.14354667609618105,
+        0.23404650794906273
+      ],
+      "word": [
+        0.2709861162038735,
+        0.37562220622774456
+      ],
+      "symbol": [
+        0.0,
+        0.3333333333333333
+      ]
+    },
+    "firstLoss": {
+      "unobserved-or-unproposed": 140,
+      "visible": 114,
+      "outside-visible-three": 69,
+      "eligible-pool-limit": 9,
+      "policy": 18
+    },
+    "firstLossDetailed": {
+      "no-current-model-at-observation": 48,
+      "visible": 114,
+      "literal-unobserved-retrieval-or-late": 72,
+      "outside-visible-three": 69,
+      "eligible-pool-limit": 9,
+      "trailing-space-mismatch": 20,
+      "policy": 18
+    },
+    "visibleGhost": {},
+    "neural": {
+      "eligible": 319,
+      "deliveredAtObservation": 0
+    },
+    "pairedTopThree": {
+      "prefix": {
+        "opportunities": 129,
+        "gained": 2,
+        "lost": 0,
+        "delta": 0.015503875968992248,
+        "ci95": [
+          0.0,
+          0.04546321998612078
+        ]
+      },
+      "boundary": {
+        "opportunities": 221,
+        "gained": 0,
+        "lost": 2,
+        "delta": -0.00904977375565611,
+        "ci95": [
+          -0.019801980198019802,
+          0.0
+        ]
+      },
+      "word": {
+        "opportunities": 335,
+        "gained": 2,
+        "lost": 2,
+        "delta": 0.0,
+        "ci95": [
+          -0.011527377521613832,
+          0.013587418663117422
+        ]
+      },
+      "symbol": {
+        "opportunities": 15,
+        "gained": 0,
+        "lost": 0,
+        "delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "input": {
+      "arm": "default",
+      "config": "a180542dfa0705b304eaeed219acab34dfa56fdfcd7328155394d3b96e8cfac4",
+      "fasterTyping": true,
+      "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+      "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+      "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+      "menuTrial": "m1-neutral",
+      "phase": "capture",
+      "phraseGhost": null,
+      "punctuationPairs": false,
+      "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+      "split": {
+        "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+        "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+        "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+        "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+      },
+      "static": "34aacf2f4397e4f4c74ec33f37fab614c3e02c71aab0dd617362f3618a6a77ee"
+    },
+    "impressionSha256": "74fc822048601628b611206bf01a4ae30bf49fbd771532ed1a0bc7150d456060",
+    "sourceRecallAtObservation": {
+      "equation": {
+        "enumerated": 2,
+        "admissible": 2
+      },
+      "notation": {
+        "enumerated": 579,
+        "admissible": 526,
+        "exactEnumeratedEvents": 9,
+        "exactAdmissibleEvents": 8,
+        "exactVisibleFromAnySourceEvents": 4
+      },
+      "paragraph": {
+        "enumerated": 1198,
+        "admissible": 1075,
+        "exactEnumeratedEvents": 28,
+        "exactAdmissibleEvents": 28,
+        "exactVisibleFromAnySourceEvents": 19
+      },
+      "question": {
+        "enumerated": 1824,
+        "admissible": 1641,
+        "exactEnumeratedEvents": 51,
+        "exactAdmissibleEvents": 48,
+        "exactVisibleFromAnySourceEvents": 33
+      },
+      "symbol": {
+        "enumerated": 703,
+        "admissible": 703
+      },
+      "word": {
+        "enumerated": 25893,
+        "admissible": 23346,
+        "exactEnumeratedEvents": 201,
+        "exactAdmissibleEvents": 184,
+        "exactVisibleFromAnySourceEvents": 110
+      }
+    },
+    "tracedWorkerDiagnosticSharedHost": {
+      "samples": 262,
+      "p95Ms": 86.79999999990685
+    },
+    "trajectory": {
+      "threads": 12,
+      "manual": 1531,
+      "assisted": 994,
+      "ksr": 0.3507511430437622,
+      "keysSha256": "aec94e9fe3777eae7dc6ad1ccc9a9c213c059ffbe98a42a1682b188ad39e264d",
+      "input": {
+        "arm": "default",
+        "config": "59c155f503a2fd753075274fbc014e44e610e9b866c4df8d9a11124cf559e327",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": "m1",
+        "phase": "cost",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+          "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+          "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+          "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+        },
+        "static": "aba2f87f822215cba02845e9152794aad1528b4b155a29706aa35a62996ac94f"
+      }
+    },
+    "pairedStratifiedVsShipping": {
+      "stratumBlocks": {
+        "math.stackexchange.com/long": 3,
+        "math.stackexchange.com/short": 3,
+        "mathoverflow.net/long": 3,
+        "mathoverflow.net/short": 3
+      },
+      "gain": [
+        -0.0013063357282821686,
+        -0.00904977375565611
+      ],
+      "pairedBootstrap95": [
+        [
+          -0.005763688760806916,
+          0.0022059534056582315
+        ],
+        [
+          -0.018691588785046728,
+          0.0
+        ]
+      ],
+      "resamples": 10000,
+      "seed": 253
+    }
+  },
+  "m2": {
+    "threads": 12,
+    "totals": {
+      "boundaryOpportunities": 221,
+      "boundaryHits": 46,
+      "boundaryIndeterminate": 0,
+      "wordOpportunities": 335,
+      "wordHits": 112,
+      "symbolOpportunities": 15,
+      "symbolHits": 4,
+      "prefixOpportunities": 129,
+      "prefixHits": 70,
+      "prefixIndeterminate": 0
+    },
+    "topThreeCi95": {
+      "prefix": [
+        0.4537037037037037,
+        0.6099290780141844
+      ],
+      "boundary": [
+        0.14646464646464646,
+        0.2547192489114659
+      ],
+      "word": [
+        0.2748070631658418,
+        0.3805970149253731
+      ],
+      "symbol": [
+        0.0,
+        0.3333333333333333
+      ]
+    },
+    "firstLoss": {
+      "unobserved-or-unproposed": 142,
+      "policy": 16,
+      "outside-visible-three": 71,
+      "visible": 116,
+      "eligible-pool-limit": 5
+    },
+    "firstLossDetailed": {
+      "no-current-model-at-observation": 31,
+      "literal-unobserved-retrieval-or-late": 91,
+      "trailing-space-mismatch": 20,
+      "policy": 16,
+      "outside-visible-three": 71,
+      "visible": 116,
+      "eligible-pool-limit": 5
+    },
+    "visibleGhost": {},
+    "neural": {
+      "eligible": 319,
+      "deliveredAtObservation": 0
+    },
+    "pairedTopThree": {
+      "prefix": {
+        "opportunities": 129,
+        "gained": 2,
+        "lost": 1,
+        "delta": 0.007751937984496124,
+        "ci95": [
+          -0.014705882352941176,
+          0.043478260869565216
+        ]
+      },
+      "boundary": {
+        "opportunities": 221,
+        "gained": 5,
+        "lost": 4,
+        "delta": 0.004524886877828055,
+        "ci95": [
+          -0.012123059866962306,
+          0.0183507377499683
+        ]
+      },
+      "word": {
+        "opportunities": 335,
+        "gained": 7,
+        "lost": 5,
+        "delta": 0.005970149253731343,
+        "ci95": [
+          -0.0074087893864013266,
+          0.02034071255620893
+        ]
+      },
+      "symbol": {
+        "opportunities": 15,
+        "gained": 0,
+        "lost": 0,
+        "delta": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "input": {
+      "arm": "default",
+      "config": "59c155f503a2fd753075274fbc014e44e610e9b866c4df8d9a11124cf559e327",
+      "fasterTyping": true,
+      "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+      "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+      "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+      "menuTrial": "m2",
+      "phase": "capture",
+      "phraseGhost": null,
+      "punctuationPairs": false,
+      "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+      "split": {
+        "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+        "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+        "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+        "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+      },
+      "static": "aba2f87f822215cba02845e9152794aad1528b4b155a29706aa35a62996ac94f"
+    },
+    "impressionSha256": "d887245ff6df88a82ca0a4f1282a6b700dcabf7a8e6224598d2758c19ee25101",
+    "sourceRecallAtObservation": {
+      "equation": {
+        "enumerated": 2,
+        "admissible": 2
+      },
+      "notation": {
+        "enumerated": 515,
+        "admissible": 462,
+        "exactEnumeratedEvents": 8,
+        "exactAdmissibleEvents": 7,
+        "exactVisibleFromAnySourceEvents": 4
+      },
+      "paragraph": {
+        "enumerated": 1336,
+        "admissible": 1200,
+        "exactEnumeratedEvents": 30,
+        "exactAdmissibleEvents": 30,
+        "exactVisibleFromAnySourceEvents": 20
+      },
+      "question": {
+        "enumerated": 1991,
+        "admissible": 1792,
+        "exactEnumeratedEvents": 52,
+        "exactAdmissibleEvents": 49,
+        "exactVisibleFromAnySourceEvents": 35
+      },
+      "symbol": {
+        "enumerated": 753,
+        "admissible": 753
+      },
+      "word": {
+        "enumerated": 15700,
+        "admissible": 14015,
+        "exactEnumeratedEvents": 197,
+        "exactAdmissibleEvents": 182,
+        "exactVisibleFromAnySourceEvents": 112
+      }
+    },
+    "tracedWorkerDiagnosticSharedHost": {
+      "samples": 208,
+      "p95Ms": 78.27000000011172
+    },
+    "trajectory": {
+      "threads": 12,
+      "manual": 1531,
+      "assisted": 993,
+      "ksr": 0.35140431090790336,
+      "keysSha256": "cfd060293f921f9800c042d101036182d3ac8ab7dfcd93c643c2e9886f19bd38",
+      "input": {
+        "arm": "default",
+        "config": "59c155f503a2fd753075274fbc014e44e610e9b866c4df8d9a11124cf559e327",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": "m2",
+        "phase": "cost",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "6ef0781c6e293b7e86ef26d7194fff7177db69d2a09417b30ced2d000fbb9d65",
+          "contexts.jsonl": "07ba1bcc939f33e5c64b3e2b4b706c2b5768e6c44a0fbf54186b03aaffdf8276",
+          "events.jsonl": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+          "gold.jsonl": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321"
+        },
+        "static": "aba2f87f822215cba02845e9152794aad1528b4b155a29706aa35a62996ac94f"
+      }
+    },
+    "pairedStratifiedVsShipping": {
+      "stratumBlocks": {
+        "math.stackexchange.com/long": 3,
+        "math.stackexchange.com/short": 3,
+        "mathoverflow.net/long": 3,
+        "mathoverflow.net/short": 3
+      },
+      "gain": [
+        -0.0006531678641410843,
+        0.004524886877828055
+      ],
+      "pairedBootstrap95": [
+        [
+          -0.008573178199632579,
+          0.008354755784061696
+        ],
+        [
+          -0.008771929824561403,
+          0.017094017094017096
+        ]
+      ],
+      "resamples": 10000,
+      "seed": 253
+    }
+  },
+  "interior": {
+    "prefix": {
+      "threads": 8,
+      "totals": {
+        "prefixOpportunities": 8,
+        "prefixHits": 5,
+        "prefixIndeterminate": 0,
+        "wordOpportunities": 8,
+        "wordHits": 5
+      },
+      "topThreeCi95": {
+        "prefix": [
+          0.25,
+          0.875
+        ],
+        "word": [
+          0.25,
+          0.875
+        ]
+      },
+      "firstLoss": {
+        "outside-visible-three": 1,
+        "policy": 2,
+        "visible": 5
+      },
+      "firstLossDetailed": {
+        "outside-visible-three": 1,
+        "policy": 2,
+        "visible": 5
+      },
+      "visibleGhost": {},
+      "neural": {
+        "eligible": 8,
+        "deliveredAtObservation": 0
+      },
+      "input": {
+        "arm": "default",
+        "config": "59c155f503a2fd753075274fbc014e44e610e9b866c4df8d9a11124cf559e327",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": "m2",
+        "phase": "capture",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "dd6bfe57d64908610e2d1d4ee91615d2429a353e78746acfaa3c2682944db3fd",
+          "contexts.jsonl": "121f9c5a62fb59e824dccd45a2e2ff1c5935eb3df9be046f8d5ebd29c7fc3daf",
+          "events.jsonl": "b6a29e5f1f01e5bb83d8eca9a10c110647338002532d5185993cf4d25902ddc6",
+          "gold.jsonl": "9be7f4d74cf526932864d8d5452d090d57dbdcaba27766aec3c1a8d9a636f360"
+        },
+        "static": "aba2f87f822215cba02845e9152794aad1528b4b155a29706aa35a62996ac94f"
+      },
+      "impressionSha256": "1a88b575b4806fee445285509703046589ef7070e6cba9b9d581684a670fc5db",
+      "sourceRecallAtObservation": {
+        "paragraph": {
+          "enumerated": 3,
+          "admissible": 3,
+          "exactEnumeratedEvents": 1,
+          "exactAdmissibleEvents": 1,
+          "exactVisibleFromAnySourceEvents": 1
+        },
+        "question": {
+          "enumerated": 5,
+          "admissible": 4,
+          "exactEnumeratedEvents": 1,
+          "exactAdmissibleEvents": 1,
+          "exactVisibleFromAnySourceEvents": 1
+        },
+        "word": {
+          "enumerated": 266,
+          "admissible": 248,
+          "exactEnumeratedEvents": 8,
+          "exactAdmissibleEvents": 6,
+          "exactVisibleFromAnySourceEvents": 5
+        }
+      },
+      "tracedWorkerDiagnosticSharedHost": {
+        "samples": 8,
+        "p95Ms": 40.424999999813735
+      }
+    },
+    "suffix": {
+      "threads": 8,
+      "totals": {
+        "prefixOpportunities": 8,
+        "prefixHits": 5,
+        "prefixIndeterminate": 0,
+        "wordOpportunities": 8,
+        "wordHits": 5
+      },
+      "topThreeCi95": {
+        "prefix": [
+          0.25,
+          0.875
+        ],
+        "word": [
+          0.25,
+          0.875
+        ]
+      },
+      "firstLoss": {
+        "outside-visible-three": 1,
+        "policy": 2,
+        "visible": 5
+      },
+      "firstLossDetailed": {
+        "outside-visible-three": 1,
+        "policy": 2,
+        "visible": 5
+      },
+      "visibleGhost": {},
+      "neural": {
+        "eligible": 8,
+        "deliveredAtObservation": 0
+      },
+      "pairedTopThree": {
+        "prefix": {
+          "opportunities": 8,
+          "gained": 0,
+          "lost": 0,
+          "delta": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "word": {
+          "opportunities": 8,
+          "gained": 0,
+          "lost": 0,
+          "delta": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "input": {
+        "arm": "default",
+        "config": "59c155f503a2fd753075274fbc014e44e610e9b866c4df8d9a11124cf559e327",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": "m2-right",
+        "phase": "capture",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "dd6bfe57d64908610e2d1d4ee91615d2429a353e78746acfaa3c2682944db3fd",
+          "contexts.jsonl": "121f9c5a62fb59e824dccd45a2e2ff1c5935eb3df9be046f8d5ebd29c7fc3daf",
+          "events.jsonl": "b6a29e5f1f01e5bb83d8eca9a10c110647338002532d5185993cf4d25902ddc6",
+          "gold.jsonl": "9be7f4d74cf526932864d8d5452d090d57dbdcaba27766aec3c1a8d9a636f360"
+        },
+        "static": "aba2f87f822215cba02845e9152794aad1528b4b155a29706aa35a62996ac94f"
+      },
+      "impressionSha256": "7254bc1a56961d17b43306aa6a2fdcc930d0eae675d52b20d52285d47848ac02",
+      "sourceRecallAtObservation": {
+        "paragraph": {
+          "enumerated": 3,
+          "admissible": 3,
+          "exactEnumeratedEvents": 1,
+          "exactAdmissibleEvents": 1,
+          "exactVisibleFromAnySourceEvents": 1
+        },
+        "question": {
+          "enumerated": 5,
+          "admissible": 4,
+          "exactEnumeratedEvents": 1,
+          "exactAdmissibleEvents": 1,
+          "exactVisibleFromAnySourceEvents": 1
+        },
+        "word": {
+          "enumerated": 266,
+          "admissible": 248,
+          "exactEnumeratedEvents": 8,
+          "exactAdmissibleEvents": 6,
+          "exactVisibleFromAnySourceEvents": 5
+        }
+      },
+      "tracedWorkerDiagnosticSharedHost": {
+        "samples": 8,
+        "p95Ms": 42.3799999995157
+      }
+    }
+  },
+  "postFreezeReview": {
+    "experimentalBuilds": "Each run records its static-build digest, replay-driver digest and count fingerprint.",
+    "normalPromotion": "Lab URL selection is available in override-enabled builds. Ordinary faster typing stays on the shipping count path.",
+    "completeQuestionTokenGuard": {
+      "fitting": {
+        "questions": 40,
+        "over640CodeUnits": 22,
+        "changedBoundedTermTraces": 0
+      },
+      "pilot": {
+        "questions": 12,
+        "over640CodeUnits": 9,
+        "changedBoundedTermTraces": 0
+      },
+      "development": {
+        "questions": 100,
+        "over640CodeUnits": 57,
+        "changedBoundedTermTraces": 0
+      },
+      "method": "Compared exact text and punctuation from the first 48 lexical matches in math-segmented question text before and after excluding the clipped tail."
+    }
+  },
+  "geometry": {
+    "viewport": [
+      390,
+      844
+    ],
+    "keyboard": [
+      0,
+      606.21875,
+      390,
+      237.78125
+    ],
+    "visibleSlots": [
+      "notable",
+      "notation",
+      "notational"
+    ],
+    "m1ScreenshotSha256": "2883788631247d4d4431aec7954ef56e1e9d7a8d884cd7218e7d5b28c95d34be"
+  },
+  "tutorPriorityContract": {
+    "matchedHintConditions": [
+      "prefer example, demote case",
+      "prefer case, demote example",
+      "neutral",
+      "scope absent"
+    ],
+    "sameEligibleExactEditsAndSources": true,
+    "signedAdjustmentsReverse": true,
+    "prohibitedChoices": 2,
+    "prohibitedChoicesShown": 0,
+    "evidence": "Focused unit test on the real count pack. Synthetic fixture labels were used for the contract check."
+  }
+}

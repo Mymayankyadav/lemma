@@ -6,7 +6,9 @@ type Offer = Pick<WritingAidProposal, 'label' | 'source'>;
 
 function identity({label, source}: Offer): string {
   const name = label.trim();
-  return aidEntryKey(source === 'symbol' ? 'symbol' : /\s/u.test(name) ? 'phrase' : 'word', name);
+  if (source === 'symbol' || source === 'declared') return aidEntryKey('symbol', name);
+  const literal = source === 'question' || source === 'paragraph' || source === 'literal';
+  return aidEntryKey(/\s/u.test(name) ? 'phrase' : 'word', literal ? name.replace(/[,.!?;:…]+$/u, '') : name);
 }
 
 /** Only link regular inflections when their base is also offered. */

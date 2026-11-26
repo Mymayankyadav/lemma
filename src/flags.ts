@@ -64,6 +64,8 @@ export const FLAG_DEFAULTS = {
   writingAidSettings: false,
   /** N223 (Owner): the writing aid's grey-text continuation is off; it returns later as a proof-assist option. */
   proofAssistGhost: false,
+  /** N253: local phrase previews for Faster Typing after their independent qualification. */
+  typeaheadPhraseGhost: false,
   /** N233/N235: the keyboard's Kneser-Ney next-word model, the maths slot, the question-aware learner-choice rule and the
    *  LaTeX grammar inside equations. Default off until Harden; a default-on change needs an independent review. */
   typeaheadV2: false,

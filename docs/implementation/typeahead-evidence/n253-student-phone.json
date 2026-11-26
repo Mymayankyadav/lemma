@@ -1,0 +1,7 @@
+{
+  "target": "physical Android WebView",
+  "trained": false,
+  "status": "unavailable",
+  "reason": "Select one attached, authorized physical Android device.",
+  "scriptSha256": "e1b21a167b39287a9eae7c4ad7e6c24d98ea17d7121e78c77cc349b5fd038c63"
+}

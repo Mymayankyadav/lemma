@@ -7,11 +7,13 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import {VitePWA} from 'vite-plugin-pwa';
 import {FLAG_DEFAULTS,resolveFlags} from './src/flags';
+import {phraseGhostQualified} from './src/features/tutor/writingAid/phraseGhostConfig';
 import {prePaintPaper} from './src/app/paper';
 import {shouldBundlePushWorker, shouldStartPushWorker} from './src/lib/push-build-flag';
 import inkModel from './public/models/tutor-symbols/detypify-0.3.0-lemma-v1/manifest.json' with {type:'json'};
 
 const allowOverrides = process.env.VITE_ALLOW_FLAG_OVERRIDES === '1';
+const precachePhraseGhost = allowOverrides || (FLAG_DEFAULTS.typeaheadPhraseGhost && phraseGhostQualified());
 const pushEnabled = shouldBundlePushWorker(FLAG_DEFAULTS.notificationsPush, allowOverrides);
 const pushAutoStart = shouldStartPushWorker(FLAG_DEFAULTS.notificationsPush, allowOverrides, process.env.VITE_FLAGS ?? '');
 // Splash and installed-window colours follow the default shell: under v7 the Day paper page, matching the graph-paper
@@ -133,7 +135,9 @@ export default defineConfig(({mode})=>{const android=mode==='android';return {
     // Store-listing screenshots are published for Play/PWA installability,
     // not app runtime. Keep them out of first-install Workbox downloads.
     // Model bytes are verified and cached lazily after Draw opens. The worker entry is part of the app shell.
-    globIgnores:['**/screenshots/**','**/fonts/v7/**','**/models/tutor-symbols/**'],
+    // The phrase worker is offline in the lab and enters ordinary PWA installs after qualification.
+    globIgnores:['**/screenshots/**','**/fonts/v7/**','**/models/tutor-symbols/**',
+     ...(!precachePhraseGhost ? ['**/phraseGhost.worker-*.js'] : [])],
     cleanupOutdatedCaches:true,
     maximumFileSizeToCacheInBytes:4*1024*1024,
     navigateFallback:'/lemma/index.html',

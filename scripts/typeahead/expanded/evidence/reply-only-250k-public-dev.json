@@ -1,0 +1,572 @@
+{
+  "bootstrap": {
+    "baseline": "D2",
+    "comparisons": {
+      "D2": {
+        "boundary": {
+          "deltaPercentagePoints95": [
+            0.0,
+            0.0
+          ],
+          "validResamples": 10000
+        },
+        "prefix": {
+          "deltaPercentagePoints95": [
+            0.0,
+            0.0
+          ],
+          "validResamples": 10000
+        }
+      },
+      "reply": {
+        "boundary": {
+          "deltaPercentagePoints95": [
+            0.0,
+            6.452087286527507
+          ],
+          "validResamples": 10000
+        },
+        "prefix": {
+          "deltaPercentagePoints95": [
+            -2.3255813953488373,
+            4.0
+          ],
+          "validResamples": 10000
+        }
+      },
+      "shipping": {
+        "boundary": {
+          "deltaPercentagePoints95": [
+            1.2903225806451613,
+            10.126582278481013
+          ],
+          "validResamples": 10000
+        },
+        "prefix": {
+          "deltaPercentagePoints95": [
+            9.70873786407767,
+            22.93577981651376
+          ],
+          "validResamples": 10000
+        }
+      }
+    },
+    "method": "paired whole-thread percentile bootstrap, separately resampled within each site-by-length stratum",
+    "repetitions": 10000,
+    "seed": 253,
+    "stratumThreadCounts": {
+      "math.stackexchange.com/long": 3,
+      "math.stackexchange.com/short": 3,
+      "mathoverflow.net/long": 3,
+      "mathoverflow.net/short": 3
+    },
+    "threadCounts": [
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 8,
+              "hits": 3
+            },
+            "prefix": {
+              "denominator": 4,
+              "hits": 4
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 8,
+              "hits": 3
+            },
+            "prefix": {
+              "denominator": 4,
+              "hits": 4
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 8,
+              "hits": 5
+            },
+            "prefix": {
+              "denominator": 4,
+              "hits": 4
+            }
+          }
+        },
+        "stratum": "math.stackexchange.com/short",
+        "threadIndex": 0
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 10,
+              "hits": 3
+            },
+            "prefix": {
+              "denominator": 6,
+              "hits": 4
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 10,
+              "hits": 3
+            },
+            "prefix": {
+              "denominator": 6,
+              "hits": 4
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 10,
+              "hits": 2
+            },
+            "prefix": {
+              "denominator": 6,
+              "hits": 4
+            }
+          }
+        },
+        "stratum": "math.stackexchange.com/short",
+        "threadIndex": 1
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 18,
+              "hits": 2
+            },
+            "prefix": {
+              "denominator": 11,
+              "hits": 9
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 18,
+              "hits": 2
+            },
+            "prefix": {
+              "denominator": 11,
+              "hits": 9
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 18,
+              "hits": 2
+            },
+            "prefix": {
+              "denominator": 11,
+              "hits": 9
+            }
+          }
+        },
+        "stratum": "math.stackexchange.com/long",
+        "threadIndex": 2
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 4,
+              "hits": 1
+            },
+            "prefix": {
+              "denominator": 1,
+              "hits": 1
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 4,
+              "hits": 1
+            },
+            "prefix": {
+              "denominator": 1,
+              "hits": 1
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 4,
+              "hits": 1
+            },
+            "prefix": {
+              "denominator": 1,
+              "hits": 1
+            }
+          }
+        },
+        "stratum": "math.stackexchange.com/long",
+        "threadIndex": 3
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 6,
+              "hits": 1
+            },
+            "prefix": {
+              "denominator": 4,
+              "hits": 2
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 6,
+              "hits": 2
+            },
+            "prefix": {
+              "denominator": 4,
+              "hits": 2
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 6,
+              "hits": 2
+            },
+            "prefix": {
+              "denominator": 4,
+              "hits": 3
+            }
+          }
+        },
+        "stratum": "mathoverflow.net/short",
+        "threadIndex": 4
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 8,
+              "hits": 3
+            },
+            "prefix": {
+              "denominator": 5,
+              "hits": 4
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 8,
+              "hits": 3
+            },
+            "prefix": {
+              "denominator": 5,
+              "hits": 4
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 8,
+              "hits": 3
+            },
+            "prefix": {
+              "denominator": 5,
+              "hits": 5
+            }
+          }
+        },
+        "stratum": "mathoverflow.net/short",
+        "threadIndex": 5
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 32,
+              "hits": 8
+            },
+            "prefix": {
+              "denominator": 20,
+              "hits": 12
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 32,
+              "hits": 8
+            },
+            "prefix": {
+              "denominator": 20,
+              "hits": 13
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 32,
+              "hits": 10
+            },
+            "prefix": {
+              "denominator": 20,
+              "hits": 17
+            }
+          }
+        },
+        "stratum": "mathoverflow.net/long",
+        "threadIndex": 6
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 14,
+              "hits": 6
+            },
+            "prefix": {
+              "denominator": 8,
+              "hits": 5
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 14,
+              "hits": 6
+            },
+            "prefix": {
+              "denominator": 8,
+              "hits": 5
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 14,
+              "hits": 6
+            },
+            "prefix": {
+              "denominator": 8,
+              "hits": 6
+            }
+          }
+        },
+        "stratum": "mathoverflow.net/long",
+        "threadIndex": 7
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 15,
+              "hits": 2
+            },
+            "prefix": {
+              "denominator": 7,
+              "hits": 2
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 15,
+              "hits": 3
+            },
+            "prefix": {
+              "denominator": 7,
+              "hits": 2
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 15,
+              "hits": 6
+            },
+            "prefix": {
+              "denominator": 7,
+              "hits": 5
+            }
+          }
+        },
+        "stratum": "math.stackexchange.com/short",
+        "threadIndex": 8
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 15,
+              "hits": 5
+            },
+            "prefix": {
+              "denominator": 10,
+              "hits": 4
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 15,
+              "hits": 7
+            },
+            "prefix": {
+              "denominator": 10,
+              "hits": 5
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 15,
+              "hits": 5
+            },
+            "prefix": {
+              "denominator": 10,
+              "hits": 6
+            }
+          }
+        },
+        "stratum": "math.stackexchange.com/long",
+        "threadIndex": 9
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 6,
+              "hits": 2
+            },
+            "prefix": {
+              "denominator": 5,
+              "hits": 2
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 6,
+              "hits": 1
+            },
+            "prefix": {
+              "denominator": 5,
+              "hits": 2
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 6,
+              "hits": 2
+            },
+            "prefix": {
+              "denominator": 5,
+              "hits": 3
+            }
+          }
+        },
+        "stratum": "mathoverflow.net/short",
+        "threadIndex": 10
+      },
+      {
+        "counts": {
+          "D2": {
+            "boundary": {
+              "denominator": 26,
+              "hits": 6
+            },
+            "prefix": {
+              "denominator": 16,
+              "hits": 10
+            }
+          },
+          "reply": {
+            "boundary": {
+              "denominator": 26,
+              "hits": 8
+            },
+            "prefix": {
+              "denominator": 16,
+              "hits": 9
+            }
+          },
+          "shipping": {
+            "boundary": {
+              "denominator": 26,
+              "hits": 8
+            },
+            "prefix": {
+              "denominator": 16,
+              "hits": 12
+            }
+          }
+        },
+        "stratum": "mathoverflow.net/long",
+        "threadIndex": 11
+      }
+    ]
+  },
+  "eligibility": "lowercase ASCII word of at least 2 letters followed by a space; exact matching on the fixed visible input",
+  "eligibleEvents": 259,
+  "eventsSha256": "9a687ead3ca7d473287279488c39d16c291454a0180eceb99def9711ae4cd593",
+  "eventsTotal": 350,
+  "goldSha256": "f8978c6a1e77394840c7bba41d6642c6fc0aec5d978ea62275b9ddbf263ad321",
+  "limitations": "Exploratory count-only retrieval on 12 public development threads; no subject pack, touch decoder, UI, safety policy or action costs. Casing, notation and punctuation are excluded. Bootstrap is a within-site-by-length whole-thread resampling interval, not a release gate; sealed duplicate checks and independent validation remain outstanding.",
+  "models": {
+    "D2": {
+      "assetSha256": "ad1d04c65ec415f9f06a47df15d725c9de69b472a013abc461396d14ae2ed565",
+      "counts": {
+        "boundaryDenominator": 162,
+        "boundaryHits": 42,
+        "prefixDenominator": 97,
+        "prefixHits": 59
+      },
+      "pairedVersusD2": {
+        "boundary": {
+          "denominator": 162,
+          "gained": 0,
+          "lost": 0
+        },
+        "prefix": {
+          "denominator": 97,
+          "gained": 0,
+          "lost": 0
+        }
+      }
+    },
+    "reply": {
+      "assetSha256": "a60aab358bba846035bcbdd0dc712ca74bfe74042bdc8dfdc4afbc4dca0de9a3",
+      "counts": {
+        "boundaryDenominator": 162,
+        "boundaryHits": 47,
+        "prefixDenominator": 97,
+        "prefixHits": 60
+      },
+      "pairedVersusD2": {
+        "boundary": {
+          "denominator": 162,
+          "gained": 7,
+          "lost": 2
+        },
+        "prefix": {
+          "denominator": 97,
+          "gained": 3,
+          "lost": 2
+        }
+      }
+    },
+    "shipping": {
+      "assetSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+      "counts": {
+        "boundaryDenominator": 162,
+        "boundaryHits": 52,
+        "prefixDenominator": 97,
+        "prefixHits": 75
+      },
+      "pairedVersusD2": {
+        "boundary": {
+          "denominator": 162,
+          "gained": 16,
+          "lost": 6
+        },
+        "prefix": {
+          "denominator": 97,
+          "gained": 17,
+          "lost": 1
+        }
+      }
+    }
+  },
+  "scope": "public development text-only general count retrieval; no subject pack, touch decoder, UI, or action cost",
+  "scorerSha256": "bfa2a6ae3be2a96978eed6b43cfe841be593ccb99b8c2450657a9e712761750e",
+  "threads": 12
+}

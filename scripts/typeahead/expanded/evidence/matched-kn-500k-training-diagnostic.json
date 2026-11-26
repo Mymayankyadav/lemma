@@ -1,0 +1,229 @@
+{
+  "arms": {
+    "D0": {
+      "bytes": 10183728,
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.7566604867082232,
+            1.1236828426478942,
+            1.4601047810519203
+          ],
+          "3": [
+            0.8647561178801983,
+            1.2593244847220613,
+            1.5232772867635247
+          ],
+          "4": [
+            0.8345825765712069,
+            1.27742136701106,
+            1.3693691660585183
+          ]
+        },
+        "maxRowMassError": 2.978497670724778e-08,
+        "targetTrainTokens": 500000,
+        "trainTokens": 500000,
+        "validation": {
+          "outOfVocabulary": 2315,
+          "perplexity": 615.7151906410461,
+          "referencePerplexity": 615.7151888203878,
+          "targets": 45213,
+          "wordOovRate": 0.05419641812009832,
+          "wordTargets": 42715
+        }
+      },
+      "mix": {
+        "explanation": {
+          "connectedGroups": 413,
+          "documents": 430,
+          "duplicateComponents": 430,
+          "publisherGroups": 413,
+          "tokens": 300000
+        },
+        "learner": {
+          "connectedGroups": 202,
+          "documents": 202,
+          "duplicateComponents": 202,
+          "publisherGroups": 202,
+          "tokens": 50000
+        },
+        "proof": {
+          "connectedGroups": 24,
+          "documents": 24,
+          "duplicateComponents": 24,
+          "publisherGroups": 24,
+          "tokens": 150000
+        }
+      },
+      "seconds": 22.789,
+      "sha256": "6556e7bfed7b24e24649566ebf3cef0e6aca7914b8e3ea8ab0bb008ef339e2b8",
+      "vocabSha256": "ab82c9d0888ffabc30e01295126b170dfce6eeefe53d48ac17bb5e9b33faabf9"
+    },
+    "D1": {
+      "bytes": 10183792,
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.756792268274523,
+            1.1227315269434353,
+            1.4584340187019502
+          ],
+          "3": [
+            0.864852887475493,
+            1.2581141285296793,
+            1.5197527092896514
+          ],
+          "4": [
+            0.8345347608016014,
+            1.2771732768100312,
+            1.373757356422868
+          ]
+        },
+        "maxRowMassError": 2.9793914557707524e-08,
+        "targetTrainTokens": 500000,
+        "trainTokens": 500000,
+        "validation": {
+          "outOfVocabulary": 2315,
+          "perplexity": 445.1400075447809,
+          "referencePerplexity": 445.14000975634644,
+          "targets": 45213,
+          "wordOovRate": 0.05419641812009832,
+          "wordTargets": 42715
+        }
+      },
+      "mix": {
+        "explanation": {
+          "connectedGroups": 414,
+          "documents": 431,
+          "duplicateComponents": 431,
+          "publisherGroups": 414,
+          "tokens": 300000
+        },
+        "learner": {
+          "connectedGroups": 202,
+          "documents": 202,
+          "duplicateComponents": 202,
+          "publisherGroups": 202,
+          "tokens": 50000
+        },
+        "proof": {
+          "connectedGroups": 24,
+          "documents": 24,
+          "duplicateComponents": 24,
+          "publisherGroups": 24,
+          "tokens": 150000
+        }
+      },
+      "seconds": 23.45,
+      "sha256": "2e5e0f52652d7b3683f8f00abb47d8bf146cf3f2d78c6d357fc4a0a8248592e7",
+      "vocabSha256": "ab82c9d0888ffabc30e01295126b170dfce6eeefe53d48ac17bb5e9b33faabf9"
+    },
+    "D2": {
+      "bytes": 10118320,
+      "metrics": {
+        "discounts": {
+          "2": [
+            0.7439400753710395,
+            1.1400375338542994,
+            1.4915393001750377
+          ],
+          "3": [
+            0.8590187325177294,
+            1.2362699830388741,
+            1.5256537324564683
+          ],
+          "4": [
+            0.8555669419494846,
+            1.2735017392309356,
+            1.3962133892464355
+          ]
+        },
+        "maxRowMassError": 2.978899749095376e-08,
+        "targetTrainTokens": 500000,
+        "trainTokens": 500000,
+        "validation": {
+          "outOfVocabulary": 2315,
+          "perplexity": 345.8611991317426,
+          "referencePerplexity": 345.86119844704365,
+          "targets": 45213,
+          "wordOovRate": 0.05419641812009832,
+          "wordTargets": 42715
+        }
+      },
+      "mix": {
+        "explanation": {
+          "connectedGroups": 284,
+          "documents": 297,
+          "duplicateComponents": 297,
+          "publisherGroups": 284,
+          "tokens": 200000
+        },
+        "learner": {
+          "connectedGroups": 817,
+          "documents": 817,
+          "duplicateComponents": 817,
+          "publisherGroups": 817,
+          "tokens": 200000
+        },
+        "proof": {
+          "connectedGroups": 17,
+          "documents": 17,
+          "duplicateComponents": 17,
+          "publisherGroups": 17,
+          "tokens": 100000
+        }
+      },
+      "seconds": 20.333,
+      "sha256": "80b2d0e9b2b9ce28ed318786004b2f94340e0c817bde7a8f24d4f62546a50242",
+      "vocabSha256": "ab82c9d0888ffabc30e01295126b170dfce6eeefe53d48ac17bb5e9b33faabf9"
+    }
+  },
+  "codeSha256AtReceipt": {
+    "corpus.py": "d90f88c7bf0376be3c266a5deb5acee5f5cd8c3d30018943ca40816286c6d4e8",
+    "data_audit.py": "494c39c959ee0df6a5c3bec475fd2cd42df31fa0cbbb8ffab46922d3d2dd92ad",
+    "kn_matched_data.py": "5e08812386bc9e830b5acc6e63a966b8009750f1c80737836edcee87e19cd0d1",
+    "ngram.py": "18179f73314f9684a9dee79dff2431745754836a237236b9ef35f2af5c025af9"
+  },
+  "correctedD2RunSeconds": 153.734,
+  "diagnosticDocuments": 62,
+  "diagnosticTokens": 50000,
+  "order": 4,
+  "packing": "shipping KN v2 encoder, count pruning, 20 MiB ceiling; same D0 vocabulary",
+  "preFixRunSeconds": 189.069,
+  "reuseNote": "D0/D1 packs were built before protecting TeX environments in HTML; after correction their selected token streams, diagnostic stream, and shared vocabulary regenerated byte-identically. D2 changed and was rebuilt. The old temporary file manifest differs, so D0/D1 retain their original corpus identity.",
+  "reuseVerification": {
+    "D0.jsonl.gz": {
+      "corrected": "bae272732d818d17c877c049dfff7946298b58f30e470987afaf635ab49f1df3",
+      "match": true,
+      "old": "bae272732d818d17c877c049dfff7946298b58f30e470987afaf635ab49f1df3"
+    },
+    "D1.jsonl.gz": {
+      "corrected": "5a3b015fe2199aa07d0e1afd1a0647ee50f78e7b6be014e29565364ac96cb9c0",
+      "match": true,
+      "old": "5a3b015fe2199aa07d0e1afd1a0647ee50f78e7b6be014e29565364ac96cb9c0"
+    },
+    "diagnostic.jsonl.gz": {
+      "corrected": "2c412dcb1cf6cc9842c046109bf9dd620cc3a68b39b6c2fdb4749e591f65e559",
+      "match": true,
+      "old": "2c412dcb1cf6cc9842c046109bf9dd620cc3a68b39b6c2fdb4749e591f65e559"
+    },
+    "shared-vocab.json": {
+      "corrected": "8b4f756c92959d04a42e59fda70faef1121fe8e3fdd62d4cf4c8d02a264ebf4c",
+      "match": true,
+      "old": "8b4f756c92959d04a42e59fda70faef1121fe8e3fdd62d4cf4c8d02a264ebf4c"
+    }
+  },
+  "sampleDocuments": 4500,
+  "scope": "Bounded training-only group-held diagnostic. Not independent validation; no UI or action-cost result.",
+  "sourceManifest": {
+    "diagnosticSha256": "2c412dcb1cf6cc9842c046109bf9dd620cc3a68b39b6c2fdb4749e591f65e559",
+    "sampleIdDigest": "8801458f0ef3919635b67d2359f7a28e82de033db7b1b60db92aca152b31e6b4",
+    "sourceManifestSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+    "streamSha256": {
+      "D0": "bae272732d818d17c877c049dfff7946298b58f30e470987afaf635ab49f1df3",
+      "D1": "5a3b015fe2199aa07d0e1afd1a0647ee50f78e7b6be014e29565364ac96cb9c0",
+      "D2": "9f307f5e72b1c1c72b3e8248eb0b29a5cebc91cfd78967c9f47673d48f53d696"
+    }
+  },
+  "tokenBudgetPerArm": 500000
+}

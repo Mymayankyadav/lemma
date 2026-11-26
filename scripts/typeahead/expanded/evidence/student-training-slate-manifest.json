@@ -1,0 +1,102 @@
+{
+  "contract": {
+    "candidates": "at most 16 natural frozen-model full lowercase words; strict prefix advancement; no target injection",
+    "draft": "visible text including prefix",
+    "gold": "actual full next word",
+    "group": "archived group hash",
+    "kind": [
+      "boundary",
+      "prefix"
+    ],
+    "prefix": "typed lowercase stem or empty",
+    "question": "visible source question when available, else empty",
+    "split": [
+      "fit",
+      "calibration"
+    ]
+  },
+  "countModelSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+  "dataSha256": "283dba8d2b4102f4613e53b84ad9d0b04b1ad05640d17512aa9dab54ce77aad8",
+  "documentsScanned": 16865,
+  "eligibility": "Python port of current prose choice, steering, operand and literal guards with no Tutor-specific aid; not full editor-context or on-device policy execution.",
+  "eligibilityPolicySha256": "b00cc3b997c0c500275112c4019739fd53fe2e1aa1e9bc183e5709a4dea619ae",
+  "filtered": {
+    "quotedOrPromptWrapper": 87
+  },
+  "generatorSha256": "8b64a0316099c57c2795f853ae542c5b13422fa934c618cab6743306e84ab615",
+  "groups": 5000,
+  "groupsByRegister": {
+    "explanation": 2500,
+    "learner": 2000,
+    "proof": 500
+  },
+  "groupsBySource": {
+    "EleutherAI/proof-pile-2": 500,
+    "HuggingFaceTB/finemath": 2500,
+    "hoskinson-center/proof-pile": 2000
+  },
+  "groupsBySplit": {
+    "calibration": 982,
+    "fit": 4018
+  },
+  "groupsWithQuestion": 2000,
+  "limitations": "Rows from one group and paired boundary/prefix positions are dependent. Existing shipping count pack was trained on the archived corpus and may have seen these documents; the grouped calibration partition is not independent evaluation. Existing archive grouping is bounded; a new sealed substring/near-duplicate exclusion check was not performed.",
+  "maximumCandidates": 16,
+  "naturalSlateDiagnostics": {
+    "calibration|boundary|emptySlate": 20,
+    "calibration|boundary|outside16": 972,
+    "calibration|boundary|rank4to16": 317,
+    "calibration|boundary|top3": 675,
+    "calibration|prefix|emptySlate": 33,
+    "calibration|prefix|outside16": 349,
+    "calibration|prefix|rank4to16": 171,
+    "calibration|prefix|top3": 1444,
+    "fit|boundary|emptySlate": 69,
+    "fit|boundary|outside16": 3932,
+    "fit|boundary|rank4to16": 1380,
+    "fit|boundary|top3": 2724,
+    "fit|prefix|emptySlate": 130,
+    "fit|prefix|outside16": 1387,
+    "fit|prefix|rank4to16": 721,
+    "fit|prefix|top3": 5928
+  },
+  "prefixStemLengths": {
+    "1": 3861,
+    "2": 3749,
+    "3": 2390
+  },
+  "rows": 20000,
+  "rowsBySplitAndKind": {
+    "calibration|boundary": 1964,
+    "calibration|prefix": 1964,
+    "fit|boundary": 8036,
+    "fit|prefix": 8036
+  },
+  "rowsWithQuestion": 8000,
+  "scope": "archived train shards only; grouped within-training fit/calibration, no independent validation",
+  "selection": "two pre-scoring word positions per group, each with matched boundary and prefix; no gold injection; 50/10/40 explanation/proof/public-Q&A group quotas; Q&A requires a parsed question and first reply",
+  "sourceManifestSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+  "sourceSplit": "train",
+  "sources": [
+    {
+      "id": "EleutherAI/proof-pile-2",
+      "license": "Underlying arXiv author licences, see document metadata and dataset card",
+      "revision": "901a9273a770e9d4138c5ddd91802f9c5c6cdc4b",
+      "url": "https://huggingface.co/datasets/EleutherAI/proof-pile-2"
+    },
+    {
+      "id": "HuggingFaceTB/finemath",
+      "license": "ODC-By, underlying Common Crawl source terms",
+      "revision": "e92b25a616738fe95dc186b64dfb19f9c8525594",
+      "url": "https://huggingface.co/datasets/HuggingFaceTB/finemath"
+    },
+    {
+      "id": "hoskinson-center/proof-pile",
+      "license": "CC BY-SA (Math StackExchange text)",
+      "revision": "490b980249446f2f3bd2df3a8cf085d0f2de240a",
+      "url": "https://huggingface.co/datasets/hoskinson-center/proof-pile"
+    }
+  ],
+  "splitMethod": "SHA-256 of student-split: plus archived publisher/duplicate group, 80/20 by hash",
+  "version": 1
+}

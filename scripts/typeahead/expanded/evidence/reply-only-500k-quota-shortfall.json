@@ -1,0 +1,57 @@
+{
+  "availableLearnerTokens": 124713,
+  "codeSha256": {
+    "corpus.py": "d90f88c7bf0376be3c266a5deb5acee5f5cd8c3d30018943ca40816286c6d4e8",
+    "data_audit.py": "494c39c959ee0df6a5c3bec475fd2cd42df31fa0cbbb8ffab46922d3d2dd92ad",
+    "kn_matched_data.py": "1ff3197d4455f98568c90288453b652b0757525e135dc977b92f4ffa6bbd53b0",
+    "reply_ablation.py": "aa108d771caf944dd5bac971eae8204df706d1a5bcdf01289695a8483657364a"
+  },
+  "fallbackDocuments": 12,
+  "intendedRegisterTokens": {
+    "explanation": 200000,
+    "learner": 200000,
+    "proof": 100000
+  },
+  "limitations": "Training-only bounded source sample; no model, public-development retrieval, human validation, or D3 new-source result. Refill was confined to the same grouped 4500-document sample.",
+  "matchedBaselineAndDiagnosticStreams": {
+    "D0.jsonl.gz": {
+      "match": true,
+      "originalSha256": "bae272732d818d17c877c049dfff7946298b58f30e470987afaf635ab49f1df3",
+      "regeneratedSha256": "bae272732d818d17c877c049dfff7946298b58f30e470987afaf635ab49f1df3"
+    },
+    "D1.jsonl.gz": {
+      "match": true,
+      "originalSha256": "5a3b015fe2199aa07d0e1afd1a0647ee50f78e7b6be014e29565364ac96cb9c0",
+      "regeneratedSha256": "5a3b015fe2199aa07d0e1afd1a0647ee50f78e7b6be014e29565364ac96cb9c0"
+    },
+    "D2.jsonl.gz": {
+      "match": true,
+      "originalSha256": "9f307f5e72b1c1c72b3e8248eb0b29a5cebc91cfd78967c9f47673d48f53d696",
+      "regeneratedSha256": "9f307f5e72b1c1c72b3e8248eb0b29a5cebc91cfd78967c9f47673d48f53d696"
+    },
+    "diagnostic.jsonl.gz": {
+      "match": true,
+      "originalSha256": "2c412dcb1cf6cc9842c046109bf9dd620cc3a68b39b6c2fdb4749e591f65e559",
+      "regeneratedSha256": "2c412dcb1cf6cc9842c046109bf9dd620cc3a68b39b6c2fdb4749e591f65e559"
+    }
+  },
+  "method": "Known source with strict title/question/reply wrapper: use first nonempty answer; keep question separate; fall back to unchanged cleaned text for nonmatches.",
+  "sampleDocuments": 4500,
+  "shortfall": {
+    "arm": "D2-reply",
+    "availableMatchedTrainDocuments": 1022,
+    "diagnosticSha256": "2c412dcb1cf6cc9842c046109bf9dd620cc3a68b39b6c2fdb4749e591f65e559",
+    "matchedReplyDocuments": 1022,
+    "refillDocumentsOutsideBaseline": 217,
+    "register": "learner",
+    "requiredTokens": 200000,
+    "sampleIdDigest": "8801458f0ef3919635b67d2359f7a28e82de033db7b1b60db92aca152b31e6b4",
+    "scope": "training-only bounded sample; no independent validation",
+    "selectedDocuments": 1034,
+    "shortfallTokens": 75287,
+    "sourceManifestSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b"
+  },
+  "status": "quota_shortfall_no_model_built",
+  "targetTokensPerArm": 500000,
+  "vocabularyNote": "The baseline D0 token stream matches exactly; the shared vocabulary was not regenerated because the quota failure occurs before vocabulary fitting."
+}

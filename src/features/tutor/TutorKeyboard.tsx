@@ -57,7 +57,7 @@ interface KeyHold {
  * edge of a letter counts for its neighbour when only the neighbour continues a word (tap correction).
  */
 export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove, onBrowse, wordBefore, ink,
-  layout = 'gboard', onTab, onHide}: {
+  layout = 'gboard', onTab, onTabPress, onHide}: {
   view: string; lastMath: string; onView: (view: string) => void; disabled: boolean;
   /** `touch`: where a letter was tapped, in key pitches and rows from the top-left of the letter rows (N221 decoder). */
   onInsert: (text: string, typed?: boolean, touch?: KeyTouch) => void; onDelete: () => void;
@@ -69,7 +69,8 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
   /** N252: `ipad` draws iPadOS's keyboard; anything else Gboard's. */
   layout?: KeyboardLayout;
   /** The iPad's tab key; without it, tab types a tab. */
-  onTab?: () => void;
+  onTab?: (fromPointer: boolean) => void;
+  onTabPress?: (pressed: boolean) => void;
   /** The iPad's hide-keyboard key (Gboard's layouts hide the keyboard from the strip). */
   onHide?: () => void;
 }) {
@@ -122,13 +123,14 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
     return q && first && q.width > 0 && q.height > 0
       ? {x: (point.x - first.left) / q.width + GBOARD_ROW_START[row]!, y: (point.y - q.top) / q.height} : undefined;
   };
-  function key(label: string, action: () => void, options: {style?: string; icon?: ReactNode; alt?: string; printable?: boolean; letter?: string;
+  function key(label: string, action: (fromPointer: boolean) => void, options: {style?: string; icon?: ReactNode; alt?: string; printable?: boolean; letter?: string;
     /** N252: the key's width in letter keys (iPad rows); `id` tells apart two keys with one label (the iPad's two shifts). */
-    grow?: number; id?: string;} = {}) {
-    const {style = '', icon, alt, printable, letter, grow, id} = options;
+    grow?: number; id?: string; onPress?: (pressed: boolean) => void;} = {}) {
+    const {style = '', icon, alt, printable, letter, grow, id, onPress} = options;
     const swallowing = (event: PointerEvent<HTMLButtonElement>) => {
       const current = hold.current;
       if (!current || current.pointer !== event.pointerId) return;
+      if (event.type !== 'pointerup') onPress?.(false);
       clearTimeout(current.timer);
       if (current.fired) skipClick.current = current.key;
       hold.current = null;
@@ -142,6 +144,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
       onPointerDown={event => {
         if (!event.isPrimary || event.button !== 0) return;
         keepSelection(event);
+        onPress?.(true);
         skipClick.current = null;
         haptic('key');
         const preview = printable && !ipad ? popup.current : null;
@@ -205,7 +208,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
         if (event.detail && skipClick.current === label) {skipClick.current = null; return;}
         if (!event.detail || pressed.current !== event.currentTarget) {haptic('key'); touch.current = null;}
         pressed.current = null;
-        action();
+        action(event.detail > 0);
       }}>
       <span className="kl">{icon ?? label}</span>{alt && <sup>{alt}</sup>}
     </button>;
@@ -242,7 +245,8 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
     icon: <span className="ip-hide-icon" aria-hidden="true"><Keyboard/><ChevronDown/></span>});
   /** N252 · iPadOS's rows. Each is 12.5 letter keys across, so the letters line up as they do on the iPad. */
   function iPadRows() {
-    const tab = key('Tab', () => onTab ? onTab() : onInsert('\t', true), {grow: IPAD.tab, style: 'fn ip-l', icon: <ArrowRightToLine/>});
+    const tab = key('Tab', fromPointer => onTab ? onTab(fromPointer) : onInsert('\t', true),
+      {grow: IPAD.tab, style: 'fn ip-l', icon: <ArrowRightToLine/>, onPress: onTabPress});
     const del = key('Delete', onDelete, {grow: IPAD.back, style: 'fn ip-r', icon: <Delete/>});
     const enter = (grow: number) => key('Return', () => onInsert('\n', true), {grow, style: 'fn ip-r', icon: <CornerDownLeft/>});
     const shiftKey = (id: string, grow: number, side: string) => key('Shift', toggleShift, {

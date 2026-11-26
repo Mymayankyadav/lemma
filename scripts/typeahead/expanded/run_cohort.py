@@ -59,7 +59,9 @@ def run(opts):
         dep.symlink_to(repo/'node_modules', target_is_directory=True)
     for source in ('n238-typeahead-replay.spec.ts','helpers/live-tutor.ts'):
         dest = driver/source
-        incoming = repo/'tests/e2e'/source
+        incoming = (opts.driver_from or repo/'tests/e2e')/source
+        if dest.exists() and file_hash(dest) != file_hash(incoming):
+            raise ValueError('Existing output uses a different replay driver: ' + source)
         if not dest.exists():
             shutil.copyfile(incoming, dest)
     config = driver/'config.mts'
@@ -67,7 +69,10 @@ def run(opts):
                       'export default {...base,testDir:' + json.dumps(str(driver)) + ',workers:1};\n')
     invocation = dict(arm=opts.arm, phase=opts.phase, sha=opts.sha, static=static.hexdigest(),
                       config=file_hash(opts.config), harness=file_hash(driver/'n238-typeahead-replay.spec.ts'), fixture=file_hash(driver/'helpers/live-tutor.ts'),
-                      split=manifest['files'])
+                      split=manifest['files'], menuTrial=opts.menu_trial, phraseGhost=opts.phrase_ghost,
+                      punctuationPairs=opts.punctuation_pairs, fasterTyping=opts.faster_typing, flags=opts.flags)
+    if opts.phrase_ghost and not opts.faster_typing:
+        raise ValueError('Phrase ghost requires --faster-typing in every compared arm')
     pack_env = {}
     if opts.fp16_pack:
         spec = json.loads((repo/'src/features/tutor/writingAid/decoder/android-fp16.json').read_bytes())
@@ -111,9 +116,15 @@ def run(opts):
             raise ValueError('Existing block mismatches schedule')
         env = {**process_env, **pack_env, 'LEMMA_TYPEAHEAD_REPLAY_INPUT':str(directory/'events.jsonl'),
             'LEMMA_TYPEAHEAD_REPLAY_ANSWERS':str(directory/'context.jsonl'), 'LEMMA_TYPEAHEAD_REPLAY_OUTPUT':str(dest),
-            'LEMMA_TYPEAHEAD_REPLAY_ARM':opts.arm,'LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NGRAM_SHA':opts.sha,
+            'LEMMA_TYPEAHEAD_REPLAY_ARM': '' if opts.arm == 'default' else opts.arm,
+            'LEMMA_TYPEAHEAD_REPLAY_EXPECTED_NGRAM_SHA':opts.sha if opts.sha != 'none' else '',
+            'LEMMA_TYPEAHEAD_REPLAY_FLAGS':opts.flags,
             'LEMMA_TYPEAHEAD_REPLAY_COMPARE':'1', 'LEMMA_TYPEAHEAD_REPLAY_CAPTURE_ONLY':str(int(capture)),
-            'LEMMA_TYPEAHEAD_REPLAY_BLIND':str(int(capture))}
+            'LEMMA_TYPEAHEAD_REPLAY_BLIND':str(int(capture)),
+            'LEMMA_TYPEAHEAD_REPLAY_MENU_TRIAL':opts.menu_trial or '',
+            'LEMMA_TYPEAHEAD_REPLAY_PHRASE_GHOST':opts.phrase_ghost or '',
+            'LEMMA_TYPEAHEAD_REPLAY_FASTER_TYPING':str(int(opts.faster_typing)),
+            'LEMMA_TYPEAHEAD_REPLAY_PUNCTUATION_PAIRS':str(int(opts.punctuation_pairs))}
         command = [str(repo/'node_modules/.bin/playwright'),'test','-c',str(config),
                    'n238-typeahead-replay.spec.ts','-g','replays visible','--workers=1','--output',str(directory/'playwright')]
         browser_log = directory/'browser.log'
@@ -147,11 +158,17 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     for arg in ('split','output','config','build'):
         p.add_argument('--'+arg, type=lambda path:Path(path).resolve(), required=True)
-    p.add_argument('--arm', choices=['corrected-v1','expanded-kn','tutor','personal','neural'],required=True)
+    p.add_argument('--arm', choices=['default','corrected-v1','expanded-kn','tutor','personal','neural'],required=True)
     p.add_argument('--phase', choices=['capture','cost'],required=True)
     p.add_argument('--sha', required=True)
     p.add_argument('--threads',type=int)
     p.add_argument('--fp16-pack',type=lambda path:Path(path).resolve(),help='Install and validate a pinned optional model through the real settings UI')
     p.add_argument('--jobs', type=int, default=2)
     p.add_argument('--block', type=int, default=10)
+    p.add_argument('--menu-trial', choices=['m1','m1-neutral','m2','m2-tutor','m2-right'])
+    p.add_argument('--phrase-ghost', choices=['shadow','lab'])
+    p.add_argument('--punctuation-pairs', action='store_true', help='Run separate verified suggestion then punctuation trajectories')
+    p.add_argument('--faster-typing', action='store_true', help='Set the scoped faster-typing opt-in in the isolated fixture')
+    p.add_argument('--driver-from', type=lambda path:Path(path).resolve(), help='Use an existing pinned replay driver directory for matched runs')
+    p.add_argument('--flags', default='typeaheadV2,tutorAnswerAids,proofAssistGhost')
     run(p.parse_args())

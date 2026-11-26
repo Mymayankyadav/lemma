@@ -1,8 +1,8 @@
 import {selectWritingAidPool, type WritingAidPool} from './poolRanking';
 export {applyNeuralReply, selectWritingAidPool, type WritingAidPool} from './poolRanking';
 import type {WordTrace} from './menuRanking';
-import {proseSymbol} from './menuEdit';
-import {hasOpenLiteral} from './eligibility';
+import {learnerAuthored, proseSymbol} from './menuEdit';
+import {hasOpenLiteral, hasProofChoiceGap} from './eligibility';
 import {personalContext} from './adaptation';
 import {effectiveAidLevel} from '../../../../supabase/functions/_shared/tutor-answer-aids';
 import {padEdit} from '../../pad/padEdit';
@@ -25,6 +25,8 @@ import speedPolicy from './vendor/speed-policy.json';
 import {decodeWord, decoderSymbols, prepareLanguage, type LanguageDistribution, typeaheadActive, typeaheadRequested, writingDecoderReady} from './decoder/ngramSpatial';
 import {atSentenceStart, capitalise, grammarAllows} from './grammar';
 import {aidScopeSpecificity, contextualWording, tutorHint, type AidRankingContext} from './answerAids';
+import {declaredMenuCandidates, literalMenuCandidates, prepareMenuCopies} from './menuCandidates';
+import {generalNgram, prepareRightContext} from './decoder/kn';
 
 // Lemma already offers these spellings. The pinned rank asset includes
 // preimage, while the general-purpose dictionary omits both forms.
@@ -49,7 +51,6 @@ const FILLERS = new Set(['a', 'an', 'the', 'i', 'we', 'of', 'to', 'in', 'for', '
 const COMPLETE_PROOF_WORDS = new Set([...wordAssets.common, ...FILLERS, 'never', 'none', 'unless', 'nor',
   'implied', 'imply', 'then', 'there', 'therefore', 'conversely', 'greater', 'less',
   'zero', 'even', 'odd', 'nonzero', 'rational', 'integer', 'real', 'preimage', 'preimages']);
-const LOGIC_GAP = /(?:\b(?:by|because|since|if|then|not|or|and|only|all|for every|witness|choose|let|take|assume|suppose|given|denote|define|equals?|implies|therefore|hence|thus|consequently|belongs to|is a subset of)|[=<>≤≥∈∉⊆⊂≠∀∃⇒⇔¬])\s*$/iu;
 const TOKEN = /\\[A-Za-z]+|[<=>!\-]+|_[0-9]|\bthe the\b|[\p{L}\p{M}]+/gu;
 const RISKY_PERSONAL_WORD = /^(?:not|no|or|if|only|all|some|any|neither|never|contradiction|contrapositive|induction|injective|surjective|bijective|infinite|finite|nonempty|empty|zero|nonzero|positive|negative|unique|uniqueness|compact|compactness|continuous|discontinuous|unbounded|bounded|converges?|convergent|convergence|diverges?|divergent|divergence|contradicts|witness|true|false|greater|less|every|exists|inverse|proof|prove|proves|proved|proving|prime|composite|property|properties|counterexample|theorem|lemma|sufficient|necessary|equivalent|implies|integer|rational|irrational|even|odd|commutative|associative|distributive|invertible|singular|nonsingular|symmetric|antisymmetric|reflexive|transitive|irreflexive|countable|uncountable|measurable|monotone|increasing|decreasing|differentiable|integrable|closed|open|dense|separable|complete|completeness|connected|disconnected|distinct|equal|unequal|idempotent|coprime|independent|dependent|linear|nonlinear|convex|concave)$/iu;
 /** N221 (Owner): words that steer a proof (its reasons and moves) are never offered from a short stem or as the next
@@ -91,7 +92,7 @@ function keyProposals(
   const prefix = wordAtCaret(cursor);
   const rangeStart = cursor.end - (prefix?.length ?? 0);
   const before = cursor.text.slice(0, rangeStart);
-  const protectedGap = LOGIC_GAP.test(before);
+  const protectedGap = hasProofChoiceGap(before);
   const spacer = trailingSpace(cursor.text.slice(cursor.end));
   if (rangeStart < start || (protectedGap && prefix && prefix.length < 5)) return [];
   if (!v2 && protectedGap && !prefix) return [];
@@ -118,6 +119,10 @@ function keyProposals(
     authored: authoredText.slice(0, rangeStart - start), subject: request.subject});
   observeLanguage?.(language);
   const bank = contextualWording(hintContext);
+  const trial = v2 && request.menuTrial && !anchor?.continuation &&
+    learnerAuthored(request.acceptedSpans, rangeStart, cursor.end);
+  const copies = trial ? prepareMenuCopies(request, before, prefix ?? '', language.score) : undefined;
+  const literal = trial && mode !== 'strict' && !protectedGap ? literalMenuCandidates(request, hintContext) : [];
   const inPhrase = bank.some(entry => entry.progress > 0);
   // The spatial keyboard covers ASCII touch keys. Copy paths also preserve
   // mathematical names and compound terms from the actual question.
@@ -136,7 +141,7 @@ function keyProposals(
       // All remaining lexical scores are ordered. Even the largest tutor reward cannot reach the first 64
       // admitted distinct edits, including their maximum possible phrase penalty. Explicit terms have their own pass.
       if (v2 && !request.exhaustivePool && batch === 0 && admitted >= 64 && score !== undefined &&
-          score + Math.log(2) < first64Floor) break;
+          score + (trial ? 0 : Math.log(2)) < first64Floor) break;
       const word = sentenceStart ? capitalise(candidate) : candidate;
       const raw = trace && {start: rangeStart, end: cursor.end, insert: word + spacer, caret: rangeStart + word.length + spacer.length, source: 'word' as const, eligible: false};
       if (raw) trace!.push(raw);
@@ -160,14 +165,15 @@ function keyProposals(
       if (cursor.text.length - (prefix?.length ?? 0) + insert.length > WRITING_AID_LIMIT) continue;
       const proposal = writingAidProposal(request, 'word', rangeStart, cursor.end, insert, word);
       const hint = tutorHint(hintContext, word);
+      const base = v2 ? score ?? language.score(word.toLowerCase()) : undefined;
       const offered: WritingAidProposal = {...proposal, source: fromDecoder ? 'decoder' : undefined,
         role: hint.role, tutorAdjustment: hint.adjustment, logic: v2 && risk === 'logic',
-        score: v2 ? (score ?? language.score(word.toLowerCase())) + hint.adjustment : undefined};
+        score: base === undefined ? undefined : base + hint.adjustment, menuBase: trial ? base : undefined};
       seenLabels.add(word);
       if (!proposalEligible(request, offered)) continue;
       if (raw) raw.eligible = true;
       if (batch === 0 && admitted < 64 && offered.score !== undefined) {
-        first64Floor = Math.min(first64Floor, offered.score - (inPhrase ? Math.log(2) : 0));
+        first64Floor = Math.min(first64Floor, (offered.menuBase ?? offered.score) - (inPhrase ? Math.log(2) : 0));
         admitted++;
       }
       proposals.push(offered);
@@ -177,15 +183,46 @@ function keyProposals(
     if (cursor.text.length - (prefix?.length ?? 0) + word.length + 1 > WRITING_AID_LIMIT || anchor?.continuation && !prefix) continue;
     const hint = tutorHint(hintContext, word);
     const lm = language.score(word.split(/\s+/u)[0].toLowerCase().replace(/[.,;:!?]+$/u, ''));
-    const score = (Number.isFinite(lm) ? lm : Math.log(.002)) + Math.log(4) / phrase.trim().split(/\s+/u).length + hint.adjustment;
-    const proposal: WritingAidProposal = {...writingAidProposal(request, 'word', rangeStart, cursor.end, word + spacer, word),
-      source: 'bank', role: hint.role ?? 'neutral', tutorAdjustment: hint.adjustment, score};
+    const base = (Number.isFinite(lm) ? lm : Math.log(.002)) + Math.log(4) / phrase.trim().split(/\s+/u).length;
+    const exact = literal.find(item => item.text.replace(/\s+/gu, ' ') === word && item.insert !== word + spacer);
+    const proposal: WritingAidProposal = {...writingAidProposal(request, 'word', rangeStart, cursor.end, exact?.insert ?? word + spacer, exact?.text ?? word),
+      source: exact?.source ?? 'bank', role: hint.role ?? 'neutral', tutorAdjustment: hint.adjustment,
+      score: base + hint.adjustment, menuBase: trial ? base : undefined};
     proposals.push(proposal);
+  }
+  if (trial && copies && (mode !== 'strict' || (prefix?.length ?? 0) >= 4)) {
+    const declared = !protectedGap ? declaredMenuCandidates(request, hintContext) : [];
+    const sources = [...(wordsAllowed ? copies.candidates : []), ...literal, ...declared];
+    const identity = new Set(proposals.map(proposal => proposal.insert));
+    for (const {text: label, word, insert, source} of sources) {
+      const hint = tutorHint(hintContext, label);
+      const contextScore = source === 'declared' ? language.mathLog - Math.log(8) : language.score(word.toLowerCase());
+      const base = (Number.isFinite(contextScore) ? contextScore : Math.log(.002)) -
+        Number(label !== word && source !== 'literal') * Math.log(4);
+      const proposal = {...writingAidProposal(request, 'word', rangeStart, cursor.end, insert, label), source,
+        score: base + hint.adjustment, menuBase: base,
+        role: hint.role, tutorAdjustment: hint.adjustment};
+      const reason = source !== 'declared' && (!grammarAllows(before, word) ||
+        protectedGap && prefix && prefix.length / word.length < .6) ? 'grammar' :
+        cursor.text.length - (cursor.end - rangeStart) + insert.length > WRITING_AID_LIMIT ? 'range' :
+        !proposalEligible(request, proposal) ? 'eligibility' : identity.has(insert) ? 'duplicate' : undefined;
+      if (reason === 'duplicate') {
+        trace?.push({...proposalEdit(proposal), source, eligible: true, reason});
+        continue;
+      }
+      if (reason) {
+        trace?.push({...proposalEdit(proposal), source, eligible: false, reason});
+        continue;
+      }
+      identity.add(insert);
+      proposals.push(proposal);
+    }
   }
   if (v2 && !prefix && !sentenceStart && !OPERAND_GAP.test(before)) {
     const freshWitness = /\blet\s*$/iu.test(before) && /\b(?:choose|find|exhibit|witness)\b/iu.test(request.question?.[0] ?? '');
     const symbols = freshWitness ? [] : decoderSymbols(before, [...request.question ?? [], ...aidActive ? request.aid?.symbols ?? [] : []]).slice(0, 8);
-    const declared = aidActive ? request.aid?.ranking?.declaredSymbols ?? [] : [];
+    const declarations = aidActive ? request.aid?.ranking?.declaredSymbols ?? [] : [];
+    const declared = trial ? declarations.filter(item => declarations.filter(other => other.symbol === item.symbol).length === 1) : declarations;
     const subject = /(?:^|\s)([A-Za-z])\s+is\s+(?:an?\s+)?(?:open |closed )?(?:subset of|in|open in|closed in)\s*$/u.exec(before)?.[1];
     const ambient = declared.filter(symbol => symbol.symbol === subject && symbol.role === 'set' && symbol.ambient && !symbol.binder).map(symbol => symbol.ambient);
     const matchingAmbient = [...new Set(ambient)];
@@ -204,7 +241,8 @@ function keyProposals(
     });
     const total = modeled.reduce((sum, {weight}) => sum + weight, 0);
     for (const {weight, proposal, adjustment} of modeled) {
-      proposals.push({...proposal, score: language.mathLog + Math.log(weight / total) + adjustment});
+      const base = language.mathLog + Math.log(weight / total);
+      proposals.push({...proposal, score: base + adjustment, menuBase: trial ? base : undefined});
     }
   }
   // Long-term vocabulary only supplies strongly typed word endings. It never
@@ -222,8 +260,10 @@ function keyProposals(
       if (!word.startsWith(prefix) || proposals.some(item => item.label === word) ||
           cursor.text.length - prefix.length + word.length + 1 > WRITING_AID_LIMIT) continue;
       const hint = tutorHint(hintContext, word);
+      const base = v2 ? language.score(saved) : undefined;
       proposals.push({...writingAidProposal(request, 'word', rangeStart, cursor.end, word + spacer, word),
-        source: 'personal', role: hint.role, tutorAdjustment: hint.adjustment, score: v2 ? language.score(saved) + hint.adjustment : undefined});
+        source: 'personal', role: hint.role, tutorAdjustment: hint.adjustment,
+        score: base === undefined ? undefined : base + hint.adjustment, menuBase: trial ? base : undefined});
     }
   }
   const eligible = proposals.filter(proposal => proposalEligible(request, proposal));
@@ -233,13 +273,23 @@ function keyProposals(
   }
   if (!v2 && !bank.length) return eligible;
   const deduped = new Map<string, WritingAidProposal>();
+  const shortlistScore = (item: WritingAidProposal) => item.menuBase ?? item.score ?? -Infinity;
   for (const candidate of eligible) {
-    const item = inPhrase && candidate.source !== 'bank' && candidate.score !== undefined && candidate.source !== 'symbol' && !bank.some(entry => entry.text === candidate.label)
-      ? {...candidate, score: candidate.score - Math.log(2)} : candidate;
+    const item = inPhrase && candidate.source !== 'bank' && candidate.source !== 'literal' && candidate.score !== undefined &&
+      candidate.source !== 'symbol' && candidate.source !== 'declared' && !bank.some(entry => entry.text === candidate.label)
+      ? {...candidate, score: candidate.score - Math.log(2),
+        menuBase: candidate.menuBase === undefined ? undefined : candidate.menuBase - Math.log(2)} : candidate;
     const key = writingAidProposalKey(item);
-    if (!deduped.has(key) || (deduped.get(key)?.score ?? -Infinity) < (item.score ?? -Infinity)) deduped.set(key, item);
+    const previous = deduped.get(key);
+    if (!previous || shortlistScore(previous) < shortlistScore(item)) deduped.set(key, item);
   }
-  return [...deduped.values()].sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity)).slice(0, 64);
+  const shortlist = [...deduped.values()].sort((a, b) => shortlistScore(b) - shortlistScore(a)).slice(0, 64);
+  if (!copies) return shortlist;
+  const ngram = generalNgram();
+  const right = ngram && (trace || request.menuTrial === 'm2-right')
+    ? prepareRightContext(ngram, before, cursor.text.slice(cursor.end)) : undefined;
+  return shortlist.map((item, index) => ({...item, contextRecurrence: copies.recurrence(item.label),
+    rightContextGain: index < 24 ? right?.(item.insert) : undefined}));
 }
 
 interface KeyCandidate {
@@ -290,7 +340,7 @@ function ghostProposals(
   request: WritingAidRequest, text: string, authoredText: string,
 ): WritingAidProposal[] {
   const {mode, cursor, anchor} = request;
-  if (mode === 'strict' || mode === 'off' || anchor?.continuation || LOGIC_GAP.test(cursor.text) ||
+  if (mode === 'strict' || mode === 'off' || anchor?.continuation || hasProofChoiceGap(cursor.text) ||
       /[`"“”‘’]/u.test(authoredText)) return [];
   const proposals: WritingAidProposal[] = [];
   function add(suffix: string) {
