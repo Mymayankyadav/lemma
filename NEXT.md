@@ -6,6 +6,15 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N253 Measure and improve the mathematical typing predictor and inline completions
+
+Owner task: "Ok, start working on it use two sol 6.2 agents and two 6.1 terra agents. Decide aptly which goes to whom, minimising token usage without compromising the quality of the output."
+Stage: Build · Status: in progress · Needs: N238, N250 · Assigned: chat-681#p7s4
+Done = Implement the opt-in word and phrase candidates, signed Tutor ranking, exact grey-text evaluation and paired browser replay. Audit and compare training data at matched exposure. Record measured results and a separate release decision for the strip, grey text and optional student. Qualify promoted features on the physical phone and against their specified outcomes.
+Tests: existing Tutor keyboard, equation, drawing, model and replay suites plus focused menu, phrase-provider, corpus and two-action punctuation regressions.
+Scope: src/features/tutor/**; src/flags.ts; scripts/typeahead/**; public/models/typeahead/**; tests/unit/tutor/**; tests/e2e/**typeahead*; docs/current/N253.md; docs/implementation/typeahead-evidence/**; NEXT.md.
+Not: keyboard layout changes, automatic proof choices or changing a default based only on offline scores.
+
 ## N251 Exam mode on by default in the app, with its screens polished
 
 Owner task: "Turn on exam mode in the app"
