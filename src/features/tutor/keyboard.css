@@ -415,3 +415,45 @@
 .lemma-tutor .kb .rows[data-key-ink] {touch-action: none;}
 .lemma-tutor .kb .rows .tutor-key-ink {position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3;}
 .lemma-tutor .kb .rows .tutor-key-ink-status {position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;}
+
+/* N252 (Owner: "This is how the native keyboard looks on iPad … keyboard layout should depend on the device. Keep the
+   current layout for android devices") · on an iPad the keys follow iPadOS's full-size keyboard: rows 12.6 letter keys
+   across (the widths are set on each key), near-square caps a little apart with a hairline shadow underneath, the
+   modifier keys in the tinted shade with their names in lower case at the outer bottom corner, secondary characters
+   grey above their letters, and no enlarged preview. The rows grow with the screen up to iPadOS's own pitch; Gboard's
+   rules above stay as they are for every other device. */
+@media (min-height: 560px) {
+  .lemma-tutor .kb[data-keyboard-layout="ipad"] {--cell: clamp(44px, 7dvh, 62px);}
+}
+.lemma-tutor .kb[data-keyboard-layout="ipad"] {padding: 0 4px max(6px, var(--v7-safe-bottom, env(safe-area-inset-bottom)));}
+.lemma-tutor .kb .rows[data-layout="ipad"] {padding: 2px 0 0;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k {--capl: 3.5px; --capr: 3.5px; font: 400 min(25px, 2.9vw + 1px, var(--cell) * .42)/1 var(--v7-sans);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k::before {
+  top: 3.5px; bottom: 3.5px; border-radius: 7px;
+  box-shadow: 0 1px 0 light-dark(rgb(18 27 49 / 24%), rgb(0 0 0 / 45%));
+}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.sym {font: 400 min(24px, 2.7vw + 1px, var(--cell) * .4)/1 var(--v7-glyph);}
+/* The secondary character, centred above its letter; the letter sits lower to make room. Both scale with the row's
+   height, so the short rows of a landscape iPad keep them apart. */
+.lemma-tutor .kb .rows[data-layout="ipad"] .k sup {
+  top: calc(3.5px + var(--cell) * .1); left: var(--capl); right: var(--capr); text-align: center;
+  font: 400 min(14px, var(--cell) * .24)/1 var(--v7-sans); color: var(--v7-role-text-tertiary);
+}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.dual .kl {padding-top: calc(var(--cell) * .32);}
+/* Modifier names: tab, caps lock and the left shift at the bottom left; delete, return and the right shift at the
+   bottom right; .?123 and ABC centred. */
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-txt {font: 400 min(17px, 1.9vw + 1px, var(--cell) * .3)/1 var(--v7-sans);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-l .kl {place-items: end start; padding: 0 0 calc(3.5px + var(--cell) * .15) 10px;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-r .kl {place-items: end end; padding: 0 10px calc(3.5px + var(--cell) * .15) 0;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-sym {font: 400 clamp(18px, 2.5vw, 22px)/1 var(--v7-glyph);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.fn.lit::before {background: var(--tutor-key-press, var(--key));}
+/* Caps lock's light, top left: lit while caps lock is on. */
+.lemma-tutor .kb .rows[data-layout="ipad"] .k .ip-led {
+  position: absolute; top: calc(3.5px + var(--cell) * .15); left: 10px; width: 6px; height: 6px; border-radius: 9999px;
+  background: var(--v7-role-border-default);
+}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.lit .ip-led {background: var(--v7-role-selection-fg);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .ip-hide-icon {display: grid; justify-items: center; gap: 0;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .ip-hide-icon svg {width: 22px; height: 22px;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .ip-hide-icon svg + svg {width: 14px; height: 14px; margin-top: -3px;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .row.catbar .ip-hide {flex: 0 0 56px;}

@@ -6,6 +6,15 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N252 The tutor's keyboard follows iPadOS on an iPad; Android keeps Gboard's
+
+Owner task: "This is how it looks on my ipad. And this how the native keyboard looks on iPad. I understand that keyboard layout should depend on the device. Keep the current layout for android devices."
+Stage: Build · Status: done · Needs: — · Assigned: chat-697888#xr09
+Done = On an iPad (iPadOS Safari, desktop-mode Safari or the installed web app) in a window at least 600 px wide, the tutor's answer keyboard follows iPadOS's full-size keyboard: tab · q–p · delete; caps lock · a–l · return; shift · z–m · `!,` · `?.` · shift; then the maths key (where iPadOS has its emoji key) · .?123 · space · .?123 · hide keyboard, every row 12.6 keys across. Secondary characters stand grey above their letters and are typed by holding the key; the number pages keep Lemma's maths symbols in the same frame (#+= and 123 switch them); tab goes to the next □ or takes the shown continuation, as Tab does on a hardware keyboard, and otherwise types a tab; the hide key replaces the strip's. Rows grow to iPadOS's pitch in portrait and stay clear in landscape. Android (app and browser), iPhone, desktops and a narrow iPad window keep Gboard's layout unchanged. Typed taps reach the word decoder in Gboard's frame on either layout. Recorded in docs/current/N252.md.
+Tests: tests/unit/tutor/ipad-keyboard.test.tsx; tests/e2e/v7-tutor-ipad-keyboard.spec.ts; the tutor unit suite and the tutor keyboard browser specs (Gboard layout, keyboard, typeahead, writing aid, symbol input, inline maths, ink).
+Scope: src/features/tutor/{keyboardLayout.ts,TutorKeyboard.tsx,TutorComposer.tsx,keyboard.css}; the tests above; docs/current/N252.md; NEXT.md.
+Not: Gboard's layout or geometry; the maths category pages; an iPhone-specific layout; new dependencies; server, MCP or migration changes.
+
 ## N251 Exam mode on by default in the app, with its screens polished
 
 Owner task: "Turn on exam mode in the app"
