@@ -29,6 +29,10 @@ class PairedStudyTests(unittest.TestCase):
             invalid = write(root/'invalid', [dict(answerId=str(i),manualKeys=10,assistedKeys=7,costDefinition='full-answer-punctuation-pairs-v1') for i in range(4)])
             with self.assertRaises(ValueError):
                 analyze(allocation,gold,left,right,base,invalid,simulations=50)
+            ambiguous = write(root/'ambiguous', [dict(eventId=str(i),prefixSha256='p',
+                slate=[dict(start=0,end=0,text='x')]) for i in range(4)])
+            with self.assertRaisesRegex(ValueError, 'unverified matching edit'):
+                analyze(allocation,gold,left,ambiguous,base,candidate,simulations=50)
 
 
 if __name__ == '__main__':

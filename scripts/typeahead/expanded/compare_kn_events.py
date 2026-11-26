@@ -9,6 +9,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import numpy as np
 from corpus import PROSE, file_hash
 from score_assets import loaded
 
@@ -44,6 +45,8 @@ def main():
     p.add_argument('--split', required=True, type=Path)
     p.add_argument('--model', nargs=2, action='append', required=True, metavar=('NAME','DIRECTORY'))
     p.add_argument('--out', required=True, type=Path)
+    p.add_argument('--bootstrap-reps', type=int, default=0, help='stratified whole-thread resamples')
+    p.add_argument('--seed', type=int, default=253)
     a = p.parse_args()
     events = {}
     with (a.split/'events.jsonl').open() as f:
@@ -105,10 +108,49 @@ def main():
                                      'lost':sum(hits[baseline][i] and not hits[name][i] for i in relevant),
                                      'denominator':len(relevant)}
             outputs[name]['pairedVersus'+baseline] = comparisons
+    bootstrap = None
+    if a.bootstrap_reps:
+        if not 1 <= a.bootstrap_reps <= 100000:
+            raise ValueError('bootstrap repetitions must be between 1 and 100000')
+        allocation = [json.loads(line) for line in (a.split/'allocation.jsonl').read_text().splitlines() if line.strip()]
+        answer_to_index = {item['answerId']:i for i,item in enumerate(allocation)}
+        if len(answer_to_index) != len(allocation) or set(answer_to_index) != {v['answerId'] for v in events.values()}:
+            raise ValueError('thread allocation does not match frozen events')
+        by_stratum = {}
+        for i,item in enumerate(allocation):
+            by_stratum.setdefault(item['stratum'], []).append(i)
+        rng = np.random.default_rng(a.seed)
+        draws = np.concatenate([rng.choice(indices, (a.bootstrap_reps, len(indices)), replace=True)
+                                for _,indices in sorted(by_stratum.items())], axis=1)
+        thread_counts, comparisons = [], {}
+        base = a.model[0][0]
+        for i,item in enumerate(allocation):
+            row = {'threadIndex':i, 'stratum':item['stratum'], 'counts':{}}
+            for name in hits:
+                row['counts'][name] = {}
+                for kind in ('boundary','prefix'):
+                    ids = [event_id for event_id,k,*_ in prepared if k == kind and answer_to_index[events[event_id]['answerId']] == i]
+                    row['counts'][name][kind] = {'hits':sum(hits[name][event_id] for event_id in ids), 'denominator':len(ids)}
+            thread_counts.append(row)
+        for name in hits:
+            comparisons[name] = {}
+            for kind in ('boundary','prefix'):
+                values = np.array([[row['counts'][base][kind]['hits'], row['counts'][name][kind]['hits'],
+                                    row['counts'][base][kind]['denominator']] for row in thread_counts], dtype=np.int64)
+                totals = values[draws].sum(axis=1)
+                valid = totals[:,2] > 0
+                delta = 100.0 * (totals[valid,1] - totals[valid,0]) / totals[valid,2]
+                comparisons[name][kind] = {'deltaPercentagePoints95':np.percentile(delta,[2.5,97.5]).tolist() if len(delta) else None,
+                                           'validResamples':int(valid.sum())}
+        bootstrap = {'method':'paired whole-thread percentile bootstrap, separately resampled within each site-by-length stratum',
+                     'repetitions':a.bootstrap_reps, 'seed':a.seed, 'stratumThreadCounts':{key:len(value) for key,value in sorted(by_stratum.items())},
+                     'baseline':base, 'comparisons':comparisons, 'threadCounts':thread_counts}
     result = {'scope':'public development text-only general count retrieval; no subject pack, touch decoder, UI, or action cost',
               'eligibility':'lowercase ASCII word of at least 2 letters followed by a space; exact matching on the fixed visible input',
               'eventsSha256':file_hash(a.split/'events.jsonl'), 'goldSha256':file_hash(a.split/'gold.jsonl'),
               'eventsTotal':len(events), 'eligibleEvents':len(prepared), 'models':outputs}
+    if bootstrap is not None:
+        result['bootstrap'] = bootstrap
     a.out.write_text(json.dumps(result, indent=2, sort_keys=True)+'\n')
 
 

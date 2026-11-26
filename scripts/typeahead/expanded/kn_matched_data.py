@@ -14,6 +14,7 @@ import time
 import ngram
 from corpus import PROSE, documents, file_hash
 from data_audit import clean, connected_groups, digest
+from reply_ablation import first_reply
 
 REGS = ('explanation', 'proof', 'learner')
 
@@ -41,7 +42,8 @@ def main():
     parser.add_argument('--max-docs', default=3000, type=int)
     parser.add_argument('--tokens', default=500000, type=int)
     parser.add_argument('--materialize-only', action='store_true', help='write and hash streams without building models')
-    parser.add_argument('--arms', nargs='+', choices=('D0','D1','D2'), default=['D0','D1','D2'])
+    parser.add_argument('--shared-vocab', type=Path, help='reuse an existing pinned KN vocabulary')
+    parser.add_argument('--arms', nargs='+', choices=('D0','D1','D2','D2-reply'), default=['D0','D1','D2'])
     args = parser.parse_args()
     if args.tokens % 100:
         parser.error('tokens must be divisible by 100')
@@ -76,8 +78,15 @@ def main():
     records = []
     for d, group, duplicate in zip(raw, groups, duplicate_groups):
         result, _, reason = clean(d['text'])
+        reply_text, reply_match = first_reply(d, result) if result is not None else ('', False)
+        reply_tokens = tokenize(reply_text) if reply_match else []
+        # An answer without usable N233 sentences must not silently disappear.
+        if not reply_tokens:
+            reply_match = False
         records.append({'doc':d, 'group':group, 'duplicate':duplicate, 'original':tokenize(d['text']),
-                        'cleaned':tokenize(result) if result is not None else [], 'reason':reason})
+                        'cleaned':tokenize(result) if result is not None else [],
+                        'reply':reply_tokens if reply_match else (tokenize(result) if result is not None else []),
+                        'replyMatch':reply_match, 'reason':reason})
     representative = {group:raw[group]['id'] for group in set(groups)}
     for r in records:
         r['held'] = int(digest('diagnostic:' + representative[r['group']])[:8], 16) % 5 == 0
@@ -109,17 +118,22 @@ def main():
     write_docs(valid_file, validation)
     raw_order = sorted(train, key=lambda r:digest('selection:' + r['doc']['id']))
     count_by_arm = {}
-    for name, field, mix in [('D0','original',(60,30,10)), ('D1','cleaned',(60,30,10)),
-                             ('D2','cleaned',(40,20,40))]:
+    arm_definitions = [('D0','original',(60,30,10)), ('D1','cleaned',(60,30,10)),
+                       ('D2','cleaned',(40,20,40))]
+    if 'D2-reply' in args.arms:
+        arm_definitions.append(('D2-reply','reply',(40,20,40)))
+    baseline_learner_ids = set()
+    for name, field, mix in arm_definitions:
         entries = []
         stats = {}
         for register, proportion in zip(REGS, mix):
             remaining = args.tokens * proportion // 100
             used, groups_used, duplicates_used, publishers = 0, set(), set(), set()
+            matched, refilled = 0, 0
             for r in raw_order:
-                if r['doc']['register'] != register or (field == 'cleaned' and r['reason']):
+                if r['doc']['register'] != register or (field in ('cleaned','reply') and r['reason']):
                     continue
-                if field == 'cleaned' and r['duplicate'] in duplicates_used:
+                if field in ('cleaned','reply') and r['duplicate'] in duplicates_used:
                     continue
                 sentences = take(r[field], remaining)
                 if not sentences:
@@ -127,16 +141,35 @@ def main():
                 entries.append(sentences)
                 remaining -= sum(map(len, sentences))
                 used += 1
+                if name == 'D2' and register == 'learner':
+                    baseline_learner_ids.add(r['doc']['id'])
+                if name == 'D2-reply' and register == 'learner':
+                    matched += r['replyMatch']
+                    refilled += r['doc']['id'] not in baseline_learner_ids
                 groups_used.add(r['group'])
                 duplicates_used.add(r['duplicate'])
                 publishers.add(r['doc']['group'])
                 if not remaining:
                     break
             if remaining:
-                raise ValueError(f'{name} {register} shortfall {remaining}; increase max-docs or reduce budget')
+                failure = {'arm':name, 'register':register, 'shortfallTokens':remaining,
+                           'requiredTokens':args.tokens * proportion // 100,
+                           'selectedDocuments':used, 'matchedReplyDocuments':matched,
+                           'refillDocumentsOutsideBaseline':refilled,
+                           'availableMatchedTrainDocuments':sum(r['replyMatch'] for r in train if r['doc']['register'] == register),
+                           'sourceManifestSha256':file_hash(args.corpus/'manifest.json'),
+                           'sampleIdDigest':digest('\n'.join(r['doc']['id'] for r in records)),
+                           'diagnosticSha256':file_hash(valid_file),
+                           'scope':'training-only bounded sample; no independent validation'}
+                (args.out/'shortfall.json').write_text(json.dumps(failure, indent=2, sort_keys=True)+'\n')
+                raise ValueError(f'{name} {register} shortfall {remaining}; see shortfall.json')
             stats[register] = {'tokens':args.tokens * proportion // 100, 'documents':used,
                                'connectedGroups':len(groups_used), 'duplicateComponents':len(duplicates_used),
                                'publisherGroups':len(publishers)}
+            if name == 'D2-reply' and register == 'learner':
+                stats[register].update({'matchedReplyDocuments':matched, 'fallbackDocuments':used-matched,
+                                        'refillDocumentsOutsideBaseline':refilled,
+                                        'availableMatchedTrainDocuments':sum(r['replyMatch'] for r in train if r['doc']['register'] == register)})
         write_docs(args.out/(name+'.jsonl.gz'), entries)
         count_by_arm[name] = stats
     def read_sentences(path):
@@ -151,14 +184,18 @@ def main():
             raise ValueError('only general ngram is supported')
         yield from read_sentences(valid_file if split == 'validation' else args.out/(current+'.jsonl.gz'))
     ngram.words = word_stream
-    vocab = ngram.estimate_vocab(read_sentences(args.out/'D0.jsonl.gz'), 60000)
     vocab_file = args.out/'shared-vocab.json'
-    vocab_file.write_text(json.dumps(vocab, ensure_ascii=False)+'\n')
+    if args.shared_vocab:
+        vocab_file.write_bytes(args.shared_vocab.read_bytes())
+    else:
+        vocab = ngram.estimate_vocab(read_sentences(args.out/'D0.jsonl.gz'), 60000)
+        vocab_file.write_text(json.dumps(vocab, ensure_ascii=False)+'\n')
     # Existing KN functions hash the corpus manifest; this pins the sample and all streams.
     manifest = {'sourceManifestSha256':file_hash(args.corpus/'manifest.json'),
                 'sampleIdDigest':digest('\n'.join(r['doc']['id'] for r in records)),
-                'streamSha256':{name:file_hash(args.out/(name+'.jsonl.gz')) for name in ('D0','D1','D2')},
-                'diagnosticSha256':file_hash(valid_file)}
+                'streamSha256':{name:file_hash(args.out/(name+'.jsonl.gz')) for name,_,_ in arm_definitions},
+                'diagnosticSha256':file_hash(valid_file),
+                'sharedVocabularyFileSha256':file_hash(vocab_file)}
     (args.out/'manifest.json').write_text(json.dumps(manifest,sort_keys=True)+'\n')
     if args.materialize_only:
         print(json.dumps(manifest, sort_keys=True), flush=True)
@@ -176,7 +213,7 @@ def main():
     output = {'scope':'train-only grouped diagnostic; no independent validation', 'sampleDocuments':len(records),
               'duplicateCandidateLinks':len(links), 'sourceManifest':manifest,
               'diagnosticTokens':50000, 'diagnosticDocuments':len(validation), 'tokenBudgetPerArm':args.tokens,
-              'order':4, 'packing':'shipping KN v2 encoder, count pruning, 20 MiB ceiling; same D0 vocabulary',
+              'order':4, 'packing':'shipping KN v2 encoder, count pruning, 20 MiB ceiling; shared pinned vocabulary',
               'timeSeconds':round(time.monotonic()-started,3), 'arms':results}
     (args.out/'report.json').write_text(json.dumps(output, indent=2, sort_keys=True)+'\n')
 

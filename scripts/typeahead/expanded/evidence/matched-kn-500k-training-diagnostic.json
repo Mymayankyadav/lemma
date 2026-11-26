@@ -178,13 +178,13 @@
       "vocabSha256": "ab82c9d0888ffabc30e01295126b170dfce6eeefe53d48ac17bb5e9b33faabf9"
     }
   },
-  "correctedD2RunSeconds": 153.734,
-  "currentCodeSha256": {
+  "codeSha256AtReceipt": {
     "corpus.py": "d90f88c7bf0376be3c266a5deb5acee5f5cd8c3d30018943ca40816286c6d4e8",
     "data_audit.py": "494c39c959ee0df6a5c3bec475fd2cd42df31fa0cbbb8ffab46922d3d2dd92ad",
     "kn_matched_data.py": "5e08812386bc9e830b5acc6e63a966b8009750f1c80737836edcee87e19cd0d1",
     "ngram.py": "18179f73314f9684a9dee79dff2431745754836a237236b9ef35f2af5c025af9"
   },
+  "correctedD2RunSeconds": 153.734,
   "diagnosticDocuments": 62,
   "diagnosticTokens": 50000,
   "order": 4,

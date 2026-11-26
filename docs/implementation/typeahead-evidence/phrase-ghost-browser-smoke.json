@@ -4,7 +4,7 @@
   "baseCommit": "9e1d2413",
   "fingerprint": "phrase-trie-v1:7824d55d316d13cebbee060ed821aad3be4227b7d1ecaaa85feb8d6b5f4e8a75:c6ee15a41c3f55d8133366b67eba1476b510b410c8d80c3fca1403789f9d096a",
   "testFile": "tests/e2e/n253-typeahead-phrase-ghost.spec.ts",
-  "checksPassed": 4,
+  "checksPassed": 5,
   "narrowViewport": {
     "widthCssPx": 320,
     "heightCssPx": 820,
@@ -21,7 +21,8 @@
     "Caret motion, composition and equation mode cleared the offer",
     "Faster Typing opt-out and the held release flag left the lab lane silent",
     "The legacy proof-assist flag kept its original path",
-    "The lab produced an inline phrase after a controlled PWA reload with network access disabled"
+    "The lab produced an inline phrase after a controlled PWA reload with network access disabled",
+    "On iPad, an obsolete or cancelled on-screen Tab press could not apply a phrase. A fresh touch and keyboard activation each applied the visible phrase"
   ],
   "workerAsset": {
     "path": "assets/phraseGhost.worker-Bnq6X3iF.js",
@@ -34,6 +35,23 @@
     "source": "Exact asset membership in the generated Workbox manifests of two bundled builds with the phrase qualification held",
     "ordinaryProduction": {"overridesEnabled": false, "entries": 434, "workerIncluded": false, "workerBytes": 0},
     "overrideLab": {"overridesEnabled": true, "entries": 437, "workerIncluded": true, "workerBytes": 30543, "offlineReloadPassed": true}
+  },
+  "integratedRegressions": {
+    "casesPassed": 74,
+    "workers": 1,
+    "existingSuites": {
+      "n238-optional-model.spec.ts": 1,
+      "pad-math-keyboard.spec.ts": 2,
+      "pwa-writing-model.spec.ts": 1,
+      "tutor-writing-aid.spec.ts": 26,
+      "v7-ipad-layout.spec.ts": 23,
+      "v7-tutor-gboard-layout.spec.ts": 6,
+      "v7-tutor-ipad-keyboard.spec.ts": 6,
+      "v7-tutor-keyboard.spec.ts": 4
+    },
+    "focusedPhraseCases": 5,
+    "firstRun": {"passed": 73, "failed": 1},
+    "focusedRerun": {"passed": 1, "failed": 0, "reason": "The initial iPad phrase fixture needed to focus the answer editor before asserting keyboard visibility"}
   },
   "previewTiming": "The smoke exercised layout cutoff and genuine expirations on a shared desktop host. Visible-paint p90 and human completion-time estimates remain open.",
   "physicalAndroid": null,
