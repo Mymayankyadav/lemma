@@ -23,8 +23,10 @@ async function liveQuestionnaire(page: Page, withMath = false) {
     questionnaire: {id: questionnaireId, turnId, title: 'Quick check', purpose: 'diagnose', state: 'unseen', answers: {}, version: 0,
       questions: [
         {id: 'q1', kind: 'short', prompt: 'In your own words, when is a surjection a quotient map?'},
-        {id: 'q2', kind: 'mcq', prompt: 'Is every continuous surjection a quotient map?', options: withMath ? ['$\\mathbb{Z}/36\\mathbb{Z}$', '$\\mathbb{Z}/3\\mathbb{Z} \\oplus \\mathbb{Z}/12\\mathbb{Z}$'] : ['Yes', 'No']},
-        {id: 'q3', kind: 'msq', prompt: 'Which of these are always quotient maps?', options: withMath ? ['$3,1$', '$2,1,1$', '$4$'] : ['Open surjections', 'Closed surjections', 'Constant maps']},
+        {id: 'q2', kind: 'mcq', prompt: withMath ? 'Let $D=\\operatorname{diag}(3,12)$. Which group is $\\mathbb{Z}^2/D\\mathbb{Z}^2$?' : 'Is every continuous surjection a quotient map?',
+          options: withMath ? ['$\\mathbb{Z}/36\\mathbb{Z}$', '$\\mathbb{Z}/3\\mathbb{Z} \\oplus \\mathbb{Z}/12\\mathbb{Z}$'] : ['Yes', 'No']},
+        {id: 'q3', kind: 'msq', prompt: withMath ? 'Which Jordan block sizes are possible if $N^3=0$?' : 'Which of these are always quotient maps?',
+          options: withMath ? ['$3,1$', '$2,1,1$', '$4$'] : ['Open surjections', 'Closed surjections', 'Constant maps']},
       ]} as TutorQuestionnaire,
     saves: [] as {expected: number; answers: QuestionnaireAnswers | null; submit: boolean}[],
     failing: false,
@@ -68,7 +70,10 @@ test('tutor-set math renders in the question banner and in selectable quiz answe
   await expect(form.locator('.v7-radio-row .katex')).toHaveCount(2);
   await expect(form.locator('.v7-check-choice .katex')).toHaveCount(3);
   await form.locator('.v7-radio-row .katex').nth(1).click();
-  await form.locator('.v7-check-choice .katex').first().click();
+  const choice = form.locator('.v7-check-choice').first();
+  await choice.scrollIntoViewIfNeeded();
+  const formula = (await choice.locator('.katex').boundingBox())!;
+  await page.mouse.click(formula.x + formula.width / 2, formula.y + formula.height / 2);
   await expect(form.getByRole('radio').nth(1)).toBeChecked();
   await expect(form.getByRole('checkbox').first()).toBeChecked();
 });
