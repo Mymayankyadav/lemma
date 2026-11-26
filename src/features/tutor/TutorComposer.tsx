@@ -20,6 +20,7 @@ import {inkIssueText,tutorInkIssue} from '../../data/tutor/ink-storage';
 import {imageReference, readTutorAcceptedSpans, referencedImageIds, tutorAnswerParts, type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer';
 import {readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection, TutorAnswerEditor} from './TutorAnswerEditor';
 import {TutorKeyboard, type KeyboardInk} from './TutorKeyboard';
+import {useKeyboardLayout} from './keyboardLayout';
 import {KeyInkWords} from './input/latentInk/KeyInkWords';
 import {useKeyInk, type FlushResult, type KeyEdit} from './input/latentInk/useKeyInk';
 import {editBetween, mapSpan, type TextEdit} from './input/latentInk/rebase';
@@ -119,6 +120,8 @@ export function TutorComposer(props: Props) {
   const [shown, setShown] = useState(false);
   /** N227 (Owner): the keyboard icon in the answer box keeps the keys up and the answer selected while the chat scrolls. */
   const [pinned, setPinned] = useState(false);
+  // N252: iPadOS's keyboard on an iPad, Gboard's everywhere else.
+  const keyboardLayout = useKeyboardLayout();
   const composerRoot = useRef<HTMLDivElement>(null);
   const [view, setView] = useState('abc');
   const [lastMath, setLastMath] = useState('∀∃');
@@ -1373,12 +1376,23 @@ export function TutorComposer(props: Props) {
     onClick={()=>{haptic('snap');selectSurface(surface === 'equation' ? 'keys' : 'equation');}}><Radical aria-hidden="true"/></button>;
   const keysButton = <button className="sbtn" type="button" aria-label="Keys" onPointerDown={keepSelection}
     onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></button>;
-  type KeyboardActions = Pick<ComponentProps<typeof TutorKeyboard>, 'onView' | 'onInsert' | 'wordBefore' | 'onBrowse' | 'onDelete' | 'onMove'>;
+  type KeyboardActions = Required<Pick<ComponentProps<typeof TutorKeyboard>, 'onView' | 'onInsert' | 'wordBefore' | 'onBrowse' | 'onDelete'
+    | 'onMove' | 'onTab' | 'onHide'>>;
   const keyboardActions = useRef<KeyboardActions | null>(null);
   useLayoutEffect(() => {
+    const onInsert: KeyboardActions['onInsert'] = keyInkEnabled
+      ? (text, typed, touch) => keyInk.beforeKeyEdit({kind: 'insert', text, typed, touch}) : insert;
     keyboardActions.current = {
       onView: changeView,
-      onInsert: keyInkEnabled ? (text, typed, touch) => keyInk.beforeKeyEdit({kind: 'insert', text, typed, touch}) : insert,
+      onInsert,
+      // N252: the iPad's tab key does what Tab does on a hardware keyboard here (take the shown continuation, or go to
+      // the next □), and otherwise types a tab, as iPadOS's own key does.
+      onTab: () => {
+        if (writingGhost) {keyInk.settle(); remember(); acceptWriting(writingGhost);}
+        else if (findNotationSlot(history.current.present)) {keyInk.settle(); nextSlot();}
+        else onInsert('\t', true);
+      },
+      onHide: () => {haptic('snap'); setPinned(false); closeKeys();},
       onDelete: keyInkEnabled ? () => keyInk.beforeKeyEdit({kind: 'delete'}) : deleteBackward,
       wordBefore: () => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';},
       onBrowse: () => {keyInk.settle(); remember(); assist.openPicker();},
@@ -1392,6 +1406,8 @@ export function TutorComposer(props: Props) {
     onBrowse: () => keyboardActions.current?.onBrowse(),
     onMove: (direction, count) => keyboardActions.current?.onMove(direction, count),
     wordBefore: () => keyboardActions.current?.wordBefore?.() ?? '',
+    onTab: () => keyboardActions.current?.onTab(),
+    onHide: () => keyboardActions.current?.onHide(),
   }), []);
 
   const inkCapture = useRef(keyInk.bind);
@@ -1606,7 +1622,7 @@ export function TutorComposer(props: Props) {
       editingImageId={editingImageId} canMigrate={!readOnly} answerLength={migrationAnswerLength}
       canInsertImage={canInsertImage} referencedImageIds={refs}/>}
     {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}
-      data-surface={surface}>
+      data-surface={surface} data-keyboard-layout={keyboardLayout === 'ipad' ? 'ipad' : undefined}>
       {surface === 'equation' ? <>
         <TutorEquationPanel disabled={editingDisabled} replacing={writeReplace?.source} leading={keysButton} trailing={equationButton}
           symbols={{enabled: inputPrefs.recognition, ids: [...new Set([...assist.recognized, ...assist.completions])], actionable: assist.actionable,
@@ -1671,14 +1687,15 @@ export function TutorComposer(props: Props) {
         </div>}
         {slots === 'idle' && <div className="sugg">{props.ink && incomplete && nextSlotButton}</div>}
         {equationButton}
-        {hideButton('sbtn')}
+        {/* N252: the iPad's keyboard has its own hide key at the bottom right, as iPadOS's. */}
+        {keyboardLayout !== 'ipad' && hideButton('sbtn')}
         {/* N249: the drawn symbol's readings have the strip to themselves; the correction overlay waits. */}
         {!scratch && slots !== 'ink' && <WritingAidBar words={writingWords} edit={shownEdit} ghost={writingGhost}
           disabled={editingDisabled} undoable={suggestionUndoable} reviewRef={writingReview} exhausted={aidExhausted}
           onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
           onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
-      <TutorKeyboard view={view} lastMath={lastMath} disabled={editingDisabled} ink={keyboardInk} {...keyboardListeners}/>{hideButton('sbtn kb-band-hide')}</>}
+      <TutorKeyboard view={view} lastMath={lastMath} disabled={editingDisabled} ink={keyboardInk} layout={keyboardLayout} {...keyboardListeners}/>{hideButton('sbtn kb-band-hide')}</>}
     </div> : null}
     {assist.picker && <TutorSymbolPicker recent={assist.recent} onPick={assist.onPick} onClose={assist.closePicker} error={assist.error}/>}
   </div>;

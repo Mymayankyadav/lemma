@@ -53,6 +53,7 @@
 :where(html[data-v7]) .v7-capture {position:fixed;right:var(--v7-page-margin);bottom:calc(var(--v7-dock-height) + var(--v7-space-4));z-index:19;width:56px;height:56px;display:grid;place-items:center;
   border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-overlay);color:var(--v7-role-selection-fg);box-shadow:var(--v7-shadow-2);transition:transform var(--v7-base) var(--v7-ease-standard),opacity var(--v7-base) var(--v7-ease-standard);}
  :where(html[data-v7]) .v7-capture svg {width:24px;height:24px;}
+ :where(html[data-v7]) .v7-capture-label {display:none;}
  :where(html[data-v7]) .v7-capture-types {display:grid;grid-template-columns:repeat(2,1fr);gap:var(--v7-space-2);margin-top:var(--v7-space-3);}
  :where(html[data-v7]) .v7-capture-types button {min-height:calc(var(--v7-touch) + var(--v7-space-4));display:flex;align-items:center;gap:var(--v7-space-2);padding-inline:var(--v7-space-4);
   border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}

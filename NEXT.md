@@ -6,6 +6,20 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N252 iPad tutor keyboard and layout in portrait and landscape
+
+Owner task: "This is how it looks on my ipad. And this how the native keyboard looks on iPad. I understand that keyboard layout should depend on the device. Keep the current layout for android devices."
+Owner follow-up: "Also for iPad you might have to add proper padding in the header. You can see earlier screenshot of Claude app to see the proper padding"
+Owner follow-up: "Ok create comprehensive ui audit for my ipad use the sentout screenshots for size and ratios. Add the detailed changes list to the current pr before coding. And keep all of this in the current pr. And go ahead and open a new pr for all changes for ipad."
+Owner follow-up: "Ok don't apply the pallette just fix layout for ipad"
+Owner follow-up: "Almost all the screens have this empty space therefore waste of space, fix the layout in landscape mode too."
+Owner follow-up: "This looks very oddly placed. Also look at all the screens for similar waste of space. I have seen that you are not thorough for layout like you missed many screens like analytucs and settings, look at the import paths like adding tasks etc bw thorough."
+Stage: Build · Status: done · Needs: — · Assigned: chat-697888#xr09
+Done = On iPad windows at least 600 px wide, the tutor offers iPadOS-style key rows, long-press secondary characters, Tab, Caps Lock, Return and Hide. Decoder taps use the current layout's geometry. Android, iPhone, desktop and narrower windows use the Gboard layout. On iPad, v7 headers clear the status bar, pages use the available width in both orientations and charts and action bars fill their columns. Capture aligns with the wide rail, Path tabs group at the left, and the Paths grid, Calendar, Welcome, Close the day and Review use the layouts in the audit. The audit covers all Settings pages, Progress and the flows for creating study items.
+Tests: tests/unit/tutor/ipad-keyboard.test.tsx, tests/unit/v7/n130-decisions.test.tsx, tests/e2e/v7-tutor-ipad-keyboard.spec.ts and tests/e2e/v7-ipad-layout.spec.ts.
+Scope: src/platform/ipad.ts, src/main.tsx, src/app/v7/{V7Shell.tsx,shell.css,ipad.css}, src/features/tutor/{keyboardLayout.ts,TutorKeyboard.tsx,TutorComposer.tsx,PaperInputTools.tsx,keyboard.css}, src/ui/v7/Chart.tsx, src/features/card/v7/RecallChart.tsx, src/features/cards/v7/cards.css, the tests above, docs/v7/ipad-audit-2026-11-26.md, docs/current/N252.md and this item.
+Not: palette changes, Gboard geometry, server or migration changes, or new dependencies.
+
 ## N251 Exam mode on by default in the app, with its screens polished
 
 Owner task: "Turn on exam mode in the app"

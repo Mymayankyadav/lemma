@@ -1,0 +1,96 @@
+/* N252 · iPad layout (docs/v7/ipad-audit-2026-11-26.md). Applies only when main.tsx has marked the document `data-ipad`
+   before the first paint, so Android, phones, desktops and other tablets keep their layout. Unlayered on purpose: these
+   rules must win over the layered v7 components and over feature CSS that loads later with a route. */
+
+/* C1 · The top inset. An iPad shows the page under its status bar, and iPadOS blurs about the top 25 pt of the page
+   (Owner screenshot: the exam tutor's title, 12–25 pt down, is blurred; its status line, 32 pt down, is sharp). Every
+   header starts 20 pt below the page top (or the safe area), so even the hubs' large titles begin about 30 pt down, as
+   the Claude app's bar sits clear of the status bar. */
+html[data-ipad] {--v7-ipad-top: calc(var(--v7-safe-top, 0px) + 20px);}
+html[data-ipad] .v7-hub-header {padding-top: var(--v7-ipad-top);}
+html[data-ipad] .v7-hub-bar {padding-top: var(--v7-ipad-top);}
+html[data-ipad] :is(.v7-detail-header, .v7-immersive-header) {padding-top: var(--v7-ipad-top); min-height: calc(var(--v7-ipad-top) + 48px);}
+html[data-ipad] .lemma-tutor.v7-page {padding-top: calc(var(--tutor-safe-top, 0px) + 20px);}
+html[data-ipad] .v7-atlas {--atlas-bar-top-padding: var(--v7-ipad-top);}
+/* Sticky parts that sit under a 52 px header move down with it. */
+html[data-ipad] .v7-path-tabs {top: calc(var(--v7-ipad-top) + 52px);}
+html[data-ipad] .v7-exam-summary {top: calc(var(--v7-ipad-top) + 108px);}
+/* The rail's + (and, when the rail is wide, its brand row) stays centred on the header row (44 pt down). */
+@media (min-width: 700px) {
+  html[data-ipad] .v7-shell:not([data-immersive="true"]) .v7-dock-row > .v7-capture {margin-top: calc(var(--v7-ipad-top) - 2px);}
+}
+@media (min-width: 1100px) {
+  html[data-ipad] .v7-rail-head {padding-top: calc(var(--v7-ipad-top) + 2px);}
+  html[data-ipad] .v7-shell:not([data-immersive="true"]) .v7-dock-row > .v7-capture {margin-top: var(--v7-space-3);}
+}
+
+/* C2 · Today: a 48 pt header row, and 24 pt of room above the day's title (it had 8). */
+html[data-ipad] .v7-hub-header > .v7-hub-row {min-height: 48px;}
+html[data-ipad] .v7-hub-header > .v7-hub-title {margin-top: var(--v7-space-4);}
+
+/* C3 · Calendar's view switch: each segment is at least as wide as its label ("Agenda" was clipped). */
+html[data-ipad] .v7-cal-toolbar > .v7-segmented button {flex: 1 0 auto;}
+
+/* C4 · Paths cards: the step line wraps to two lines instead of being cut with an ellipsis. */
+html[data-ipad] .v7-paths-now {white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;}
+
+/* C5 · 44 pt touch targets. Today's heading links keep their look and get a 44 pt hit area, as the app's chips have;
+   the Path's plan rows and the wide rail's rows are 44 pt tall. */
+html[data-ipad] .v7-card-heading > a {position: relative;}
+html[data-ipad] .v7-card-heading > a::after {content: ""; position: absolute; left: -4px; right: -4px; top: 50%; height: max(100%, 44px); transform: translateY(-50%);}
+html[data-ipad] .v7-path-body {min-height: 44px; align-content: center;}
+@media (min-width: 1100px) {
+  html[data-ipad] :is(.v7-rail-library a, .v7-rail-brand) {min-height: 44px;}
+}
+
+/* C6 · Review run's empty state stands in the middle of the page, as Focus's does. */
+html[data-ipad] .v7-review > .v7-review-state {flex: 1 1 auto;}
+
+/* C7 · Use the iPad's width (Owner: "Almost all the screens have this empty space therefore waste of space, fix the
+   layout in landscape mode too"). Pages fill the screen beside the rail with 24 pt margins in portrait and 32 pt in
+   landscape, as the Claude app's content runs 17–18 pt from its edges; reading text keeps its own measure (assistant
+   messages, goals, notes). */
+@media (min-width: 700px) {
+  html[data-ipad] {--v7-page-margin: 24px;}
+  html[data-ipad] .v7-page {max-width: none;}
+  html[data-ipad] .v7-settings {max-width: none;}
+  html[data-ipad] .lemma-tutor.v7-page {max-width: none;}
+  html[data-ipad] .local-pad-page {max-width: none;}
+  html[data-ipad] :is(svg.v7-plot, .v7-chart-plot, .v7-recall svg) {max-width: none;}
+  /* Floating and pinned bars (Continue with tutor · Review, Close the day) span the page, not a phone's width. */
+  html[data-ipad] .v7-pinned-dock {max-width: none;}
+  html[data-ipad] .v7-shell:not([data-immersive="true"]) :is(.v7-learn-bar, .v7-path-bar) {right: var(--v7-page-margin); max-width: none;}
+}
+@media (min-width: 1100px) {
+  html[data-ipad] {--v7-page-margin: 32px;}
+}
+
+/* C8 (Owner: "This looks very oddly placed") · in the wide rail Capture was a lone 48 pt square centred under Search.
+   It is a full-width row there instead, with its + and its name lined up with the navigation rows below. */
+@media (min-width: 1100px) {
+  html[data-ipad] .v7-shell:not([data-immersive="true"]) .v7-dock-row > .v7-capture {
+    width: auto; height: 44px; margin: var(--v7-space-3) var(--v7-space-4) var(--v7-space-1);
+    display: flex; align-items: center; justify-content: flex-start; gap: var(--v7-space-3); padding: 0 var(--v7-space-3);
+    border-radius: var(--v7-radius-2); color: var(--v7-role-text-primary);
+  }
+  html[data-ipad] .v7-shell:not([data-immersive="true"]) .v7-dock-row > .v7-capture svg {width: 20px; height: 20px; color: var(--v7-role-selection-fg);}
+  html[data-ipad] .v7-shell:not([data-immersive="true"]) .v7-capture-label {display: inline; font: 600 var(--v7-type-supporting)/1 var(--v7-sans);}
+}
+
+/* C9 · Path and exam ledger tabs start at the left with even gaps, as the hubs' tabs do, instead of spreading over
+   the whole page. */
+html[data-ipad] .v7-path-tabs .v7-tabs {justify-content: flex-start; gap: 0 var(--v7-space-6);}
+
+/* C10 · Close the day uses the page's width. */
+html[data-ipad] .v7-cd {max-width: none;}
+
+/* C11 · Welcome: a wider column, centred in the page rather than pinned to its top. */
+html[data-ipad] .v7-welcome {width: min(100%, 680px); align-content: center;}
+
+/* C12 · The review run's answer bar spans the card above it. */
+html[data-ipad] .v7-review-dock {max-width: none;}
+
+/* C13 · Paths cards stay at least 320 pt wide: two columns in portrait and in landscape (three squeezed them to 280). */
+@media (min-width: 700px) {
+  html[data-ipad] .v7-paths-list, html[data-ipad] .v7-paths-groups {grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));}
+}

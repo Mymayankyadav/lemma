@@ -34,8 +34,6 @@
  /* Recall chart. Grade colours follow the review grade dock. */
  :where(html[data-v7]) .v7-recall {position:relative;margin:0;display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-recall svg {display:block;width:100%;max-width:640px;height:auto;overflow:visible;}
- /* N157 · V08: an empty full-width line the chart measures itself against (the drawing is at most 640 px). */
- :where(html[data-v7]) .v7-recall-measure {position:absolute;inset:0 0 auto 0;height:0;}
  :where(html[data-v7]) .v7-recall-grid {stroke:var(--v7-role-border-subtle);stroke-width:1;}
  :where(html[data-v7]) .v7-recall-mid {stroke:var(--v7-role-border-default);stroke-width:1;}
  :where(html[data-v7]) .v7-recall-target {stroke:var(--v7-role-text-secondary);stroke-width:1;stroke-dasharray:4 3;}

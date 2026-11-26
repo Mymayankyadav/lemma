@@ -415,3 +415,44 @@
 .lemma-tutor .kb .rows[data-key-ink] {touch-action: none;}
 .lemma-tutor .kb .rows .tutor-key-ink {position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3;}
 .lemma-tutor .kb .rows .tutor-key-ink-status {position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;}
+
+/* N252 (Owner: "This is how the native keyboard looks on iPad … keyboard layout should depend on the device. Keep the
+   current layout for android devices") · on an iPad the keys follow iPadOS's full-size keyboard, as measured on the
+   Owner's screenshot: rows 12.5 letter keys across (the widths are set on each key), near-square caps about 10 px
+   apart with a hairline shadow underneath, the modifier keys in the tinted shade with iPadOS's symbols (and .?123) in
+   their outer bottom corner, secondary characters grey above their letters, and no enlarged preview. The rows grow
+   with the screen up to iPadOS's pitch; Gboard's rules above stay as they are for every other device. */
+@media (min-height: 560px) {
+  /* The row follows the taller of the screen's height and width, so landscape keys (now as wide as the screen) stay
+     about two-thirds as tall as wide, as iPadOS's are; portrait caps are about 54 pt square. */
+  .lemma-tutor .kb[data-keyboard-layout="ipad"] {--cell: clamp(44px, max(7dvh, 5.4vw), 64px);}
+}
+.lemma-tutor .kb[data-keyboard-layout="ipad"] {padding: 0 3px max(6px, var(--v7-safe-bottom, env(safe-area-inset-bottom)));}
+.lemma-tutor .kb .rows[data-layout="ipad"] {padding: 2px 0 0; --ip-gap: 5px; --ip-corner: calc(var(--ip-gap) + var(--cell) * .14);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k {--capl: var(--ip-gap); --capr: var(--ip-gap); font: 400 min(25px, 2.9vw + 1px, var(--cell) * .42)/1 var(--v7-sans);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k::before {
+  top: var(--ip-gap); bottom: var(--ip-gap); border-radius: 8px;
+  box-shadow: 0 1px 0 light-dark(rgb(18 27 49 / 24%), rgb(0 0 0 / 45%));
+}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.sym {font: 400 min(24px, 2.7vw + 1px, var(--cell) * .4)/1 var(--v7-glyph);}
+/* The secondary character, centred above its letter; the letter sits lower to make room. Both scale with the row's
+   height, so the short rows of a landscape iPad keep them apart. */
+.lemma-tutor .kb .rows[data-layout="ipad"] .k sup {
+  top: calc(var(--ip-gap) + var(--cell) * .08); left: var(--capl); right: var(--capr); text-align: center;
+  font: 400 min(14px, var(--cell) * .24)/1 var(--v7-sans); color: var(--v7-role-text-tertiary);
+}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.dual .kl {padding-top: calc(var(--cell) * .36);}
+/* Modifier symbols: tab, caps lock, the left shift and the maths key at the bottom left; delete, return, the right shift,
+   .?123 and hide at the bottom right; the left .?123 at the bottom centre. */
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.fn svg {width: min(22px, var(--cell) * .38); height: min(22px, var(--cell) * .38);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-txt {font: 400 min(16px, 1.8vw + 1px, var(--cell) * .28)/1 var(--v7-sans);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k:is(.ip-l, .ip-r, .ip-c) .kl {padding: 0 12px var(--ip-corner);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-l .kl {place-items: end start;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-r .kl {place-items: end end;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-c .kl {place-items: end center; padding-inline: 2px;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-txt .kl {white-space: nowrap;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.ip-sym {font: 400 min(18px, 2.3vw, var(--cell) * .32)/1 var(--v7-glyph);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.fn.lit::before {background: var(--tutor-key-press, var(--key));}
+.lemma-tutor .kb .rows[data-layout="ipad"] .ip-hide-icon {display: grid; justify-items: center; gap: 0;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.fn .ip-hide-icon svg + svg {width: 13px; height: 13px; margin-top: -3px;}
+.lemma-tutor .kb .rows[data-layout="ipad"] .row.catbar .ip-hide {flex: 0 0 56px;}
