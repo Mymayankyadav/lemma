@@ -52,7 +52,7 @@ function PathCard({project,due,pinnedCount,selected}:{project:ProjectSummary;due
    {label:'Archive',icon:<Archive aria-hidden="true"/>,onClick:()=>{void change({status:'archived'},'Path archived',{status:project.status});}},
   ];
  return <li className={'v7-paths-card '+klass} data-path={project.slug}>
-  <Link className="v7-paths-cover" to={href} tabIndex={-1} aria-hidden="true"><Emblem subject={subject} seed={project.id} size={96} animate={false}/></Link>
+  <Link className="v7-paths-cover" to={href} tabIndex={-1} aria-hidden="true"><Emblem subject={subject} seed={project.id} size={72} animate={false}/></Link>
   <div className="v7-paths-body">
    <div className="v7-paths-title-row">
     <Link className="v7-paths-title" to={href} aria-current={selected===project.slug?'page':undefined}>{project.title}</Link>

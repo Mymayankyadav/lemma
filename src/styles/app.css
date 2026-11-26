@@ -1,5 +1,6 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 @import 'tailwindcss';
+@import './palette.css' layer(lemma-app);
 @import './tokens.css' layer(lemma-app);
 @import './themes.css' layer(lemma-app);
 @import './base.css' layer(lemma-app);

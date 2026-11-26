@@ -61,7 +61,7 @@ html[data-native-app] .local-pad-controls button {min-width:48px; min-height:48p
 .local-pad-chooser {display:grid; grid-template-columns:minmax(0,1fr); gap:.5rem; padding:1rem; border:1px solid var(--line,currentColor); border-radius:.75rem; background:var(--well,transparent)}
 .local-pad-chooser h2,.local-pad-cached h2 {margin:0; font-size:1.125rem}
 .local-pad-chooser select,.local-pad-chooser button {width:100%; min-width:0; min-height:44px; padding:.5rem; border:1px solid var(--line,currentColor); border-radius:.5rem; background:var(--raised,transparent); color:inherit; font:inherit}
-.local-pad-chooser option {background:var(--page,#f8f5f0); color:var(--ink,#091023)}
+.local-pad-chooser option {background:var(--page,#faf9f5); color:var(--ink,#141413)}
 .local-pad-chooser p {margin:.25rem 0}
 .local-pad-cached ul {display:flex; flex-wrap:wrap; gap:.5rem 1rem; padding:0; list-style:none}
 .local-pad-page h2,.local-pad-page p,.local-pad-page a {overflow-wrap:anywhere}

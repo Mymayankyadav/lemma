@@ -1,8 +1,8 @@
 import {menuFeatures, menuScore, type MenuSource, type WordTrace} from './writingAid/menuRanking';
 import {applyMenuEdit, learnerAuthored, type MenuEdit} from './writingAid/menuEdit';
 import {startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type ComponentProps, type KeyboardEvent, type PointerEvent} from 'react';
-import {createPortal} from 'react-dom';
-import {ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, HelpCircle, Keyboard, MoveRight, Paperclip, PenLine, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
+import {createPortal, flushSync} from 'react-dom';
+import {ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, HelpCircle, Keyboard, MoveRight, Paperclip, PenLine, Pin, Radical, Undo2, Redo2, SlidersHorizontal, RefreshCw, Signature, X} from 'lucide-react';
 import {isFlagOn} from '../../flags';
 import {needsTutorInkMigration,TutorInkTray,type TutorInkState} from './TutorInk';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
@@ -34,7 +34,9 @@ import {useTutorInputPreferences} from './input/inputPreferences';
 import {sameEditTarget} from './input/recognitionPolicy';
 import type {EditTarget} from './input/types';
 import {useWritingAid, useWritingAidPreferences, WritingAidSettings, advanceWritingAidAnchor, continueWritingAidAnchor, applyWritingAidProposal, type WritingAidAnchor, type WritingAidProposal} from './writingAid';
-import {LatexWords, SymbolWords, WritingAidBar, WritingAidWords} from './WritingAidBar';
+import {LatexWords, SymbolWords, TypedWordKey, WordLabel, WritingAidBar, WritingAidWords} from './WritingAidBar';
+import {wordSlots} from './writingAid/wordSlots';
+import {trailingSpace, wordAtCaret} from './input/completionPolicy';
 import {unfinishedMath} from './writingAid/latexGrammar';
 import {useLatexSuggestions} from './writingAid/useLatexSuggestions';
 import {currentTypeaheadArm, typeaheadGraphTrial, typeaheadReplayEnabled, usesTutorBias} from './writingAid/replayArm';
@@ -54,7 +56,7 @@ import {TutorEquationPanel} from './input/TutorEquationPanel';
 import {INK_VIEWPORT} from './input/TutorInkPad';
 import {resampleInkPath} from './input/inkGeometry';
 import {PAD_PAPER, type PadStrokes} from '../../ui/v7/ink/ink';
-import {clearKeyTouches, decoderSymbols, prepareTypeahead, prepareWritingDecoder, recordKeyTouch, writingDecoderReady, type KeyTouch} from './writingAid/decoder/ngramSpatial';
+import {clearKeyTouches, decoderSymbols, recordKeyTouch, type KeyTouch} from './writingAid/decoder/ngramSpatial';
 import './keyboard.css';
 import './input/input.css';
 import './writing-aid.css';
@@ -118,7 +120,7 @@ export function TutorComposer(props: Props) {
   const pendingDrawingTap = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(pendingDrawingTap.current), []);
   const [shown, setShown] = useState(false);
-  /** N227 (Owner): the keyboard icon in the answer box keeps the keys up and the answer selected while the chat scrolls. */
+  const [deviceKeyboard, setDeviceKeyboard] = useState(false);
   const [pinned, setPinned] = useState(false);
   // N252: iPadOS's keyboard on an iPad, Gboard's everywhere else.
   const keyboardLayout = useKeyboardLayout();
@@ -149,9 +151,6 @@ export function TutorComposer(props: Props) {
   const authoredAnchor = useRef<WritingAidAnchor | null>(null);
   const acceptedSuggestion = useRef<{before: PadTextHistory; after: PadEdit; proposal: WritingAidProposal} | null>(null);
   const [hideSuggestionUndo, setHideSuggestionUndo] = useState(false);
-  const decoderSeen = useRef(false);
-  const [decoderReady, setDecoderReady] = useState(writingDecoderReady);
-  const shownSuggestions = useRef(0);
   const writingReview = useRef<HTMLDivElement>(null);
   const swipe = useRef<{pointer: number; x: number; y: number; time: number; proposal: WritingAidProposal; cursor: PadEdit} | null>(null);
   const scopeKey = props.inputScopeKey ?? 'tutor-preview';
@@ -207,6 +206,7 @@ export function TutorComposer(props: Props) {
       const edited = insertTutorSymbol(history.current.present,id);
       if (!edited || !commit(changePadText(history.current,edited),false,true,true))return false;
       focusAfterSymbol.current=true;
+      setDeviceKeyboard(false);
       setShown(true);
       haptic('snap');
       return true;
@@ -252,9 +252,12 @@ export function TutorComposer(props: Props) {
     expanded: enhancedMenu, fasterTyping: writingPrefs.fasterTyping, middleEdits: enhancedMenu,
     subject: props.aidSubject, step: props.aidStep, question, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
     surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || aidSettings || !shown || props.suspended || provenanceFull};
-  const writing = useWritingAid(writingRequest);
+  const writing = useWritingAid(writingRequest, !deviceKeyboard && !readOnly && !props.suspended && !provenanceFull);
   const aidVisible = dismissedAid !== aidSignature && !editingDisabled && !inkSlots;
   const writingWords = aidVisible ? writing.words : EMPTY_WRITING_WORDS;
+  const typedWord = aidVisible && view === 'abc' && !equationMode && writingPrefs.surfaces.words && eligibleNeuralContext(writingRequest)
+    ? wordAtCaret(cursor, true) : undefined;
+  const proseSlots = useMemo(() => wordSlots(writingWords, typedWord, word => word.label), [writingWords, typedWord]);
   const rankedWritingWords = aidVisible && enhancedMenu ? writing.rankedWords : EMPTY_WRITING_WORDS;
   const rejectionKey = (proposal: WritingAidProposal) => JSON.stringify([proposal.start, proposal.end, proposal.before, proposal.insert]);
   const writingEdit = aidVisible && writing.edit && !rejectedEdits.current.has(rejectionKey(writing.edit)) ? writing.edit : null;
@@ -264,7 +267,6 @@ export function TutorComposer(props: Props) {
   const refreshable = writingWords.length > 0 || Boolean(writingEdit || writingGhost);
   /** With a word in progress, a review of an earlier word yields to current completions. */
   const wordInProgress = cursor.start === cursor.end && /[A-Za-z]$/.test(cursor.text.slice(0, cursor.start)) && writingWords.length > 0;
-  shownSuggestions.current = writingWords.length + Number(Boolean(writingEdit || writingGhost || suggestionUndoable));
   // N221 (Owner): the writing aid's replacement or continuation takes the strip as Gboard shows a correction: for the
   // word at the caret, for a continuation, or at a word boundary. While a new word is typed with its own suggestions,
   // a fix for an earlier word steps aside (the answer still marks it) and returns at the next space. It leaves when
@@ -394,10 +396,13 @@ export function TutorComposer(props: Props) {
       label: entry.label, snapshot: writingRequest, score: entry.score,
       source: replacement.equation ? 'equation' : 'notation', menuPosition: position};
   }
-  const displayedWordMenu = useMemo(() => [menuEntries[1], menuEntries[0], menuEntries[2]].flatMap((entry, position) =>
+  const lexicalMenu = menuEntries.every(entry => entry.word && entry.word.source !== 'symbol');
+  const menuTypedWord = lexicalMenu ? typedWord : undefined;
+  const menuSlots = wordSlots(menuEntries, menuTypedWord, entry => entry.word?.label ?? entry.label);
+  const displayedWordMenu = useMemo(() => menuSlots.flatMap((entry, position) =>
     entry ? [observedEntry(entry, position)] : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [menuEntries.map(entry => entry.key).join('|'), rankedWritingWords, aidSignature]);
+    [menuSlots.map(entry => entry?.key).join('|'), rankedWritingWords, aidSignature]);
   useLayoutEffect(() => {
     liveMenu.current = {key: menuEpoch, target: offeredTarget, entries: enhancedMenu ? menuEntries : entries};
     if (inkSlots) pressedOffer.current = null;
@@ -415,7 +420,7 @@ export function TutorComposer(props: Props) {
       currentCountModel: writing.assetHashes.ngram ?? null, ghost: writingGhost ? proposalEdit(writingGhost) : null,
       correction: shownEdit ? proposalEdit(shownEdit) : null, raw: [...writing.rawTrace ?? [], ...notationTrace ?? []],
       eligible: rankedEntries.map(e => ({...e.edit, base: e.base, features: e.features, score: e.score, family: familyOf(e)})),
-      displayed: [menuEntries[1], menuEntries[0], menuEntries[2]].flatMap(e => e ? [e.edit] : [])});
+      displayed: menuSlots.flatMap(e => e ? [e.edit] : [])});
   });
   useEffect(() => {
     if (!replayDiagnostics) return;
@@ -428,41 +433,30 @@ export function TutorComposer(props: Props) {
   const eligibleLatex = latexOptions.filter(option => entries.some(entry => entry.key === 'latex:' + option.insert)).slice(0, 3);
   const fallback = mathKeys ? 'quick' : 'idle';
   const preferSymbols = symbolSlots.length && (mathKeys || symbolSlots[0].kind !== 'name');
-  const slots = inkSlots ? 'ink' : enhancedMenu ? menuEntries.length ? 'unified' : fallback
+  const slots = inkSlots ? 'ink' : enhancedMenu ? menuEntries.length || menuTypedWord ? 'unified' : fallback
     : equationOptions.length ? 'equation' : preferSymbols ? 'symbols' : eligibleLatex.length ? 'latex'
-      : writingWords.length ? 'words' : symbolSlots.length ? 'symbols' : fallback;
+      : writingWords.length ? 'words' : symbolSlots.length ? 'symbols' : typedWord ? 'words' : fallback;
 
   useEffect(() => {
     const reportVisibility = () => {
       const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && !editMenu && slots !== 'ink' && document.visibilityState !== 'hidden';
       writing.shown('words', visible ? slots === 'unified' ? displayedWordMenu : slots === 'words'
-        ? [writingWords[1], writingWords[0], writingWords[2]].filter(Boolean) : [] : [], editMenu);
+        ? proseSlots.filter((word): word is WritingAidProposal => Boolean(word)) : [] : [], editMenu);
       writing.shown('edit', visible && shownEdit && !suggestionUndoable ? [shownEdit] : [], editMenu);
       writing.shown('ghost', visible && writingGhost ? [writingGhost] : [], editMenu);
     };
     reportVisibility();
     document.addEventListener('visibilitychange', reportVisibility);
     return () => document.removeEventListener('visibilitychange', reportVisibility);
-  }, [writing.shown, writingWords, displayedWordMenu, slots, shownEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, suggestionUndoable]);
+  }, [writing.shown, proseSlots, displayedWordMenu, slots, shownEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, suggestionUndoable]);
 
-  // N221: load N219's lexicon for the n-gram and touch decoder when the keyboard opens, and let the tutor's question
-  // (with the checkpoint's title and step) favour its own words while the learner answers it.
-  // Once it is ready, an empty strip is worked out again; a suggestion already shown never changes under the finger.
-  useEffect(() => {
-    if (!shown) return;
-    let live = true;
-    // N233: the Kneser-Ney model loads beside the lexicon (only with typeaheadV2); both must be ready before the strip is re-worked.
-    const workerProse = enhancedMenu && typeof Worker !== 'undefined';
-    void Promise.all([workerProse ? undefined : prepareWritingDecoder(), prepareTypeahead()]).then(() => {
-      if (!live || !workerProse && !writingDecoderReady()) return;
-      setDecoderReady(true);
-      if (decoderSeen.current || shownSuggestions.current) return;
-      decoderSeen.current = true;
-      // A new cursor object recomputes; the edit target's revisions stay, so a picker or drawing in progress stays valid.
-      setCursor(current => ({...current}));
-    });
-    return () => {live = false;};
-  }, [shown, enhancedMenu]);
+  const typedKey = typedWord ? <TypedWordKey key="typed" word={typedWord} epoch={menuEpoch} disabled={editingDisabled} onKeep={() => {
+    remember();
+    const edit = history.current.present;
+    if (editMenu || writingRequest.readOnly || composition.current || !sameEditTarget(offeredTarget, editTarget()) || wordAtCaret(edit, true) !== typedWord) return;
+    if (trailingSpace(edit.text.slice(edit.end))) typeText(edit, ' ', true);
+    else if (edit.text[edit.end] === ' ') change(padEdit(edit.text, edit.end + 1), true);
+  }}/> : undefined;
 
 
   useEffect(() => {
@@ -955,7 +949,7 @@ export function TutorComposer(props: Props) {
   /**
    * N227 (Owner: "auto close and open the keyboard when input is not selected or selected respectively"): the keys open
    * when the answer is selected (focusAnswer) and close when the learner touches the chat or the header instead. With
-   * the keyboard icon pressed they stay, and the answer keeps its selection, so the learner can scroll back to the
+   * the pin pressed they stay, and the answer keeps its selection, so the learner can scroll back to the
    * question while typing. Drawing surfaces (scratch pad, equation mode, Draw symbol) are not closed this way.
    */
   useEffect(() => {
@@ -987,6 +981,27 @@ export function TutorComposer(props: Props) {
     setScratch(false);
     setShown(true);
   }
+  function switchKeyboard() {
+    const input = fieldElement();
+    if (!input || editingDisabled || props.suspended) return;
+    keyInk.settle();
+    remember();
+    const selection = history.current.present;
+    const nextDevice = !deviceKeyboard;
+    input.blur();
+    // iPadOS checks inputmode at focus time. Keep the focus change inside this tap's native user activation.
+    flushSync(() => {
+      assist.stop();
+      setEquationMode(false);
+      setWriteReplace(null);
+      setScratch(false);
+      setPinned(false);
+      setDeviceKeyboard(nextDevice);
+      setShown(!nextDevice);
+    });
+    input.focus({preventScroll: true});
+    selectField(selection);
+  }
   useEffect(() => {
     if (equationMode && shown && !scratch && inputPrefs.recognition && !assist.drawing && !editingDisabled) assist.openDraw();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -997,6 +1012,7 @@ export function TutorComposer(props: Props) {
    */
   function selectSurface(next: Surface) {
     if (editingDisabled && next !== 'keys') return;
+    if (deviceKeyboard) {fieldElement()?.blur(); setDeviceKeyboard(false);}
     // N249: a drawing over the keys is settled (with the keys tapped meanwhile) before the keys give way.
     keyInk.settle();
     if (next !== 'equation') {setEquationMode(false); setWriteReplace(null);}
@@ -1144,7 +1160,8 @@ export function TutorComposer(props: Props) {
     remember();
     const edit = history.current.present;
     const image = imageDeletion(edit, true);
-    change(image ? insertNotation(image, '') : deletePadBackward(edit), true);
+    if (image) change(insertNotation(image, ''), true);
+    else commit(changePadText(history.current, deletePadBackward(edit)), true, true, false, true);
   }
   /** The range deleteBackward removes from `edit`: a whole image reference before the caret, or the graphemes it takes. */
   function deletionRange(edit: PadEdit) {
@@ -1175,6 +1192,7 @@ export function TutorComposer(props: Props) {
     drawingOccurrence.current = offset;
     drawingSelection.current = history.current.present;
     fieldElement()?.blur();
+    setDeviceKeyboard(false);
     setShown(false);
     setEditingImageId(id);
     setScratch(true);
@@ -1298,7 +1316,8 @@ export function TutorComposer(props: Props) {
   }
   function refreshWriting() {
     if (editingDisabled) return;
-    if (writingWords.length) writing.refresh('words', enhancedMenu ? displayedWordMenu.filter(item => item.source !== 'notation' && item.source !== 'equation') : writingWords);
+    if (writingWords.length) writing.refresh('words', enhancedMenu ? displayedWordMenu.filter(item => item.source !== 'notation' && item.source !== 'equation') :
+      proseSlots.filter((word): word is WritingAidProposal => Boolean(word)));
     if (writingEdit) writing.refresh('edit', [writingEdit]);
     if (writingGhost) writing.refresh('ghost', [writingGhost]);
     haptic('snap');
@@ -1357,7 +1376,7 @@ export function TutorComposer(props: Props) {
       pendingSelection.current=null;
     }
     remember();
-    if (!readOnly) {setShown(true); setScratch(false);}
+    if (!readOnly && !deviceKeyboard) {setShown(true); setScratch(false);}
   }
   // N221: in the Android app Hide keyboard sits in the band under the keys, where Gboard's ⌄ is; browsers keep it in the strip.
   const hideButton = (className: string) => <button className={className} type="button" aria-label="Hide keyboard"
@@ -1377,7 +1396,7 @@ export function TutorComposer(props: Props) {
   const keysButton = <button className="sbtn" type="button" aria-label="Keys" onPointerDown={keepSelection}
     onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></button>;
   type KeyboardActions = Required<Pick<ComponentProps<typeof TutorKeyboard>, 'onView' | 'onInsert' | 'wordBefore' | 'onBrowse' | 'onDelete'
-    | 'onMove' | 'onTab' | 'onHide'>>;
+    | 'onMove' | 'onTab' | 'onPin' | 'onHide'>>;
   const keyboardActions = useRef<KeyboardActions | null>(null);
   useLayoutEffect(() => {
     const onInsert: KeyboardActions['onInsert'] = keyInkEnabled
@@ -1393,6 +1412,7 @@ export function TutorComposer(props: Props) {
         else onInsert('\t', true);
       },
       onHide: () => {haptic('snap'); setPinned(false); closeKeys();},
+      onPin: pinKeys,
       onDelete: keyInkEnabled ? () => keyInk.beforeKeyEdit({kind: 'delete'}) : deleteBackward,
       wordBefore: () => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';},
       onBrowse: () => {keyInk.settle(); remember(); assist.openPicker();},
@@ -1400,6 +1420,7 @@ export function TutorComposer(props: Props) {
     };
   });
   const keyboardListeners = useMemo<KeyboardActions>(() => ({
+    onPin: () => keyboardActions.current?.onPin(),
     onView: view => keyboardActions.current?.onView(view),
     onInsert: (text, typed, touch) => keyboardActions.current?.onInsert(text, typed, touch),
     onDelete: () => keyboardActions.current?.onDelete(),
@@ -1500,19 +1521,19 @@ export function TutorComposer(props: Props) {
         onPointerDownCapture={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={stopSwipe}
         onLostPointerCapture={event => {if (event.target === event.currentTarget && swipe.current) stopSwipe();}}>
       <div className="field">
-        {props.ink ? <TutorAnswerEditor editor={richField} restoreSelection={!pendingSelection.current} value={value} images={props.ink.draft.photos}
+        {props.ink ? <TutorAnswerEditor editor={richField} inputMode={deviceKeyboard ? 'text' : 'none'} restoreSelection={!pendingSelection.current} value={value} images={props.ink.draft.photos}
           placeholder={followUp ? 'Add to your question…' : props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
           composing={composing} ghost={ghostSuffix} marked={writingEdit ? {start: writingEdit.start, end: writingEdit.end} : undefined} onSelection={remember} onChip={chipAction} onMath={openEquation} onFocus={event=>{
             if (event.target === event.currentTarget) focusAnswer();
           }} onKeyDown={keyDown}
-          onPointerDown={event=>{if (event.target === event.currentTarget && !readOnly) setShown(true);}}
+          onPointerDown={event=>{if (event.target === event.currentTarget && !readOnly && !deviceKeyboard) setShown(true);}}
           onCompositionStart={event=>beginComposition(event.currentTarget)}
           onCompositionEnd={event=>{
             composition.current = false;
             inputChanged(event.currentTarget);
             setCompositionText(null);
           }}
-          onInput={event=>inputChanged(event.currentTarget, (event.nativeEvent as InputEvent).inputType === 'insertText')}
+          onInput={event=>inputChanged(event.currentTarget, ['insertText', 'deleteContentBackward'].includes((event.nativeEvent as InputEvent).inputType))}
           onCopy={event=>copyAnswer(event)}
           onCut={event=>copyAnswer(event, true)}
           onPaste={pasteAnswer}
@@ -1520,10 +1541,10 @@ export function TutorComposer(props: Props) {
         /> : <div className="writing-editor-wrap">{(ghostSuffix || writingEdit) && <div className="writing-editor-mirror" aria-hidden="true">
           <span>{writingEdit ? <>{value.slice(0, writingEdit.start)}<span data-writing-aid-source="">{value.slice(writingEdit.start, writingEdit.end)}</span>{value.slice(writingEdit.end)}</> : value}</span>{ghostSuffix}
         </div>}<textarea ref={field} aria-label="Your answer" placeholder={followUp ? 'Add to your question…' : props.pending ? 'Draft your next answer…' : 'Write your answer…'}
-          inputMode="none" rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+          inputMode={deviceKeyboard ? 'text' : 'none'} rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
           value={compositionText ?? value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={focusAnswer}
           onPointerDown={() => {
-            if (!shown && !readOnly) {
+            if (!shown && !readOnly && !deviceKeyboard) {
               setShown(true);
             }
           }}
@@ -1536,7 +1557,7 @@ export function TutorComposer(props: Props) {
           onChange={event => {
             const edit = fieldSelection(event.currentTarget);
             if (composition.current) setCompositionText(edit.text);
-            else commit(changePadText(history.current, edit), false, false, false, (event.nativeEvent as InputEvent).inputType === 'insertText');
+            else commit(changePadText(history.current, edit), false, false, false, ['insertText', 'deleteContentBackward'].includes((event.nativeEvent as InputEvent).inputType));
           }}
           onScroll={event => {const mirror = event.currentTarget.previousElementSibling; if (mirror) mirror.scrollTop = event.currentTarget.scrollTop;}}
           onPaste={event => {
@@ -1549,10 +1570,13 @@ export function TutorComposer(props: Props) {
           onDrop={event => event.preventDefault()}
           onKeyDown={keyDown}/></div>}
         <div className="tutor-composer-tools">
-          {props.ink ? <IconButton label="Keep keyboard open" aria-pressed={pinned} disabled={editingDisabled}
-            onPointerDown={keepSelection} onClick={pinKeys}><Keyboard aria-hidden="true"/></IconButton>
-            : <IconButton label="Keys" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
-              onClick={()=>{if(shown){assist.pause();closeKeys();}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
+          {!props.ink && !shown && !deviceKeyboard ? <IconButton label="Keys" disabled={editingDisabled} onPointerDown={keepSelection}
+            onClick={keys}><Keyboard aria-hidden="true"/></IconButton> :
+            <IconButton label={deviceKeyboard ? 'Use Lemma keyboard' : 'Use device keyboard'} disabled={editingDisabled}
+              onPointerDown={keepSelection} onClick={switchKeyboard}><Keyboard aria-hidden="true"/></IconButton>}
+          {props.ink && !deviceKeyboard && (keyboardLayout !== 'ipad' || !shown || surface !== 'keys') &&
+            <IconButton label="Keep keyboard open" aria-pressed={pinned} disabled={editingDisabled}
+              onPointerDown={keepSelection} onClick={pinKeys}><Pin aria-hidden="true"/></IconButton>}
           {props.ink && <div className="tutor-composer-photos" ref={setPhotoActions}/>}
           <IconButton label="Attach context" aria-haspopup="dialog" aria-pressed={props.hasContext} disabled={inkDraft?.queuedText!==undefined}
             onPointerDown={keepSelection} onClick={props.onContext}><Paperclip aria-hidden="true"/></IconButton>
@@ -1621,7 +1645,7 @@ export function TutorComposer(props: Props) {
     {props.ink&&<TutorInkTray {...inkListeners} ink={props.ink} shown={scratch} photoActions={photoActions} photoDisabled={editingDisabled}
       editingImageId={editingImageId} canMigrate={!readOnly} answerLength={migrationAnswerLength}
       canInsertImage={canInsertImage} referencedImageIds={refs}/>}
-    {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={decoderReady ? 'ready' : undefined}
+    {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard" data-decoder={writing.decoderReady ? 'ready' : undefined}
       data-surface={surface} data-keyboard-layout={keyboardLayout === 'ipad' ? 'ipad' : undefined}>
       {surface === 'equation' ? <>
         <TutorEquationPanel disabled={editingDisabled} replacing={writeReplace?.source} leading={keysButton} trailing={equationButton}
@@ -1644,9 +1668,9 @@ export function TutorComposer(props: Props) {
             at the left and Equation mode at the right, the slots between them for one kind of suggestion at a time. */}
         {/* N227 (Owner): with the scratch pad, the strip's pencil opens it (Draw symbol lives on in equation mode). */}
         {props.ink ? scratchButton : incomplete ? nextSlotButton : drawButton}
-        {slots === 'unified' && <div className="sugg equation-words" role="group" aria-label="Answer suggestions">
-          {[menuEntries[1], menuEntries[0], menuEntries[2]].map((entry, index) => entry
-            ? <button key={entry.slotKey} type="button" className={index === 1 ? 'preferred' : undefined} title={entry.title}
+        {slots === 'unified' && <div className={'sugg ' + (lexicalMenu ? 'writing-aid-words' : 'equation-words')} role="group" aria-label="Answer suggestions">
+          {menuSlots.map((entry, index) => index === 0 && menuTypedWord ? typedKey : entry
+            ? <button key={entry.slotKey} type="button" className={index === 1 ? 'preferred' : undefined} title={entry.title ?? entry.word?.label}
               aria-label={entry.label} disabled={editingDisabled}
               data-typeahead-insert={entry.edit.insert}
               data-typeahead-kind={entry.word?.source === 'symbol' || !entry.word ? 'symbol' : 'word'}
@@ -1662,7 +1686,7 @@ export function TutorComposer(props: Props) {
                 pressedOffer.current = null;
                 if (event.detail && (pressed?.key !== entry.key || pressed.epoch !== menuEpoch)) return;
                 acceptMenu(entry);
-              }}>{entry.math ? <MathText source={entry.math}/> : entry.display}</button>
+              }}>{lexicalMenu && entry.word ? <WordLabel word={entry.word.label}/> : entry.math ? <MathText source={entry.math}/> : entry.display}</button>
             : <button key={'empty' + index} type="button" disabled aria-label="No suggestion"><span aria-hidden="true" className="writing-aid-empty">·</span></button>)}
         </div>}
         {slots === 'ink' && <KeyInkWords view={keyInk.view} disabled={editingDisabled} onChoose={keyInk.choose}/>}
@@ -1679,7 +1703,7 @@ export function TutorComposer(props: Props) {
         {slots === 'symbols' && <SymbolWords options={symbolSlots} disabled={editingDisabled}
           onAccept={option => acceptLegacyNotation('symbol:' + option.symbol.id)}/>}
         {slots === 'latex' && <LatexWords options={eligibleLatex} disabled={editingDisabled} onAccept={option => acceptLegacyNotation('latex:' + option.insert)}/>}
-        <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting} hidden={slots !== 'words'}/>
+        <WritingAidWords slots={proseSlots} typedKey={typedKey} disabled={editingDisabled} onAccept={acceptWriting} hidden={slots !== 'words'}/>
         {slots === 'quick' && <div className="sugg tutor-quick-math" role="group" aria-label="Quick math symbols">
           {['∀', '∈', ...(props.ink && incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="qsym" aria-label={symbol}
             disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
@@ -1695,7 +1719,7 @@ export function TutorComposer(props: Props) {
           onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
           onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
-      <TutorKeyboard view={view} lastMath={lastMath} disabled={editingDisabled} ink={keyboardInk} layout={keyboardLayout} {...keyboardListeners}/>{hideButton('sbtn kb-band-hide')}</>}
+      <TutorKeyboard view={view} lastMath={lastMath} disabled={editingDisabled} ink={keyboardInk} layout={keyboardLayout} pinned={pinned} {...keyboardListeners}/>{hideButton('sbtn kb-band-hide')}</>}
     </div> : null}
     {assist.picker && <TutorSymbolPicker recent={assist.recent} onPick={assist.onPick} onClose={assist.closePicker} error={assist.error}/>}
   </div>;

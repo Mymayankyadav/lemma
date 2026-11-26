@@ -22,7 +22,7 @@ export function civilMonthLabel(day:string):string{
  return new Intl.DateTimeFormat('en',{timeZone:'UTC',month:'long',year:'numeric'}).format(utc(day));
 }
 /** Deterministic subject colour from the token palette (N121 B3/B6); no stripe without a subject. */
-const palette=['var(--accent)','var(--good,#3f8f6b)','var(--easy,#4d7cc7)','var(--warn,#b7791f)','var(--again,#c0504d)','var(--link,#6b5bd2)'];
+const palette=['var(--subject-sky-stroke)','var(--subject-ochre-stroke)','var(--subject-teal-stroke)','var(--subject-sage-stroke)','var(--subject-lavender-stroke)'];
 export function subjectColor(subjectId:string|null|undefined):string|null{
  if(!subjectId)return null;
  let hash=0;for(const char of subjectId)hash=(hash*31+char.charCodeAt(0))>>>0;

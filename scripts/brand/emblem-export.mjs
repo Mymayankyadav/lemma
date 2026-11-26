@@ -16,7 +16,7 @@ if (!args.subject || !args.seed) {
   console.error('Usage: npm run emblem -- --subject <Subject> --seed <seed> [--size 160] [--colour #RRGGBB] [--out dir]');
   process.exit(2);
 }
-const spec = {subject: args.subject, seed: args.seed, size: Number(args.size) || 160, colour: args.colour || '#121B31'};
+const spec = {subject: args.subject, seed: args.seed, size: Number(args.size) || 160, colour: args.colour || '#141413'};
 const out = args.out || join('docs', 'brand', 'emblems');
 const name = args.seed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'emblem';
 mkdirSync(out, {recursive: true});

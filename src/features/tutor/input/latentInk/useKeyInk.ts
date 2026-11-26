@@ -152,7 +152,7 @@ export function useKeyInk(enabled: boolean, handlers: KeyInkHandlers) {
     if (!strokes.length) return;
     const style = getComputedStyle(host);
     context.lineWidth = 3.5; context.lineCap = context.lineJoin = 'round';
-    context.strokeStyle = style.getPropertyValue('--v7-role-action-bg').trim() || style.color || '#3b3bc4';
+    context.strokeStyle = style.getPropertyValue('--v7-role-action-bg').trim() || style.color || '#a8476d';
     for (const stroke of strokes) {
       context.beginPath();
       stroke.points.forEach((point, index) => index ? context.lineTo(point.x, point.y) : context.moveTo(point.x, point.y));

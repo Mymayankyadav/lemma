@@ -1,6 +1,6 @@
 /**
  * The Lemma "Notebook" mark (release plan R2, Owner decision D3 = C · Notebook, 12 Nov 2026): a large ℓ on graph paper,
- * with a red margin rule and an indigo ∎ (end of proof). One geometry, two outputs:
+ * with a rose margin rule and ∎ (end of proof). One geometry, two outputs:
  *  - `markSvg()` writes vector masters (the theme-following favicon and the 1024 references), and
  *  - `rasterMark()` rasterises the same geometry to RGBA with analytic anti-aliasing, so every PNG is generated on
  *    each build with no native canvas, font or image dependency.
@@ -12,10 +12,10 @@
 export const ELL_PATH = 'M18 249Q41 254 66 259.5Q91 265 117 272Q144 342 177.5 412.5Q211 483 249.5 541Q288 599 331.5 634.5Q375 670 421 670Q465 670 487 643.5Q509 617 509 572Q509 509 481 459.5Q453 410 406.5 372.5Q360 335 303 308Q246 281 188 263Q171 219 159 177Q147 135 147 97Q147 72 159 51Q171 30 196 30Q234 30 270 69Q306 108 362 190L386 173Q326 79 281.5 34.5Q237 -10 182 -10Q158 -10 133.5 -0.5Q109 9 93 35Q77 61 77 112Q77 140 85 172.5Q93 205 105 239Q58 228 22 222ZM414 625Q390 625 366.5 605Q343 585 322 553Q301 521 283 485Q265 449 251 416Q237 383 228 361L203 299Q270 323 328.5 359Q387 395 424 445Q461 495 461 562Q461 598 447 611.5Q433 625 414 625Z';
 const ELL_BOUNDS = {x0: 18, y0: -10, x1: 509, y1: 670};
 
-/** v7 palette (src/ui/v7/tokens.css): paper (page), ink (primary text), the brand indigo grid and ∎, the margin red. */
+/** Same paper, ink and rose accent as the app; all mark geometry stays unchanged. */
 export const MARK_THEMES = {
- day: {page: '#F8F5F0', ink: '#121B31', brand: '#4246C2', margin: '#C86265'},
- night: {page: '#091023', ink: '#EEF2FA', brand: '#5159D7', margin: '#FF9D9E'},
+ day: {page: '#FAF9F5', ink: '#141413', brand: '#A8476D', margin: '#A8476D'},
+ night: {page: '#262624', ink: '#FAF9F5', brand: '#D885A2', margin: '#D885A2'},
 };
 
 /**

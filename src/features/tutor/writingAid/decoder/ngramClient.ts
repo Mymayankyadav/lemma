@@ -2,7 +2,7 @@ import type {WritingAidPool} from '../engine';
 import type {WritingAidModel} from '../learning';
 import type {WritingAidRequest} from '../policy';
 import {snapshotKeyTouches} from './ngramSpatial';
-import type {ComponentReply, NgramReply, NgramRequest} from './ngram.worker';
+import type {ComponentReply, NgramReply, NgramRequest, PreloadReply, PreloadRequest} from './ngram.worker';
 
 const STARTUP_TIMEOUT_MS = 18_000;
 const REQUEST_TIMEOUT_MS = 500;
@@ -13,6 +13,7 @@ type Reply = {pool: WritingAidPool; computeMs: number; elapsedMs: number; assetS
 type Waiter = {request: NgramRequest; resolve: (reply: Reply) => void; cancelled?: boolean; startedAt: number};
 
 export interface NgramClient {
+  preload: (expanded: boolean, arm?: WritingAidRequest['arm']) => Promise<boolean>;
   predict: (request: WritingAidRequest, model?: WritingAidModel) => Promise<Reply>;
   components: (word: string, request: WritingAidRequest) => Promise<ComponentReply | undefined>;
   cancel: () => void;
@@ -28,6 +29,9 @@ export function createNgramClient(): NgramClient | undefined {
   let id = 0, unavailable = false, warm = false;
   const stats = {dropped: 0, failures: 0, timeouts: 0, requests: 0};
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let preloadTimer: ReturnType<typeof setTimeout> | undefined;
+  let preloading: Promise<boolean> | undefined;
+  let finishPreload: ((verified: boolean) => void) | undefined;
   let active: Waiter | undefined, queued: Waiter | undefined;
   let componentId = 0;
   const componentWaiters = new Map<number, (reply?: ComponentReply) => void>();
@@ -35,6 +39,9 @@ export function createNgramClient(): NgramClient | undefined {
     if (unavailable) return;
     unavailable = true;
     clearTimeout(timer);
+    clearTimeout(preloadTimer);
+    finishPreload?.(false);
+    finishPreload = undefined;
     worker.terminate();
     for (const resolve of componentWaiters.values()) resolve();
     componentWaiters.clear();
@@ -48,7 +55,7 @@ export function createNgramClient(): NgramClient | undefined {
     close();
   }
   function send() {
-    if (active || !queued || unavailable) return;
+    if (active || !queued || unavailable || finishPreload) return;
     active = queued;
     queued = undefined;
     stats.requests++;
@@ -58,7 +65,16 @@ export function createNgramClient(): NgramClient | undefined {
   }
   worker.addEventListener('error', fail);
   worker.addEventListener('messageerror', fail);
-  worker.addEventListener('message', ({data}: MessageEvent<NgramReply | ComponentReply>) => {
+  worker.addEventListener('message', ({data}: MessageEvent<NgramReply | ComponentReply | PreloadReply>) => {
+    if ('preloaded' in data) {
+      if (!finishPreload) return;
+      clearTimeout(preloadTimer);
+      warm = true;
+      finishPreload(data.preloaded);
+      finishPreload = undefined;
+      send();
+      return;
+    }
     if ('componentId' in data) {
       componentWaiters.get(data.componentId)?.(data);
       return;
@@ -81,6 +97,15 @@ export function createNgramClient(): NgramClient | undefined {
     send();
   });
   return {
+    preload(expanded, arm) {
+      if (unavailable) return Promise.resolve(false);
+      return preloading ??= new Promise(resolve => {
+        finishPreload = resolve;
+        preloadTimer = setTimeout(() => {stats.timeouts++; fail();}, STARTUP_TIMEOUT_MS);
+        try {worker.postMessage({preload: true, expanded, arm} satisfies PreloadRequest);}
+        catch {fail();}
+      });
+    },
     predict(request, model) {
       if (unavailable) return Promise.resolve('unavailable');
       return new Promise(resolve => {

@@ -84,6 +84,10 @@ describe('G1 the emblem exporter', () => {
       const ds = (html: string) => [...html.matchAll(/ d="([^"]+)"/g)].map(match => match[1]);
       expect(ds(svg)).toEqual(ds(component));
       expect(svg).toContain(`viewBox="${emblemViewBox(size >= 160 ? 'hero' : size >= 40 ? 'tile' : 'glyph')}"`);
+      expect(svg).toContain('viewBox="0 0 64 64"');
+      expect(component).toContain('viewBox="0 0 64 64"');
+      const frame = (html: string) => /<g transform="([^"]+)"/.exec(html)?.[1];
+      expect(frame(svg)).toBe(frame(component));
     }
   });
   it('stroke order keeps the generator’s order, times strokes by length and ends at 1', () => {

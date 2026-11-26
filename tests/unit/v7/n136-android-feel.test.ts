@@ -90,8 +90,8 @@ describe('AW7 · the WebView has the page colour before the page paints',()=>{
   const activity=readFileSync('android/app/src/main/java/io/github/mymayankyadav/lemma/MainActivity.java','utf8');
   expect(activity).toContain('getBridge().getWebView().setBackgroundColor(ContextCompat.getColor(this, R.color.lemma_paper))');
   expect(activity.match(/applyPaper\(\);/g)).toHaveLength(2);
-  expect(readFileSync('android/app/src/main/res/values/colors.xml','utf8')).toContain('<color name="lemma_paper">#F8F5F0</color>');
-  expect(readFileSync('android/app/src/main/res/values-night/colors.xml','utf8')).toContain('<color name="lemma_paper">#091023</color>');
+  expect(readFileSync('android/app/src/main/res/values/colors.xml','utf8')).toContain('<color name="lemma_paper">#FAF9F5</color>');
+  expect(readFileSync('android/app/src/main/res/values-night/colors.xml','utf8')).toContain('<color name="lemma_paper">#262624</color>');
   expect(readFileSync('android/app/src/main/AndroidManifest.xml','utf8')).toMatch(/configChanges="[^"]*uiMode/);
  });
 });

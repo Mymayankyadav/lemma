@@ -20,7 +20,7 @@ import {createDecoderLexicon, searchDecoderLexicon, type DecoderLexicon, type De
 import {usesExpandedNgram, type TypeaheadArm} from '../replayArm';
 import {loadTypeaheadMixture, subjectWeights} from './mixture';
 import {isFlagOn} from '../../../../flags';
-import {activeSubjectNgram, generalNgram, historyIds, historyLog, historyWords, loadExpandedNgram, loadLatexModel, loadNgram, MATH_TOKEN,
+import {activeSubjectNgram, generalNgram, historyIds, historyLog, historyWords, loadExpandedNgram, loadNgram, MATH_TOKEN,
   typeaheadNgramFingerprint, UNK, type NgramModel} from './kn';
 
 export interface KeyTouch {
@@ -129,19 +129,11 @@ export const typeaheadRequested = (expanded?: boolean): boolean => expanded ?? (
 export function typeaheadActive(expanded?: boolean): boolean {
   return typeaheadRequested(expanded) && model !== null && generalNgram() !== null;
 }
-export function prepareTypeahead(): Promise<void> {
-  if (!isFlagOn('typeaheadV2')) return Promise.resolve();
-  return typeof Worker === 'undefined'
-    ? Promise.all([loadNgram(), loadLatexModel(true), loadTypeaheadMixture()]).then(() => undefined)
-    : Promise.resolve();
-}
-export function prepareMainTypeaheadFallback(arm?: TypeaheadArm): Promise<void> {
+export function prepareWorkerTypeahead(expanded: boolean, arm?: TypeaheadArm): Promise<void> {
+  workerTypeahead = expanded;
+  if (!expanded) return prepareWritingDecoder();
   const general = usesExpandedNgram(arm) ? loadExpandedNgram().then(() => generalNgram() ? undefined : loadNgram()) : loadNgram();
   return Promise.all([prepareWritingDecoder(), general, usesExpandedNgram(arm) && loadTypeaheadMixture()]).then(() => undefined);
-}
-export function prepareWorkerTypeahead(arm?: TypeaheadArm): Promise<void> {
-  workerTypeahead = true;
-  return prepareMainTypeaheadFallback(arm);
 }
 // ── conversation cache ──────────────────────────────────────────────────────────────────────────────────────────────
 type WordCache = {counts: Map<string, number>; total: number};

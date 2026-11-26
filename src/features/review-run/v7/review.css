@@ -6,7 +6,7 @@
  :where(html[data-v7]) .v7-review-state {display:grid;justify-items:center;align-content:center;gap:var(--v7-space-3);text-align:center;}
  :where(html[data-v7]) .v7-review-count {font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-review-progress {list-style:none;margin:0;padding:0;display:flex;gap:2px;height:4px;}
- :where(html[data-v7]) .v7-review-progress li {flex:1;border-radius:var(--v7-round);background:var(--v7-role-border-subtle);}
+ :where(html[data-v7]) .v7-review-progress li {flex:1;border-radius:var(--v7-round);background:var(--progress-track);}
  :where(html[data-v7]) .v7-review-progress [data-grade="answered"] {background:var(--v7-role-text-tertiary);}
  :where(html[data-v7]) .v7-review-progress [data-grade="stale"] {background:var(--v7-role-border-default);}
  :where(html[data-v7]) :is(.v7-review-progress li,.v7-review-grades button)[data-grade="again"] {--v7-grade:var(--v7-role-status-danger);}

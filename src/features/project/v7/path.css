@@ -7,7 +7,7 @@
  :where(html[data-v7]) .v7-path-emblem {position:absolute;z-index:-1;bottom:-64px;right:-72px;width:var(--v7-emblem-hero);height:var(--v7-emblem-hero);opacity:var(--v7-hero-alpha);color:var(--v7-subject,var(--v7-role-text-secondary));pointer-events:none;}
  :where(html[data-v7]) .v7-path-goal {max-width:34ch;color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
  :where(html[data-v7]) .v7-path-meter {display:flex;align-items:center;gap:var(--v7-space-3);font:600 var(--v7-type-supporting)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
- :where(html[data-v7]) .v7-path-meter > [role="meter"] {flex:1;max-width:240px;height:6px;border-radius:var(--v7-round);background:var(--v7-role-border-subtle);overflow:hidden;}
+ :where(html[data-v7]) .v7-path-meter > [role="meter"] {flex:1;max-width:240px;height:6px;border-radius:var(--v7-round);background:var(--progress-track);overflow:hidden;}
  :where(html[data-v7]) .v7-path-meter > [role="meter"] > span {display:block;height:100%;background:var(--v7-subject,var(--v7-role-text-secondary));}
  :where(html[data-v7]) .v7-path-chips {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-path-panel {display:grid;gap:var(--v7-space-3);min-width:0;padding-bottom:calc(64px + var(--v7-space-6));}

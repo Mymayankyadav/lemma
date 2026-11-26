@@ -99,6 +99,13 @@ export function advanceWritingAidAnchor(
   before: PadEdit, after: PadEdit, previous: WritingAidAnchor | null, middleEdits = false,
   acceptedSpans?: readonly OriginRange[],
 ): WritingAidAnchor | null {
+  // A direct backspace can shorten a word the learner is still typing. Never promote old or accepted text to an anchor.
+  if (previous && !previous.continuation && previous.text === before.text && (previous.caret ?? before.text.length) === before.end &&
+      before.start === before.end && after.start === after.end && after.end < before.end && after.end > previous.start &&
+      (atEnd(after) || middleEdits) && before.text.slice(0, after.end) === after.text.slice(0, after.end) &&
+      before.text.slice(before.end) === after.text.slice(after.end)) {
+    return {text: after.text, start: previous.start, ...(atEnd(after) ? {} : {caret: after.end})};
+  }
   if (middleEdits && before.start === before.end && after.start === after.end && !atEnd(after) &&
       after.end > before.end && after.text.length <= WRITING_AID_LIMIT &&
       before.text.slice(0, before.end) === after.text.slice(0, before.end) &&

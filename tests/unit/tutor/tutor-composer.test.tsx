@@ -293,7 +293,11 @@ test('shows both numeric layouts and keeps physical IME composition atomic', asy
   await click('Hide keyboard');
   expect(host.querySelector('.rows')).toBeNull();
   await click('Keys');
-  expect(button('Use device keyboard')).toBeUndefined();
+  expect(button('Use device keyboard')).toBeDefined();
+  await click('Use device keyboard');
+  expect(field().inputMode).toBe('text');
+  expect(host.querySelector('.rows')).toBeNull();
+  await click('Use Lemma keyboard');
   expect(field().inputMode).toBe('none');
   await act(async () => field().focus());
   onChange.mockClear();

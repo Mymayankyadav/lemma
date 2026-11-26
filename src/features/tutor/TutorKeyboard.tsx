@@ -1,5 +1,5 @@
 import {memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type HTMLAttributes, type PointerEvent, type ReactNode, type RefObject} from 'react';
-import {ArrowBigUp, ArrowBigUpDash, ArrowRightToLine, ChevronDown, ChevronLeft, ChevronRight, CornerDownLeft, Delete, Keyboard, Search} from 'lucide-react';
+import {ArrowBigUp, ArrowBigUpDash, ArrowRightToLine, ChevronDown, ChevronLeft, ChevronRight, CornerDownLeft, Delete, Keyboard, Pin, Search} from 'lucide-react';
 import {haptic} from '../../ui/v7/haptics';
 import {notation} from './notation';
 import {correctTap, needsTapCorrection, prepareTapCorrection, type KeyBox} from './tapCorrection';
@@ -30,9 +30,8 @@ const GBOARD_ROW_START = [0, .5, 1.5];
 const IPAD_ALTS: Readonly<Record<string, string>> = {
   a: '@', s: '#', d: '$', f: '&', g: '*', h: '(', j: ')', k: "'", l: '"', z: '%', x: '-', c: '+', v: '=', b: '/', n: ';', m: ':',
 };
-/** iPad key widths in letter keys, each row 12.5 keys across, measured on the Owner's screenshot of iPadOS's keyboard.
- *  iPadOS's dictation key has no counterpart here, so the space bar takes its room. */
-const IPAD = {tab: 1.25, back: 1.25, caps: 1.55, enter: 1.95, wideEnter: 2.5, shiftL: 2, shiftR: 1.5, maths: 1.05, modeL: 1.05, space: 7.4,
+/** Each iPad row spans 12.5 letter pitches. The pin occupies the native dictation key's cell. */
+const IPAD = {tab: 1.25, back: 1.25, caps: 1.55, enter: 1.95, wideEnter: 2.5, shiftL: 2, shiftR: 1.5, maths: 1.05, modeL: 1.05, pin: 1.05, space: 6.35,
   modeR: 1.5, hide: 1.5};
 
 interface KeyHold {
@@ -57,7 +56,7 @@ interface KeyHold {
  * edge of a letter counts for its neighbour when only the neighbour continues a word (tap correction).
  */
 export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove, onBrowse, wordBefore, ink,
-  layout = 'gboard', onTab, onHide}: {
+  layout = 'gboard', onTab, onHide, pinned = false, onPin}: {
   view: string; lastMath: string; onView: (view: string) => void; disabled: boolean;
   /** `touch`: where a letter was tapped, in key pitches and rows from the top-left of the letter rows (N221 decoder). */
   onInsert: (text: string, typed?: boolean, touch?: KeyTouch) => void; onDelete: () => void;
@@ -72,6 +71,8 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
   onTab?: () => void;
   /** The iPad's hide-keyboard key (Gboard's layouts hide the keyboard from the strip). */
   onHide?: () => void;
+  pinned?: boolean;
+  onPin?: () => void;
 }) {
   const ipad = layout === 'ipad';
   const [phrasePage, setPhrasePage] = useState(0);
@@ -124,7 +125,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
   };
   function key(label: string, action: () => void, options: {style?: string; icon?: ReactNode; alt?: string; printable?: boolean; letter?: string;
     /** N252: the key's width in letter keys (iPad rows); `id` tells apart two keys with one label (the iPad's two shifts). */
-    grow?: number; id?: string;} = {}) {
+    grow?: number; id?: string; selected?: boolean;} = {}) {
     const {style = '', icon, alt, printable, letter, grow, id} = options;
     const swallowing = (event: PointerEvent<HTMLButtonElement>) => {
       const current = hold.current;
@@ -138,7 +139,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
     };
     return <button type="button" key={id ?? label} className={'k ' + style} aria-label={label} disabled={disabled}
       data-letter={letter} style={grow === undefined ? undefined : {flexGrow: grow}}
-      aria-pressed={label === 'Shift' || label === 'Caps lock on' ? shift !== 'off' : label === 'Caps lock' ? shift === 'locked' : undefined}
+      aria-pressed={options.selected ?? (label === 'Shift' || label === 'Caps lock on' ? shift !== 'off' : label === 'Caps lock' ? shift === 'locked' : undefined)}
       onPointerDown={event => {
         if (!event.isPrimary || event.button !== 0) return;
         keepSelection(event);
@@ -279,6 +280,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
     return <div className="row bottom">
       {key('Maths symbols', () => onView(lastMath), {grow: IPAD.maths, style: 'fn ip-sym ip-l', icon: lastMath === 'Phrases' ? 'Aa' : '∀∃'})}
       {key(mode, toggle, {id: 'mode-left', grow: IPAD.modeL, style: 'fn ip-txt ip-c'})}
+      {key('Keep keyboard open', () => onPin?.(), {grow: IPAD.pin, style: 'fn ip-c' + (pinned ? ' lit' : ''), icon: <Pin/>, selected: pinned})}
       {key('Space', () => onInsert(' ', true), {grow: IPAD.space, style: 'space', icon: <span aria-hidden="true"/>})}
       {key(mode, toggle, {id: 'mode-right', grow: IPAD.modeR, style: 'fn ip-txt ip-r'})}
       {hideKey(IPAD.hide)}

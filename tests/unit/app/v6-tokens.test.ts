@@ -16,9 +16,11 @@ function properties(selector:string):Record<string,string>{
  return Object.fromEntries(Array.from(block.matchAll(/(--v6-[\w-]+)\s*:\s*([^;]+);/g),
   ([,name,value])=>[name,value.trim()]));
 }
+const palette=JSON.parse(readFileSync('src/ui/v7/design-tokens.json','utf8')).palette;
+const resolve=(values:Record<string,string>,mode:'day'|'night')=>Object.fromEntries(Object.entries(values).map(([name,value])=>[name,value.replace(/var\(--([\w-]+)\)/g,(_,key)=>palette[mode][key]??value)]));
 const baseTokens=properties(base);
-const dayTokens={...baseTokens,...properties(day)};
-const nightTokens={...baseTokens,...properties(night)};
+const dayTokens=resolve({...baseTokens,...properties(day)},'day');
+const nightTokens=resolve({...baseTokens,...properties(night)},'night');
 function luminance(color:string):number{
  expect(color).toMatch(/^#[\da-f]{6}$/i);
  const channels=Array.from({length:3},(_,i)=>parseInt(color.slice(1+i*2,3+i*2),16)/255)

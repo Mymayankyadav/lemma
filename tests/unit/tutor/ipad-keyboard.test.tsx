@@ -67,7 +67,7 @@ test('the iPad rows follow iPadOS: tab and delete, caps lock and return, two shi
     ['Tab', ...'qwertyuiop', 'Delete'],
     ['Caps lock', ...'asdfghjkl', 'Return'],
     ['Shift', ...'zxcvbnm', ',', '.', 'Shift'],
-    ['Maths symbols', '.?123', 'Space', '.?123', 'Hide keyboard'],
+    ['Maths symbols', '.?123', 'Keep keyboard open', 'Space', '.?123', 'Hide keyboard'],
   ]);
   // Each row is 12.5 letter keys across, so the letters line up as on the iPad.
   const width = (button: HTMLButtonElement) => Number(button.style.flexGrow || 1);
@@ -133,7 +133,7 @@ test('the iPad number pages keep the maths symbols in the same frame and switch 
     ['Tab', ...'1234567890', 'Delete'],
     ['+', '−', '×', '÷', '=', '<', '>', '(', ')', '/', 'Return'],
     ['#+=', '^', '_', "'", ':', ';', '!', '?', ',', '.', '#+='],
-    ['Maths symbols', 'ABC', 'Space', 'ABC', 'Hide keyboard'],
+    ['Maths symbols', 'ABC', 'Keep keyboard open', 'Space', 'ABC', 'Hide keyboard'],
   ]);
   await act(async () => {tap(keys('#+=')[1]!);});
   expect(rowLabels()[2]).toEqual(['123', '·', '…', '∘', '≈', '±', '∞', '~', '*', '$', '123']);

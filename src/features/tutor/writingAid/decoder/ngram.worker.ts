@@ -1,8 +1,8 @@
 import {predictWritingAidPool, type WritingAidPool} from '../engine';
 import type {WritingAidModel} from '../learning';
 import type {WritingAidProposal, WritingAidRequest} from '../policy';
-import {prepareWorkerTypeahead, restoreKeyTouches, type KeyTouchSample, type LanguageDistribution, type ComponentProbabilities} from './ngramSpatial';
-import {usesExpandedNgram} from '../replayArm';
+import {prepareWorkerTypeahead, restoreKeyTouches, writingDecoderReady, type KeyTouchSample, type LanguageDistribution, type ComponentProbabilities} from './ngramSpatial';
+import {usesExpandedNgram, type TypeaheadArm} from '../replayArm';
 import {activeSubjectNgram, selectSubjectNgram, typeaheadNgramFingerprint} from './kn';
 
 export type WirePool = Readonly<Record<'words' | 'edit' | 'ghost', readonly Omit<WritingAidProposal, 'snapshot'>[]>> & Pick<WritingAidPool, 'trace'>;
@@ -10,13 +10,15 @@ export type NgramRequest = Readonly<{
   id: number; request: WritingAidRequest; model?: WritingAidModel; touches: readonly KeyTouchSample[];
 }>;
 export type ComponentQuery = {componentId: number; cursorEnd: number; revision: number; word: string};
+export type PreloadRequest = {preload: true; expanded: boolean; arm?: TypeaheadArm};
+export type PreloadReply = {preloaded: boolean};
 export type ComponentReply = {componentId: number; subject?: string; probability?: ComponentProbabilities;
   assetSha256?: string; subjectAssetSha256?: string};
 export type NgramReply = Readonly<{id: number; pool: WirePool; computeMs: number; assetSha256?: string;
   subjectAssetSha256?: string} | {id: number; failed: true}>;
 type WorkerEndpoint = {
-  onmessage: ((event: MessageEvent<NgramRequest | ComponentQuery>) => void) | null;
-  postMessage: (reply: NgramReply | ComponentReply) => void;
+  onmessage: ((event: MessageEvent<NgramRequest | ComponentQuery | PreloadRequest>) => void) | null;
+  postMessage: (reply: NgramReply | ComponentReply | PreloadReply) => void;
 };
 const worker = self as unknown as WorkerEndpoint;
 let ready: Promise<void> | undefined;
@@ -26,6 +28,13 @@ let measured: {cursorEnd: number; revision: number; subject?: string; language: 
 const withoutSnapshot = ({snapshot: _, ...fields}: WritingAidProposal) => fields;
 
 worker.onmessage = async ({data}) => {
+  if ('preload' in data) {
+    try {
+      await (ready ??= prepareWorkerTypeahead(data.expanded, data.arm));
+      worker.postMessage({preloaded: writingDecoderReady()});
+    } catch {worker.postMessage({preloaded: false});}
+    return;
+  }
   if ('componentId' in data) {
     const match = measured && measured.cursorEnd === data.cursorEnd && measured.revision === data.revision;
     worker.postMessage({componentId: data.componentId, ...(match && measured ? {subject: measured.subject,
@@ -34,8 +43,9 @@ worker.onmessage = async ({data}) => {
     return;
   }
   try {
-    await (ready ??= prepareWorkerTypeahead(data.request.arm));
-    if (usesExpandedNgram(data.request.arm) && data.request.subject !== subject) {
+    const expanded = Boolean(data.request.expanded);
+    await (ready ??= prepareWorkerTypeahead(expanded, data.request.arm));
+    if (expanded && usesExpandedNgram(data.request.arm) && data.request.subject !== subject) {
       subject = data.request.subject;
       const loading = selectSubjectNgram(subject);
       if (data.request.replayDiagnostics) await loading;

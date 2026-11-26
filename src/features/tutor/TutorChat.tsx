@@ -5,6 +5,7 @@ import {useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'reac
 import {Copy, Trash2, X} from 'lucide-react';
 import {tutorMessageKey, type SavedTutorTurn, type TutorMessageRef} from '../../data/tutor/manual-api';
 import {MathText} from '../../ui/MathText';
+import {Tex} from '../../ui/Tex';
 import {Button, IconButton, Sheet} from '../../ui/v7/components';
 import {useToast} from '../../ui/Toast';
 import type {TutorInkState} from './TutorInk';
@@ -194,7 +195,7 @@ export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, 
     } : undefined}
     onCloseSession={() => setPanel('close')} onConnection={openConnection}>
     {!overview && question && <button className="tutor-pinned" type="button" aria-haspopup="dialog" inert={hideHeader} onClick={()=>setPanel('question')}>
-      <span>On the table</span><strong>{question}</strong>
+      <span>On the table</span><strong><Tex source={question}/></strong>
     </button>}
     <div className="chat" ref={chat} role="log" aria-label="Conversation" aria-live={selecting ? 'off' : 'polite'} data-selecting={selecting || undefined}
       onScroll={event => {const node = event.currentTarget; follow.current = node.scrollHeight - node.scrollTop - node.clientHeight < 80;}}>

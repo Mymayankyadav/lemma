@@ -11,17 +11,25 @@ const WORD = /^[a-z]{2,32}$/u;
 
 /** "word<TAB>frequency[<TAB>logic]" lines in strict byte order; anything else rejects the whole file. */
 export function parseLexiconTsv(text: string): DecoderLexicon {
-  const lines = text.endsWith('\n') ? text.slice(0, -1).split('\n') : text.split('\n');
-  if (!lines.length || lines.length > MAX_COMPLETE_WORDS) throw new Error('Invalid writing decoder lexicon');
+  if (!text.length) throw new Error('Invalid writing decoder lexicon');
   const entries: DecoderCandidate[] = [];
   let previous = '';
-  for (const line of lines) {
-    const [word, count, tag, extra] = line.split('\t');
-    const frequency = Number(count);
+  // Index directly from the verified buffer without allocating an additional array of 114,780 lines.
+  for (let start = 0; start < text.length;) {
+    if (entries.length === MAX_COMPLETE_WORDS) throw new Error('Invalid writing decoder lexicon');
+    const newline = text.indexOf('\n', start);
+    const end = newline < 0 ? text.length : newline;
+    const tab = text.indexOf('\t', start);
+    if (tab < start || tab >= end) throw new Error('Invalid writing decoder entry');
+    const word = text.slice(start, tab);
+    const nextTab = text.indexOf('\t', tab + 1);
+    const tagged = nextTab >= 0 && nextTab < end;
+    const frequency = Number(text.slice(tab + 1, tagged ? nextTab : end));
     if (!WORD.test(word) || word <= previous || !Number.isInteger(frequency) || frequency <= 0 || frequency > 1_000_000 ||
-        (tag !== undefined && tag !== 'logic') || extra !== undefined) throw new Error('Invalid writing decoder entry');
+        tagged && text.slice(nextTab + 1, end) !== 'logic') throw new Error('Invalid writing decoder entry');
     previous = word;
-    entries.push(Object.freeze({word, frequency, ...(tag ? {riskTags: Object.freeze(['logic'] as const)} : {})}));
+    entries.push(Object.freeze({word, frequency, ...(tagged ? {riskTags: Object.freeze(['logic'] as const)} : {})}));
+    start = end + 1;
   }
   return Object.freeze({version: 1, entries: Object.freeze(entries)});
 }

@@ -5,7 +5,7 @@ import {emblemKind,emblemHash,emblemStrokes,emblemTier,TIER_LIMIT,TIER_WIDTH,typ
 const families=['Analysis','Algebra','Topology','Number theory','Geometry','Logic','Probability','Combinatorics','Other'];
 const tiers:EmblemTier[]=['hero','tile','glyph'];
 
-describe('v7 mathematical emblems (emblem system v2)',()=>{
+describe('v7 mathematical emblems (warm-theme draft)',()=>{
  it('selects one mathematical family per subject',()=>{
   expect(emblemKind('Real Analysis')).toBe('radial-wave');
   expect(emblemKind('Linear Algebra')).toBe('icosahedron');
@@ -33,15 +33,24 @@ describe('v7 mathematical emblems (emblem system v2)',()=>{
    expect(JSON.stringify(strokes)).not.toMatch(/NaN|Infinity/);
   }
  });
- it('applies one stroke rule per tier: focal full strength, context at 40–60%',()=>{
+ it('uses the same 1.75px stroke for every family, with helpers at exactly 50%',()=>{
   for(const subject of families)for(const tier of ['hero','tile'] as const){
    for(const stroke of emblemStrokes(subject,'seed',undefined,tier)){
     if(stroke.focal){expect(stroke.width).toBe(TIER_WIDTH[tier].focal);expect(stroke.opacity).toBe(1);}
-    else{expect(stroke.width).toBe(TIER_WIDTH[tier].base);expect(stroke.opacity).toBeGreaterThanOrEqual(.4);expect(stroke.opacity).toBeLessThanOrEqual(.6);}
+    else{expect(stroke.width).toBe(TIER_WIDTH[tier].base);expect(stroke.opacity).toBe(.5);}
    }
   }
-  expect(TIER_WIDTH.tile.base).toBe(1);expect(TIER_WIDTH.hero.base).toBe(1.25);
-  expect(TIER_WIDTH.hero.focal).toBeGreaterThanOrEqual(1.6);expect(TIER_WIDTH.hero.focal).toBeLessThanOrEqual(1.8);
+  for(const tier of tiers){
+   expect(TIER_WIDTH[tier]).toEqual({base:1.75,focal:1.75});
+   for(const subject of families)for(const stroke of emblemStrokes(subject,'seed',undefined,tier))expect(stroke.width).toBe(1.75);
+  }
+ });
+ it('draws Topology as a single knot line without duplicate tube outlines',()=>{
+  for(const tier of tiers)for(const seed of ['a','b','path-123']){
+   const strokes=emblemStrokes('Topology',seed,undefined,tier);
+   expect(strokes).toHaveLength(1);
+   expect(strokes[0]).toMatchObject({focal:true,width:1.75,opacity:1});
+  }
  });
  it('varies parameters within a family by seed, never the family, and is deterministic',()=>{
   expect(emblemHash('path-a')).not.toBe(emblemHash('path-b'));
@@ -51,7 +60,7 @@ describe('v7 mathematical emblems (emblem system v2)',()=>{
    expect(new Set(seeds).size,subject).toBeGreaterThan(1);
   }
  });
- it('matches the approved family × tier construction (deterministic SVG strings)',()=>{
+ it('matches the deterministic family × tier construction (SVG strings)',()=>{
   const digest:Record<string,string>={};
   for(const subject of families)for(const tier of tiers){
    const strokes=emblemStrokes(subject,'snapshot-seed',undefined,tier);

@@ -3,32 +3,38 @@
  * for the neighbouring key it is near. The touched letter wins unless it cannot continue any word in the dictionary
  * while the nearby letter can; the first letter of a word is never changed. The dictionary loads once, on demand.
  */
-let words: string[] | null = null;
+let words: string | null = null;
 let loading: Promise<void> | null = null;
 
 export function prepareTapCorrection(): Promise<void> {
-  if (words) return Promise.resolve();
+  if (words !== null) return Promise.resolve();
   return loading ??= import('./writingAid/vendor/wordlist.txt?raw')
-    .then(module => {words = module.default.split('\n').map(word => word.trim().toLowerCase()).filter(Boolean).sort();})
+    .then(module => {words = module.default;})
     .catch(() => {loading = null;});
 }
 
 /** For tests: use a known word list. */
 export function setTapCorrectionWords(list: readonly string[] | null): void {
-  words = list ? [...list].map(word => word.toLowerCase()).sort() : null;
+  words = list ? [...list].map(word => word.toLowerCase()).sort().join('\n') : null;
   loading = null;
 }
 
 /** Whether some dictionary word starts with `prefix` (lower case). Unknown (still loading) counts as yes. */
 export function isWordPrefix(prefix: string): boolean {
-  if (!words) return true;
+  if (words === null) return true;
+  // The bundled lowercase word list is already sorted. Search its lines in place so the UI needs no second dictionary.
   let low = 0, high = words.length;
   while (low < high) {
     const middle = (low + high) >> 1;
-    if (words[middle] < prefix) low = middle + 1;
-    else high = middle;
+    const start = middle === 0 ? 0 : words.lastIndexOf('\n', middle - 1) + 1;
+    if (words.startsWith(prefix, start)) return true;
+    if (words.slice(start, start + prefix.length) < prefix) {
+      const end = words.indexOf('\n', middle);
+      if (end < 0) return false;
+      low = end + 1;
+    } else high = start;
   }
-  return low < words.length && words[low].startsWith(prefix);
+  return false;
 }
 
 export interface KeyBox {letter: string; x: number; y: number; width: number; height: number}

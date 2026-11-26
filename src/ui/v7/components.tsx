@@ -271,7 +271,7 @@ export function Sheet({
 }: {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title: ReactNode;
   eyebrow?: string;
   children: ReactNode;
   footer?: ReactNode;
@@ -812,7 +812,7 @@ export function RadioOption({
   onChange,
   disabled = false,
 }: {
-  label: string;
+  label: ReactNode;
   name: string;
   checked: boolean;
   onChange: () => void;

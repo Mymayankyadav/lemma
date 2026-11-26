@@ -1,16 +1,20 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createNgramClient} from '../../../src/features/tutor/writingAid/decoder/ngramClient';
 import {clearKeyTouches, recordKeyTouch} from '../../../src/features/tutor/writingAid/decoder/ngramSpatial';
-import type {NgramReply, NgramRequest} from '../../../src/features/tutor/writingAid/decoder/ngram.worker';
+import type {NgramReply, NgramRequest, PreloadRequest, PreloadReply} from '../../../src/features/tutor/writingAid/decoder/ngram.worker';
 import type {WritingAidRequest} from '../../../src/features/tutor/writingAid/policy';
 
 class WorkerDouble extends EventTarget {
   readonly messages: NgramRequest[] = [];
+  readonly preloads: PreloadRequest[] = [];
   static latest: WorkerDouble;
   constructor() {super(); WorkerDouble.latest = this;}
-  postMessage(request: NgramRequest) {this.messages.push(request);}
+  postMessage(request: NgramRequest | PreloadRequest) {
+    if ('preload' in request) this.preloads.push(request);
+    else this.messages.push(request);
+  }
   terminate = vi.fn();
-  reply(data: NgramReply) {this.dispatchEvent(new MessageEvent('message', {data}));}
+  reply(data: NgramReply | PreloadReply) {this.dispatchEvent(new MessageEvent('message', {data}));}
 }
 
 const snapshot = (text: string, revision: number): WritingAidRequest => ({
@@ -21,6 +25,40 @@ const snapshot = (text: string, revision: number): WritingAidRequest => ({
 afterEach(() => {vi.useRealTimers(); vi.unstubAllGlobals(); clearKeyTouches();});
 
 describe('N-gram worker client', () => {
+  it('preloads without draft text and sends only the latest prefix when the dictionary is indexed', async () => {
+    vi.stubGlobal('Worker', WorkerDouble);
+    const client = createNgramClient()!, worker = WorkerDouble.latest;
+    const warm = client.preload(false, 'personal');
+    expect(client.preload(false, 'personal')).toBe(warm);
+    const first = client.predict(snapshot('app', 1));
+    const second = client.predict(snapshot('appl', 2));
+    const latest = client.predict(snapshot('apply', 3));
+    await expect(first).resolves.toBeNull();
+    await expect(second).resolves.toBeNull();
+    expect(worker.preloads).toEqual([{preload: true, expanded: false, arm: 'personal'}]);
+    expect(worker.messages).toHaveLength(0);
+    worker.reply({preloaded: true});
+    await expect(warm).resolves.toBe(true);
+    expect(worker.messages.map(message => message.request.cursor.text)).toEqual(['apply']);
+    worker.reply({id: 3, pool: {words: [], edit: [], ghost: []}, computeMs: 1});
+    await expect(latest).resolves.toMatchObject({computeMs: 1});
+    client.close();
+  });
+
+  it('releases a preloading worker, its timers and pending draft when closed', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('Worker', WorkerDouble);
+    const client = createNgramClient()!, worker = WorkerDouble.latest;
+    const warm = client.preload(true);
+    const query = client.predict(snapshot('app', 1));
+    client.close();
+    worker.reply({preloaded: true});
+    await expect(warm).resolves.toBe(false);
+    await expect(query).resolves.toBe('unavailable');
+    expect(worker.messages).toHaveLength(0);
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it('coalesces queued requests and ignores cancelled or mismatched replies', async () => {
     vi.stubGlobal('Worker', WorkerDouble);
     const client = createNgramClient()!;

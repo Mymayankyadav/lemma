@@ -1,8 +1,7 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
-/* N157 · U1 S11 the margin (flag v7Margin). The rule is the margin red of the icon (day #C86265, night #FF9D9E), which the
-   tokens hold as the combinatorics colour; here it marks the page's margin, as on the icon, not a subject. */
+/* N157 · U1 S11 the margin (flag v7Margin). Match the rose rule on the app's Notebook icon. */
 @layer v7-components {
- :where(html[data-v7]) {--v7-margin-width:292px;--v7-margin-rule:var(--v7-role-subject-combinatorics);}
+ :where(html[data-v7]) {--v7-margin-width:292px;--v7-margin-rule:var(--v7-role-action-bg);}
  :where(html[data-v7]) .v7-margin-notes {display:grid;gap:var(--v7-space-5);}
  :where(html[data-v7]) .v7-margin-note {display:grid;gap:var(--v7-space-2);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-margin-note :is(ul,ol) {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-1);}

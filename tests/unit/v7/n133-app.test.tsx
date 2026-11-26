@@ -112,16 +112,16 @@ describe('AW5 · the welcome sheet', () => {
 });
 
 describe('G0 · the pre-paint papers follow the build', () => {
-  it('v7 builds paint the v7 page colours; others keep the legacy ones', () => {
-    expect(prePaintPaper(true)).toEqual({day: '#F8F5F0', night: '#091023'});
-    expect(prePaintPaper(false)).toEqual({day: '#FAFAF6', night: '#13171D'});
+  it('all shells paint the shared palette before their styles load', () => {
+    expect(prePaintPaper(true)).toEqual({day: '#FAF9F5', night: '#262624'});
+    expect(prePaintPaper(false)).toEqual({day: '#FAF9F5', night: '#262624'});
     const tokens = readFileSync('src/ui/v7/tokens.css', 'utf8');
-    expect(tokens).toMatch(/\[data-theme="graph"\] \{\n {2}--v7-role-surface-page: #F8F5F0;/);
-    expect(tokens).toMatch(/\[data-theme="graph-night"\] \{\n {2}--v7-role-surface-page: #091023;/);
+    expect(tokens).toMatch(/\[data-theme="graph"\] \{\n {2}--v7-role-surface-page: #FAF9F5;/);
+    expect(tokens).toMatch(/\[data-theme="graph-night"\] \{\n {2}--v7-role-surface-page: #262624;/);
   });
   it('index.html takes them from the build, not a fixed hex', () => {
     const html = readFileSync('index.html', 'utf8');
-    expect(html).not.toMatch(/#FAFAF6|#13171D/);
+    expect(html).not.toMatch(/#FAF9F5|#262624/);
     expect(html.match(/__PAPER_DAY__/g)!.length).toBe(2);
     expect(html.match(/__PAPER_NIGHT__/g)!.length).toBe(2);
     expect(readFileSync('vite.config.ts', 'utf8')).toContain("transformIndexHtml:(html:string)=>html.replaceAll('__PAPER_DAY__',paper.day)");

@@ -85,7 +85,7 @@ async function useFasterTyping(page: Page) {
   await page.keyboard.press('Escape');
 }
 
-const offeredWords = async (page: Page) => wordStrip(page).locator('button:enabled').evaluateAll(nodes =>
+const offeredWords = async (page: Page) => wordStrip(page).locator('button[data-typeahead-kind="word"]:enabled').evaluateAll(nodes =>
   nodes.map(node => node.getAttribute('aria-label')!.replace(/^Insert /, '')));
 const surfaceItemWeight = (model: Awaited<ReturnType<typeof storedModel>>, surface: string) =>
   Object.entries(model?.model.weights ?? {}).filter(([key]) => key.startsWith('item:' + surface + ':'))
@@ -120,9 +120,11 @@ test('keyboard refresh replaces the displayed words and records feedback on thos
   const answer = await openAnswer(page);
   await useFasterTyping(page);
   await typeDraft(page, answer, 'I think the re');
-  await expect.poll(async () => (await offeredWords(page)).length).toBe(3);
+  const literal = wordStrip(page).getByRole('button', {name: 'Keep re', exact: true});
+  await expect(literal).toBeVisible();
+  await expect.poll(async () => (await offeredWords(page)).length).toBe(2);
   const first = await offeredWords(page);
-  expect(new Set(first).size).toBe(3);
+  expect(new Set(first).size).toBe(2);
   const before = await storedModel(page);
   await refreshSuggestions(page);
   await expect.poll(async () => {
@@ -130,6 +132,8 @@ test('keyboard refresh replaces the displayed words and records feedback on thos
     return words.length > 0 && words.join('|') !== first.join('|');
   }).toBe(true);
   const next = await offeredWords(page);
+  await expect(literal).toBeVisible();
+  expect((await storedModel(page))?.model.weights['item:word:re']).toEqual(before?.model.weights['item:word:re']);
   expect(next.length).toBeGreaterThan(0);
   expect(next.every(word => !first.includes(word))).toBe(true);
   await expect(answer).toHaveJSProperty('textContent', 'I think the re');
@@ -145,7 +149,8 @@ test('a typed different word revokes its earlier visible offers and records weak
   const answer = await openAnswer(page);
   await useFasterTyping(page);
   await typeDraft(page, answer, 'I think the re');
-  await expect.poll(async () => (await offeredWords(page)).length).toBe(3);
+  await expect(wordStrip(page).getByRole('button', {name: 'Keep re', exact: true})).toBeVisible();
+  await expect.poll(async () => (await offeredWords(page)).length).toBe(2);
   const first = await offeredWords(page);
   const before = await storedModel(page);
   // Exposure requires a short dwell before continuing to type.
@@ -216,7 +221,8 @@ test('learned writing preferences can be paused and forgotten without changing t
   const answer = await openAnswer(page);
   await useFasterTyping(page);
   await typeDraft(page, answer, 'I think the re');
-  await expect.poll(async () => (await offeredWords(page)).length).toBe(3);
+  await expect(wordStrip(page).getByRole('button', {name: 'Keep re', exact: true})).toBeVisible();
+  await expect.poll(async () => (await offeredWords(page)).length).toBe(2);
   await refreshSuggestions(page);
   await expect.poll(async () => Object.keys((await storedModel(page))?.model.weights ?? {}).length).toBeGreaterThan(0);
   await page.getByRole('button', {name: 'Session actions', exact: true}).click();
@@ -518,6 +524,8 @@ test('the writing switches and full Off setting persist while manual typing and 
   await expect(wordStrip(page).locator('button:enabled')).toHaveCount(0);
   await expect(floating(page)).toHaveCount(0);
   await answer.press('Tab');
+  await expect(page.getByRole('button', {name: 'Use device keyboard', exact: true})).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(page.getByRole('button', {name: 'Keep keyboard open', exact: true})).toBeFocused();
   await page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: 'Space', exact: true}).click();
   await page.getByRole('button', {name: 'Maths symbols', exact: true}).click();

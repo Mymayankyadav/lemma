@@ -147,8 +147,8 @@ html[data-v6].lemma-native-sheet-open,html[data-v6].lemma-native-sheet-open body
 :root[data-v6] progress.lemma-goal-bar::-moz-progress-bar{background:var(--accent);border-radius:999px}
 
 /* N121 D4 · Learning charts: Good and Easy are told apart, labels never clip, tiles use sans figures. */
-:root[data-v6] .notebook-progress{--easy:#2f5f93}
-html[data-v6][data-theme=graph-night] .notebook-progress{--easy:#8fb8e6}
+:root[data-v6] .notebook-progress{--easy:var(--info)}
+html[data-v6][data-theme=graph-night] .notebook-progress{--easy:var(--info)}
 :root[data-v6] .notebook-progress svg{overflow:visible}
 :root[data-v6] .notebook-progress-content [style*="--font-num"]{font-family:var(--font-ui)!important;font-variant-numeric:tabular-nums}
 :root[data-v6] .notebook-metrics{align-items:stretch}

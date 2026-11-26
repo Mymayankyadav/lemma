@@ -32,7 +32,7 @@ export async function rasterizeInk(strokes:PadStrokes,width=3,accent=false) {
   ctx.fillStyle='#fff';
   ctx.fillRect(0,0,crop.width,crop.height);
   ctx.translate(-crop.x,-crop.y);
-  ctx.strokeStyle=accent?'#3730a3':'#171728';
+  ctx.strokeStyle=accent?'#a8476d':'#141413';
   ctx.lineWidth=width;
   ctx.lineCap='round';
   ctx.lineJoin='round';

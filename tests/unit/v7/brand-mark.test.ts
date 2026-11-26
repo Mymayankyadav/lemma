@@ -39,11 +39,11 @@ describe('Notebook app mark', () => {
   it('draws graph paper: the installed icon is paper-coloured with grid lines, a margin rule, the ℓ and the ∎', () => {
     const size = 512, px = rasterMark({size, theme: 'day', layout: 'full'});
     const at = (x: number, y: number) => Array.from(px.slice((Math.round(y * size) * size + Math.round(x * size)) * 4, (Math.round(y * size) * size + Math.round(x * size)) * 4 + 3));
-    const page = [0xF8, 0xF5, 0xF0], dist = (a: number[], b: number[]) => a.reduce((s, v, k) => s + Math.abs(v - b[k]), 0);
+    const page = [0xFA, 0xF9, 0xF5], dist = (a: number[], b: number[]) => a.reduce((s, v, k) => s + Math.abs(v - b[k]), 0);
     expect(dist(at(0.03, 0.03), page)).toBeLessThan(8);
     expect(dist(at(LAYOUTS.full.margin!, 0.1), page)).toBeGreaterThan(30);
     const [qx, qy, q] = LAYOUTS.full.qed!;
-    expect(dist(at(qx + q / 2, qy + q / 2), [0x42, 0x46, 0xC2])).toBeLessThan(6);
+    expect(dist(at(qx + q / 2, qy + q / 2), [0xA8, 0x47, 0x6D])).toBeLessThan(6);
   });
 
   it('writes a favicon that follows the device theme: ℓ on graph paper, no margin rule, ∎, gradient or text', () => {

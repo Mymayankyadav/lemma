@@ -14,30 +14,30 @@
           "name": "surface/page",
           "type": "COLOR",
           "modes": {
-            "day": "#F8F5F0",
-            "night": "#091023",
-            "day-hc": "#F8F5F0",
-            "night-hc": "#091023"
+            "day": "#FAF9F5",
+            "night": "#262624",
+            "day-hc": "#FAF9F5",
+            "night-hc": "#262624"
           }
         },
         {
           "name": "surface/sunken",
           "type": "COLOR",
           "modes": {
-            "day": "#F0ECE5",
-            "night": "#050A1B",
-            "day-hc": "#F0ECE5",
-            "night-hc": "#050A1B"
+            "day": "#FAF9F5",
+            "night": "#1F1E1D",
+            "day-hc": "#FAF9F5",
+            "night-hc": "#1F1E1D"
           }
         },
         {
           "name": "surface/raised",
           "type": "COLOR",
           "modes": {
-            "day": "#FEFCF9",
-            "night": "#11192C",
-            "day-hc": "#FEFCF9",
-            "night-hc": "#11192C"
+            "day": "#FFFFFF",
+            "night": "#30302E",
+            "day-hc": "#FFFFFF",
+            "night-hc": "#30302E"
           }
         },
         {
@@ -45,99 +45,99 @@
           "type": "COLOR",
           "modes": {
             "day": "#FFFFFF",
-            "night": "#192135",
+            "night": "#30302E",
             "day-hc": "#FFFFFF",
-            "night-hc": "#192135"
+            "night-hc": "#30302E"
           }
         },
         {
           "name": "surface/muted",
           "type": "COLOR",
           "modes": {
-            "day": "#E9E4DC",
-            "night": "#1E263B",
-            "day-hc": "#E9E4DC",
-            "night-hc": "#1E263B"
+            "day": "#FAF9F5",
+            "night": "#30302E",
+            "day-hc": "#FAF9F5",
+            "night-hc": "#30302E"
           }
         },
         {
           "name": "surface/muted-hover",
           "type": "COLOR",
           "modes": {
-            "day": "#E1DCD2",
-            "night": "#273045",
-            "day-hc": "#E1DCD2",
-            "night-hc": "#273045"
+            "day": "#F0EEE6",
+            "night": "#393937",
+            "day-hc": "#F0EEE6",
+            "night-hc": "#393937"
           }
         },
         {
           "name": "border/subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#DDD8D0",
-            "night": "#262D40",
-            "day-hc": "#DDD8D0",
-            "night-hc": "#262D40"
+            "day": "#E8E6DC",
+            "night": "#3D3D3A",
+            "day-hc": "#E8E6DC",
+            "night-hc": "#3D3D3A"
           }
         },
         {
           "name": "border/default",
           "type": "COLOR",
           "modes": {
-            "day": "#857F77",
-            "night": "#687082",
-            "day-hc": "#857F77",
-            "night-hc": "#687082"
+            "day": "#73726C",
+            "night": "#9C9A92",
+            "day-hc": "#73726C",
+            "night-hc": "#9C9A92"
           }
         },
         {
           "name": "border/strong",
           "type": "COLOR",
           "modes": {
-            "day": "#625D55",
-            "night": "#8A92A4",
-            "day-hc": "#625D55",
-            "night-hc": "#8A92A4"
+            "day": "#5E5D59",
+            "night": "#C2C0B6",
+            "day-hc": "#5E5D59",
+            "night-hc": "#C2C0B6"
           }
         },
         {
           "name": "text/primary",
           "type": "COLOR",
           "modes": {
-            "day": "#121B31",
-            "night": "#EEF2FA",
-            "day-hc": "#121B31",
-            "night-hc": "#EEF2FA"
+            "day": "#141413",
+            "night": "#FAF9F5",
+            "day-hc": "#141413",
+            "night-hc": "#FAF9F5"
           }
         },
         {
           "name": "text/secondary",
           "type": "COLOR",
           "modes": {
-            "day": "#40495C",
-            "night": "#B1B7C6",
-            "day-hc": "#40495C",
-            "night-hc": "#B1B7C6"
+            "day": "#5E5D59",
+            "night": "#C2C0B6",
+            "day-hc": "#5E5D59",
+            "night-hc": "#C2C0B6"
           }
         },
         {
           "name": "text/tertiary",
           "type": "COLOR",
           "modes": {
-            "day": "#5B6375",
-            "night": "#8B92A2",
-            "day-hc": "#5B6375",
-            "night-hc": "#8B92A2"
+            "day": "#73726C",
+            "night": "#9C9A92",
+            "day-hc": "#73726C",
+            "night-hc": "#9C9A92"
           }
         },
         {
           "name": "text/disabled",
           "type": "COLOR",
           "modes": {
-            "day": "#878C99",
-            "night": "#676D7C",
-            "day-hc": "#878C99",
-            "night-hc": "#676D7C"
+            "day": "#73726C",
+            "night": "#9C9A92",
+            "day-hc": "#73726C",
+            "night-hc": "#9C9A92"
           }
         },
         {
@@ -145,409 +145,409 @@
           "type": "COLOR",
           "modes": {
             "day": "#FFFFFF",
-            "night": "#FFFFFF",
+            "night": "#141413",
             "day-hc": "#FFFFFF",
-            "night-hc": "#FFFFFF"
+            "night-hc": "#141413"
           }
         },
         {
           "name": "action/bg",
           "type": "COLOR",
           "modes": {
-            "day": "#4246C2",
-            "night": "#5159D7",
-            "day-hc": "#4246C2",
-            "night-hc": "#5159D7"
+            "day": "#A8476D",
+            "night": "#D885A2",
+            "day-hc": "#A8476D",
+            "night-hc": "#D885A2"
           }
         },
         {
           "name": "action/hover",
           "type": "COLOR",
           "modes": {
-            "day": "#393BAF",
-            "night": "#5862E1",
-            "day-hc": "#393BAF",
-            "night-hc": "#5862E1"
+            "day": "#8F3A5B",
+            "night": "#E3A0B8",
+            "day-hc": "#8F3A5B",
+            "night-hc": "#E3A0B8"
           }
         },
         {
           "name": "action/pressed",
           "type": "COLOR",
           "modes": {
-            "day": "#313498",
-            "night": "#4C52D0",
-            "day-hc": "#313498",
-            "night-hc": "#4C52D0"
+            "day": "#8F3A5B",
+            "night": "#E3A0B8",
+            "day-hc": "#8F3A5B",
+            "night-hc": "#E3A0B8"
           }
         },
         {
           "name": "selection/subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#E2E8FF",
-            "night": "#232953",
-            "day-hc": "#E2E8FF",
-            "night-hc": "#232953"
+            "day": "#F2E7E7",
+            "night": "#423538",
+            "day-hc": "#F2E7E7",
+            "night-hc": "#423538"
           }
         },
         {
           "name": "selection/hover",
           "type": "COLOR",
           "modes": {
-            "day": "#D5DEFF",
-            "night": "#2C3363",
-            "day-hc": "#D5DEFF",
-            "night-hc": "#2C3363"
+            "day": "#EDDDDF",
+            "night": "#4D3B40",
+            "day-hc": "#EDDDDF",
+            "night-hc": "#4D3B40"
           }
         },
         {
           "name": "selection/fg",
           "type": "COLOR",
           "modes": {
-            "day": "#3738AC",
-            "night": "#B9C6FF",
-            "day-hc": "#3738AC",
-            "night-hc": "#B9C6FF"
+            "day": "#8F3A5B",
+            "night": "#E3A0B8",
+            "day-hc": "#8F3A5B",
+            "night-hc": "#E3A0B8"
           }
         },
         {
           "name": "focus/ring",
           "type": "COLOR",
           "modes": {
-            "day": "#4246C2",
-            "night": "#B1BFFF",
-            "day-hc": "#4246C2",
-            "night-hc": "#B1BFFF"
+            "day": "#A8476D",
+            "night": "#D885A2",
+            "day-hc": "#A8476D",
+            "night-hc": "#D885A2"
           }
         },
         {
           "name": "link/fg",
           "type": "COLOR",
           "modes": {
-            "day": "#4246C2",
-            "night": "#A9B8FF",
-            "day-hc": "#4246C2",
-            "night-hc": "#A9B8FF"
+            "day": "#A8476D",
+            "night": "#D885A2",
+            "day-hc": "#A8476D",
+            "night-hc": "#D885A2"
           }
         },
         {
           "name": "status/success",
           "type": "COLOR",
           "modes": {
-            "day": "#107C40",
-            "night": "#75D78D",
-            "day-hc": "#107C40",
-            "night-hc": "#75D78D"
+            "day": "#5A7A3A",
+            "night": "#8FAE6B",
+            "day-hc": "#5A7A3A",
+            "night-hc": "#8FAE6B"
           }
         },
         {
           "name": "status/success-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#E2F6E6",
-            "night": "#112917",
-            "day-hc": "#E2F6E6",
-            "night-hc": "#112917"
+            "day": "#F7F6F1",
+            "night": "#33362D",
+            "day-hc": "#F7F6F1",
+            "night-hc": "#33362D"
           }
         },
         {
           "name": "status/warning",
           "type": "COLOR",
           "modes": {
-            "day": "#9B610E",
-            "night": "#FFBF67",
-            "day-hc": "#9B610E",
-            "night-hc": "#FFBF67"
+            "day": "#946112",
+            "night": "#E0A84F",
+            "day-hc": "#946112",
+            "night-hc": "#E0A84F"
           }
         },
         {
           "name": "status/warning-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#FFF0DF",
-            "night": "#301F07",
-            "day-hc": "#FFF0DF",
-            "night-hc": "#301F07"
+            "day": "#F4F0E7",
+            "night": "#3C3629",
+            "day-hc": "#F4F0E7",
+            "night-hc": "#3C3629"
           }
         },
         {
           "name": "status/danger",
           "type": "COLOR",
           "modes": {
-            "day": "#9E1D1C",
-            "night": "#FF8579",
-            "day-hc": "#9E1D1C",
-            "night-hc": "#FF8579"
+            "day": "#C4453D",
+            "night": "#E5675F",
+            "day-hc": "#C4453D",
+            "night-hc": "#E5675F"
           }
         },
         {
           "name": "status/danger-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#FFE9E5",
-            "night": "#361A17",
-            "day-hc": "#FFE9E5",
-            "night-hc": "#361A17"
+            "day": "#F9F5F1",
+            "night": "#2A2725",
+            "day-hc": "#F9F5F1",
+            "night-hc": "#2A2725"
           }
         },
         {
           "name": "status/danger-solid",
           "type": "COLOR",
           "modes": {
-            "day": "#9E1D1C",
-            "night": "#BA2B28",
-            "day-hc": "#9E1D1C",
-            "night-hc": "#BA2B28"
+            "day": "#C4453D",
+            "night": "#E5675F",
+            "day-hc": "#C4453D",
+            "night-hc": "#E5675F"
           }
         },
         {
           "name": "status/danger-hover",
           "type": "COLOR",
           "modes": {
-            "day": "#94020D",
-            "night": "#AE2523",
-            "day-hc": "#94020D",
-            "night-hc": "#AE2523"
+            "day": "#AA3E37",
+            "night": "#E87D76",
+            "day-hc": "#AA3E37",
+            "night-hc": "#E87D76"
           }
         },
         {
           "name": "subject/analysis",
           "type": "COLOR",
           "modes": {
-            "day": "#00789C",
-            "night": "#17A9CB",
-            "day-hc": "#00789C",
-            "night-hc": "#17A9CB"
+            "day": "#3371A2",
+            "night": "#80B4E1",
+            "day-hc": "#3371A2",
+            "night-hc": "#80B4E1"
           }
         },
         {
           "name": "subject/analysis-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#D9F4FD",
-            "night": "#082831",
-            "day-hc": "#D9F4FD",
-            "night-hc": "#082831"
+            "day": "#E6F2FD",
+            "night": "#323C44",
+            "day-hc": "#E6F2FD",
+            "night-hc": "#323C44"
           }
         },
         {
           "name": "subject/topology",
           "type": "COLOR",
           "modes": {
-            "day": "#009C85",
-            "night": "#52D7C1",
-            "day-hc": "#009C85",
-            "night-hc": "#52D7C1"
+            "day": "#007E73",
+            "night": "#6AC0B5",
+            "day-hc": "#007E73",
+            "night-hc": "#6AC0B5"
           }
         },
         {
           "name": "subject/topology-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#DAF6EF",
-            "night": "#082A25",
-            "day-hc": "#DAF6EF",
-            "night-hc": "#082A25"
+            "day": "#E2F5F2",
+            "night": "#2F3E3C",
+            "day-hc": "#E2F5F2",
+            "night-hc": "#2F3E3C"
           }
         },
         {
           "name": "subject/logic",
           "type": "COLOR",
           "modes": {
-            "day": "#417934",
-            "night": "#74A968",
-            "day-hc": "#417934",
-            "night-hc": "#74A968"
+            "day": "#4B7A40",
+            "night": "#91BC88",
+            "day-hc": "#4B7A40",
+            "night-hc": "#91BC88"
           }
         },
         {
           "name": "subject/logic-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#E4F4E1",
-            "night": "#192916",
-            "day-hc": "#E4F4E1",
-            "night-hc": "#192916"
+            "day": "#E9F4E7",
+            "night": "#353D33",
+            "day-hc": "#E9F4E7",
+            "night-hc": "#353D33"
           }
         },
         {
           "name": "subject/number-theory",
           "type": "COLOR",
           "modes": {
-            "day": "#978722",
-            "night": "#CEC06A",
-            "day-hc": "#978722",
-            "night-hc": "#CEC06A"
+            "day": "#866617",
+            "night": "#C7AA6E",
+            "day-hc": "#866617",
+            "night-hc": "#C7AA6E"
           }
         },
         {
           "name": "subject/number-theory-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#F3EFD9",
-            "night": "#28240C",
-            "day-hc": "#F3EFD9",
-            "night-hc": "#28240C"
+            "day": "#F6EFE1",
+            "night": "#3F3A2F",
+            "day-hc": "#F6EFE1",
+            "night-hc": "#3F3A2F"
           }
         },
         {
           "name": "subject/algebra",
           "type": "COLOR",
           "modes": {
-            "day": "#9D5300",
-            "night": "#CE8545",
-            "day-hc": "#9D5300",
-            "night-hc": "#CE8545"
+            "day": "#866617",
+            "night": "#C7AA6E",
+            "day-hc": "#866617",
+            "night-hc": "#C7AA6E"
           }
         },
         {
           "name": "subject/algebra-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#FEEADB",
-            "night": "#321F0F",
-            "day-hc": "#FEEADB",
-            "night-hc": "#321F0F"
+            "day": "#F6EFE1",
+            "night": "#3F3A2F",
+            "day-hc": "#F6EFE1",
+            "night-hc": "#3F3A2F"
           }
         },
         {
           "name": "subject/combinatorics",
           "type": "COLOR",
           "modes": {
-            "day": "#C86265",
-            "night": "#FF9D9E",
-            "day-hc": "#C86265",
-            "night-hc": "#FF9D9E"
+            "day": "#4B7A40",
+            "night": "#91BC88",
+            "day-hc": "#4B7A40",
+            "night-hc": "#91BC88"
           }
         },
         {
           "name": "subject/combinatorics-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#FFE7E6",
-            "night": "#351C1C",
-            "day-hc": "#FFE7E6",
-            "night-hc": "#351C1C"
+            "day": "#E9F4E7",
+            "night": "#353D33",
+            "day-hc": "#E9F4E7",
+            "night-hc": "#353D33"
           }
         },
         {
           "name": "subject/geometry",
           "type": "COLOR",
           "modes": {
-            "day": "#984780",
-            "night": "#C97AAF",
-            "day-hc": "#984780",
-            "night-hc": "#C97AAF"
+            "day": "#6D60A1",
+            "night": "#AFA5E0",
+            "day-hc": "#6D60A1",
+            "night-hc": "#AFA5E0"
           }
         },
         {
           "name": "subject/geometry-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#FDE7F5",
-            "night": "#311C2A",
-            "day-hc": "#FDE7F5",
-            "night-hc": "#311C2A"
+            "day": "#F0EEFD",
+            "night": "#3A3944",
+            "day-hc": "#F0EEFD",
+            "night-hc": "#3A3944"
           }
         },
         {
           "name": "subject/probability",
           "type": "COLOR",
           "modes": {
-            "day": "#9E6EC0",
-            "night": "#D5A8F8",
-            "day-hc": "#9E6EC0",
-            "night-hc": "#D5A8F8"
+            "day": "#6D60A1",
+            "night": "#AFA5E0",
+            "day-hc": "#6D60A1",
+            "night-hc": "#AFA5E0"
           }
         },
         {
           "name": "subject/probability-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#F5E9FE",
-            "night": "#2A1E33",
-            "day-hc": "#F5E9FE",
-            "night-hc": "#2A1E33"
+            "day": "#F0EEFD",
+            "night": "#3A3944",
+            "day-hc": "#F0EEFD",
+            "night-hc": "#3A3944"
           }
         },
         {
           "name": "viz/heat1",
           "type": "COLOR",
           "modes": {
-            "day": "#7E8CAB",
-            "night": "#5560B8",
-            "day-hc": "#7E8CAB",
-            "night-hc": "#5560B8"
+            "day": "#B47D91",
+            "night": "#A17584",
+            "day-hc": "#B47D91",
+            "night-hc": "#A17584"
           }
         },
         {
           "name": "viz/heat2",
           "type": "COLOR",
           "modes": {
-            "day": "#516494",
-            "night": "#7C86DD",
-            "day-hc": "#516494",
-            "night-hc": "#7C86DD"
+            "day": "#A4607A",
+            "night": "#BD889A",
+            "day-hc": "#A4607A",
+            "night-hc": "#BD889A"
           }
         },
         {
           "name": "viz/heat3",
           "type": "COLOR",
           "modes": {
-            "day": "#2F4275",
-            "night": "#A9B3F2",
-            "day-hc": "#2F4275",
-            "night-hc": "#A9B3F2"
+            "day": "#944463",
+            "night": "#DA9AB1",
+            "day-hc": "#944463",
+            "night-hc": "#DA9AB1"
           }
         },
         {
           "name": "viz/heat4",
           "type": "COLOR",
           "modes": {
-            "day": "#172448",
-            "night": "#D6DDFF",
-            "day-hc": "#172448",
-            "night-hc": "#D6DDFF"
+            "day": "#8F3A5B",
+            "night": "#E3A0B8",
+            "day-hc": "#8F3A5B",
+            "night-hc": "#E3A0B8"
           }
         },
         {
           "name": "state/hover",
           "type": "COLOR",
           "modes": {
-            "day": "#121B310F",
-            "night": "#FFFFFF0F",
-            "day-hc": "#121B310F",
-            "night-hc": "#FFFFFF0F"
+            "day": "#F0EEE6",
+            "night": "#393937",
+            "day-hc": "#F0EEE6",
+            "night-hc": "#393937"
           }
         },
         {
           "name": "state/pressed",
           "type": "COLOR",
           "modes": {
-            "day": "#121B311F",
-            "night": "#FFFFFF1F",
-            "day-hc": "#121B311F",
-            "night-hc": "#FFFFFF1F"
+            "day": "#F2E7E7",
+            "night": "#423538",
+            "day-hc": "#F2E7E7",
+            "night-hc": "#423538"
           }
         },
         {
           "name": "viz/neutral",
           "type": "COLOR",
           "modes": {
-            "day": "#40495C",
-            "night": "#B1B7C6",
-            "day-hc": "#40495C",
-            "night-hc": "#B1B7C6"
+            "day": "#5E5D59",
+            "night": "#C2C0B6",
+            "day-hc": "#5E5D59",
+            "night-hc": "#C2C0B6"
           }
         },
         {
           "name": "viz/easy",
           "type": "COLOR",
           "modes": {
-            "day": "#1C64C8",
-            "night": "#58A6FF",
-            "day-hc": "#1C64C8",
-            "night-hc": "#58A6FF"
+            "day": "#3B74AB",
+            "night": "#6A9BCC",
+            "day-hc": "#3B74AB",
+            "night-hc": "#6A9BCC"
           }
         },
         {
@@ -1094,9 +1094,9 @@
           "name": "effects/backdrop",
           "type": "STRING",
           "modes": {
-            "day": "rgb(18 27 49 / 40%)",
+            "day": "rgb(20 20 19 / 40%)",
             "night": "rgb(0 0 0 / 60%)",
-            "day-hc": "rgb(18 27 49 / 40%)",
+            "day-hc": "rgb(20 20 19 / 40%)",
             "night-hc": "rgb(0 0 0 / 60%)"
           }
         },
@@ -1104,9 +1104,9 @@
           "name": "effects/shadow-1",
           "type": "STRING",
           "modes": {
-            "day": "0 1px 2px rgb(18 27 49 / 6%)",
+            "day": "0 1px 2px rgb(20 20 19 / 6%)",
             "night": "inset 0 1px rgb(255 255 255 / 5%)",
-            "day-hc": "0 1px 2px rgb(18 27 49 / 6%)",
+            "day-hc": "0 1px 2px rgb(20 20 19 / 6%)",
             "night-hc": "inset 0 1px rgb(255 255 255 / 5%)"
           }
         },
@@ -1114,9 +1114,9 @@
           "name": "effects/shadow-2",
           "type": "STRING",
           "modes": {
-            "day": "0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%)",
+            "day": "0 4px 12px rgb(20 20 19 / 8%),0 12px 32px rgb(20 20 19 / 10%)",
             "night": "inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%)",
-            "day-hc": "0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%)",
+            "day-hc": "0 4px 12px rgb(20 20 19 / 8%),0 12px 32px rgb(20 20 19 / 10%)",
             "night-hc": "inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%)"
           }
         },
@@ -1124,9 +1124,9 @@
           "name": "effects/shadow-3",
           "type": "STRING",
           "modes": {
-            "day": "0 24px 64px rgb(18 27 49 / 18%)",
+            "day": "0 24px 64px rgb(20 20 19 / 18%)",
             "night": "0 24px 64px rgb(0 0 0 / 60%)",
-            "day-hc": "0 24px 64px rgb(18 27 49 / 18%)",
+            "day-hc": "0 24px 64px rgb(20 20 19 / 18%)",
             "night-hc": "0 24px 64px rgb(0 0 0 / 60%)"
           }
         }
@@ -1140,10 +1140,10 @@
           "type": "COLOR",
           "description": "Page canvas, never a control",
           "modes": {
-            "day": "#F8F5F0",
-            "night": "#091023",
-            "day-hc": "#F8F5F0",
-            "night-hc": "#091023"
+            "day": "#FAF9F5",
+            "night": "#262624",
+            "day-hc": "#FAF9F5",
+            "night-hc": "#262624"
           }
         },
         {
@@ -1151,10 +1151,10 @@
           "type": "COLOR",
           "description": "Editable wells",
           "modes": {
-            "day": "#F0ECE5",
-            "night": "#050A1B",
-            "day-hc": "#F0ECE5",
-            "night-hc": "#050A1B"
+            "day": "#FAF9F5",
+            "night": "#1F1E1D",
+            "day-hc": "#FAF9F5",
+            "night-hc": "#1F1E1D"
           }
         },
         {
@@ -1162,10 +1162,10 @@
           "type": "COLOR",
           "description": "Ordinary paper/card",
           "modes": {
-            "day": "#FEFCF9",
-            "night": "#11192C",
-            "day-hc": "#FEFCF9",
-            "night-hc": "#11192C"
+            "day": "#FFFFFF",
+            "night": "#30302E",
+            "day-hc": "#FFFFFF",
+            "night-hc": "#30302E"
           }
         },
         {
@@ -1174,9 +1174,9 @@
           "description": "Menus, sheets and notifications",
           "modes": {
             "day": "#FFFFFF",
-            "night": "#192135",
+            "night": "#30302E",
             "day-hc": "#FFFFFF",
-            "night-hc": "#192135"
+            "night-hc": "#30302E"
           }
         },
         {
@@ -1184,10 +1184,10 @@
           "type": "COLOR",
           "description": "Secondary controls and neutral tags",
           "modes": {
-            "day": "#E9E4DC",
-            "night": "#1E263B",
-            "day-hc": "#E9E4DC",
-            "night-hc": "#1E263B"
+            "day": "#FAF9F5",
+            "night": "#30302E",
+            "day-hc": "#FAF9F5",
+            "night-hc": "#30302E"
           }
         },
         {
@@ -1195,10 +1195,10 @@
           "type": "COLOR",
           "description": "Semantic surface muted-hover role",
           "modes": {
-            "day": "#E1DCD2",
-            "night": "#273045",
-            "day-hc": "#E1DCD2",
-            "night-hc": "#273045"
+            "day": "#F0EEE6",
+            "night": "#393937",
+            "day-hc": "#F0EEE6",
+            "night-hc": "#393937"
           }
         },
         {
@@ -1206,10 +1206,10 @@
           "type": "COLOR",
           "description": "Semantic border subtle role",
           "modes": {
-            "day": "#DDD8D0",
-            "night": "#262D40",
-            "day-hc": "#DDD8D0",
-            "night-hc": "#262D40"
+            "day": "#E8E6DC",
+            "night": "#3D3D3A",
+            "day-hc": "#E8E6DC",
+            "night-hc": "#3D3D3A"
           }
         },
         {
@@ -1217,10 +1217,10 @@
           "type": "COLOR",
           "description": "Visible non-text edges, at least 3:1 on adjacent surfaces",
           "modes": {
-            "day": "#857F77",
-            "night": "#687082",
-            "day-hc": "#625D55",
-            "night-hc": "#8A92A4"
+            "day": "#73726C",
+            "night": "#9C9A92",
+            "day-hc": "#5E5D59",
+            "night-hc": "#C2C0B6"
           }
         },
         {
@@ -1228,10 +1228,10 @@
           "type": "COLOR",
           "description": "Semantic border strong role",
           "modes": {
-            "day": "#625D55",
-            "night": "#8A92A4",
-            "day-hc": "#625D55",
-            "night-hc": "#8A92A4"
+            "day": "#5E5D59",
+            "night": "#C2C0B6",
+            "day-hc": "#5E5D59",
+            "night-hc": "#C2C0B6"
           }
         },
         {
@@ -1239,10 +1239,10 @@
           "type": "COLOR",
           "description": "Primary readable copy",
           "modes": {
-            "day": "#121B31",
-            "night": "#EEF2FA",
-            "day-hc": "#121B31",
-            "night-hc": "#EEF2FA"
+            "day": "#141413",
+            "night": "#FAF9F5",
+            "day-hc": "#141413",
+            "night-hc": "#FAF9F5"
           }
         },
         {
@@ -1250,10 +1250,10 @@
           "type": "COLOR",
           "description": "Secondary readable copy",
           "modes": {
-            "day": "#40495C",
-            "night": "#B1B7C6",
-            "day-hc": "#121B31",
-            "night-hc": "#EEF2FA"
+            "day": "#5E5D59",
+            "night": "#C2C0B6",
+            "day-hc": "#141413",
+            "night-hc": "#FAF9F5"
           }
         },
         {
@@ -1261,10 +1261,10 @@
           "type": "COLOR",
           "description": "Placeholder and supporting details",
           "modes": {
-            "day": "#5B6375",
-            "night": "#8B92A2",
-            "day-hc": "#121B31",
-            "night-hc": "#EEF2FA"
+            "day": "#73726C",
+            "night": "#9C9A92",
+            "day-hc": "#141413",
+            "night-hc": "#FAF9F5"
           }
         },
         {
@@ -1272,10 +1272,10 @@
           "type": "COLOR",
           "description": "Clearly unavailable (exempt from text contrast)",
           "modes": {
-            "day": "#878C99",
-            "night": "#676D7C",
-            "day-hc": "#878C99",
-            "night-hc": "#676D7C"
+            "day": "#73726C",
+            "night": "#9C9A92",
+            "day-hc": "#73726C",
+            "night-hc": "#9C9A92"
           }
         },
         {
@@ -1284,9 +1284,9 @@
           "description": "Semantic text on-action role",
           "modes": {
             "day": "#FFFFFF",
-            "night": "#FFFFFF",
+            "night": "#141413",
             "day-hc": "#FFFFFF",
-            "night-hc": "#FFFFFF"
+            "night-hc": "#141413"
           }
         },
         {
@@ -1294,10 +1294,10 @@
           "type": "COLOR",
           "description": "Primary actions only",
           "modes": {
-            "day": "#4246C2",
-            "night": "#5159D7",
-            "day-hc": "#4246C2",
-            "night-hc": "#5159D7"
+            "day": "#A8476D",
+            "night": "#D885A2",
+            "day-hc": "#A8476D",
+            "night-hc": "#D885A2"
           }
         },
         {
@@ -1305,10 +1305,10 @@
           "type": "COLOR",
           "description": "Semantic action hover role",
           "modes": {
-            "day": "#393BAF",
-            "night": "#5862E1",
-            "day-hc": "#393BAF",
-            "night-hc": "#5862E1"
+            "day": "#8F3A5B",
+            "night": "#E3A0B8",
+            "day-hc": "#8F3A5B",
+            "night-hc": "#E3A0B8"
           }
         },
         {
@@ -1316,10 +1316,10 @@
           "type": "COLOR",
           "description": "Semantic action pressed role",
           "modes": {
-            "day": "#313498",
-            "night": "#4C52D0",
-            "day-hc": "#313498",
-            "night-hc": "#4C52D0"
+            "day": "#8F3A5B",
+            "night": "#E3A0B8",
+            "day-hc": "#8F3A5B",
+            "night-hc": "#E3A0B8"
           }
         },
         {
@@ -1327,10 +1327,10 @@
           "type": "COLOR",
           "description": "State selection only",
           "modes": {
-            "day": "#E2E8FF",
-            "night": "#232953",
-            "day-hc": "#E2E8FF",
-            "night-hc": "#232953"
+            "day": "#F2E7E7",
+            "night": "#423538",
+            "day-hc": "#F2E7E7",
+            "night-hc": "#423538"
           }
         },
         {
@@ -1338,10 +1338,10 @@
           "type": "COLOR",
           "description": "Semantic selection hover role",
           "modes": {
-            "day": "#D5DEFF",
-            "night": "#2C3363",
-            "day-hc": "#D5DEFF",
-            "night-hc": "#2C3363"
+            "day": "#EDDDDF",
+            "night": "#4D3B40",
+            "day-hc": "#EDDDDF",
+            "night-hc": "#4D3B40"
           }
         },
         {
@@ -1349,10 +1349,10 @@
           "type": "COLOR",
           "description": "Semantic selection fg role",
           "modes": {
-            "day": "#3738AC",
-            "night": "#B9C6FF",
-            "day-hc": "#3738AC",
-            "night-hc": "#B9C6FF"
+            "day": "#8F3A5B",
+            "night": "#E3A0B8",
+            "day-hc": "#8F3A5B",
+            "night-hc": "#E3A0B8"
           }
         },
         {
@@ -1360,10 +1360,10 @@
           "type": "COLOR",
           "description": "Keyboard focus, non-text contrast",
           "modes": {
-            "day": "#4246C2",
-            "night": "#B1BFFF",
-            "day-hc": "#4246C2",
-            "night-hc": "#B1BFFF"
+            "day": "#A8476D",
+            "night": "#D885A2",
+            "day-hc": "#A8476D",
+            "night-hc": "#D885A2"
           }
         },
         {
@@ -1371,10 +1371,10 @@
           "type": "COLOR",
           "description": "Semantic link fg role",
           "modes": {
-            "day": "#4246C2",
-            "night": "#A9B8FF",
-            "day-hc": "#4246C2",
-            "night-hc": "#A9B8FF"
+            "day": "#A8476D",
+            "night": "#D885A2",
+            "day-hc": "#A8476D",
+            "night-hc": "#D885A2"
           }
         },
         {
@@ -1382,10 +1382,10 @@
           "type": "COLOR",
           "description": "Completed or successful state",
           "modes": {
-            "day": "#107C40",
-            "night": "#75D78D",
-            "day-hc": "#107C40",
-            "night-hc": "#75D78D"
+            "day": "#5A7A3A",
+            "night": "#8FAE6B",
+            "day-hc": "#5A7A3A",
+            "night-hc": "#8FAE6B"
           }
         },
         {
@@ -1393,10 +1393,10 @@
           "type": "COLOR",
           "description": "Semantic status success-subtle role",
           "modes": {
-            "day": "#E2F6E6",
-            "night": "#112917",
-            "day-hc": "#E2F6E6",
-            "night-hc": "#112917"
+            "day": "#F7F6F1",
+            "night": "#33362D",
+            "day-hc": "#F7F6F1",
+            "night-hc": "#33362D"
           }
         },
         {
@@ -1404,10 +1404,10 @@
           "type": "COLOR",
           "description": "Attention required state",
           "modes": {
-            "day": "#9B610E",
-            "night": "#FFBF67",
-            "day-hc": "#9B610E",
-            "night-hc": "#FFBF67"
+            "day": "#946112",
+            "night": "#E0A84F",
+            "day-hc": "#946112",
+            "night-hc": "#E0A84F"
           }
         },
         {
@@ -1415,10 +1415,10 @@
           "type": "COLOR",
           "description": "Semantic status warning-subtle role",
           "modes": {
-            "day": "#FFF0DF",
-            "night": "#301F07",
-            "day-hc": "#FFF0DF",
-            "night-hc": "#301F07"
+            "day": "#F4F0E7",
+            "night": "#3C3629",
+            "day-hc": "#F4F0E7",
+            "night-hc": "#3C3629"
           }
         },
         {
@@ -1426,10 +1426,10 @@
           "type": "COLOR",
           "description": "Destructive or failed state",
           "modes": {
-            "day": "#9E1D1C",
-            "night": "#FF8579",
-            "day-hc": "#9E1D1C",
-            "night-hc": "#FF8579"
+            "day": "#C4453D",
+            "night": "#E5675F",
+            "day-hc": "#C4453D",
+            "night-hc": "#E5675F"
           }
         },
         {
@@ -1437,10 +1437,10 @@
           "type": "COLOR",
           "description": "Semantic status danger-subtle role",
           "modes": {
-            "day": "#FFE9E5",
-            "night": "#361A17",
-            "day-hc": "#FFE9E5",
-            "night-hc": "#361A17"
+            "day": "#F9F5F1",
+            "night": "#2A2725",
+            "day-hc": "#F9F5F1",
+            "night-hc": "#2A2725"
           }
         },
         {
@@ -1448,10 +1448,10 @@
           "type": "COLOR",
           "description": "Semantic status danger-solid role",
           "modes": {
-            "day": "#9E1D1C",
-            "night": "#BA2B28",
-            "day-hc": "#9E1D1C",
-            "night-hc": "#BA2B28"
+            "day": "#C4453D",
+            "night": "#E5675F",
+            "day-hc": "#C4453D",
+            "night-hc": "#E5675F"
           }
         },
         {
@@ -1459,10 +1459,10 @@
           "type": "COLOR",
           "description": "Semantic status danger-hover role",
           "modes": {
-            "day": "#94020D",
-            "night": "#AE2523",
-            "day-hc": "#94020D",
-            "night-hc": "#AE2523"
+            "day": "#AA3E37",
+            "night": "#E87D76",
+            "day-hc": "#AA3E37",
+            "night-hc": "#E87D76"
           }
         },
         {
@@ -1470,10 +1470,10 @@
           "type": "COLOR",
           "description": "Semantic subject analysis role",
           "modes": {
-            "day": "#00789C",
-            "night": "#17A9CB",
-            "day-hc": "#00789C",
-            "night-hc": "#17A9CB"
+            "day": "#3371A2",
+            "night": "#80B4E1",
+            "day-hc": "#3371A2",
+            "night-hc": "#80B4E1"
           }
         },
         {
@@ -1481,10 +1481,10 @@
           "type": "COLOR",
           "description": "Semantic subject analysis-subtle role",
           "modes": {
-            "day": "#D9F4FD",
-            "night": "#082831",
-            "day-hc": "#D9F4FD",
-            "night-hc": "#082831"
+            "day": "#E6F2FD",
+            "night": "#323C44",
+            "day-hc": "#E6F2FD",
+            "night-hc": "#323C44"
           }
         },
         {
@@ -1492,10 +1492,10 @@
           "type": "COLOR",
           "description": "Semantic subject topology role",
           "modes": {
-            "day": "#009C85",
-            "night": "#52D7C1",
-            "day-hc": "#009C85",
-            "night-hc": "#52D7C1"
+            "day": "#007E73",
+            "night": "#6AC0B5",
+            "day-hc": "#007E73",
+            "night-hc": "#6AC0B5"
           }
         },
         {
@@ -1503,10 +1503,10 @@
           "type": "COLOR",
           "description": "Semantic subject topology-subtle role",
           "modes": {
-            "day": "#DAF6EF",
-            "night": "#082A25",
-            "day-hc": "#DAF6EF",
-            "night-hc": "#082A25"
+            "day": "#E2F5F2",
+            "night": "#2F3E3C",
+            "day-hc": "#E2F5F2",
+            "night-hc": "#2F3E3C"
           }
         },
         {
@@ -1514,10 +1514,10 @@
           "type": "COLOR",
           "description": "Semantic subject logic role",
           "modes": {
-            "day": "#417934",
-            "night": "#74A968",
-            "day-hc": "#417934",
-            "night-hc": "#74A968"
+            "day": "#4B7A40",
+            "night": "#91BC88",
+            "day-hc": "#4B7A40",
+            "night-hc": "#91BC88"
           }
         },
         {
@@ -1525,10 +1525,10 @@
           "type": "COLOR",
           "description": "Semantic subject logic-subtle role",
           "modes": {
-            "day": "#E4F4E1",
-            "night": "#192916",
-            "day-hc": "#E4F4E1",
-            "night-hc": "#192916"
+            "day": "#E9F4E7",
+            "night": "#353D33",
+            "day-hc": "#E9F4E7",
+            "night-hc": "#353D33"
           }
         },
         {
@@ -1536,10 +1536,10 @@
           "type": "COLOR",
           "description": "Semantic subject number-theory role",
           "modes": {
-            "day": "#978722",
-            "night": "#CEC06A",
-            "day-hc": "#978722",
-            "night-hc": "#CEC06A"
+            "day": "#866617",
+            "night": "#C7AA6E",
+            "day-hc": "#866617",
+            "night-hc": "#C7AA6E"
           }
         },
         {
@@ -1547,10 +1547,10 @@
           "type": "COLOR",
           "description": "Semantic subject number-theory-subtle role",
           "modes": {
-            "day": "#F3EFD9",
-            "night": "#28240C",
-            "day-hc": "#F3EFD9",
-            "night-hc": "#28240C"
+            "day": "#F6EFE1",
+            "night": "#3F3A2F",
+            "day-hc": "#F6EFE1",
+            "night-hc": "#3F3A2F"
           }
         },
         {
@@ -1558,10 +1558,10 @@
           "type": "COLOR",
           "description": "Semantic subject algebra role",
           "modes": {
-            "day": "#9D5300",
-            "night": "#CE8545",
-            "day-hc": "#9D5300",
-            "night-hc": "#CE8545"
+            "day": "#866617",
+            "night": "#C7AA6E",
+            "day-hc": "#866617",
+            "night-hc": "#C7AA6E"
           }
         },
         {
@@ -1569,10 +1569,10 @@
           "type": "COLOR",
           "description": "Semantic subject algebra-subtle role",
           "modes": {
-            "day": "#FEEADB",
-            "night": "#321F0F",
-            "day-hc": "#FEEADB",
-            "night-hc": "#321F0F"
+            "day": "#F6EFE1",
+            "night": "#3F3A2F",
+            "day-hc": "#F6EFE1",
+            "night-hc": "#3F3A2F"
           }
         },
         {
@@ -1580,10 +1580,10 @@
           "type": "COLOR",
           "description": "Semantic subject combinatorics role",
           "modes": {
-            "day": "#C86265",
-            "night": "#FF9D9E",
-            "day-hc": "#C86265",
-            "night-hc": "#FF9D9E"
+            "day": "#4B7A40",
+            "night": "#91BC88",
+            "day-hc": "#4B7A40",
+            "night-hc": "#91BC88"
           }
         },
         {
@@ -1591,10 +1591,10 @@
           "type": "COLOR",
           "description": "Semantic subject combinatorics-subtle role",
           "modes": {
-            "day": "#FFE7E6",
-            "night": "#351C1C",
-            "day-hc": "#FFE7E6",
-            "night-hc": "#351C1C"
+            "day": "#E9F4E7",
+            "night": "#353D33",
+            "day-hc": "#E9F4E7",
+            "night-hc": "#353D33"
           }
         },
         {
@@ -1602,10 +1602,10 @@
           "type": "COLOR",
           "description": "Semantic subject geometry role",
           "modes": {
-            "day": "#984780",
-            "night": "#C97AAF",
-            "day-hc": "#984780",
-            "night-hc": "#C97AAF"
+            "day": "#6D60A1",
+            "night": "#AFA5E0",
+            "day-hc": "#6D60A1",
+            "night-hc": "#AFA5E0"
           }
         },
         {
@@ -1613,10 +1613,10 @@
           "type": "COLOR",
           "description": "Semantic subject geometry-subtle role",
           "modes": {
-            "day": "#FDE7F5",
-            "night": "#311C2A",
-            "day-hc": "#FDE7F5",
-            "night-hc": "#311C2A"
+            "day": "#F0EEFD",
+            "night": "#3A3944",
+            "day-hc": "#F0EEFD",
+            "night-hc": "#3A3944"
           }
         },
         {
@@ -1624,10 +1624,10 @@
           "type": "COLOR",
           "description": "Semantic subject probability role",
           "modes": {
-            "day": "#9E6EC0",
-            "night": "#D5A8F8",
-            "day-hc": "#9E6EC0",
-            "night-hc": "#D5A8F8"
+            "day": "#6D60A1",
+            "night": "#AFA5E0",
+            "day-hc": "#6D60A1",
+            "night-hc": "#AFA5E0"
           }
         },
         {
@@ -1635,10 +1635,10 @@
           "type": "COLOR",
           "description": "Semantic subject probability-subtle role",
           "modes": {
-            "day": "#F5E9FE",
-            "night": "#2A1E33",
-            "day-hc": "#F5E9FE",
-            "night-hc": "#2A1E33"
+            "day": "#F0EEFD",
+            "night": "#3A3944",
+            "day-hc": "#F0EEFD",
+            "night-hc": "#3A3944"
           }
         },
         {
@@ -1646,10 +1646,10 @@
           "type": "COLOR",
           "description": "Semantic viz heat1 role",
           "modes": {
-            "day": "#7E8CAB",
-            "night": "#5560B8",
-            "day-hc": "#7E8CAB",
-            "night-hc": "#5560B8"
+            "day": "#B47D91",
+            "night": "#A17584",
+            "day-hc": "#B47D91",
+            "night-hc": "#A17584"
           }
         },
         {
@@ -1657,10 +1657,10 @@
           "type": "COLOR",
           "description": "Semantic viz heat2 role",
           "modes": {
-            "day": "#516494",
-            "night": "#7C86DD",
-            "day-hc": "#516494",
-            "night-hc": "#7C86DD"
+            "day": "#A4607A",
+            "night": "#BD889A",
+            "day-hc": "#A4607A",
+            "night-hc": "#BD889A"
           }
         },
         {
@@ -1668,10 +1668,10 @@
           "type": "COLOR",
           "description": "Semantic viz heat3 role",
           "modes": {
-            "day": "#2F4275",
-            "night": "#A9B3F2",
-            "day-hc": "#2F4275",
-            "night-hc": "#A9B3F2"
+            "day": "#944463",
+            "night": "#DA9AB1",
+            "day-hc": "#944463",
+            "night-hc": "#DA9AB1"
           }
         },
         {
@@ -1679,10 +1679,10 @@
           "type": "COLOR",
           "description": "Semantic viz heat4 role",
           "modes": {
-            "day": "#172448",
-            "night": "#D6DDFF",
-            "day-hc": "#172448",
-            "night-hc": "#D6DDFF"
+            "day": "#8F3A5B",
+            "night": "#E3A0B8",
+            "day-hc": "#8F3A5B",
+            "night-hc": "#E3A0B8"
           }
         },
         {
@@ -1690,10 +1690,10 @@
           "type": "COLOR",
           "description": "Pointer state overlay; never a subject or status.",
           "modes": {
-            "day": "#121B310F",
-            "night": "#FFFFFF0F",
-            "day-hc": "#121B310F",
-            "night-hc": "#FFFFFF0F"
+            "day": "#F0EEE6",
+            "night": "#393937",
+            "day-hc": "#F0EEE6",
+            "night-hc": "#393937"
           }
         },
         {
@@ -1701,10 +1701,10 @@
           "type": "COLOR",
           "description": "Pointer state overlay; never a subject or status.",
           "modes": {
-            "day": "#121B311F",
-            "night": "#FFFFFF1F",
-            "day-hc": "#121B311F",
-            "night-hc": "#FFFFFF1F"
+            "day": "#F2E7E7",
+            "night": "#423538",
+            "day-hc": "#F2E7E7",
+            "night-hc": "#423538"
           }
         },
         {
@@ -1712,10 +1712,10 @@
           "type": "COLOR",
           "description": "Single-series amounts and meters that are not about a subject (never indigo, never a subject colour).",
           "modes": {
-            "day": "#40495C",
-            "night": "#B1B7C6",
-            "day-hc": "#40495C",
-            "night-hc": "#B1B7C6"
+            "day": "#5E5D59",
+            "night": "#C2C0B6",
+            "day-hc": "#5E5D59",
+            "night-hc": "#C2C0B6"
           }
         },
         {
@@ -1723,10 +1723,10 @@
           "type": "COLOR",
           "description": "The Easy grade in review charts and legends: a clear blue, distinct from Good (green), Hard (amber) and Again (red).",
           "modes": {
-            "day": "#1C64C8",
-            "night": "#58A6FF",
-            "day-hc": "#1C64C8",
-            "night-hc": "#58A6FF"
+            "day": "#3B74AB",
+            "night": "#6A9BCC",
+            "day-hc": "#3B74AB",
+            "night-hc": "#6A9BCC"
           }
         },
         {

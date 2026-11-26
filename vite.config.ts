@@ -17,7 +17,7 @@ const pushAutoStart = shouldStartPushWorker(FLAG_DEFAULTS.notificationsPush, all
 // Splash and installed-window colours follow the default shell: under v7 the Day paper page, matching the graph-paper
 // Notebook icon (D3 = C); under v6 the Graph-night page. Rolling v7Shell back flips these with it.
 // The build's own flags decide (production builds ignore overrides, so they follow FLAG_DEFAULTS).
-const installColour = resolveFlags({allowOverrides, envFlags: process.env.VITE_FLAGS ?? ''}).v7Shell ? '#F8F5F0' : '#13171D';
+const installColour = resolveFlags({allowOverrides, envFlags: process.env.VITE_FLAGS ?? ''}).v7Shell ? '#FAF9F5' : '#262624';
 // G0 (v7 UX audit r3): the papers index.html paints before the app loads follow the build's v7 flag.
 const paper = prePaintPaper(resolveFlags({allowOverrides, envFlags: process.env.VITE_FLAGS ?? ''}).v7Shell);
 const tutorModelDir = `models/tutor-symbols/${inkModel.assetSetVersion}`;

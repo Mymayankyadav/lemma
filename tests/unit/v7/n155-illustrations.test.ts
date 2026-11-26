@@ -38,16 +38,25 @@ describe('IL6 · ✓ means nothing is waiting, ∎ means you finished something'
 });
 
 describe('IL4 · accents', () => {
-  it('a badge is always the brand indigo; the subject colour stays on the object', () => {
+  it('a badge is always the brand accent; the subject colour stays on the object', () => {
     for (const name of ['calendar', 'review', 'inbox', 'tasks', 'round']) {
       expect(art[name].match(/<circle class="f" data-badge="" [^>]*r="13"/g), name).toHaveLength(1);
       expect(art[name], name).not.toMatch(/<circle class="f" cx/);
     }
     expect(css).toContain('.v7-il [data-badge] {fill:var(--v7-role-selection-fg);}');
   });
-  it('by day, topology and number theory take 20% ink so they clear 3 : 1 on the disc', () => {
-    expect(css).toMatch(/:where\(html\[data-v7\]:not\(\[data-theme="graph-night"\]\)\) :is\(\.v7-subject-3,\.v7-subject-4\) \.v7-il,/);
-    expect(css).toContain('--v7-il-accent:color-mix(in srgb,var(--v7-subject) 80%,var(--v7-role-text-primary));');
+  it('all supplied subject strokes clear 3 : 1 on the disc without darkening individual hues', () => {
+    expect(css).toContain('--v7-il-accent:var(--v7-subject,var(--v7-role-selection-fg));');
+    expect(css).not.toContain('--v7-il-accent:color-mix');
+    const tokens=JSON.parse(readFileSync('src/ui/v7/design-tokens.json','utf8'));
+    const luminance=(hex:string)=>{
+      const [r,g,b]=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+      return .2126*r+.7152*g+.0722*b;
+    };
+    for(const mode of ['day','night'])for(const name of Object.keys(tokens.subjectPalette.familyAssignments)){
+      const a=luminance(tokens.raw[mode]['subject.'+name].$value),b=luminance(tokens.raw[mode]['surface.muted'].$value);
+      expect((Math.max(a,b)+.05)/(Math.min(a,b)+.05),mode+' '+name).toBeGreaterThanOrEqual(3);
+    }
   });
 });
 

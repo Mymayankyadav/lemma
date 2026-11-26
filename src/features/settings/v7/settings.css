@@ -19,11 +19,13 @@
  :where(html[data-v7]) .v7-theme-card small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/1.2 var(--v7-sans);}
  /* Live previews: each card draws a tiny screen in its own theme's surfaces, so they read correctly in either theme. */
  :where(html[data-v7]) .v7-theme-preview {display:grid;gap:4px;width:100%;aspect-ratio:4 / 3;padding:8px;border-radius:var(--v7-radius-2);}
- :where(html[data-v7]) .v7-theme-preview[data-preview="day"] {background:#F7F6F1;}
- :where(html[data-v7]) .v7-theme-preview[data-preview="night"] {background:#0E1424;}
- :where(html[data-v7]) .v7-theme-preview[data-preview="auto"] {background:linear-gradient(135deg,#F7F6F1 50%,#0E1424 50%);}
- :where(html[data-v7]) .v7-theme-preview i {display:block;height:8px;border-radius:4px;background:#8A93A6;}
- :where(html[data-v7]) .v7-theme-preview i:first-child {width:60%;background:#5B5BD6;}
+ :where(html[data-v7]) .v7-theme-preview[data-preview="day"] {background:#FAF9F5;}
+ :where(html[data-v7]) .v7-theme-preview[data-preview="night"] {background:#262624;}
+ :where(html[data-v7]) .v7-theme-preview[data-preview="night"] i {background:#9C9A92;}
+ :where(html[data-v7]) .v7-theme-preview[data-preview="night"] i:first-child {background:#D885A2;}
+ :where(html[data-v7]) .v7-theme-preview[data-preview="auto"] {background:linear-gradient(135deg,#FAF9F5 50%,#262624 50%);}
+ :where(html[data-v7]) .v7-theme-preview i {display:block;height:8px;border-radius:4px;background:#73726C;}
+ :where(html[data-v7]) .v7-theme-preview i:first-child {width:60%;background:#A8476D;}
  :where(html[data-v7]) .v7-theme-preview i:last-child {width:80%;}
  :where(html[data-v7]) .v7-subject-dot {display:grid;place-items:center;width:40px;height:40px;border-radius:var(--v7-radius-2);background:var(--v7-subject-subtle,var(--v7-role-surface-muted));color:var(--v7-subject,var(--v7-role-text-secondary));}
  :where(html[data-v7]) .v7-subject-preview {display:grid;justify-items:center;gap:var(--v7-space-2);padding:var(--v7-space-3);border-radius:var(--v7-radius-3);background:var(--v7-subject-subtle,var(--v7-role-surface-muted));color:var(--v7-subject,var(--v7-role-text-secondary));}

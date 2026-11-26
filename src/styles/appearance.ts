@@ -21,7 +21,7 @@ function updateTheme(mode:AppearanceMode){
  root.dataset.theme=theme;root.dataset.appearanceMode=mode;
  root.dataset.density='compact';root.dataset.effects='calm';
  delete root.dataset.themePreference;
- document.querySelectorAll('meta[name="theme-color"]').forEach(meta=>meta.setAttribute('content',themes.find(t=>t.id===theme)?.t.bg||'#FAFAF6'));
+ document.querySelectorAll('meta[name="theme-color"]').forEach(meta=>meta.setAttribute('content',themes.find(t=>t.id===theme)?.t.bg||'#FAF9F5'));
  if(root.hasAttribute('data-v7'))syncThemeColour(root);
 }
 export const THEME_TURN_ATTR='data-v7-theme-turn';

@@ -13,7 +13,7 @@ export type ShareCard =
   | {kind: 'day'; date: string; figure: string; line: string; aim: string}
   | {kind: 'week'; minutes: number; reviews: number; demonstrated: number; days: readonly number[]; range: string};
 
-const PAPER = '#F8F5F0', GRID = '#E4DED3', INK = '#121B31', SECONDARY = '#4A5368', ACCENT = '#3738AC';
+const PAPER = '#FAF9F5', GRID = '#E8E6DC', INK = '#141413', SECONDARY = '#5E5D59', ACCENT = '#A8476D';
 
 const plural = (n: number, one: string, many = one + 's') => n + ' ' + (n === 1 ? one : many);
 function minutesText(minutes: number): string {
