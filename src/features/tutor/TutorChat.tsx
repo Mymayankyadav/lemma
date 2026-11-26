@@ -1,4 +1,4 @@
-import {BackToStudy,type TutorExamPanel} from '../exam/TutorExamTools';
+import {BackToStudy,ExamTutorStart,type TutorExamPanel} from '../exam/TutorExamTools';
 import {authGeneration,authOwner} from '../../data/authBoundary';
 import {getDemoProfile,getMode} from '../../data/mode';
 import {useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
@@ -204,9 +204,11 @@ export function TutorChat({page, turns, draft, acceptedSpans, onChange, onSend, 
         onWrite={!first && !readOnly ? () => setView('chat') : undefined}
         onBegin={() => send('Let’s study ' + page.detail.view.title + '. Start with one short question to check what I understand.', {includeObjective:true, keepDraft:true})}/>
         : <>
-          {!first && !readOnly && !sendingText && <div className="turn"><div className="msg a">
+          {!first && !readOnly && !sendingText && (page.exam
+            ? <ExamTutorStart sitting={page.exam} disabled={!canSend} onSend={text=>send(text,{keepDraft:true})}/>
+            : <div className="turn"><div className="msg a">
             <div className="bd"><MathText source={step || page.detail.view.title}/></div>
-          </div></div>}
+          </div></div>)}
           <TutorSelection.Provider value={{selected, select}}>{transcript}</TutorSelection.Provider>
           {sendingText&&<div className="ans" aria-label="Outgoing message">
             <div className="msg u"><div className="bd">{sendingText}</div></div><span className="ctag">Sending…</span>

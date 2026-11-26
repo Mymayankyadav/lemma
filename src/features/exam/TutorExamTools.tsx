@@ -1,6 +1,6 @@
 import {useId,useState,type FormEvent} from 'react'
 import {Link,useNavigate} from 'react-router'
-import {BookmarkPlus} from 'lucide-react'
+import {ArrowRight,BookmarkPlus} from 'lucide-react'
 import type {CardIdea,SittingChange,SittingRecord} from '../../data/exam/contract'
 import {getExamApi,useRefreshExam} from '../../data/exam/queries'
 import type {ProjectDetail} from '../../data/types'
@@ -20,9 +20,15 @@ export function TutorExamHeader({sitting,open,onOpen}:{
  sitting:SittingRecord;open:boolean;onOpen:()=>void;
 }){
  const time=remainingTime(sitting.starts_at)
- return <Button className="v7-exam-tutor-chip" aria-haspopup="dialog" aria-expanded={open} data-phase={sitting.phase} onClick={onOpen}>
-  {sitting.status==='finished'?'Exam finished':'Exam prep'} · {sitting.title}{time?' · '+time:''}{sitting.study_minutes!=null?' · '+formatDuration(sitting.study_minutes)+' left':''}
- </Button>
+ const status=sitting.status==='finished'?'Exam finished':'Exam prep'
+ const left=sitting.study_minutes!=null?formatDuration(sitting.study_minutes)+' left':''
+ // N251: the same centred title as the checkpoint tutor, with the exam status on a second line, so it never
+ // wraps into a three-line pill on a phone. The study budget shows on the "I have N min" chip; the accessible name keeps
+ // the whole sentence.
+ return <button type="button" className="v7-exam-tutor-title" aria-label={[status,sitting.title,time,left].filter(Boolean).join(' · ')}
+  aria-haspopup="dialog" aria-expanded={open} data-phase={sitting.phase} onClick={onOpen}>
+  <strong>{sitting.title}</strong><small>{[status,time].filter(Boolean).join(' · ')}</small>
+ </button>
 }
 
 export type TutorExamPanel='ledger'|'finish'|'postpone'|'budget'
@@ -84,17 +90,31 @@ export function BackToStudy({project,sitting,callback}:{project:ProjectDetail;si
   }catch(error){notify(error instanceof Error?error.message:'Could not pause exam prep.',{tone:'danger'})}
   finally{setBusy(false)}
  }
- return <Button disabled={busy||!online} onClick={()=>{void go()}}>Back to study</Button>
+ return <Button small disabled={busy||!online} onClick={()=>{void go()}}>Back to study</Button>
 }
 
 export function ExamChatNotice({sitting,slug}:{sitting:SittingRecord;slug:string}){
  const [dismissed,setDismissed]=useState(false)
  if(dismissed)return null
- return <div className="v7-exam-panel" aria-label="Active exam prep">
+ return <div className="v7-exam-panel v7-exam-chat-notice" aria-label="Active exam prep">
   <p>Exam prep is active for this subject.</p>
-  <div className="v7-exam-actions"><Link to={tutorHref(slug)+'?exam='+encodeURIComponent(sitting.id)}>Open exam chat</Link>
-   <Button onClick={()=>setDismissed(true)}>Dismiss</Button></div>
+  <div className="v7-exam-actions"><Link className="v7-button v7-secondary v7-small" to={tutorHref(slug)+'?exam='+encodeURIComponent(sitting.id)}>Open exam chat</Link>
+   <Button variant="ghost" small onClick={()=>setDismissed(true)}>Dismiss</Button></div>
  </div>
+}
+
+/** N251: an empty exam conversation opens like the checkpoint tutor's "On the table" card, not with a bare title. */
+export function ExamTutorStart({sitting,disabled,onSend}:{sitting:SittingRecord;disabled:boolean;onSend:(text:string)=>void}){
+ return <section className="tutor-start" aria-label="Start exam prep">
+  <div><p className="v7-eyebrow">Exam prep</p><h2>{sitting.title}</h2>
+   <p className="tutor-start-goal">Short, timed questions on your highest-mark topics. Your answers update the exam ledger.</p></div>
+  <div className="tutor-start-actions">
+   <Button variant="primary" small disabled={disabled} onClick={()=>onSend('Give me one short, gradable question on my highest-mark row that is not yet secure, and wait for my answer.')}>
+    Quick check<ArrowRight aria-hidden="true"/></Button>
+   <Button variant="ghost" small disabled={disabled} onClick={()=>onSend('Give me a short recap of my highest-mark row that is not yet secure. Record it as reading exposure, then offer a fresh item.')}>
+    Read a recap</Button>
+  </div>
+ </section>
 }
 
 export function TutorIdeaAction({sitting,slug,turnId,ideas,disabled,body}:{
@@ -135,7 +155,7 @@ export function TutorIdeaAction({sitting,slug,turnId,ideas,disabled,body}:{
    <form id={formId} className="v7-exam-form" onSubmit={submit}>
     <Field name="target" label="What should be retrievable?" minLength={3} maxLength={300} defaultValue={suggestion} required/>
     <Field name="reason" label="Why?" maxLength={300} defaultValue={existing[0]?.reason??diagnosis??''} optional/>
-    {!!concepts.length&&<label className="v7-field-group">Concept<select className="v7-field" name="concept"><option value="">Choose a concept</option>{concepts.map(concept=><option key={concept}>{concept}</option>)}</select></label>}
+    {!!concepts.length&&<label className="v7-field-group"><span>Concept</span><select className="v7-field" name="concept"><option value="">Choose a concept</option>{concepts.map(concept=><option key={concept}>{concept}</option>)}</select></label>}
     {error&&<p role="alert">{error}</p>}
    </form>
   </Sheet>}

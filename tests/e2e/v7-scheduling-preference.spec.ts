@@ -71,6 +71,7 @@ test('live Planning persists each owner choice through reload and leaves existin
     if (resource === 'rpc/lemma_plan_released') payload = true
     else if (resource === 'rpc/bootstrap') payload = settings(owner)
     else if (resource === 'rpc/home_summary') payload = {resume: null, due: 0, pendingProposals: 0, projects: []}
+    else if (resource === 'rpc/exam_home_summary') payload = {resume: null, due: 0, pendingProposals: 0, projects: [], exam: {sittings: []}}
     else if (resource === 'rpc/changes_since') payload = {changes: [], nextCursor: request.postDataJSON().p_cursor, reset: false}
     else if (resource === 'rpc/register_app_device') payload = null
     else if (resource === 'study_goals' && request.method() === 'HEAD') return route.fulfill({headers:{'content-range':'*/0'},body:''})

@@ -11,7 +11,7 @@ export function CountdownCard({sitting,now,online}:{sitting:ExamHomeSitting;now:
   {date&&<p>{date} · {remainingTime(sitting.starts_at,now)}</p>}
   {sitting.coverage&&<p>{marks(sitting.coverage.secure)}{sitting.total_marks?'/'+marks(sitting.total_marks):''} marks independently covered</p>}
   <div className="v7-exam-actions">
-   {online&&<Link className="v7-button v7-primary" to={tutorHref(sitting.slug)+'?'+new URLSearchParams({exam:sitting.id,question:'Use the exam planner for sitting '+sitting.id+' and help me with its next task.'})}><span>Prep now</span></Link>}
+   {online&&<Link className="v7-button v7-secondary" to={tutorHref(sitting.slug)+'?'+new URLSearchParams({exam:sitting.id,question:'Use the exam planner for sitting '+sitting.id+' and help me with its next task.'})}><span>Prep now</span></Link>}
    <Link className="v7-button v7-secondary" to={path+'?tab=exam&examSitting='+encodeURIComponent(sitting.id)}><span>Ledger</span></Link>
   </div>
  </section>

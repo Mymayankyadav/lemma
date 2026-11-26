@@ -70,7 +70,7 @@ export function IdeaItem({idea,slug,canEdit}:{idea:CardIdea;slug:string;canEdit:
    <form id={formId} className="v7-exam-form" onSubmit={submit}>
     {edit==='draft'&&<>
      <Field label="Front" name="front" defaultValue={idea.front??idea.target} maxLength={1500} required/>
-     <label className="v7-field-group">Back<textarea className="v7-field" name="back" defaultValue={idea.back??''} maxLength={3000}/></label>
+     <label className="v7-field-group"><span>Back</span><textarea className="v7-field" name="back" defaultValue={idea.back??''} maxLength={3000}/></label>
     </>}
     {edit==='update'&&<>
      <Field label="Retrieval target" name="target" defaultValue={idea.target} minLength={3} maxLength={300} required/>

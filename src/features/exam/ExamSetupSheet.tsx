@@ -1,4 +1,5 @@
 import {useId,useState,type FormEvent} from 'react'
+import {ChevronDown} from 'lucide-react'
 import type {BlueprintRow,CardMode,ExamSetup} from '../../data/exam/contract'
 import {cardModes} from '../../data/exam/contract'
 import type {ProjectDetail} from '../../data/types'
@@ -72,16 +73,16 @@ export function ExamSetupSheet({data,zone,mode,disabled,allowActivate,onSave,onC
        <Field name="duration" label="Duration (minutes)" type="number" min="5" max="600" defaultValue={120} required/>
        <Field name="marks" label="Total marks" type="number" min="0.01" max="10000" step="any" defaultValue={100} required/>
       </div>
-      <label className="v7-field-group">Goal
+      <label className="v7-field-group"><span>Goal</span>
        <select className="v7-field" value={pass?'pass':'marks'} onChange={event=>setPass(event.target.value==='pass')}>
         <option value="marks">Most marks</option><option value="pass">Reach a pass mark</option>
        </select>
       </label>
       {pass&&<Field name="pass" label="Pass mark" type="number" min="0" max="10000" step="any" required/>}
-      <label className="v7-field-group">Format notes <textarea className="v7-field" name="format" placeholder="Sections, choice rules or allowed aids" maxLength={1000}/></label>
-      {selectSources.length>0&&<details><summary>Exam sources</summary>
-       <div className="v7-exam-options">{selectSources.map(source=><label key={source.id} className="v7-exam-check">
-        <input type="checkbox" name="source" value={source.id}/> {source.title}
+      <label className="v7-field-group"><span>Format notes</span><textarea className="v7-field" name="format" placeholder="Sections, choice rules or allowed aids" maxLength={1000}/></label>
+      {selectSources.length>0&&<details className="v7-exam-disclosure"><summary><span>Exam sources</span><ChevronDown size={16} aria-hidden="true"/></summary>
+       <div className="v7-exam-options">{selectSources.map(source=><label key={source.id} className="v7-exam-check v7-check-choice">
+        <input type="checkbox" name="source" value={source.id}/><span>{source.title}</span>
        </label>)}</div></details>}
      </div>
     </fieldset>
@@ -112,12 +113,12 @@ export function ExamSetupSheet({data,zone,mode,disabled,allowActivate,onSave,onC
     <fieldset disabled={busy||disabled}>
      <legend>Cards during prep</legend>
      <div className="v7-exam-form">
-      <label className="v7-field-group">Card creation
+      <label className="v7-field-group"><span>Card creation</span>
        <select className="v7-field" name="cardMode" defaultValue={mode}>
         {cardModes.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
        </select>
       </label>
-      <label className="v7-exam-check"><input type="checkbox" disabled={!allowActivate} checked={allowActivate&&(activate??withinWeek)} onChange={event=>setActivate(event.target.checked)}/> Start prep now</label>
+      <label className="v7-exam-check v7-check-choice"><input type="checkbox" disabled={!allowActivate} checked={allowActivate&&(activate??withinWeek)} onChange={event=>setActivate(event.target.checked)}/><span>Start prep now</span></label>
      </div>
     </fieldset>
     {error&&<p role="alert">{error}</p>}

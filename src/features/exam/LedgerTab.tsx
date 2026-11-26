@@ -12,6 +12,12 @@ import {formatDuration} from '../../lib/format'
 
 type Editor = {kind:'row';base:SittingRecord;row?:BlueprintRow} | {kind:'skip'|'defer';row:BlueprintRow} | {kind:'time'} | {kind:'review';row:BlueprintRow;exposure:number}
 
+/** N251: the shared planner's sentence ("Compulsory <row>: 17.0 marks exposed.") as the app writes numbers elsewhere. */
+function conflictText(conflict:string){
+ const match=/^Compulsory (.+): (\d+(?:\.\d+)?) marks exposed\.$/.exec(conflict)
+ return match?<><strong>{match[1]}</strong> is compulsory · {marks(Number(match[2]))} marks exposed</>:conflict
+}
+
 export function LedgerTab({sitting,plan,project,now,disabled,onChange}:{
  sitting:SittingRecord;plan:ExamPlan;project:ProjectDetail;now:number;disabled:boolean
  onChange:(change:SittingChange,base?:SittingRecord)=>Promise<void>
@@ -77,7 +83,7 @@ export function LedgerTab({sitting,plan,project,now,disabled,onChange}:{
   </section>
   {plan.conflicts.length>0&&<section className="v7-exam-panel v7-exam-callout" aria-label="Coverage conflict">
    <h2 className="v7-subhead">Coverage conflict</h2>
-   <ul>{plan.conflicts.map(conflict=><li key={conflict}>{conflict}</li>)}</ul>
+   <ul>{plan.conflicts.map(conflict=><li key={conflict}>{conflictText(conflict)}</li>)}</ul>
    <div className="v7-exam-actions">
     {!closed&&<Button onClick={()=>open({kind:'time'})} disabled={changeDisabled}>Add time</Button>}
     <Button onClick={()=>document.getElementById('exam-ledger-rows')?.scrollIntoView({block:'start'})}>See plan</Button>

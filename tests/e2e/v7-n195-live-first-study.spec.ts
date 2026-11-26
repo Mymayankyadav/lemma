@@ -42,7 +42,7 @@ test('signed-in first card and grade recover both lost acknowledgements through 
   if(table==='rpc/lemma_plan_released')return answer(true);
   if(table==='rpc/study_run_item_available')return answer(true);
   if(table==='rpc/bootstrap'||table==='settings')return answer(settings);
-  if(table==='rpc/home_summary')return answer({projects:[],current:null,proposals:0,activeSession:null});
+  if(table==='rpc/home_summary'||table==='rpc/exam_home_summary')return answer({projects:[],current:null,proposals:0,activeSession:null,...(table==='rpc/exam_home_summary'?{exam:{sittings:[]}}:{})});
   if(table==='rpc/home_review_outlook')return answer({decks:[],forecast:[]});
   if(table==='rpc/search_cards_filtered_page')return answer(created.length?[{noteNo:14,front,projectSlug:'topology',status:'active',type:'basic',kind:'other',openComments:0}]:[]);
   if(table==='notes')return answer(req.headers().accept?.includes('object')?noteRow:[noteRow]);
@@ -137,7 +137,7 @@ async function reviewFixture(page:Page,options:{count:number;paused?:boolean;fut
   const visibleRuns=()=>runs.filter(run=>run.user_id===session.user.id);
   if(table==='rpc/lemma_plan_released')return reply(options.released??true);
   if(table==='rpc/bootstrap'||table==='settings')return reply(studySettings);
-  if(table==='rpc/home_summary')return reply({projects:[],current:null,proposals:0,activeSession:null});
+  if(table==='rpc/home_summary'||table==='rpc/exam_home_summary')return reply({projects:[],current:null,proposals:0,activeSession:null,...(table==='rpc/exam_home_summary'?{exam:{sittings:[]}}:{})});
   if(table==='rpc/home_review_outlook')return reply({decks:['topology','algebra'].map(slug=>({key:'project:'+slug,
    label:slug==='topology'?'Topology':'Algebra',due:dueCards().filter(row=>row.slug===slug).length,children:[]})),forecast:[]});
   if(table==='rpc/insights')return reply({});

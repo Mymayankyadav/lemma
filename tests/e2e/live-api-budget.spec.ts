@@ -61,6 +61,8 @@ const insights={
 const payloads:Record<string,unknown>={
  '/rpc/bootstrap':settings,
  '/rpc/home_summary':home,
+ // N251: with exam mode on, Today's single summary read is exam_home_summary (home_summary plus `exam`).
+ '/rpc/exam_home_summary':{...home,exam:{sittings:[]}},
  '/rpc/home_review_outlook':{
   decks:[{key:'project:math-0',label:'Mathematics project 1',glyph:'∫',
    level:0,due:4000,children:[]}],
@@ -138,7 +140,8 @@ for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
   const today=[...requests]
   expect(today.length,'Cold Today must make actual intercepted REST calls').toBeGreaterThan(0)
   expect(today.filter(r=>r.path==='/rpc/bootstrap')).toHaveLength(1)
-  expect(today.filter(r=>r.path==='/rpc/home_summary')).toHaveLength(1)
+  expect(today.filter(r=>r.path==='/rpc/exam_home_summary')).toHaveLength(1)
+  expect(today.filter(r=>r.path==='/rpc/home_summary')).toHaveLength(0)
   expect(withinBudget(today,3),'Cold Today total request and transfer budget').toBe(true)
   await page.screenshot({path:'test-results/screens/fix-484b-'+theme+'-'+viewport.width+'-today.png'})
 

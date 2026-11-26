@@ -259,8 +259,6 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
     finally{await exam.refresh();setModeBusy(false);}
    })();}}>{exam.pendingSetup?'Retry setup':'Retry Calendar update'}</Button></div>
   </section>}
-  {sitting&&recentExamReturn(sitting,exam.now)&&<ReturnCard sitting={sitting} slug={slug} projectTitle={project.title}
-   next={nextStudy} whatChanged={improvement?'Exam prep improved your latest evidence on '+improvement.row.title+'.':undefined} ideaCount={ideaCount}/>}
   {needsNextCourseDate&&<CourseContinuation project={project} zone={studyZone} online={online}
    onChanged={async()=>{await Promise.all([query.refetch(),exam.refresh(),queryClient.invalidateQueries({queryKey:['projects']})]);}}
    onArchive={()=>setStatus('archived','Path archived')}/>}
@@ -278,6 +276,9 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   </>}
   <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={visibleTabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
+   {/* N251: the return card opens the Plan tab instead of sitting between the header and the tabs (N157). */}
+   {tab==='Plan'&&sitting&&recentExamReturn(sitting,exam.now)&&<ReturnCard sitting={sitting} slug={slug} projectTitle={project.title}
+    next={nextStudy} whatChanged={improvement?'Exam prep improved your latest evidence on '+improvement.row.title+'.':undefined} ideaCount={ideaCount}/>}
    {tab==='Plan'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
     {stages.map(stage=>{
      const active=stage.checkpoints.some(cp=>cp.id===current?.id),minutes=estimates.minutes(stage.checkpoints);

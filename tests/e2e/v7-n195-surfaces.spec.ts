@@ -131,7 +131,7 @@ for(const proposalKind of ['plan','plan_change'])test(`structured ${proposalKind
   const answer=(value:unknown,count?:number)=>route.fulfill({json:value,headers:count===undefined?{}:{'content-range':count?`0-${count-1}/${count}`:'*/0','access-control-expose-headers':'Content-Range'}});
   if(table==='rpc/lemma_plan_released')return answer(true);
   if(table==='settings'||table==='rpc/bootstrap')return answer(settings);
-  if(table==='rpc/home_summary')return answer({projects:[],current:null,proposals:1,activeSession:null});
+  if(table==='rpc/home_summary'||table==='rpc/exam_home_summary')return answer({projects:[],current:null,proposals:1,activeSession:null,...(table==='rpc/exam_home_summary'?{exam:{sittings:[]}}:{})});
   if(table==='rpc/home_review_outlook')return answer({decks:[],forecast:[]});
   if(table==='rpc/project_summaries')return answer([]);
   if(table==='projects')return answer(single?project:[project]);
