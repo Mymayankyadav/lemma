@@ -40,6 +40,8 @@ const topText = (page: Page) => page.evaluate(() => {
 });
 
 test.describe('on an iPad', () => {
+  test.use({isMobile: true, hasTouch: true});
+
   for (const [name, hash] of [['Today', '#/'], ['Paths', '#/projects'], ['Review', '#/review'], ['Calendar', '#/calendar'],
     ['Progress', '#/insights'], ['Settings', '#/settings'], ['a Path', '#/p/real-analysis'], ['a checkpoint', '#/p/real-analysis/cp/CP4'],
     ['Inbox', '#/proposals'], ['the tutor', '#/p/real-analysis/cp/CP4/tutor'], ['Focus', '#/focus']] as const) {
@@ -161,6 +163,28 @@ test.describe('on an iPad', () => {
     await expect(page.locator('.v7-dock .v7-capture .v7-capture-label')).toBeVisible();
     await expect(page.getByRole('button', {name: 'Capture', exact: true})).toBeVisible();
   });
+
+  for (const [orientation, size] of [['portrait', PORTRAIT], ['landscape', LANDSCAPE]] as const) {
+    test(`C7 · Progress and recall charts use their displayed width and review dots respond to touch in ${orientation}`, async ({page}) => {
+      await asIPad(page, size);
+      await open(page, '#/insights');
+      const progress = page.locator('svg.v7-plot').first();
+      await expect(progress).toBeVisible();
+      const widthError = (svg: SVGSVGElement) => Math.abs(svg.getBoundingClientRect().width - svg.viewBox.baseVal.width);
+      await expect.poll(() => progress.evaluate(widthError)).toBeLessThanOrEqual(1);
+
+      await open(page, '#/cards/1');
+      const recall = page.locator('.v7-recall');
+      const plot = recall.locator('svg');
+      await expect(plot).toBeVisible();
+      await expect.poll(() => plot.evaluate(widthError)).toBeLessThanOrEqual(1);
+      const dot = recall.locator('.v7-recall-dot').last();
+      await dot.scrollIntoViewIfNeeded();
+      const point = (await dot.boundingBox())!;
+      await page.touchscreen.tap(point.x + point.width / 2, point.y + point.height / 2);
+      await expect(recall.locator('.v7-recall-hits button').last()).toHaveAttribute('aria-pressed', 'true');
+    });
+  }
 
   test('C9 · the Path\'s tabs start at the left with even gaps', async ({page}) => {
     for (const size of [PORTRAIT, LANDSCAPE]) {
