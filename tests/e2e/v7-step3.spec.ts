@@ -2,7 +2,9 @@ import {test,expect} from "@playwright/test";
 for(const mode of ["graph","graph-night"] as const){
  test("mathematical galleries and accessible charts work in "+mode,async({page})=>{
   await page.goto("/lemma/?demo=1&flags=v7Shell&theme="+mode+"#/kit");
-  const art=page.getByRole("region",{name:"Icons and mathematical emblems"}).locator(".v7-split-panel").first();
+  const gallery=page.getByRole("region",{name:"Icons and mathematical emblems",exact:true});
+  await gallery.waitFor({state:"visible"});
+  const art=gallery.locator(".v7-split-panel").first();
   await expect(art.locator(".v7-emblem-choice")).toHaveCount(9);
   await expect(art.locator(".v7-emblem-stage .v7-emblem")).toBeVisible();
   const charts=page.getByRole("region",{name:"Data visualisation"}).locator(".v7-split-panel").first();

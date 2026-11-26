@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {dismissTopLayer,hasDirtyLayer,hasOpenLayer,registerLayer,requestLayerClose,subscribeLayers} from '../../../src/ui/v7/layers';
+import {dismissTopLayer,hasDirtyLayer,hasOpenLayer,registerLayer,requestLayerClose,subscribeLayers,topLayerOwnsHistory} from '../../../src/ui/v7/layers';
 import {closeTopLayer} from '../../../src/platform/links';
 import {civilDate,dayKey,moveDay} from '../../../src/ui/v7/dateGrid';
 
@@ -49,6 +49,22 @@ describe('surface ownership',()=>{
     dismissTopLayer('back');
     expect(dismiss).toHaveBeenCalledWith('back');expect(owner).not.toHaveBeenCalled();
     b(false);a(false);
+  });
+  it('returns Back to the router for a clean URL-owned reader after its child closes',()=>{
+    let dirty=true;
+    const form=document.createElement('div'), reader=document.createElement('div'), list=document.createElement('div');
+    document.body.append(form,reader,list);
+    const a=registerLayer({element:form,role:'S3',trigger:null,dirty:()=>dirty,dismiss:vi.fn()});
+    const b=registerLayer({element:reader,role:'S3',owner:form,trigger:null,historyEntry:()=>true,dismiss:vi.fn()});
+    expect(topLayerOwnsHistory()).toBe(false);
+    dirty=false;
+    expect(topLayerOwnsHistory()).toBe(true);
+    const c=registerLayer({element:list,role:'S4',owner:reader,trigger:null,dismiss:vi.fn()});
+    expect(topLayerOwnsHistory()).toBe(false);
+    c(false);
+    expect(topLayerOwnsHistory()).toBe(true);
+    b(false);a(false);
+    expect(topLayerOwnsHistory()).toBe(false);
   });
 });
 describe('date grid roving cursor',()=>{

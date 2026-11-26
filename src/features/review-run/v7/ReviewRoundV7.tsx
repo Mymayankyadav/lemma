@@ -7,7 +7,7 @@ import {GradeGlyph,type GradeKey} from '../../../ui/v7/grades';
 import {fromEdge} from '../../../ui/v7/edges';
 import {haptic} from '../../../ui/v7/haptics';
 import {useToast} from '../../../ui/Toast';
-import {useEffect,useLayoutEffect,useMemo,useRef,useState,useSyncExternalStore,type PointerEvent as ReactPointerEvent} from 'react';
+import {useEffect,useId,useLayoutEffect,useMemo,useRef,useState,useSyncExternalStore,type PointerEvent as ReactPointerEvent} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Undo2,X} from 'lucide-react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -76,6 +76,7 @@ export default function ReviewRoundV7(){
  const [drag,setDrag]=useState<SwipeOffset|null>(null),[tracking,setTracking]=useState(false);
  const dragStart=useRef<{x:number;y:number;id:number;lastX:number;lastY:number;at:number;velocity:SwipeOffset}|null>(null);
  const gradeLock=useRef(false),cardNode=useRef<HTMLElement>(null),question=useRef<HTMLDivElement>(null);
+ const answer=useRef<HTMLDivElement>(null),answerHeading=useId();
  const incoming=useRef<{itemId:string;from?:SwipeOffset}|null>(null);
  const reduced=useMotionReduced();
  const pendingRef=useRef<{itemId:string;rating:Rating;swipe?:CommittedSwipe}|null>(null);
@@ -149,6 +150,9 @@ export default function ReviewRoundV7(){
   return ()=>{cancelled=true;};
  },[runId,link,repair,atomic,signedIn,queries,navigate]);
  useEffect(()=>{setRevealed(false);setConfidence(null);setStartTime(Date.now());setDrag(null);},[run?.id,run?.position]);
+ useLayoutEffect(()=>{
+  if(revealed)answer.current?.focus({preventScroll:true});
+ },[revealed]);
  useLayoutEffect(()=>{
   const next=incoming.current,node=cardNode.current;
   if(!node||!next||next.itemId!==item?.id||!card)return;
@@ -388,7 +392,8 @@ export default function ReviewRoundV7(){
      {!revealed?<div className="v7-review-confidence"><p>How sure? <span className="v7-meta">Optional</span></p>
       <div role="radiogroup" aria-label="How sure?">{(['sure','unsure','guess'] as const).map(value=><button key={value} type="button" role="radio" aria-checked={confidence===value}
        className="v7-filter-chip" onClick={()=>setConfidence(confidence===value?null:value)}>{value[0].toUpperCase()+value.slice(1)}</button>)}</div></div>
-     :<div className="v7-review-back"><p className="v7-eyebrow">Answer</p><MathText source={faces.back} variant="answer" interactiveMath/>
+     :<div className="v7-review-back" ref={answer} tabIndex={-1} role="group" aria-labelledby={answerHeading}>
+      <p className="v7-eyebrow" id={answerHeading}>Answer</p><MathText source={faces.back} variant="answer" interactiveMath/>
       <p className="v7-review-source">{card.sourceShort&&<span className="v7-meta">{card.sourceShort}{card.pageLabel?' p. '+card.pageLabel:''}</span>}
        {confidence&&<span className="v7-meta">You: {confidence[0].toUpperCase()+confidence.slice(1)}</span>}</p></div>}
      {busy&&pendingRef.current&&<span className="v7-review-pending" role="status">Saving answer…</span>}

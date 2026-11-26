@@ -5,6 +5,7 @@ import {useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExtern
 import {useQuery} from '@tanstack/react-query';
 import {Link, useLocation, useNavigate, useParams, useSearchParams} from 'react-router';
 import {setShellRoot} from '../../app/shellRoot';
+import {useRouteReadingFocus} from '../../app/v7/useRouteReadingFocus';
 import {loadShellFonts} from '../../app/shellFonts';
 import {authGeneration, authOwner, authSignedOut} from '../../data/authBoundary';
 import {getApi, LemmaError, type CheckpointDetail} from '../../data';
@@ -33,6 +34,7 @@ export default function OfflinePadPage() {
     return () => setShellRoot('legacy');
   }, [v7]);
   const location = useLocation(), navigate = useNavigate();
+  useRouteReadingFocus(location.pathname, v7);
   const online = navigator.onLine, demo = getMode() === 'demo';
   // Do not replace a cold-offline working copy merely because connectivity returns.
   const [onlineVisit, setOnlineVisit] = useState(online);

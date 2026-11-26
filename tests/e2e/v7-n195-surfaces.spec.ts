@@ -71,10 +71,22 @@ for(const width of [360,390])test(`Atlas dialogs contain keyboard focus and rest
   await expect(dialog).toBeVisible();
   expect(await dialog.evaluate(el=>el.matches(':modal'))).toBe(true);
   expect(await dialog.evaluate(el=>el.contains(document.activeElement))).toBe(true);
-  for(const key of ['Tab','Shift+Tab'])for(let i=0;i<12;i++){
-   await page.keyboard.press(key);
-   expect(await dialog.evaluate(el=>el.contains(document.activeElement)),name+' '+key+' step '+i).toBe(true);
-  }
+  const focusChecks=await dialog.evaluateHandle(element=>{
+   const observed:{backward:boolean;inside:boolean}[]=[];
+   const afterTab=(event:KeyboardEvent)=>{
+    if(event.key==='Tab')observed.push({backward:event.shiftKey,inside:element.contains(document.activeElement)});
+   };
+   document.addEventListener('keyup',afterTab,true);
+   return ()=>{
+    document.removeEventListener('keyup',afterTab,true);
+    return observed;
+   };
+  });
+  for(const key of ['Tab','Shift+Tab'])for(let i=0;i<12;i++)await page.keyboard.press(key);
+  const observed=await focusChecks.evaluate(read=>read());
+  await focusChecks.dispose();
+  expect(observed,name+' focus after each Tab and Shift+Tab').toEqual(
+   Array.from({length:24},(_,index)=>({backward:index>=12,inside:true})));
   expect(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
   if(name==='Pin on map')await captureEvidence(page,info,'atlas-pin-'+width+'-large-text');
   await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);

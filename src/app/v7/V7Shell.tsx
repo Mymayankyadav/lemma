@@ -4,7 +4,7 @@ import BootReady from '../BootReady';
 import LazyOverlay from './LazyOverlay';
 import RoutePending from './RoutePending';
 import {useRouteIntent} from './routeIntent';
-import {dismissTopLayer,hasOpenLayer,restoreLayerFocus} from '../../ui/v7/layers';
+import {dismissTopLayer,hasOpenLayer,restoreLayerFocus,topLayerOwnsHistory} from '../../ui/v7/layers';
 import {Children,isValidElement,Fragment,useContext,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type MouseEvent,type ReactNode,type RefObject} from 'react';
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {useDeviceCommands} from '../../platform/useDeviceCommands';
@@ -294,7 +294,11 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
 }
 
 function LayerBack(){
- const blocker=useBlocker(({historyAction})=>historyAction==='POP'&&hasOpenLayer());
+ const blocker=useBlocker(({historyAction,currentLocation,nextLocation})=>{
+  if(historyAction!=='POP'||!hasOpenLayer())return false;
+  const leaving=currentLocation.pathname!==nextLocation.pathname||currentLocation.search!==nextLocation.search;
+  return !leaving||!topLayerOwnsHistory();
+ });
  useEffect(()=>{
   if(blocker.state!=='blocked')return;
   blocker.reset();

@@ -9,6 +9,7 @@ import {setV6Root} from './v6Root';
 import {loadShellFonts} from './shellFonts';
 import {setShellRoot} from './shellRoot';
 import {v7Screen,V7_DETAIL_SCREENS} from './v7Kit';
+import {useRouteReadingFocus} from './v7/useRouteReadingFocus';
 import OfflineBanner from './OfflineBanner';
 import {RouteFallback} from './RouteError';
 import {retryLazy} from './lazyModule';
@@ -27,6 +28,7 @@ export default function AppShell(){
  // V32: the catch-all route (an address Lemma does not know) is a v7 page of its own when v7 is on.
  const notFound=useMatches().some(match=>(match.handle as {notFound?:boolean}|undefined)?.notFound===true);
  const screen=notFound&&isFlagOn('v7Shell')?'not-found':v7Screen(location.pathname,location.search),v7=screen!==null,v6=isFlagOn('v6Shell')&&!v7;
+ useRouteReadingFocus(location.pathname,v7);
  useLayoutEffect(()=>{setShellRoot(v7?'v7':v6?'v6':'legacy');if(!v7)setV6Root(v6);loadShellFonts(v7);return ()=>setShellRoot('legacy');},[v6,v7]);
  useLayoutEffect(()=>{document.documentElement.toggleAttribute('data-v7-room',v7&&isFlagOn('v7Room'));return()=>document.documentElement.removeAttribute('data-v7-room');},[v7]);
  const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas'&&(!v6||new URLSearchParams(location.search).get('view')==='map');

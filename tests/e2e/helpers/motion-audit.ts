@@ -8,8 +8,12 @@ type Snapshot={url:string;layers:string[];modal:number;focus:string;loading:stri
 async function state(page:Page):Promise<Snapshot>{
   return page.evaluate(()=>{
     const active=document.activeElement as HTMLElement|null;
+    const labelledBy=active?.getAttribute('aria-labelledby')?.split(/\s+/)
+      .map(id=>document.getElementById(id)?.textContent?.trim()).filter(Boolean).join(' ');
+    const focus=active?.getAttribute('aria-label')||labelledBy||
+      (active?.matches('h1,h2,h3,a,button')?active.textContent?.trim().slice(0,100):'')||active?.tagName||'';
     return {url:location.hash,layers:Array.from(document.querySelectorAll<HTMLElement>('[data-layer-active]'),el=>el.dataset.surfaceRole??''),
-      modal:document.querySelectorAll('dialog[open]').length, focus:active?.getAttribute('aria-label')||active?.tagName||'',
+      modal:document.querySelectorAll('dialog[open]').length, focus,
       loading:[...document.querySelectorAll<HTMLElement>('[data-loading-surface]')].filter(el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden').map(el=>el.dataset.loadingSurface!)};
   });
 }
@@ -85,7 +89,12 @@ export class MotionAudit {
     await this.page.addInitScript(()=>{
       const events:{event:string;name:string;at:number;duration:number;surface?:string}[]=[];
       const perf={layoutShift:0,longestTaskMs:0};
-      Object.assign(window,{__surfaceEvents:events,__surfacePerf:perf});
+      Object.assign(window,{__surfaceEvents:events,__surfacePerf:perf,__surfaceInputAt:0});
+      const markInput=()=>{
+        if(!Reflect.get(window,'__surfaceInputAt'))Reflect.set(window,'__surfaceInputAt',performance.timeOrigin+performance.now());
+      };
+      addEventListener('pointerdown',markInput,true);
+      addEventListener('keydown',markInput,true);
       for(const type of ['longtask','layout-shift']){
         if(!PerformanceObserver.supportedEntryTypes.includes(type))continue;
         new PerformanceObserver(list=>{
@@ -138,7 +147,10 @@ export class MotionAudit {
     };
     try{
       row.before=await state(this.page);
-      await this.page.evaluate(()=>{const perf=Reflect.get(window,'__surfacePerf');if(perf){perf.layoutShift=0;perf.longestTaskMs=0;}});
+      await this.page.evaluate(()=>{
+        const perf=Reflect.get(window,'__surfacePerf');if(perf){perf.layoutShift=0;perf.longestTaskMs=0;}
+        Reflect.set(window,'__surfaceInputAt',0);
+      });
       if(client){
         client.on('Page.screencastFrame',onFrame);
         const size=this.page.viewportSize()!;
@@ -148,6 +160,10 @@ export class MotionAudit {
       }
       row.inputAt=Date.now();
       await perform();await verify();
+      // Locator actionability may take several frames before the real press reaches the page.
+      // Direct URL changes have no pointer or key event and retain their navigation start.
+      const input=await this.page.evaluate(()=>Number(Reflect.get(window,'__surfaceInputAt')));
+      if(input>0)row.inputAt=input;
       row.settleMs=await this.settled();row.after=await state(this.page);
       row.family=family(row.before,row.after);
       row.performance=await this.page.evaluate(()=>Reflect.get(window,'__surfacePerf'));
@@ -175,7 +191,7 @@ export class MotionAudit {
         });
         expect(blocked).toEqual([]);
       }
-      if(row.after.layers.length)expect(row.after.focus).not.toBe('BODY');
+      expect(row.after.focus).not.toBe('BODY');
     }catch(err){
       row.error=String(err);delete row.family;
       row.after=await state(this.page).catch(()=>undefined);
@@ -197,7 +213,8 @@ export class MotionAudit {
         row.frames=await compareFrames(this.page,frames);
         const changed=row.frames.map((frame,i)=>frame.changed>.001?i:-1).filter(i=>i>=0);
         row.changeRuns=changed.filter((value,i)=>!i||value-changed[i-1]>2).length;
-        row.latencyMs=changed.length?Math.max(0,row.frames[changed[0]].at-(row.inputAt??0)):null;
+        const feedback=row.frames.find(frame=>frame.changed>.001&&frame.at>=(row.inputAt??0));
+        row.latencyMs=feedback?Math.round(feedback.at-(row.inputAt??0)):null;
       }
       this.rows.push(row);
     }

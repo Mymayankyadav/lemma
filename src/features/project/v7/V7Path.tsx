@@ -1,5 +1,5 @@
 import LazyOverlay from '../../../app/v7/LazyOverlay';
-import {createLazyModule,retryLazy} from '../../../app/lazyModule';
+import {createLazyModule} from '../../../app/lazyModule';
 import {useReadingIntent} from '../../../app/v7/readingIntent';
 import {CourseContinuation,coursePastDeadline} from '../../exam/CourseContinuation';
 import {useExamIdeas} from '../../../data/exam/queries';
@@ -16,7 +16,7 @@ import {LemmaError} from '../../../data/api';
 import {ProjectScheduler,PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../../adaptive/Views';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {ProofEnd} from '../../../ui/v7/ProofEnd';
-import {Suspense,useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,Suspense,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
@@ -53,7 +53,8 @@ import {actionTitle} from '../../exam/NextCard';
 import {examTutorHref} from '../../exam/model';
 import '../../exam/exam.css';
 
-const SourcesPanel=retryLazy(()=>import('./SourcesV7'));
+const sourcesModule=createLazyModule(()=>import('./SourcesV7'));
+const SourcesPanel=lazy(sourcesModule.read);
 const switchPath=createLazyModule(()=>import('../ProjectSwitcher'));
 const tabs=['Plan','Sessions','Sources','Cards','Exam'] as const;
 type Tab=typeof tabs[number];
@@ -141,6 +142,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const inIdeas=showIdeas&&params.get('cards')==='ideas';
  const requested=params.get('tab');
  const tab:Tab=tabs.find(item=>item.toLowerCase()===requested&&(item!=='Exam'||examEnabled&&(hasExam||exam.loading||!!exam.loadError)))??'Plan';
+ useEffect(()=>{if(tab==='Sources')sourcesModule.warm();},[tab]);
  const online=useOnline(),data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
  const estimates=usePathEstimates(cps);
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;

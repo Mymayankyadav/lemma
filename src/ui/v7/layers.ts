@@ -9,6 +9,7 @@ export interface Layer {
   owner?: Target;
   returnTarget?: () => Target;
   dirty?: () => boolean;
+  historyEntry?: () => boolean;
   dismiss: (reason: DismissReason) => void;
 }
 let sequence = 0;
@@ -26,6 +27,10 @@ function top(doc: Document) { for (let i = stack.length - 1; i >= 0; i--) if (st
 export function hasOpenLayer(doc: Document = document): boolean { return !!top(doc); }
 export function hasDirtyLayer(doc: Document = document): boolean {
   return stack.some(layer => layer.element.ownerDocument === doc && layer.dirty?.());
+}
+export function topLayerOwnsHistory(doc: Document = document): boolean {
+  const layer = top(doc);
+  return !!layer?.historyEntry?.() && !hasDirtyLayer(doc);
 }
 export function dismissTopLayer(reason: DismissReason, doc: Document = document): boolean {
   const layer = top(doc);

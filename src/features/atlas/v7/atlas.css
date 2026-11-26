@@ -149,7 +149,7 @@
  :where(html[data-v7]) .v7-atlas-actions > a {text-decoration:none;}
  :where(html[data-v7]) .v7-atlas-sheet-more {display:grid;gap:var(--v7-space-4);padding-top:var(--v7-space-2);border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
  :where(html[data-v7]) .v7-atlas-sheet-swap {position:relative;min-width:0;}
- :where(html[data-v7]) .v7-atlas-sheet-content {display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-atlas-sheet-content {display:grid;gap:var(--v7-atlas-detail-gap);}
  :where(html[data-v7]) .v7-atlas-sheet-content[data-exiting] {position:absolute;inset:0;pointer-events:none;}
  @media (prefers-reduced-motion: no-preference) {
   :where(html[data-v7]:not([data-motion="reduced"])) .v7-atlas-sheet:not([data-dragging]) {transition:transform var(--motion-sheet) var(--spring-sheet);}
@@ -241,7 +241,7 @@
 /* N223 (Owner: "why no breathing room in the concept"): the peek grows with its content and the reader's text size
    instead of a fixed 196 px, so the title, the chips and the actions never overlap; the title is not hyphenated, and
    each row has room around it. */
-:where(html[data-v7]) .v7-atlas-sheet {gap:6px;}
+:where(html[data-v7]) .v7-atlas-sheet {--v7-atlas-detail-gap:6px;gap:var(--v7-atlas-detail-gap);}
 :where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] {max-height:calc(min(46dvh,var(--atlas-detail-max)) + var(--v7-safe-bottom));
  padding-block-start:var(--v7-space-1);}
 :where(html[data-v7]) .v7-atlas-sheet-head {align-items:flex-start;}

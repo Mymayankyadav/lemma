@@ -40,12 +40,16 @@ test('More retains the Study path and cancelling discards the draft',async({page
  const title='Unsaved study fixture';
  await sheet.getByRole('textbox',{name:'Calendar block title'}).fill(title);
  await sheet.getByRole('button',{name:'Path: No path'}).click();
- await page.getByRole('dialog',{name:'Path',exact:true}).getByRole('radio',{name:'Real Analysis',exact:true}).check();
+ await page.getByRole('dialog',{name:'Path',exact:true}).getByRole('radio',{name:'Real Analysis',exact:true}).click();
+ await expect(sheet.getByRole('button',{name:'Path: Real Analysis',exact:true})).toBeFocused();
  await sheet.getByRole('button',{name:'More',exact:true}).click();
  await expect(sheet.getByRole('radio',{name:'Study'})).toBeChecked();
  await expect(sheet.getByRole('button',{name:'Path: Real Analysis',exact:true})).toBeVisible();
  await expect(sheet.getByRole('button',{name:'Checkpoint: No checkpoint'})).toBeVisible();
  await sheet.getByRole('button',{name:'Cancel'}).click();
+ const discard=page.getByRole('dialog',{name:'Discard changes?',exact:true});
+ await expect(discard.getByRole('button',{name:'Keep editing',exact:true})).toBeFocused();
+ await discard.getByRole('button',{name:'Discard changes',exact:true}).click();
  await expect(sheet).toBeHidden();
  await expect(page).not.toHaveURL(/new=block|quick=1/);
  await page.reload();

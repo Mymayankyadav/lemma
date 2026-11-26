@@ -2,7 +2,7 @@ import {expect,test} from '@playwright/test';
 import {MotionAudit} from './helpers/motion-audit';
 import {NOW} from './v7-scenes';
 
-// Route catalog repeats are kept separate from input-driven recordings in v7-surface-audit.
+// Direct route visits complement the input-driven Search, Capture and Review recordings.
 const catalog=[
   ['01','Today','/','main[aria-label="Today"]'],['03','Welcome','/welcome','main[aria-label="Welcome"]'],
  ['06','Calendar','/calendar?view=day&date=2026-11-09','.v7-cal[data-calendar-view="day"]'],

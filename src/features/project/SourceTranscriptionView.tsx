@@ -10,8 +10,9 @@ import {Button} from '../../ui/v7/components';
 import './sources-surfaces.css';
 import {sourceMarkdown,sourceTex} from './transcriptionExport';
 
-export function SourceTranscriptionView({source,stat,initiallyOpen=false,showCoverage=true,v7=false}:{
- source:Source;stat:SourceTranscriptionStat|undefined;initiallyOpen?:boolean;showCoverage?:boolean;v7?:boolean
+export function SourceTranscriptionView({source,stat,initiallyOpen=false,showCoverage=true,v7=false,onDirtyChange}:{
+ source:Source;stat:SourceTranscriptionStat|undefined;initiallyOpen?:boolean;showCoverage?:boolean;v7?:boolean;
+ onDirtyChange?:(dirty:boolean)=>void;
 }){
  const Control=v7?Button:'button';
  const [open,setOpen]=useState(initiallyOpen),[page,setPage]=useState(1);
@@ -23,6 +24,7 @@ export function SourceTranscriptionView({source,stat,initiallyOpen=false,showCov
  const pdf=useSourcePdfUrl(open?source.id:'');
  const transcribed=current.data?.transcribedBy;
  useEffect(()=>{setEditing(false);setDraft(current.data?.body??'')},[current.data?.body,page]);
+ useEffect(()=>{onDirtyChange?.(editing&&draft!==(current.data?.body??''));},[current.data?.body,draft,editing,onDirtyChange]);
  const go=(next:number)=>{setPage(Math.min(count,Math.max(1,next)));setEditing(false)};
  const save=async(patch:{body?:string;confidence?:'high'|'check'})=>{
   try{

@@ -28,6 +28,7 @@ export interface SheetProps {
   eyebrow?: string; footer?: ReactNode; full?: boolean; className?: string;
   hideTitle?: boolean; closeLabel?: string; focusTitle?: boolean; containFocus?: boolean;
   dirty?: boolean; onRequestDiscard?: () => void; onBack?: () => void;
+  historyEntry?: boolean;
   returnTarget?: () => HTMLElement | null;
   surfaceRole?: 'S3' | 'S5';
 }
@@ -64,7 +65,8 @@ export function Sheet(props: SheetProps) {
       current.onClose();
     }
     const release = registerLayer({element:dialog, role:surfaceRole, owner:parent, trigger,
-      dirty:() => !!latest.current.dirty, returnTarget:() => latest.current.returnTarget?.() ?? null, dismiss});
+      dirty:() => !!latest.current.dirty, historyEntry:() => !!latest.current.historyEntry,
+      returnTarget:() => latest.current.returnTarget?.() ?? null, dismiss});
     if (typeof dialog.showModal === 'function') dialog.showModal();
     else dialog.setAttribute('open','');
     const focus = dialog.querySelector<HTMLElement>('[data-v7-autofocus="true"]') ??

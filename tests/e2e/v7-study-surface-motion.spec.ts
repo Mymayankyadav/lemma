@@ -52,6 +52,7 @@ test('Review continues a committed swipe from the release point and focuses the 
  await page.goto(at('/review'));
  await page.getByRole('button',{name:/^(Start review, \d+ cards?|Resume)/}).first().click();
  await page.getByRole('button',{name:'Show answer'}).click();
+ await expect(page.getByRole('group',{name:'Answer',exact:true})).toBeFocused();
  const card=page.getByRole('article',{name:'Review card',exact:true}),box=await card.boundingBox();
  expect(box).not.toBeNull();
  await card.evaluate(node=>{
@@ -86,6 +87,7 @@ test('rapid review grade keys are accepted once per revealed card',async({page})
  await expect(progress).toHaveAttribute('aria-valuenow','0');
  for(let number=1;number<=5;number++){
   await page.keyboard.press('Space');
+  await expect(page.getByRole('group',{name:'Answer',exact:true})).toBeFocused();
   await expect(page.getByRole('group',{name:'Grade answer',exact:true})).toBeVisible();
   for(let repeat=0;repeat<5;repeat++)await page.keyboard.press('3');
   await expect(progress).toHaveAttribute('aria-valuenow',String(number));
