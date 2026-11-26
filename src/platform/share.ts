@@ -25,10 +25,16 @@ let pendingSources: File[] = [];
 export function holdSharedSources(files: File[]): void {pendingSources.push(...files);if(typeof window!=='undefined')window.dispatchEvent(new Event('lemma:shared-sources'));}
 export function takeSharedSources(): File[] {const files = pendingSources; pendingSources = []; return files;}
 
-/** Text waiting for the Capture sheet (read once). */
-let pendingCapture: string | null = null;
-export function holdCaptureText(text: string): void {pendingCapture = text;}
-export function takeCaptureText(): string | null {const text = pendingCapture; pendingCapture = null; return text;}
+/** Texts waiting for Capture, in the order the native queue supplied them. */
+type PendingCapture=Readonly<{id:number;text:string}>;
+const pendingCaptures:PendingCapture[]=[];
+let captureSequence=0;
+export function holdCaptureText(text: string): void {pendingCaptures.push({id:++captureSequence,text});}
+/** Render only peeks: React may render a sheet twice or abandon it before committing. */
+export function peekCaptureText():PendingCapture|null {return pendingCaptures[0]??null;}
+/** A committed sheet acknowledges its own item, once even when effects replay. */
+export function acknowledgeCaptureText(id:number):void {if(pendingCaptures[0]?.id===id)pendingCaptures.shift();}
+export function takeCaptureText(): string | null {return pendingCaptures.shift()?.text??null;}
 
 /** What was shared since the last look: always a list, empty when nothing was shared or the plugin answered oddly. */
 export async function sharedItems(native: {shareTake(): Promise<{items?: SharedItem[] | null}>}): Promise<SharedItem[]> {

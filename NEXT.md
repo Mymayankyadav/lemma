@@ -42,6 +42,16 @@ Tests: tests/unit/pad/latent-ink-{model,policy}.test.ts; tests/unit/pad/latent-i
 Scope: src/features/pad/latentInk/**; src/features/pad/{PadMathKeyboard,LocalPadEditor}.tsx; src/features/pad/pad-math-keyboard.css; src/flags.ts (padLatentInk, off); scripts/latent-ink-grids.ts; tests/unit/pad/latent-ink-*; docs/current/N248.md; NEXT.md.
 Not: new dependencies; turning the flag on; the tutor's keyboard; claiming physical-device or calibrated-handwriting validation.
 
+## N239 Resolve critical known data and privacy issues
+
+Owner task: "Start working on resolving known issues of the lemma repo and fix all the critical in one run."
+Owner follow-up: "What model are you. Answer this then fix critical issues in lemma repo"
+Stage: Harden · Status: done · Needs: — · Assigned: chat-742#q8m2
+Done = All open P1 reports are reproduced or verified already protected, remaining defects receive tested fixes, and directly related silent data-loss and mathematical-identity regressions are covered in one reviewable PR. Record precise results and remaining release gates.
+Tests: focused unit regressions, full migrated SQL owner/isolation/undo/retry cases, typecheck, repository lint, build and affected browser checks where supported.
+Scope: src app/data/features/platform; supabase/functions; additive supabase/migrations; tests/unit; tests/mcp; tests/e2e; relevant capability documentation; docs/current/N239.md; NEXT.md.
+Not: modifying protected CI or existing migrations, production data curation, merging held PRs, or unreviewed production deployment.
+
 ## N240 Exam preparation and return to study (includes N241–N247)
 
 Owner task: "Implement every thing remaining in this plan in one pr."

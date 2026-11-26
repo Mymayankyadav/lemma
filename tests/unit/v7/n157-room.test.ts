@@ -1,10 +1,12 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {FLAG_DEFAULTS} from '../../../src/flags';
 import {overdueParts,readRoomRecent,rememberRoomItem,ROOM_RECENT_KEY} from '../../../src/ui/v7/room';
+import {recentStorageKey} from '../../../src/ui/v7/recentScope';
+import {publishAuth} from '../../../src/data/authBoundary';
 import {AtlasScene,type ScenePalette} from '../../../src/features/atlas/v7/scene';
 import type {AtlasModel} from '../../../src/features/atlas/v7/model';
 
-beforeEach(()=>localStorage.clear());
+beforeEach(()=>{localStorage.clear();sessionStorage.clear();history.replaceState({},'','/?demo=0');publishAuth({id:'room-test-owner'});});
 describe('U3 local navigation history',()=>{
  it('is opt-in and keeps exactly the last three distinct destinations, newest first',()=>{
   expect(FLAG_DEFAULTS.v7Room).toBe(false);
@@ -24,8 +26,9 @@ describe('U3 local navigation history',()=>{
  });
  it('rejects malformed storage, external URLs, control characters and unknown groups',()=>{
   const item={id:'1',group:'Cards',title:'Card',to:'/cards/1'};
-  for(const value of ['{','null','{}']){localStorage.setItem(ROOM_RECENT_KEY,value);expect(readRoomRecent()).toEqual([]);}
-  localStorage.setItem(ROOM_RECENT_KEY,JSON.stringify([null,{}, {...item,to:'https://example.com'}, {...item,to:'//example.com'}, {...item,to:'/cards/\\evil'}, {...item,group:'Unknown'},item]));
+  const key=recentStorageKey(ROOM_RECENT_KEY)!;
+  for(const value of ['{','null','{}']){localStorage.setItem(key,value);expect(readRoomRecent()).toEqual([]);}
+  localStorage.setItem(key,JSON.stringify([null,{}, {...item,to:'https://example.com'}, {...item,to:'//example.com'}, {...item,to:'/cards/\\evil'}, {...item,group:'Unknown'},item]));
   expect(readRoomRecent()).toEqual([item]);
  });
  it('still opens pages when device storage is unavailable',()=>{

@@ -24,6 +24,7 @@ import './atlas.css';
 import {isFlagOn} from '../../../flags';
 import {matchesFilter,type AtlasFilter} from './filters';
 import {rememberRoomItem} from '../../../ui/v7/room';
+import {recentSession} from '../../../ui/v7/recentScope';
 import {ConceptFacets} from '../../adaptive/panels/ConceptFacets';
 import {typedEdges} from './typedLinks';
 import {AtlasLayerContent,AtlasLayers,usedBridges} from '../../adaptive/panels/AtlasLayers';
@@ -134,7 +135,7 @@ export function atlasTooDense(stars:number,edges:number):boolean{return stars>25
 export default function AtlasV7(){
  const studyRepair=useStudyUi();
  const [legacyView,setLegacyView]=useState<'map'|'themes'|'bridges'>('map'),[atlasFilter,setAtlasFilter]=useState<AtlasFilter>('all'),[atlasKind,setAtlasKind]=useState<string>('any');
- const room=isFlagOn('v7Room'),home=useHome();
+ const room=isFlagOn('v7Room'),home=useHome(),navigationScope=useRef(recentSession()).current;
  const [subset,setSubset]=useState<'All'|'Tonight'|'Shaky'|'Demonstrated'>('All');
  const [stale,setStale]=useState(false),[layers,setLayers]=useState(false);
  // N227: Atlas V3's typed links on the map, an optional view kept per device.
@@ -206,7 +207,7 @@ export default function AtlasV7(){
  const select=(index:number|null,fly=false,openActions=false)=>{
   if(!model)return;
   setExpanded(index!==null&&(view==='list'||openActions));
-  if(room&&index!==null)rememberRoomItem({id:'concept:'+model.stars[index].id,group:'Concepts',title:model.stars[index].name,to:'/atlas?id='+encodeURIComponent(model.stars[index].id)});
+  if(room&&index!==null)rememberRoomItem({id:'concept:'+model.stars[index].id,group:'Concepts',title:model.stars[index].name,to:'/atlas?id='+encodeURIComponent(model.stars[index].id)},navigationScope);
   update({id:index===null?null:model.stars[index].id});
   if(index!==null&&fly&&mapVisible)map.current?.flyTo(index);
  };

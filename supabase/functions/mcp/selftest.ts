@@ -295,7 +295,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
     if(only(4))await check('adaptive planning diagnostics',async()=>{
       const started=await run('start_session',startSession,{project:p.slug,goal:'Probe prerequisites',checkpoint:'CP1',client:'other'});
       const code=started.text.match(/S[0-9]+/)![0];
-      for(let i=0;i<2;i++)await run('save_progress',saveProgress,{project:p.slug,session:code,diagnostics:[{kind:'gap',topic:'Selftest prerequisite',evidence:'Could not explain it',severity:3,confirmed:true}]});
+      for(let i=0;i<2;i++)await run('save_progress',saveProgress,{project:p.slug,session:code,operationId:crypto.randomUUID(),diagnostics:[{kind:'gap',topic:'Selftest prerequisite',evidence:'Could not explain it',severity:3,confirmed:true}]});
       const d=await scoped(c,'diagnostics').eq('project_id',p.id).single();if(d.data?.times!==2)throw Error('Diagnostic sightings failed');
       if(!(await packet(c,{project:p.slug})).includes('ADAPT D'+d.data.no))throw Error('ADAPT missing');
     });
@@ -349,7 +349,8 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
     });
     if(only(4))await check('delete preview cascade and undo',async()=>{
       const preview=await run('delete',remove,{target:p.slug,confirm:false});if(preview.action)throw Error('Preview wrote data');
-      const r=await run('delete',remove,{target:p.slug,confirm:true});
+      const previewToken=preview.text.match(/previewToken: ([0-9a-f]{64})/)?.[1];if(!previewToken)throw Error('Delete preview token missing');
+      const r=await run('delete',remove,{target:p.slug,confirm:true,previewToken});
       if((await scoped(c,'projects').eq('id',p.id)).data?.length)throw Error('Delete failed');
       await run('undo',undo,{action:r.action});
       if(!(await scoped(c,'projects').eq('id',p.id)).data?.length)throw Error('Cascade restore failed');

@@ -36,7 +36,7 @@ export async function savePages(c:Context,a:{
    page_count:Math.max(...a.pages.map(page=>page.page)),
   });
  }
- const existingPages=a.source?await scoped(c,'source_pages','page,body')
+ const existingPages=a.source?await scoped(c,'source_pages','page,body,label,confidence')
   .eq('source_id',src.id).in('page',a.pages.map(page=>page.page)).limit(10):{data:[],error:null};
  if(existingPages.error)throw Error(existingPages.error.message);
  const byPage=new Map((existingPages.data||[]).map((row:any)=>[row.page,row]));
@@ -45,11 +45,11 @@ export async function savePages(c:Context,a:{
  for(const page of a.pages){
   const old:any=byPage.get(page.page);
   if(old?.body&&!a.replace){skipped++;continue}
-  const values={body:page.text,label:page.label||String(page.page),
-   transcribed_by:client,transcribed_at:now,confidence:page.confidence||'high'};
+  const values={body:page.text,label:page.label??old?.label??String(page.page),
+   transcribed_by:client,transcribed_at:now,confidence:page.confidence??old?.confidence??'high'};
   if(old){
    c.batch.push({op:'update',table:'source_pages',
-    where:{source_id:src.id,page:page.page},values});
+    where:{source_id:src.id,page:page.page},expected:{body:old.body},values});
   }else{
    c.batch.push({op:'insert',table:'source_pages',
     values:{user_id:c.userId,source_id:src.id,page:page.page,...values}});

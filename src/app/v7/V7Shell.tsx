@@ -1,7 +1,8 @@
 import {warmV7Screen} from './routeScreens';
-import {Children,isValidElement,Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type MouseEvent,type ReactNode,type RefObject} from 'react';
+import {Children,isValidElement,Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,useSyncExternalStore,type CSSProperties,type MouseEvent,type ReactNode,type RefObject} from 'react';
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {useDeviceCommands} from '../../platform/useDeviceCommands';
+import {peekCaptureText} from '../../platform/share';
 import {Link,useLocation,useNavigate,useNavigationType} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
 import {CalendarDays,ChartColumn,House,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
@@ -30,6 +31,7 @@ import './shell.css';
 import './responsive.css';
 import '../../ui/v7/room.css';
 import {rememberRoomItem} from '../../ui/v7/room';
+import {recentSession,subscribeRecentSession} from '../../ui/v7/recentScope';
 import {applyPaper} from '../../ui/v7/paper';
 import {isFlagOn} from '../../flags';
 import '../../ui/v7/qed.css';
@@ -79,9 +81,10 @@ type SearchVisit={key:string;opener:HTMLElement|null;initial?:SearchSnapshot};
 const openSearch=(event:MouseEvent<HTMLButtonElement>)=>window.dispatchEvent(new CustomEvent('v7:search',{detail:event.currentTarget}));
 /** F. Capture: a tap opens the sheet (a block on Calendar, a thought during a session); a 350 ms press offers the four types. */
 function Capture(){
- const [mode,setMode]=useState<'closed'|'sheet'|'picker'>('closed'),location=useLocation();
+ const [mode,setMode]=useState<'closed'|'sheet'|'picker'>(()=>peekCaptureText()?'sheet':'closed'),[visit,setVisit]=useState(0),location=useLocation();
  const timer=useRef<number|null>(null),long=useRef(false);
- useEffect(()=>{const open=()=>setMode('sheet');window.addEventListener('v7:capture',open);return()=>window.removeEventListener('v7:capture',open);},[]);
+ useEffect(()=>{const open=()=>setMode(current=>current==='closed'?'sheet':current);window.addEventListener('v7:capture',open);return()=>window.removeEventListener('v7:capture',open);},[]);
+ const close=()=>{if(peekCaptureText()){setVisit(value=>value+1);setMode('sheet');}else setMode('closed');};
  const down=()=>{long.current=false;timer.current=window.setTimeout(()=>{long.current=true;setMode('picker');},350);};
  const up=()=>{if(timer.current)window.clearTimeout(timer.current);timer.current=null;};
  const onCalendar=location.pathname.startsWith('/calendar');
@@ -96,7 +99,7 @@ function Capture(){
    onPointerDown={down} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}
    onClick={()=>{if(long.current){long.current=false;return;}if(onCards){window.dispatchEvent(new Event('v7:new-card'));return;}setMode('sheet');}}
    onKeyDown={event=>{if(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();setMode('picker');}}}><Plus aria-hidden="true"/></button>
-  <Suspense fallback={null}>{mode!=='closed'&&<CaptureSheet key={mode} open onClose={()=>setMode('closed')} picker={mode==='picker'} initialKind={onCalendar&&mode==='sheet'?'block':null}/>}</Suspense>
+  <Suspense fallback={null}>{mode!=='closed'&&<CaptureSheet key={mode+':'+visit} open onClose={close} picker={mode==='picker'} initialKind={onCalendar&&mode==='sheet'?'block':null}/>}</Suspense>
  </>;
 }
 
@@ -145,6 +148,10 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const [searching,setSearching]=useState<SearchVisit|null>(null),[shortcuts,setShortcuts]=useState(false);
  const key=location.pathname+location.search+'\n'+location.key;
  const searchBack=useRef(new Map<string,SearchVisit>()),previousKey=useRef(key);
+ const navigationScope=useSyncExternalStore(subscribeRecentSession,recentSession,recentSession);
+ // ReadyGate remounts the shell for each owner. Until that happens, old route DOM belongs only to the original session.
+ const recordingScope=useRef(navigationScope).current;
+ useLayoutEffect(()=>{searchBack.current.clear();setSearching(null);},[navigationScope]);
  const wide=useMinWidth(700);
  const tabbar=useRef<HTMLElement>(null),labelsFit=useTabLabelsFit(tabbar,wide,!immersive,Boolean(entry),capture);
  // A subject colour chosen in Settings redraws every screen in that colour (PLAN §6.14).
@@ -152,8 +159,9 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
  const settings=useSettings();
  useLayoutEffect(()=>{
-  if(!isFlagOn('v7Room'))return;
+  if(!isFlagOn('v7Room')||navigationScope!==recordingScope)return;
   const path=location.pathname,to=path+location.search;
+  const scope=recordingScope;
   if(/^\/p\/[^/]+(?:\/cp\/[^/]+)?\/tutor$/.test(path))return;
   const group=path.startsWith('/p/')?(path.includes('/cp/')?'Checkpoints':'Paths'):path.startsWith('/cards/')?'Cards':path.startsWith('/s/')?'Sessions':null;
   if(!group)return;
@@ -167,11 +175,11 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
    const next=project?.title??title;
    if(next===lastTitle)return;
    lastTitle=next;
-   rememberRoomItem({id:to,group,title:next,to});
+   rememberRoomItem({id:to,group,title:next,to},scope);
   };
   record();const observer=new MutationObserver(record);observer.observe(root,{childList:true,subtree:true});
   return()=>observer.disconnect();
- },[location.pathname,location.search,home.data]);
+ },[location.pathname,location.search,home.data,navigationScope,recordingScope]);
  // A1: Reduce effects follows the account (set on another device) once settings load; the device copy applied at start.
  const reduceEffects=settings.data?.ui?.reduceEffects;
  // AW6: haptic() follows Lemma's Haptics switch everywhere in v7.

@@ -98,7 +98,7 @@ function LegacyCards(){
  const visible=rows.slice(first,last);
  const save=async(v:EditorValue)=>{
   try{
-   const result=await create.mutateAsync({front:v.front,back:v.back,type:v.type,kind:v.kind,
+   const result=await create.mutateAsync({front:v.front,back:v.back,type:v.type,kind:v.kind,operationId:v.operationId,
     projectSlug:v.projectSlug,checkpointCode:v.checkpointCode});
    setCreating(false);notify('Card created');navigate('/cards/'+result.noteNo);
   }catch{notify("Couldn't create the card.",{tone:'danger'})}

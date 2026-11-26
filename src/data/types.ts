@@ -248,7 +248,7 @@ export interface CardSearchFilters {
 }
 export interface CardSearchPage { rows: CardRow[]; nextOffset: number | null }
 export interface CardDetail {
- note: {noteId: string; noteNo: number; front: string; back: string; type: NoteType; kind: NoteKind; tags: string[]
+ note: {noteId: string; noteNo: number; version?:number; front: string; back: string; type: NoteType; kind: NoteKind; tags: string[]
  status: NoteStatus; origin: 'user' | Client; projectSlug: string; checkpointCode: string | null
  sessionNumber: number | null; sourceShort: string | null; pageLabel: string | null}
  cards: {ord: number; state: CardState; cardId?: string}[]

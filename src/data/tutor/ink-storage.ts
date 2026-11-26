@@ -1,6 +1,6 @@
 import type {PadStrokes} from '../../ui/v7/ink/ink';
 import {readTutorAcceptedSpans, referencedImageIds, type TutorAcceptedSpan} from '../../../supabase/functions/_shared/tutor-answer';
-import {TUTOR_ATTACHMENT_COUNT,unresolvedTutorImageIds,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from './attachment-types';
+import {IMAGE_ONLY_ANSWER,TUTOR_ATTACHMENT_COUNT,unresolvedTutorImageIds,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from './attachment-types';
 import {authGeneration,onAccountChange} from '../authBoundary';
 import {getDemoProfile,getMode,type DemoProfile} from '../mode';
 import {subscribeTutorLocalCleanup,tutorLocalScopeActive,tutorOwnerDeleted,tutorStorageOwner} from './local-storage';
@@ -60,13 +60,31 @@ export function editInkDraft(draft:InkDraft,edit:(draft:InkDraft)=>InkDraft,refe
   return count<=TUTOR_ATTACHMENT_COUNT?next:draft;
 }
 
-export function removeSubmittedInk(draft:InkDraft,submitted:ReadonlySet<string>):InkDraft {
+function answerIdentity(text:string,spans?:readonly TutorAcceptedSpan[]):string {
+  const question=text.trim()||IMAGE_ONLY_ANSWER,offset=text.length-text.trimStart().length;
+  const accepted=readTutorAcceptedSpans(question,spans?.map(span=>({...span,start:span.start-offset,end:span.end-offset})));
+  return JSON.stringify([question,accepted.map(({start,end,text,source,aidId,aidVersion})=>[start,end,text,source,aidId,aidVersion])]);
+}
+
+export function removeSubmittedInk(draft:InkDraft,submitted:ReadonlySet<string>,
+  answer?:{question:string;acceptedSpans?:readonly TutorAcceptedSpan[]}):InkDraft {
+  const queued=draft.queuedText!==undefined,refs=referencedImageIds(draft.queuedText??'');
+  const legacy=refs.length===0&&!draft.inlineImages;
+  const queuedIds=legacy?[...draft.photos.map(photo=>photo.id),...(draft.drawingId&&draft.strokes.length?[draft.drawingId]:[])]:refs;
+  const clearQueue=queued&&!!answer&&queuedIds.length>0&&queuedIds.every(id=>submitted.has(id))&&
+    (!legacy||!draft.strokes.length||!!draft.drawingId)&&
+    answerIdentity(draft.queuedText!,draft.queuedAcceptedSpans)===answerIdentity(answer.question,answer.acceptedSpans);
+  // A later answer can reuse an already-sent image. Preserve both its text and
+  // its bytes until the confirmed submission matches the queued answer itself.
+  const retained=new Set(queued&&!clearQueue?queuedIds:[]);
+  const removable=(id:string)=>submitted.has(id)&&!retained.has(id);
   const staged=draft.stagedDrawing;
-  const current=staged&&submitted.has(staged.id)?finishStagedDrawing(draft,staged.id):draft;
-  const drawing=!!current.drawingId&&submitted.has(current.drawingId);
-  const photos=current.photos.filter(photo=>!submitted.has(photo.id));
-  if(current===draft&&!drawing&&photos.length===draft.photos.length)return draft;
-  return {...current,photos,queuedText:undefined,queuedAcceptedSpans:undefined,...(drawing&&{strokes:[],drawingId:undefined})};
+  const current=staged&&removable(staged.id)?finishStagedDrawing(draft,staged.id):draft;
+  const drawing=!!current.drawingId&&removable(current.drawingId);
+  const photos=current.photos.filter(photo=>!removable(photo.id));
+  if(current===draft&&!drawing&&photos.length===draft.photos.length&&!clearQueue)return draft;
+  return {...current,photos,...(clearQueue&&{queuedText:undefined,queuedAcceptedSpans:undefined}),
+    ...(drawing&&{strokes:[],drawingId:undefined})};
 }
 
 const DRAFTS='drafts',DELETED_OWNERS='deleted-owners';
@@ -97,7 +115,8 @@ function openInkDb():Promise<IDBDatabase> {
   });
 }
 
-async function persist<T>(scope:TutorInkScope,mode:IDBTransactionMode,operation:(store:IDBObjectStore,key:string)=>IDBRequest<T>):Promise<T> {
+async function persist<T>(scope:TutorInkScope,mode:IDBTransactionMode,operation:(store:IDBObjectStore,key:string)=>IDBRequest<T>,
+  change?:(value:T,store:IDBObjectStore,key:string)=>T):Promise<T> {
   assertTutorInkScope(scope);
   const live='ownerId' in scope;
   const key=(live?'lemma.tutor.draft:':'lemma.demo-tutor:')+JSON.stringify([live?scope.ownerId:scope.profile,scope.pathId,scope.checkpointId])+':ink';
@@ -122,8 +141,8 @@ async function persist<T>(scope:TutorInkScope,mode:IDBTransactionMode,operation:
         try {assertTutorInkScope(scope);if(failure)throw failure;resolve(result);} catch(error) {reject(error);}
       };
       function access() {
-        const request=operation(tx.objectStore(DRAFTS),key);
-        request.onsuccess=()=>guard(()=>{result=request.result;});
+        const store=tx.objectStore(DRAFTS),request=operation(store,key);
+        request.onsuccess=()=>guard(()=>{result=change?change(request.result,store,key):request.result;});
       }
       // The owner marker and draft share one transaction with deletion, including across tabs.
       guard(()=>{
@@ -159,8 +178,7 @@ export async function removeDeletedOwnerInk(ownerId:string):Promise<void> {
   } finally {db.close();}
 }
 
-export async function readInkDraft(scope:TutorInkScope):Promise<InkDraft> {
-  const draft:InkDraft|undefined=await persist({...scope},'readonly',(store,key)=>store.get(key));
+function checkedInkDraft(draft:InkDraft|undefined):InkDraft {
   if(draft&&(!Array.isArray(draft.strokes)||!Array.isArray(draft.photos)||draft.photos.some(image=>typeof image?.id!=='string')))
     throw storageUnavailable();
   if (!draft) return emptyInk;
@@ -168,8 +186,19 @@ export async function readInkDraft(scope:TutorInkScope):Promise<InkDraft> {
   const spans = readTutorAcceptedSpans(draft.queuedText ?? '', draft.queuedAcceptedSpans);
   return {...draft, queuedAcceptedSpans: spans.length ? spans : undefined};
 }
+export async function readInkDraft(scope:TutorInkScope):Promise<InkDraft> {
+  return checkedInkDraft(await persist({...scope},'readonly',(store,key)=>store.get(key)));
+}
 export function writeInkDraft(scope:TutorInkScope,draft:InkDraft) {
   return persist({...scope},'readwrite',(store,key)=>store.put(draft,key));
+}
+/** Apply selective cleanup to the latest row in the same transaction as the write. */
+export function updateInkDraft(scope:TutorInkScope,change:(draft:InkDraft)=>InkDraft):Promise<InkDraft> {
+  return persist({...scope},'readwrite',(store,key)=>store.get(key),(raw,store,key)=>{
+    const before=checkedInkDraft(raw),next=checkedInkDraft(change(before));
+    if(next!==before)store.put(next,key);
+    return next;
+  });
 }
 export function imageData(blob:Blob) {
   return new Promise<string>((resolve,reject)=>{

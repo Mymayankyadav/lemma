@@ -1,7 +1,7 @@
 import {reviewableProjects} from '../v3.ts';
 import {reuseSubject} from '../v3.ts';
 import {planningFields} from '../planning.ts';
-import {Context,scoped,all,insert,update,rpc} from '../db.ts';
+import {Context,scoped,all,paged,insert,update,rpc} from '../db.ts';
 import {project,checkpoint,session,source} from '../resolve.ts';
 import {settings} from '../packet.ts';
 import {ownerEditableSettingsFields,settingsEditCommand} from './settings-edit.ts';
@@ -83,7 +83,7 @@ export async function setPrompt(c:Context,a:any){const global=a.scope==='all',r=
  const value=a.mode==='clear'?null:a.mode==='replace'?a.text:[r[key],a.text].filter(Boolean).join('\n');
  if((value?.length||0)>(global?2000:1000))throw Error('Prompt exceeds '+(global?2000:1000)+' characters');
  c.notices=[...(c.notices??[]),...lintNotices([[global?'master_prompt':'prompt',value]])];
- enqueue(c,global?'settings':'projects',global?{user_id:c.userId}:{id:r.id},{[key]:value});return 'saved for '+(global?'all chats':r.slug)+' ('+(value?.length||0)+' chars)';}
+ c.batch!.push({op:'update',table:global?'settings':'projects',where:global?{user_id:c.userId}:{id:r.id},expected:{[key]:r[key]??null},values:{[key]:value}});return 'saved for '+(global?'all chats':r.slug)+' ('+(value?.length||0)+' chars)';}
 export async function history(c:Context,a:any){const fetched=await scoped(c,'v_history').order('no',{ascending:false}).limit(1000);if(fetched.error)throw Error(fetched.error.message);let acts:any[]=(fetched.data||[]).filter((x:any)=>x.tool!=='heartbeat');if(a.project){
   const p=await project(c,a.project),actionNos=acts.map(x=>x.no),ids=new Set<number>();
   // Filter in PostgREST *before* pagination: scanning every owner's change
@@ -192,7 +192,7 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
  if(patch.page!==undefined){patch.page_label=patch.page;delete patch.page;}
  if(table==='notes'&&['front','back','type'].some(k=>k in patch)){
   const payload:any={note_no:row.no};for(const k of ['front','back','type'])if(k in patch){payload[k]=patch[k];delete patch[k];}
-  const proposal=await insert(c,'proposals',{project_id:row.project_id,kind:'card_edit',origin:'other',payload});await rpc(c,'approve_proposal',{p_id:proposal.id});
+  const proposal=await insert(c,'proposals',{project_id:row.project_id,kind:'card_edit',origin:'other',payload,base_target_versions:{notes:{[row.id]:row.version}}});await rpc(c,'approve_proposal',{p_id:proposal.id});
  }
  if(patch.due!==undefined){const due=patch.due==='now'?new Date().toISOString():new Date(patch.due).toISOString();for(const x of (await all(c,'cards')).filter(x=>x.note_id===row.id))enqueue(c,'cards',{id:x.id},{due});delete patch.due;}
  if(patch.after!==undefined){const cps=(await all(c,'checkpoints')).filter(x=>x.project_id===p.id&&x.id!==row.id).sort((a,b)=>a.position-b.position);const i=patch.after===null?-1:cps.findIndex(x=>x.code===patch.after);if(patch.after!==null&&i<0)throw Error('Unknown insertion point');patch.position=i<0?(cps[0]?.position||10)-10:(cps[i].position+(cps[i+1]?.position||cps[i].position+20))/2;delete patch.after;}
@@ -250,24 +250,32 @@ export async function add(c:Context,a:any){const f={...a.fields};planningFields(
  else if(a.kind==='book'){await insert(c,'sources',{project_id:p.id,title:f.title,short:f.short||slug(f.title).slice(0,20),filename:'attached.pdf',status:'ready',has_text:false,page_count:0});}
  else throw Error('Unknown kind');return 'added '+a.kind;
 }
-export async function remove(c:Context,a:any){const {table,row}=await target(c,a);if(['settings'].includes(table))throw Error('Settings cannot be deleted');
- if(table==='subjects'){const ps=(await all(c,'projects')).filter(x=>x.subject_id===row.id);if(ps.length)throw Error('Subject used by '+ps.map(x=>x.slug).join(', '));}
- if(table==='styles'){const ps=(await all(c,'projects')).filter(x=>x.style===row.key);if(ps.length)throw Error('Style used by '+ps.map(x=>x.slug).join(', '));}
- const relations=[['projects','sources','project_id'],['projects','checkpoints','project_id'],['projects','sessions','project_id'],['projects','misconceptions','project_id'],['projects','notes','project_id'],['projects','proposals','project_id'],['projects','diagnostics','project_id'],['subjects','concepts','subject_id'],['sources','source_pages','source_id'],['checkpoints','checkpoint_prereqs','checkpoint_id'],['checkpoints','checkpoint_prereqs','prereq_id'],['checkpoints','checkpoint_concepts','checkpoint_id'],['sessions','session_events','session_id'],['notes','cards','note_id'],['notes','card_comments','note_id'],['cards','reviews','card_id'],['concepts','concept_links','from_id'],['concepts','concept_links','to_id'],['concepts','checkpoint_concepts','concept_id']];
- // Incident #1514: the preview only counts what cascades, so it loads each child table's id and link columns, never whole rows
- // (source texts and page transcriptions made this request run out of worker memory), and follows links through Sets.
- const parentTables=new Set(relations.map(x=>x[0])),children=[...new Set(relations.map(x=>x[1]))];
- const columns=(t:string)=>[...new Set([...(parentTables.has(t)?['id']:[]),...relations.filter(x=>x[1]===t).map(x=>x[2])])].join(',');
- const snapshots=new Map(await Promise.all(children.map(async t=>[t,await all(c,t,columns(t))] as const)));const removed=new Map<string,Set<any>>([[table,new Set([row])]]);let changed=true;
- while(changed){changed=false;for(const [parent,child,fk] of relations){const ids=new Set([...(removed.get(parent)??[])].map((x:any)=>x.id)),current=removed.get(child)??new Set<any>();if(ids.size)for(const r of snapshots.get(child)||[])if(ids.has(r[fk])&&!current.has(r)){current.add(r);changed=true;}removed.set(child,current);}}
- const counts=[...removed].filter(([t,rows])=>t!==table&&rows.size).map(([t,rows])=>rows.size+' '+t);
- if(!a.confirm)return a.target+': '+(counts.join(', ')||'1 '+table)+'. Confirm before deleting.';
- c.batch!.push({op:'delete',table,where:pk(table,row)});return 'deleted '+a.target+(counts.length?' and '+counts.join(', '):'');}
+export async function remove(c:Context,a:any){
+ const {table,row}=await target(c,a);
+ if(table==='settings')throw Error('Settings cannot be deleted');
+ if(a.confirm){
+  if(typeof a.previewToken!=='string'||!/^[0-9a-f]{64}$/.test(a.previewToken))
+   throw Error('Preview this deletion first, then confirm with its previewToken');
+  c.batch!.push({op:'delete',table,where:pk(table,row),expectedScope:a.previewToken});
+  return 'deleted '+a.target;
+ }
+ // Hashes and counts are calculated beside the data. No source/transcript text
+ // crosses the Edge boundary, and the transaction rechecks the exact scope.
+ const {data,error}=await c.db.rpc('n239_mcp_delete_scope',{
+  p_user:c.userId,p_table:table,p_key:pk(table,row),p_lock:false
+ });
+ if(error)throw Error(error.message);
+ if(!data?.token)throw Error('Deletion preview unavailable');
+ const counts=Object.entries(data.counts as Record<string,number>).filter(([,n])=>n>0)
+  .map(([t,n])=>n+' '+t).join(', ');
+ return a.target+': '+counts+'. Confirm before deleting. previewToken: '+data.token;
+}
 export async function review(c:Context,a:any){const p=a.project?await project(c,a.project):null,s=await settings(c),today=new Date();
- const ps=reviewableProjects(await all(c,'projects'),c.selftestProjectIds);
- const notes=(await all(c,'notes')).filter(x=>x.status==='active'&&ps.some(project=>project.id===x.project_id)&&(!p||x.project_id===p.id));const nm=new Map(notes.map(x=>[x.id,x]));
- const cards=(await all(c,'cards')).filter(x=>nm.has(x.note_id)&&(x.state!==0?Date.parse(x.due)<studyDayBounds(+today,s.time_zone,s.rollover_hour).end:a.new!==false));
- const {day}=await import('../derive.ts');const cardIds=new Set((await all(c,'cards')).filter(x=>nm.has(x.note_id)).map(x=>x.id));const logs=(await all(c,'reviews')).filter(x=>cardIds.has(x.card_id)&&!x.undone_at&&day(s,x.reviewed_at)===day(s));const newLeft=Math.max(0,s.new_per_day-logs.filter(x=>x.state_before===0).length),left=Math.max(0,s.reviews_per_day-logs.length);
+ const ps=reviewableProjects(await paged(c,'projects'),c.selftestProjectIds);
+ const notes=(await paged(c,'notes','*',q=>q.eq('status','active'))).filter(x=>x.status==='active'&&ps.some(project=>project.id===x.project_id)&&(!p||x.project_id===p.id));const nm=new Map(notes.map(x=>[x.id,x]));
+ const ownerCards=await paged(c,'cards');
+ const cards=ownerCards.filter(x=>nm.has(x.note_id)&&(x.state!==0?Date.parse(x.due)<studyDayBounds(+today,s.time_zone,s.rollover_hour).end:a.new!==false));
+ const {day}=await import('../derive.ts');const logs=(await paged(c,'reviews','id,card_id,reviewed_at,state_before,undone_at',q=>q.is('undone_at',null).gte('reviewed_at',new Date(studyDayBounds(+today,s.time_zone,s.rollover_hour).start).toISOString()))).filter(x=>!x.undone_at&&Date.parse(x.reviewed_at)<=+today&&day(s,x.reviewed_at)===day(s));const newLeft=Math.max(0,s.new_per_day-logs.filter(x=>x.state_before===0).length),left=Math.max(0,s.reviews_per_day-logs.length);
  const seenNotes=new Set<string>();const priority=(x:any)=>[1,3].includes(x.state)?0:x.state===2?1:2;
  const eligible=cards.sort((a,b)=>priority(a)-priority(b)||Date.parse(a.due)-Date.parse(b.due)||nm.get(a.note_id).no-nm.get(b.note_id).no||a.ord-b.ord).filter(x=>seenNotes.has(x.note_id)?false:(seenNotes.add(x.note_id),true));
  const learning=eligible.filter(x=>[1,3].includes(x.state)),due=eligible.filter(x=>x.state===2),fresh=eligible.filter(x=>x.state===0).slice(0,newLeft);const queue:any[]=[];let since=0,last='',ratio=Math.max(1,Math.ceil(due.length/(fresh.length+1)));
@@ -278,10 +286,18 @@ export async function review(c:Context,a:any){const p=a.project?await project(c,
   if(s.mix_decks&&last){const pref=pickNew?fresh:due,alt=pickNew?due:fresh;if(!pref.some(x=>key(x)!==last)&&alt.some(x=>key(x)!==last))pickNew=!pickNew;}
   take(pickNew?fresh:due);since=pickNew?0:since+1;
  }
- return queue.length+' due.\n'+queue.slice(0,a.count||5).map(x=>{const n=nm.get(x.note_id);return 'N'+n.no+'.'+x.ord+' Front: '+n.front+' / Back: '+n.back;}).join('\n');}
-export async function grade(c:Context,a:any){const s=await settings(c),notes=await all(c,'notes'),cards=await all(c,'cards'),out:string[]=[];const seen=new Set<string>();
- const visibleIds=new Set(reviewableProjects(await all(c,'projects'),c.selftestProjectIds).map(x=>x.id));
- for(const ans of a.answers){if(seen.has(ans.card))throw Error('Duplicate card');seen.add(ans.card);const m=ans.card.match(/^N(\d+)\.(\d+)$/i);if(!m)throw Error('Use N7.1');const n=notes.find(x=>x.no===Number(m[1])),card=cards.find(x=>x.note_id===n?.id&&x.ord===Number(m[2]));if(!card||n.status!=='active'||!visibleIds.has(n.project_id))throw Error('Card not found');
+ return queue.length+' due.\n'+queue.slice(0,a.count||5).map(x=>{const n=nm.get(x.note_id);const reverse=n.type==='reverse'&&x.ord===2;return 'N'+n.no+'.'+x.ord+' v'+x.version+' Front: '+(reverse?n.back:n.front)+' / Back: '+(reverse?n.front:n.back);}).join('\n');}
+export async function grade(c:Context,a:any){const s=await settings(c),out:string[]=[];const seen=new Set<string>();
+ for(const ans of a.answers){
+ const m=ans.card.match(/^N(\d+)\.(\d+)$/i);if(!m)throw Error('Use N7.1');
+ const identity=Number(m[1])+'.'+Number(m[2]);if(seen.has(identity))throw Error('Duplicate card');seen.add(identity);
+ const {data:n,error:noteError}=await scoped(c,'notes').eq('no',Number(m[1])).maybeSingle();
+ if(noteError)throw Error(noteError.message);if(!n||n.status!=='active')throw Error('Card not found');
+ const {data:p,error:projectError}=await scoped(c,'projects').eq('id',n.project_id).maybeSingle();
+ if(projectError)throw Error(projectError.message);
+ if(!p||!reviewableProjects([p],c.selftestProjectIds).length)throw Error('Card not found');
+ const {data:card,error:cardError}=await scoped(c,'cards').eq('note_id',n.id).eq('ord',Number(m[2])).maybeSingle();
+ if(cardError)throw Error(cardError.message);if(!card)throw Error('Card not found');
  const now=Date.now(),rating=['again','hard','good','easy'].indexOf(ans.rating)+1;const cfg={w:s.fsrs_weights||FSRS.DEFAULT_W,retention:s.desired_retention,maxIvl:s.max_interval_days,learn:FSRS.parseSteps(s.learn_steps),relearn:FSRS.parseSteps(s.relearn_steps),fuzz:s.fuzz,loadBalance:s.load_balance};
  const x=(FSRS.preview({st:card.state,due:Date.parse(card.due),s:card.stability,d:card.difficulty,last:card.last_review?Date.parse(card.last_review):0,step:card.step,reps:card.reps,lapses:card.lapses},now,cfg,{clock:studyClock(s.rollover_hour,s.time_zone)}) as any)[rating];
  const v=x.card,next={expected_version:card.version,state:v.st,due:new Date(v.due).toISOString(),stability:v.s,difficulty:v.d,last_review:new Date(v.last).toISOString(),step:v.step,reps:v.reps,lapses:v.lapses};

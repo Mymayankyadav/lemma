@@ -109,7 +109,7 @@ it('saves the owner correction when approving a card-edit proposal',async()=>{
 
 it('keeps the new cloze cards after the note update commits but its response is lost',async()=>{
  const n=await note('cloze','{{c1::first}}');loseNoteUpdateResponse=true;
- await expect(new LiveAdapter().updateNote(Number(n.no),{front:'{{c1::first}} and {{c2::second}}'})).rejects.toThrow(/offline|Network request failed/);
+ await expect(new LiveAdapter().updateNote(Number(n.no),{front:'{{c1::first}} and {{c2::second}}'},Number(n.version))).rejects.toThrow(/offline|Network request failed/);
  const saved=(await q('select front from public.notes where id=$1',[n.id]))[0];
  const cards=await q('select ord from public.cards where note_id=$1 order by ord',[n.id]);
  console.info('note after uncertain update',saved,cards);

@@ -8,7 +8,7 @@ import {FullscreenPaper} from './FullscreenPaper';
 import {clearPadInk,initializePadInk,replacePadStrokes,undoPadInk,type PadInkHistory,type PadStrokes} from '../../ui/v7/ink/ink';
 import {rasterizeInk,reencodePhoto} from '../../ui/v7/ink/images';
 import {TUTOR_ATTACHMENT_COUNT,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from '../../data/tutor/attachment-types';
-import {assertTutorInkScope,editInkDraft,emptyInk,finishStagedDrawing,keepDraftImage,readInkDraft,readTutorImage,writeInkDraft,
+import {assertTutorInkScope,editInkDraft,emptyInk,finishStagedDrawing,keepDraftImage,readInkDraft,readTutorImage,writeInkDraft,updateInkDraft,
   type InkDraft,type InkRecovery,type TutorInkScope} from '../../data/tutor/ink-storage';
 import {MathText} from '../../ui/MathText';
 import {EQUATION_MODEL,EQUATION_MODEL_BYTES} from './input/equationModel';
@@ -42,17 +42,24 @@ export function useTutorInk(scope:TutorInkScope,enabled:boolean) {
     retry();
     return ()=>{mounted.current=null;};
   },[scope,enabled,retry]);
-  const update=useCallback(async (change:InkDraft|((draft:InkDraft)=>InkDraft))=>{
+  const update=useCallback(async (change:InkDraft|((draft:InkDraft)=>InkDraft),options:{latestStored?:boolean}={})=>{
     const binding=mounted.current, current=latest.current;
     assertTutorInkScope(scope);
     if(!enabled||binding?.scope!==scope||current.status!=='ready')throw new Error('Reopen the saved images first.');
     const next=typeof change==='function'?change(current.draft):change;
     if(next===current.draft)return pending.current;
     publish({draft:next,status:'ready'});
-    pending.current=pending.current.catch(()=>{}).then(()=>writeInkDraft(scope,next));
+    const writing=pending.current.catch(()=>{}).then(()=>options.latestStored&&typeof change==='function'
+      ?updateInkDraft(scope,change):writeInkDraft(scope,next).then(()=>next));
+    pending.current=writing;
     try {
-      await pending.current;
-      if(mounted.current===binding)setError('');
+      const stored=await writing;
+      if(mounted.current===binding){
+        // A later local edit owns the view; otherwise show the fresh row so a
+        // concurrent tab's retained images remain available after cleanup.
+        if(options.latestStored&&latest.current.draft===next)publish({draft:stored,status:'ready'});
+        setError('');
+      }
     } catch(error) {
       if(mounted.current===binding)setError('The drawing is open here. This device could not save it.');
       throw error;

@@ -108,13 +108,18 @@ describe('November UI plan',()=>{
   it('clears only submitted images when a draft has separate drawings and photos',()=>{
     const first={id:'drawing-1',kind:'drawing',mimeType:'image/png',blob:new Blob()} as const;
     const other={id:'photo-1',kind:'photo',mimeType:'image/jpeg',blob:new Blob()} as const;
-    const stored={...emptyInk,photos:[first,other],drawingId:'drawing-2',strokes:[[{x:10,y:20}]],queuedText:''};
+    const stored={...emptyInk,photos:[first,other],drawingId:'drawing-2',strokes:[[{x:10,y:20}]]};
     expect(removeSubmittedInk(stored,new Set(['different-draft']))).toBe(stored);
     expect(removeSubmittedInk(stored,new Set(['drawing-1']))).toEqual({
-      ...stored,photos:[other],queuedText:undefined,
+      ...stored,photos:[other],
     });
     expect(removeSubmittedInk(stored,new Set(['drawing-1','drawing-2']))).toEqual({
-      ...emptyInk,photos:[other],drawingId:undefined,queuedText:undefined,
+      ...emptyInk,photos:[other],drawingId:undefined,
+    });
+    const queued={...stored,queuedText:''};
+    expect(removeSubmittedInk(queued,new Set(['drawing-1']),{question:''})).toBe(queued);
+    expect(removeSubmittedInk(queued,new Set(['drawing-1','drawing-2','photo-1']),{question:''})).toEqual({
+      ...emptyInk,drawingId:undefined,queuedText:undefined,queuedAcceptedSpans:undefined,
     });
   });
 

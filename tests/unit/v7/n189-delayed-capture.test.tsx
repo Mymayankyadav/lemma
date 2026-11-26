@@ -8,7 +8,7 @@ import type {CaptureKind} from '../../../src/app/v7/captureModel';
 const f=vi.hoisted(()=>({zone:undefined as string|undefined,text:'',
  navigate:vi.fn(),createTask:vi.fn(),createBlock:vi.fn()}));
 vi.mock('react-router',()=>({useNavigate:()=>f.navigate}));
-vi.mock('../../../src/platform/share',()=>({takeCaptureText:()=>f.text}));
+vi.mock('../../../src/platform/share',()=>({peekCaptureText:()=>({id:1,text:f.text}),acknowledgeCaptureText:()=>{}}));
 vi.mock('../../../src/platform/voice',()=>({useNativeVoice:()=>({available:false})}));
 vi.mock('../../../src/app/v7/focus',()=>({useActiveFocus:()=>({entry:null})}));
 vi.mock('../../../src/ui/Toast',()=>({useToast:()=>vi.fn()}));

@@ -6,11 +6,13 @@ export type ItemOrigin='source_exercise'|'source_example'|'source_theorem'|'plan
 export type Tag={concept_id:string;level:Level;role:'primary'|'secondary'|'used'};
 export type Item={id:string;origin:ItemOrigin;text:string;tags:Tag[];b:number;b_n:number;teaches:boolean;holdout:boolean;
   status:'active'|'needs_transcription'|'retired';has_reference_solution?:boolean};
-/** Stable text fingerprint: case, spacing, punctuation and LaTeX delimiters do not matter. */
+/** Conservative identity: mathematical case, punctuation and grouping are significant. */
 export function fingerprint(text:string):string{
-  const t=text.toLowerCase().replace(/\\(?:left|right|,|;|!|quad)|[$\s{}()\[\].,;:!?'"`]+/g,' ').replace(/\s+/g,' ').trim();
+  const t=text.normalize('NFC').replace(/\s+/g,' ').trim();
   let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}
-  return t.length.toString(36)+'-'+h.toString(36);
+  // Legacy fingerprints discarded meaningful notation. A new namespace keeps
+  // new observations from silently inheriting an already conflated item.
+  return 'v2-'+t.length.toString(36)+'-'+h.toString(36);
 }
 const EST=[-2,-1,0,1,2];
 /** Prior difficulty: an owner/tutor estimate of 1–5 maps to −2…+2; otherwise a default by origin and level (§10.3). */

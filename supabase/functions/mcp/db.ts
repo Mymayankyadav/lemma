@@ -29,6 +29,17 @@ export async function all(c: Context, table: string, select = '*'): Promise<any[
   if (error) throw new Error(error.message);
   return data || [];
 }
+/** Complete, deterministically ordered read for owner tables with an id key. */
+export async function paged(c:Context,table:string,select='*',filter?:(query:any)=>any):Promise<any[]>{
+  const rows:any[]=[];
+  for(let offset=0;;offset+=500){
+    let query=scoped(c,table,select);if(filter)query=filter(query);
+    const {data,error}=await query.order('id').range(offset,offset+499);
+    if(error)throw Error(error.message);
+    const page=data??[];rows.push(...page);
+    if(page.length<500)return rows;
+  }
+}
 export async function insert(c: Context, table: string, values: Record<string, unknown>): Promise<any> {
   if(c.batch){const row={id:crypto.randomUUID(),...values,user_id:c.userId}; c.batch.push({op:'insert',table,values:row});return row;}
   const {data, error} = await c.db.from(table).insert({...values, user_id: c.userId}).select().single();

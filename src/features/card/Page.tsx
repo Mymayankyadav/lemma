@@ -2,6 +2,7 @@ import {MathPreview} from '../../ui/MathPreview';
 import {isFlagOn} from '../../flags';
 import CardVariants from './v6/CardVariants';
 import {getApi} from "../../data";
+import {LemmaError} from '../../data/api';
 import {useQuery} from "@tanstack/react-query";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { v7Screen } from "../../app/v7Kit";
@@ -202,9 +203,14 @@ function LegacyCardPage() {
       : null;
   const save = async (v: EditorValue) => {
     if (!note) return;
+    if(v.noteNo!==number||v.noteNo!==note.noteNo||v.noteId!==note.noteId){
+      notify('The selected card changed. Your draft is kept; reopen the card you want to edit.',{tone:'danger'});return;
+    }
     try {
       await update.mutateAsync({
-        noteNo: note.noteNo,
+        noteNo:v.noteNo,
+        expectedNoteId:v.noteId,
+        expectedVersion:v.expectedVersion,
         patch: {
           front: v.front,
           back: v.back,
@@ -215,8 +221,10 @@ function LegacyCardPage() {
       });
       setEditing(false);
       notify("Card updated");
-    } catch {
-      notify("Couldn't save the card.", { tone: "danger" });
+    } catch (error) {
+      notify(error instanceof LemmaError&&error.code==='conflict'
+        ?'This card changed on another device. Your draft is kept; reopen the card to compare before saving.'
+        :"Couldn't save the card.", { tone: "danger" });
     }
   };
   const setStatus = async (nextStatus: "active" | "suspended" | "deleted") => {

@@ -13,7 +13,7 @@ export type ProjectPatch = Partial<Pick<Project, 'title' | 'goal' | 'style' | 's
 export type SubjectPatch = Partial<Pick<Subject, 'name' | 'glyph' | 'position'>>
 export type SourcePatch = Partial<Pick<Source, 'title' | 'kind'>>
 export interface ProposalEdit { front?: string; back?: string; type?: NoteType; kind?: NoteKind }
-export interface CreateNoteInput { projectSlug: string; front: string; back: string; type: NoteType; kind: NoteKind; checkpointCode?: string }
+export interface CreateNoteInput { projectSlug: string; front: string; back: string; type: NoteType; kind: NoteKind; checkpointCode?: string; operationId?:string }
 export type NotePatch = Partial<Pick<CardDetail['note'], 'front' | 'back' | 'type' | 'kind' | 'tags'>>
 export interface NoteStatusGuard {
  noteId:string
@@ -44,7 +44,8 @@ export interface AtlasMutationResult {
 }
 export interface AtlasMergePreview {
  status:'ok';actionNo:null;changed:[];
- sourceVersion:number;keepVersion:number;impact:AtlasMergeImpact
+ sourceVersion:number;keepVersion:number;impact:AtlasMergeImpact;
+ mergeAllowed?:boolean;protectedDependencies?:Record<string,number>
 }
 export interface LemmaApi {
  getNextStudyDue?():Promise<{day:string;count:number}|null>
@@ -180,8 +181,8 @@ export interface LemmaApi {
  getCardCommentsPage(noteNo: number, cursor?: string): Promise<CardCommentsPage>
  /** Create an owner-authored note without approval. */
  createNote(input: CreateNoteInput): Promise<{ noteNo: number }>
- /** Edit note content and reconcile card ordinals. */
- updateNote(noteNo: number, patch: NotePatch): Promise<void>
+ /** Edit the version actually opened in the editor and reconcile card ordinals. Live writes require that snapshot. */
+ updateNote(noteNo: number, patch: NotePatch, expectedVersion?:number, expectedNoteId?:string): Promise<void>
  /** Activate, suspend or soft-delete a note. */
  setNoteStatus(noteNo: number, status: NoteStatus, guard?: NoteStatusGuard): Promise<void>
  /** Leave a note for the tutor. */

@@ -76,8 +76,13 @@ try{
  const p2=await insertProposal({note_no:no,back:'Legacy approval still works'});
  await as(owner);
  await q("update public.notes set front='Bumped since proposal was created' where id=$1",[note]);
- const legacy=(await q('select public.approve_proposal($1) result',[p2]))[0].result;
- assert.equal(legacy.note_no,no,'legacy approval needs no expectedVersions');
+ await assert.rejects(q('select public.approve_proposal($1)',[p2]),/target changed|unavailable/i,
+  'N239: a legacy caller also receives an insertion-time target snapshot');
+ assert.equal((await row(p2)).status,'pending');
+ assert.equal((await q('select back from public.notes where id=$1',[note]))[0].back,'Original answer');
+ const freshLegacy=await insertProposal({note_no:no,back:'Legacy approval still works'});
+ const legacy=(await q('select public.approve_proposal($1) result',[freshLegacy]))[0].result;
+ assert.equal(legacy.note_no,no,'fresh legacy approval needs no caller-supplied expectedVersions');
  assert.equal((await q('select back from public.notes where id=$1',[note]))[0].back,'Legacy approval still works');
 
  await admin();

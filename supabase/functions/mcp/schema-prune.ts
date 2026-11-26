@@ -9,6 +9,9 @@ export function prune(node:any):any{
     if((k==='maximum'&&v===SAFE_INT)||(k==='minimum'&&v===-SAFE_INT))continue;
     // Incident #1492: "non-empty" (minLength 1) is advertised 36 times; zod still enforces it on every call, so leave it out of tools/list.
     if(k==='minLength'&&v===1)continue;
+    // Zod advertises UUIDs with both format and its long equivalent pattern.
+    // Keep the format; the original schema still validates every request.
+    if(k==='pattern'&&node.format==='uuid')continue;
     out[k]=prune(v);
   }
   return out;

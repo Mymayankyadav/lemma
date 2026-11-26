@@ -9,6 +9,24 @@ import type {AtlasLinkKind,AtlasMergePreview} from '../../../data/api';
 type Mode='create'|'update'|'reparent'|'link'|'unlink'|'merge';
 const control='min-h-11 rounded-ctl border border-edge bg-[var(--paper)] px-3 py-2 text-label text-ink';
 type Concept=AtlasGraph['concepts'][number]&{version?:number};
+const dependencyLabels:Record<string,string>={
+ attemptTags:'Attempt tags',instructionEvents:'Instruction history',assumptions:'Assumptions',
+ recheckDecisions:'Recheck decisions',legacyEvidence:'Saved evidence',typedLinks:'Semantic links',
+ aliases:'Aliases',practiceBank:'Practice questions',rechecks:'Scheduled rechecks',
+ familyReferences:'Skill families',itemTags:'Exercise tags',cuedAttempts:'Cued attempts',cuedItems:'Cued exercises',
+};
+const protectsHistory=(preview:AtlasMergePreview|null)=>preview?.mergeAllowed===false||
+ Object.values(preview?.protectedDependencies??{}).some(count=>count>0);
+function MergeProtection({preview}:{preview:AtlasMergePreview}){
+ if(!protectsHistory(preview))return null;
+ return <div role="status">
+  <p>This idea has saved learning history or semantic links. Keep both ideas and connect them with an approved alias.</p>
+  <dl aria-label="Protected learning history">
+   {Object.entries(preview.protectedDependencies??{}).filter(([,count])=>count>0).map(([key,count])=>
+    <div key={key}><dt>{dependencyLabels[key]??key}</dt><dd>{count}</dd></div>)}
+  </dl>
+ </div>;
+}
 /** A saved edit is always an audited N105.1 owner command, never direct DML. */
 export default function AtlasCommands({graph,sourceId,onClose,onSaved,kit=false}:{
  graph:AtlasGraph;sourceId:string|null;onClose:()=>void;onSaved:()=>Promise<void>|void;kit?:boolean
@@ -67,6 +85,7 @@ export default function AtlasCommands({graph,sourceId,onClose,onSaved,kit=false}
     }else if(mode==='merge'){
      if(!preview||preview.keepId!==targetId)
       throw Error('Preview this exact merge before confirming');
+     if(protectsHistory(preview))throw Error('Preserve this learning history by using an approved alias.');
      // Both versions come from the owner RPC preview, not from UI guesses.
      await api.mergeConcept(source.id,preview.sourceVersion,targetId,preview.keepVersion);
     }
@@ -82,7 +101,7 @@ export default function AtlasCommands({graph,sourceId,onClose,onSaved,kit=false}
   onClose={()=>{if(!busy)onClose();}}
   footer={<><Button variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button>
    <Button variant="primary" type="submit" form={formId} loading={busy}
-    disabled={busy||(mode==='merge'&&(!preview||preview.keepId!==targetId))||(mode==='create'&&!subjectId)}>
+    disabled={busy||(mode==='merge'&&(!preview||preview.keepId!==targetId||protectsHistory(preview)))||(mode==='create'&&!subjectId)}>
     {mode==='merge'?'Confirm merge':source?'Save changes':'Create idea'}
    </Button></>}>
   <form id={formId} className="v7-form-stack v7-atlas-command" onSubmit={event=>void submit(event)}>
@@ -115,7 +134,8 @@ export default function AtlasCommands({graph,sourceId,onClose,onSaved,kit=false}
       <div><dt>Notes/cards</dt><dd>{preview.impact.notesAndCards}</dd></div>
       <div><dt>Checkpoints</dt><dd>{preview.impact.checkpointRefs}</dd></div>
      </dl>
-     <p className="v7-supporting">Merge moves linked evidence and removes the source idea. You can undo it in History.</p>
+     <MergeProtection preview={preview}/>
+     {!protectsHistory(preview)&&<p className="v7-supporting">Merge moves the listed graph links and notes, then removes the source idea. You can undo it in History.</p>}
     </section>}
    </>}
    {message&&<p role="alert" className="v7-error">{message}</p>}
@@ -183,14 +203,15 @@ export default function AtlasCommands({graph,sourceId,onClose,onSaved,kit=false}
       <div><dt>Notes/cards</dt><dd>{preview.impact.notesAndCards}</dd></div>
       <div><dt>Checkpoints</dt><dd>{preview.impact.checkpointRefs}</dd></div>
      </dl>
-     <p className="mt-2">Merge moves linked evidence and removes the source idea; it is auditable and undoable.</p>
+     <MergeProtection preview={preview}/>
+     {!protectsHistory(preview)&&<p className="mt-2">Merge moves the listed graph links and notes, then removes the source idea. You can undo it in History.</p>}
     </section>}
    </div>}
    {message&&<p role="alert" className="mt-3 text-label text-red-600">{message}</p>}
    <div className="mt-4 flex justify-end gap-2">
     <button type="button" className={control} disabled={busy} onClick={onClose}>Cancel</button>
     <button type="submit" className={control+' font-semibold'}
-     disabled={busy||(mode==='merge'&&(!preview||preview.keepId!==targetId))||
+     disabled={busy||(mode==='merge'&&(!preview||preview.keepId!==targetId||protectsHistory(preview)))||
       (mode==='create'&&!subjectId)}>
      {busy?'Saving…':mode==='merge'?'Confirm merge':'Save Atlas change'}
     </button>
