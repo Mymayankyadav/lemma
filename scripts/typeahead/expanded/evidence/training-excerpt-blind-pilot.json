@@ -1,0 +1,95 @@
+{
+  "corpusManifestSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b",
+  "design": "First 20 round-robin selections from the 400-excerpt training audit. Two model reviewers independently inspected the first 480 source codepoints with a clipping indicator, without register, publisher or the peer labels.",
+  "fields": {
+    "boilerplate": "Boilerplate visibly present",
+    "corruption": "Clear mathematical corruption or invalid notation inside the excerpt, ignoring the artificial clipping boundary",
+    "learner": "Reads as a short student reply"
+  },
+  "interpretation": "The pilot oversamples rare strata. Results describe these two model reviewers on these excerpts. All seven boilerplate disagreements involved source wrappers such as titles, vote headers, usernames or quoted forum metadata.",
+  "labelFileSha256": {
+    "sol": "06b690f7d32836caf361295ee9c2c11d25f5397c05480c2214e393d59304db84",
+    "terra": "7a450ad73334998778cd3e09495d5c42a6cf156916a7684abbcd55ff90912bb1"
+  },
+  "levels": [
+    "yes",
+    "no",
+    "unclear"
+  ],
+  "matrixColumns": "GPT-6.1 Terra",
+  "matrixRows": "GPT-6.2 Sol",
+  "n": 20,
+  "packetSha256": "f230f54d0276932d2edfa3bedf2b8e5ceed3eb14db8b14240574d7ee7588ef76",
+  "results": {
+    "boilerplate": {
+      "cohenKappa": 0.375,
+      "disagreements": 7,
+      "matches": 13,
+      "matrix": [
+        [
+          7,
+          7,
+          0
+        ],
+        [
+          0,
+          6,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "rawAgreement": 0.65
+    },
+    "corruption": {
+      "cohenKappa": 0.7297297297297296,
+      "disagreements": 1,
+      "matches": 19,
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          18,
+          0
+        ],
+        [
+          1,
+          0,
+          1
+        ]
+      ],
+      "rawAgreement": 0.95
+    },
+    "learner": {
+      "cohenKappa": 0.6638655462184875,
+      "disagreements": 2,
+      "matches": 18,
+      "matrix": [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          16,
+          0
+        ],
+        [
+          0,
+          1,
+          2
+        ]
+      ],
+      "rawAgreement": 0.9
+    }
+  },
+  "selectionFileSha256": "d11dea5f59af978ba93fca08821d32b6cbc27e41cf37b06f8d096934eb53747c"
+}

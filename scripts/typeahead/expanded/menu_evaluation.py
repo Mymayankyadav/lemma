@@ -138,21 +138,26 @@ def visible_exact(target, observation):
     return any(identity(item) == target for item in observation['slate'])
 
 
+def visible_indeterminate(target, observation):
+    return not visible_exact(target, observation) and any(
+        identity(item) is None and item.get('text', item.get('insert')) == target[2] and
+        item.get('start') == target[0] and item.get('end') == target[1] for item in observation['slate'])
+
+
 def score(gold, captured, selected=None, baseline=None):
     counts, reasons, ghosts, neural = Counter(), Counter(), Counter(), Counter()
     detailed = Counter()
     groups = defaultdict(Counter)
     prior = None if baseline is None else {
-        outcome['eventId']: visible_exact(identity(outcome['edit']), row) for outcome, row in joined(gold, baseline, selected)}
+        outcome['eventId']: (visible_exact(identity(outcome['edit']), row), visible_indeterminate(identity(outcome['edit']), row))
+        for outcome, row in joined(gold, baseline, selected)}
     for outcome, row in joined(gold, captured, selected):
         group = groups[outcome['answerId']]
         target = identity(outcome['edit'])
         trace = row.get('trace') or {}
         raw = [item for item in trace.get('raw', []) if identity(item) == target]
         visible = visible_exact(target, row)
-        ambiguous = not visible and any(identity(item) is None and item.get('text', item.get('insert')) == target[2] and
-                                        item.get('start') == target[0] and item.get('end') == target[1]
-                                        for item in row['slate'])
+        ambiguous = visible_indeterminate(target, row)
         finalist = any(identity(r) == target for r in trace.get('displayed', []))
         stage = ('visible' if visible else 'finalist-not-visible' if finalist else 'outside-visible-three' if any(identity(r) == target for r in trace.get('eligible', []))
                  else 'eligible-pool-limit' if any(r['eligible'] for r in raw) else 'policy' if raw else 'unobserved-or-unproposed')
@@ -185,8 +190,10 @@ def score(gold, captured, selected=None, baseline=None):
         for lane in (kind,outcome['kind']):
             group[lane+'Opportunities'] += 1
             group[lane+'Hits'] += int(visible)
+            group[lane+'Indeterminate'] += int(ambiguous)
             if prior is not None:
-                was_visible = prior[outcome['eventId']]
+                was_visible, prior_ambiguous = prior[outcome['eventId']]
+                group[lane+'PriorIndeterminate'] += int(prior_ambiguous)
                 group[lane+'Gains'] += int(visible and not was_visible)
                 group[lane+'Losses'] += int(was_visible and not visible)
         if row.get('neuralEligible'):
@@ -203,6 +210,8 @@ def score(gold, captured, selected=None, baseline=None):
         ordered = [groups[key] for key in sorted(groups)]
         ids = np.random.default_rng(238).integers(0,len(ordered),(3000,len(ordered)))
         for lane in ('prefix','boundary','word','symbol'):
+            if any(r[lane+'Indeterminate'] or (prior is not None and r[lane+'PriorIndeterminate']) for r in ordered):
+                continue  # Do not turn an unverified identity into a statistical miss.
             hits = np.array([r[lane+'Hits'] for r in ordered])[ids].sum(axis=1)
             exposure = np.array([r[lane+'Opportunities'] for r in ordered])[ids].sum(axis=1)
             valid = exposure > 0

@@ -116,14 +116,17 @@ export function prepareMenuCopies(request: WritingAidRequest, before: string, pr
   const question = new Map<string, MenuCandidate>(), paragraph = new Map<string, MenuCandidate>();
   const questionCounts = new Map<string, number>(), paragraphCounts = new Map<string, number>();
   for (const text of request.question?.slice(0, 3) ?? []) {
-    if (text) collectCopyTerms(text.slice(0, COPY_WINDOW), 0, request, 'question', prefix, suffix, question, questionCounts);
+    if (!text) continue;
+    const visible = text.length > COPY_WINDOW ? text.slice(0, COPY_WINDOW).replace(/\S+$/u, '') : text;
+    collectCopyTerms(visible, 0, request, 'question', prefix, suffix, question, questionCounts);
   }
   const breaks = [...before.matchAll(/\n[ \t]*\n/gu)];
   const prior = breaks.at(-1);
   const start = prior ? prior.index + prior[0].length : 0;
   const bounded = Math.max(start, before.length - COPY_WINDOW);
-  const edge = bounded === start ? 0 : (before.slice(bounded).search(/\s/u) + 1 || before.length - bounded);
-  collectCopyTerms(before.slice(bounded + edge), bounded + edge, request, 'paragraph', prefix, suffix, paragraph, paragraphCounts);
+  const boundary = bounded === start ? 0 : before.slice(bounded).search(/\s/u) + 1;
+  const edge = bounded === start || boundary ? bounded + boundary : before.length;
+  collectCopyTerms(before.slice(edge), edge, request, 'paragraph', prefix, suffix, paragraph, paragraphCounts);
   const best = (items: Map<string, MenuCandidate>) => [...items.values()].map(item => ({
     item, prior: score(item.word.toLowerCase()) - Number(item.word !== item.text) * Math.log(4),
   })).sort((a, b) => b.prior - a.prior).slice(0, MAX_COPY).map(row => row.item);

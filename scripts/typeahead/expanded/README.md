@@ -195,3 +195,17 @@ Set `--phase cost` to type complete answers and verify the result of each accept
 For the optional 512-token model, package the audited FP16 export with `package_android_fp16.py --export "$export_dir" --out "$pack"`. Native references come from `android_reference.py --checkpoint "$checkpoint" --cases "$cases" --out "$reference"`. Run `run_cohort.py` with `--arm neural --fp16-pack "$pack"` for an explicitly installed, strict browser trial. A physical test uses a debuggable Android build containing the normal Tutor UI and the lab overrides. Run `node scripts/typeahead/expanded/qualify_android.mjs --pack "$pack" --reference "$reference" --out "$device_result"`. Supply `--serial` when multiple devices are attached and `--renderer` if WebView cannot identify a unique renderer through CDP. The lab records top-three parity by group, cached decode latency, actual keyboard taps, PSS and offline behavior.
 
 Pass `--baseline previous/impressions.jsonl` to `menu_evaluation.py score` to compare visible offers on the same frozen opportunities. The report gives exact completions gained and lost and a thread-bootstrap interval for each change. The `paired` command reports keystroke savings and their interval for each arm and for the paired difference.
+
+### Matched opt-in development comparison
+
+With both static builds already served and each Playwright config pointing to its own server, run:
+
+```sh
+python scripts/typeahead/expanded/validation_compare.py \
+  --split "$staged/validation" --allocation "$allocation_jsonl" \
+  --control-build "$control_build" --control-config "$control_browser_config" \
+  --candidate-build "$candidate_build" --candidate-config "$candidate_browser_config" \
+  --model-sha "$count_sha256" --menu-trial m2 --jobs 2 --block 10 --out "$comparison"
+```
+
+The allocation JSONL has one `answerId` and predeclared `stratum` per answer; add `profileBlock` when answers share learning state. The command validates the staged manifest, pins the driver, runs trace-off full trajectories and trace-on blinded fixed observations for both arms, and writes `paired.json` with 10,000 matched, stratified whole-block draws. The output's planning approximation is not a final enrollment decision; estimate it from a sufficiently informative development comparison and freeze the sample before staging final data. `--punctuation-pairs` on `run_cohort.py` is a separate trajectory definition and cannot be pooled with strict costs. This command accepts the validation split only and does not stage any reserved answers. Tap-to-paint and physical-device tests require separate, isolated runs.

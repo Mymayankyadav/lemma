@@ -98,6 +98,9 @@ describe('exact edits, tutor choices and ordered count candidates', () => {
       paragraph, prefix, () => -2);
     expect(copied.candidates).toHaveLength(0);
     expect(copied.recurrence('QuasiMap')).toEqual([0, 0]);
+    const cropped = prepareMenuCopies({...r, question: [' '.repeat(635) + 'QuasiMap supplies the notation.']},
+      before, prefix, () => -2);
+    expect(cropped.candidates).toHaveLength(0);
     const denied = predictWritingAidPool({...r, aid: {...scaffold, withhold: ['QuasiMap for']}}).words;
     expect(denied.some(row => row.insert.startsWith('QuasiMap'))).toBe(false);
   });
@@ -124,7 +127,9 @@ describe('exact edits, tutor choices and ordered count candidates', () => {
     expect(prepareRightContext(model, before, '. Another sentence.')).toBeUndefined();
     expect(actionMenuScore(-2, Math.log(2), [], 'm1', undefined, '')).toBe(-2 + Math.log(2));
     expect(actionMenuScore(-2, Math.log(2), [], 'm1-neutral', undefined, '')).toBe(-2);
-    expect(resolveMenuTrial('?typeahead-menu=m1', false, true)).toBeUndefined();
+    for (const trial of ['m1', 'm1-neutral', 'm2', 'm2-tutor', 'm2-right', 'unverified']) {
+      expect(resolveMenuTrial('?typeahead-menu=' + trial, false, true)).toBeUndefined();
+    }
     expect(resolveMenuTrial('?typeahead-menu=m1', true, false)).toBeUndefined();
     expect(resolveMenuTrial('?typeahead-menu=m1', true, true)).toBe('m1');
   });

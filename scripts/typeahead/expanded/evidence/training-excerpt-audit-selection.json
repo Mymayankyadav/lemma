@@ -1,0 +1,31 @@
+{
+  "byRegister": {
+    "explanation": 228,
+    "learner": 131,
+    "proof": 41
+  },
+  "byStratum": {
+    "EleutherAI/proof-pile-2|proof|long|formula": 38,
+    "EleutherAI/proof-pile-2|proof|long|no_formula": 1,
+    "EleutherAI/proof-pile-2|proof|short|no_formula": 2,
+    "HuggingFaceTB/finemath|explanation|long|formula": 38,
+    "HuggingFaceTB/finemath|explanation|long|no_formula": 38,
+    "HuggingFaceTB/finemath|explanation|medium|formula": 38,
+    "HuggingFaceTB/finemath|explanation|medium|no_formula": 38,
+    "HuggingFaceTB/finemath|explanation|short|formula": 38,
+    "HuggingFaceTB/finemath|explanation|short|no_formula": 38,
+    "hoskinson-center/proof-pile|learner|long|formula": 6,
+    "hoskinson-center/proof-pile|learner|long|no_formula": 1,
+    "hoskinson-center/proof-pile|learner|medium|formula": 38,
+    "hoskinson-center/proof-pile|learner|medium|no_formula": 37,
+    "hoskinson-center/proof-pile|learner|short|formula": 37,
+    "hoskinson-center/proof-pile|learner|short|no_formula": 12
+  },
+  "eligiblePrefixDocuments": 3000,
+  "labels": "not collected",
+  "reviewers": "none; independent review and agreement remain outstanding",
+  "sampling": "round-robin source/register/length/formula strata within deterministic train prefix; oversamples rare strata; not corpus prevalence",
+  "selectedExcerpts": 400,
+  "selectionIdSha256": "fc2269cc3130451546474796776a8a0423433e9c8d7c471e26a034a7b2b106ed",
+  "sourceManifestSha256": "1a0406ec50ef4c0389e5aabad15d51717d4689f6d405c66594c1c1d0ea561c2b"
+}

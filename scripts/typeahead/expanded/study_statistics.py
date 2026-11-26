@@ -10,7 +10,7 @@ import math
 from pathlib import Path
 import numpy as np
 from corpus import file_hash, records
-from menu_evaluation import identity, joined, visible_exact
+from menu_evaluation import identity, joined, visible_exact, visible_indeterminate
 
 
 def indexed(path, key):
@@ -37,13 +37,20 @@ def analyze(allocation, gold, control, candidate, control_keys, candidate_keys, 
                 any(type(r.get('assistedKeys')) is not int or r['assistedKeys'] < 0 for r in (x, y))):
             raise ValueError('Invalid or mismatched trajectory: ' + key)
         vectors[key] = np.array([x['assistedKeys'] - y['assistedKeys'], x['manualKeys'], 0, 0], dtype=float)
-    old = {outcome['eventId']: visible_exact(identity(outcome['edit']), row) for outcome, row in joined(gold, control)}
+    old = {}
+    for outcome, row in joined(gold, control):
+        target = identity(outcome['edit'])
+        if visible_indeterminate(target, row):
+            raise ValueError('Baseline has an unverified matching edit')
+        old[outcome['eventId']] = visible_exact(target, row)
     seen = set()
     for outcome, row in joined(gold, candidate):
         key = outcome['answerId']
         if key not in vectors:
             raise ValueError('Observation outside allocation')
         seen.add(key)
+        if visible_indeterminate(identity(outcome['edit']), row):
+            raise ValueError('Candidate has an unverified matching edit')
         if outcome['boundary']:
             vectors[key][2] += int(visible_exact(identity(outcome['edit']), row)) - int(old[outcome['eventId']])
             vectors[key][3] += 1
