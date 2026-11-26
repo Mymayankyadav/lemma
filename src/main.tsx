@@ -2,6 +2,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './app/App'
 import './styles/app.css'
+// N252: the iPad's layout (html[data-ipad] only). Loaded with the app, not a route: Welcome and other pages outside the
+// shell need it too.
+import './app/v7/ipad.css'
 import {setShellRoot} from './app/shellRoot'
 import {isV7Route} from './app/v7Kit'
 import {loadShellFonts} from './app/shellFonts'

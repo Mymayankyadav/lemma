@@ -423,7 +423,9 @@
    their outer bottom corner, secondary characters grey above their letters, and no enlarged preview. The rows grow
    with the screen up to iPadOS's pitch; Gboard's rules above stay as they are for every other device. */
 @media (min-height: 560px) {
-  .lemma-tutor .kb[data-keyboard-layout="ipad"] {--cell: clamp(44px, 7dvh, 60px);}
+  /* The row follows the taller of the screen's height and width, so landscape keys (now as wide as the screen) stay
+     about two-thirds as tall as wide, as iPadOS's are; portrait caps are about 54 pt square. */
+  .lemma-tutor .kb[data-keyboard-layout="ipad"] {--cell: clamp(44px, max(7dvh, 5.4vw), 64px);}
 }
 .lemma-tutor .kb[data-keyboard-layout="ipad"] {padding: 0 3px max(6px, var(--v7-safe-bottom, env(safe-area-inset-bottom)));}
 .lemma-tutor .kb .rows[data-layout="ipad"] {padding: 2px 0 0; --ip-gap: 5px; --ip-corner: calc(var(--ip-gap) + var(--cell) * .14);}
