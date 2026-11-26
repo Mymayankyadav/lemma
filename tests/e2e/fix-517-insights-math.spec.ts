@@ -40,7 +40,7 @@ for(const width of [360,390] as const){
   }))];
   await page.route('**/rest/v1/**',r=>{
    const path=new URL(r.request().url()).pathname.replace(/^\/rest\/v1/,'');
-   const value:unknown=path==='/rpc/bootstrap'||path==='/settings'?settings:path==='/rpc/insights'?{...insights,subjectMinutes}:path==='/rpc/home_summary'?home:path==='/rpc/exam_home_summary'?{...home,exam:{sittings:[]}}:undefined;
+   const value:unknown=path==='/rpc/bootstrap'||path==='/settings'?settings:path==='/rpc/insights'?{...insights,subjectMinutes}:path==='/rpc/home_summary'?home:undefined;
    if(value===undefined){unexpected.push(path);return r.fulfill({status:404,body:'{}'});}
    return r.fulfill({status:200,contentType:'application/json',headers:{'content-range':'0-0/1'},body:JSON.stringify(value)});
   });
@@ -111,7 +111,6 @@ test('FIX #517 duplicate mathematical idea names ask for a subject instead of op
   const path=new URL(r.request().url()).pathname.replace(/^\/rest\/v1/,'');
   const data:unknown=path==='/rpc/bootstrap'||path==='/settings'?settings:
    path==='/rpc/home_summary'?home:
-   path==='/rpc/exam_home_summary'?{...(home as object),exam:{sittings:[]}}:
    path==='/subjects'?subjects:path==='/concepts'?concepts:
    path==='/rpc/review_items'?[]:
    ['/concept_links','/checkpoint_concepts','/checkpoints','/projects','/checkpoint_prereqs',

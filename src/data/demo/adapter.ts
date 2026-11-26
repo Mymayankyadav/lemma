@@ -1,4 +1,4 @@
-import {isFlagOn} from '../../flags';
+import {currentEffectiveShell,isFlagOn} from '../../flags';
 import {AuthoredCards} from './authored-cards';
 import {authGeneration,authOwner} from '../authBoundary';
 import {firstUseStore,type FirstCardInput,type FirstCardReceipt} from './first-card';
@@ -1616,7 +1616,8 @@ export class DemoAdapter implements LemmaApi {
     // from browser navigation, React commit and screenshot readiness waits.
     if(this.virtualStressDue)performance.measure('lemma-stress-home-query',
       {start:queryStarted,end:performance.now()});
-    const exam=isFlagOn('examMode')?await (await import('../exam/home-demo')).demoExamHome(
+    // N251: only the v7 Today and Practice read the exam block; other shells skip loading the planner for it.
+    const exam=isFlagOn('examMode')&&currentEffectiveShell()==='v7'?await (await import('../exam/home-demo')).demoExamHome(
       projects.filter(project=>['linear-algebra','topology','real-analysis'].includes(project.slug)||
        this.store.projects.some(row=>row.id===project.id&&!row.id.startsWith('project-stress-'))),
     ):undefined

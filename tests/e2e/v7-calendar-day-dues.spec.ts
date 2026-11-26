@@ -17,7 +17,8 @@ for(const {width,textSize} of [{width:390,textSize:100},{width:320,textSize:200}
   const openDay=(date:string)=>page.goto(at('/calendar?view=day&date='+date).replace('#',',-atlasV3#'));
 
   for(const {date,title,kind} of [
-   {date:'2026-11-23',title:'Analysis examination',kind:'Deadline'},
+   // N251: with exam mode on, an exam deadline is labelled Exam rather than the generic Deadline.
+   {date:'2026-11-23',title:'Analysis examination',kind:'Exam · Real Analysis'},
    {date:'2026-11-10',title:'Proof techniques',kind:'Practice due'},
   ]){
    await openDay(date);

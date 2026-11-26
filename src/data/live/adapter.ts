@@ -1,4 +1,4 @@
-import {isFlagOn} from '../../flags'
+import {currentEffectiveShell,isFlagOn} from '../../flags'
 import type { LemmaApi } from '../api'
 import {isAuthSessionMissingError} from '@supabase/supabase-js'
 import { textKind } from '../../pdf/text-source'
@@ -426,7 +426,8 @@ export class LiveAdapter implements LemmaApi {
   await owner(db)
   // ST-5: a single owner-scoped RPC computes Today, the active resume target,
   // pending count and the daily review quota without downloading full tables.
-  if(isFlagOn('examMode')){
+  // N251: only the v7 screens (Today, Practice) read Home's exam block, so the legacy and v6 shells keep the plain summary.
+  if(isFlagOn('examMode')&&currentEffectiveShell()==='v7'){
    const result=await db.rpc('exam_home_summary')
    if(!result.error||!['PGRST202','42883'].includes(result.error.code))return checked(result) as import('../types').HomeSummary
   }
