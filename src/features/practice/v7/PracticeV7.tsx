@@ -58,7 +58,7 @@ export default function PracticeV7(){
   </HubHeader>
   {isFlagOn('examMode')&&home.data?.exam?.sittings.filter(sitting=>sitting.status==='active').map(sitting=><section className="v7-exam-ledger" aria-label={'Short topic reviews for '+sitting.title} key={sitting.id}>
    <h2 className="v7-subhead">Short topic reviews · {sitting.title}</h2>
-   {(sitting.topRows??[]).slice(0,5).map(({row,exposure})=><TopicReview key={row.key} slug={sitting.slug} sittingId={sitting.id} row={row} exposure={exposure}/>)}
+   {(sitting.topRows??[]).slice(0,5).map(({row,exposure})=><TopicReview quiet key={row.key} slug={sitting.slug} sittingId={sitting.id} row={row} exposure={exposure}/>)}
   </section>)}
   <AdaptivePractice/>
   {loading&&<p role="status" className="v7-pr-note">Loading practice topics…</p>}

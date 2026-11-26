@@ -21,8 +21,10 @@ export const FLAG_DEFAULTS = {
   /** Owner-requested tutor page. Live writes also require the server release capability. */
   tutorThreads: true,
   todayNextStep: false,
-  /** N241: exam setup and prep ledger on a Path. */
-  examMode: false,
+  /** N241: exam setup and prep ledger on a Path. N251 (Owner): on by default at the Owner's request (needs a review),
+   *  with the exam tutor, Today's exam card, return to study and card ideas (docs/current/N251.md).
+   *  `?flags=-examMode` turns it off in dev/test/e2e builds. */
+  examMode: true,
   /** N249 (Owner): draw one symbol at a time over the tutor's keys; the strip offers its readings and a confident,
    *  complete one goes in by itself (docs/current/N249.md). On by default at the Owner's request (needs a review);
    *  `?flags=-tutorKeyInk` turns it off in dev/test/e2e builds. */

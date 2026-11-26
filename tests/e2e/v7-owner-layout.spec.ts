@@ -61,7 +61,8 @@ for(const [width,height,scale] of [[320,640,100],[390,844,160]])test(`Path tabs 
  await trigger.click();
  await expect(trigger).toHaveAttribute('aria-expanded','false');
  const tabs=page.getByRole('tablist',{name:'Path sections'});
- await expect(tabs.getByRole('tab')).toHaveCount(4);
+ // N251: real-analysis has a demo exam sitting, so with exam mode on it shows a fifth tab, Exam, which must fit too.
+ await expect(tabs.getByRole('tab')).toHaveCount(5);
  expect(await tabs.evaluate(node=>{
   const box=node.getBoundingClientRect();
   return [...node.querySelectorAll('button')].every(tab=>{

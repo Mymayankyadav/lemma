@@ -1,4 +1,5 @@
 import {useId,useState,type FormEvent} from 'react'
+import {ChevronDown} from 'lucide-react'
 import type {BlueprintRow} from '../../data/exam/contract'
 import type {CheckpointView} from '../../data/types'
 import {useAtlas} from '../../data/hooks'
@@ -57,20 +58,20 @@ export function BlueprintRowSheet({row,checkpoints,disabled,onSave,onClose}:{
     <Field name="low" label="Lower marks" type="number" min="0" max="1000" step="any" defaultValue={row?.marks_low} optional/>
     <Field name="high" label="Upper marks" type="number" min="0" max="1000" step="any" defaultValue={row?.marks_high} optional/>
    </div>
-   <label className="v7-field-group">How likely is it to appear?
+   <label className="v7-field-group"><span>How likely is it to appear?</span>
     <select className="v7-field" value={chance} onChange={event=>setChance(event.target.value)}>
      <option value="1">Always (100%)</option><option value="0.8">Likely (80%)</option><option value="0.5">Maybe (50%)</option><option value="custom">Custom</option>
     </select>
    </label>
    {chance==='custom'&&<Field name="custom" label="Chance (0.01–1)" type="number" min="0.01" max="1" step="any" defaultValue={row?.chance} required/>}
-   <label className="v7-exam-check"><input type="checkbox" name="compulsory" defaultChecked={row?.compulsory}/> Compulsory</label>
+   <label className="v7-exam-check v7-check-choice"><input type="checkbox" name="compulsory" defaultChecked={row?.compulsory}/><span>Compulsory</span></label>
    <Field label="Find an Atlas concept" value={query} onChange={event=>setQuery(event.target.value)}/>
    {concepts.length>0&&<div className="v7-exam-actions">{concepts.map(concept=><Button key={concept} aria-label={'Remove concept '+concept} onClick={()=>setConcepts(list=>list.filter(value=>value!==concept))}>{concept} ×</Button>)}</div>}
    {query.trim()&&<div className="v7-exam-actions">{options.map(concept=><Button key={concept.slug} disabled={concepts.length>=8} onClick={()=>{setConcepts(list=>[...list,concept.slug]);setQuery('')}}>{concept.name}</Button>)}
     {!options.length&&<p>No matching concepts.</p>}</div>}
-   {checkpoints.length>0&&<details><summary>Checkpoints{checkpointCodes.length>0?' ('+checkpointCodes.length+')':''}</summary>
-    <div className="v7-exam-options">{checkpoints.map(cp=><label className="v7-exam-check" key={cp.id}>
-     <input type="checkbox" disabled={checkpointCodes.length>=8&&!checkpointCodes.includes(cp.code)} checked={checkpointCodes.includes(cp.code)} onChange={event=>setCheckpointCodes(list=>event.target.checked?[...list,cp.code]:list.filter(code=>code!==cp.code))}/> {cp.code} · {cp.title}
+   {checkpoints.length>0&&<details className="v7-exam-disclosure"><summary><span>Checkpoints{checkpointCodes.length>0?' ('+checkpointCodes.length+')':''}</span><ChevronDown size={16} aria-hidden="true"/></summary>
+    <div className="v7-exam-options">{checkpoints.map(cp=><label className="v7-exam-check v7-check-choice" key={cp.id}>
+     <input type="checkbox" disabled={checkpointCodes.length>=8&&!checkpointCodes.includes(cp.code)} checked={checkpointCodes.includes(cp.code)} onChange={event=>setCheckpointCodes(list=>event.target.checked?[...list,cp.code]:list.filter(code=>code!==cp.code))}/><span>{cp.code} · {cp.title}</span>
     </label>)}</div>
    </details>}
    <div className="v7-exam-form-pair">

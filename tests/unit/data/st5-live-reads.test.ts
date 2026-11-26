@@ -37,6 +37,31 @@ describe('ST-5 bounded live reads',()=>{
   expect(mock.rpc).toHaveBeenCalledWith('home_summary')
   expect(mock.getUser).toHaveBeenCalledOnce()
  })
+ // N251: exam mode is on and only the v7 Today and Practice read Home's exam block.
+ it('in the v7 shell loads Today with the exam-aware summary, still in one RPC',async()=>{
+  window.history.replaceState(null,'','/?flags=v7Shell')
+  try{
+   const home={resume:null,due:2,pendingProposals:0,projects:[],exam:{sittings:[]}}
+   mock.rpc.mockResolvedValue({data:home,error:null})
+   expect(await new LiveAdapter().getHome()).toEqual(home)
+   expect(mock.rpc).toHaveBeenCalledOnce()
+   expect(mock.rpc).toHaveBeenCalledWith('exam_home_summary')
+  }finally{window.history.replaceState(null,'','/')}
+ })
+ it('in the v7 shell falls back to the plain summary only when the exam-aware one is not deployed',async()=>{
+  window.history.replaceState(null,'','/?flags=v7Shell')
+  try{
+   const home={resume:null,due:0,pendingProposals:0,projects:[]}
+   mock.rpc.mockImplementation(async(name:string)=>name==='exam_home_summary'
+    ?{data:null,error:{code:'PGRST202',message:'Could not find the function'}}:{data:home,error:null})
+   expect(await new LiveAdapter().getHome()).toEqual(home)
+   expect(mock.rpc.mock.calls.map(call=>call[0])).toEqual(['exam_home_summary','home_summary'])
+   mock.rpc.mockReset()
+   mock.rpc.mockResolvedValue({data:null,error:{code:'42501',message:'permission denied'}})
+   await expect(new LiveAdapter().getHome()).rejects.toBeTruthy()
+   expect(mock.rpc).toHaveBeenCalledOnce()
+  }finally{window.history.replaceState(null,'','/')}
+ })
  it('loads the Review deck tree in one RPC without whole-table downloads',async()=>{
   const tree=[{key:'project:algebra',label:'Algebra',glyph:'∫',level:0,due:3,
    children:[{key:'cp:algebra:CP1',label:'Groups',glyph:'∫',level:1,due:3,children:[]}]}]

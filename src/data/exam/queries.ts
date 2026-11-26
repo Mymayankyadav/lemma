@@ -7,16 +7,19 @@ import {createDemoExamApi} from './demo'
 import {createLiveExamApi} from './live'
 import type {ExamApi, SittingRecord} from './contract'
 
-let cached:ExamApi|undefined
-let cachedProfile:string|undefined
+let live:ExamApi|undefined
+let demo:ExamApi|undefined
+let demoProfile:string|undefined
+/** N251: the demo exam store, whatever the page's mode. The demo adapter builds its Home from it, so a
+ *  DemoAdapter used outside `?demo=` (tests, stress fixtures) never reaches the live server. */
+export function getDemoExamApi(){
+ const profile=getDemoProfile()
+ if(!demo||demoProfile!==profile){demo=createDemoExamApi();demoProfile=profile}
+ return demo
+}
 export function getExamApi(){
- const mode=getMode()
- const profile=mode==='demo'?getDemoProfile():undefined
- if(cached?.mode!==mode||cachedProfile!==profile){
-  cached=mode==='demo'?createDemoExamApi():createLiveExamApi()
-  cachedProfile=profile
- }
- return cached
+ if(getMode()==='demo')return getDemoExamApi()
+ return live??=createLiveExamApi()
 }
 function examOwner() {
  return getMode()==='demo'?'demo':authSignedOut()?null:authOwner()??readDeviceSession()?.ownerId??null

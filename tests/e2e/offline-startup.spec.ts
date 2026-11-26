@@ -47,6 +47,8 @@ async function fixture(page:Page){
   }
   if(path==='/rest/v1/settings')return route.fulfill({json:settings})
   if(path==='/rest/v1/rpc/home_summary')return route.fulfill({json:{projects,due:3,pendingProposals:0,resume:null}})
+  // N251: exam mode reads the exam-aware summary, which is home_summary plus `exam`.
+  if(path==='/rest/v1/rpc/exam_home_summary')return route.fulfill({json:{projects,due:3,pendingProposals:0,resume:null,exam:{sittings:[]}}})
   if(path==='/rest/v1/rpc/project_summaries')return route.fulfill({json:projects})
   if(path==='/rest/v1/rpc/home_review_outlook')return route.fulfill({json:{decks:[],forecast:[]}})
   if(path==='/rest/v1/rpc/lemma_plan_released')return route.fulfill({json:false})

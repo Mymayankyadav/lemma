@@ -18,7 +18,7 @@ export function ReturnCard({sitting,slug,projectTitle,next,whatChanged,ideaCount
   {next&&<p><strong>Study next</strong> · {next.label}</p>}
   <p>{whatChanged??'Exam prep evidence is in your history.'}</p>
   <div className="v7-exam-actions">
-   <Link className="v7-button v7-primary" to={href}><span>Continue studying</span></Link>
+   <Link className="v7-button v7-secondary" to={href}><span>Continue studying</span></Link>
    {deferred>0&&<Link className="v7-button v7-secondary" to={path+'?tab=exam&examSitting='+encodeURIComponent(sitting.id)}><span>Deferred topics ({deferred})</span></Link>}
    {ideaCount>0&&<Link className="v7-button v7-secondary" to={path+'?tab=cards&cards=ideas'}><span>Card ideas ({ideaCount})</span></Link>}
   </div>

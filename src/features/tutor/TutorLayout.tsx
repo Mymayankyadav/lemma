@@ -100,8 +100,8 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
         {onQuestion && <Button small onClick={() => sessionAction(onQuestion)}>Latest question</Button>}
         {page.exam&&page.exam.status!=='finished'&&<>
          <BackToStudy project={project} sitting={page.exam} callback={()=>setActionsOpen(false)}/>
-         <Button onClick={()=>sessionAction(()=>startExamPanel('finish'))}>Finish exam…</Button>
-         <Button onClick={()=>sessionAction(()=>startExamPanel('budget'))}>I have {page.exam.study_minutes??0} min</Button>
+         <Button small onClick={()=>sessionAction(()=>startExamPanel('finish'))}>Finish exam…</Button>
+         <Button small onClick={()=>sessionAction(()=>startExamPanel('budget'))}>I have {page.exam.study_minutes??0} min</Button>
         </>}
         {!page.exam&&<Button small onClick={() => sessionAction(() => setPanel('plan'))}>Learn plan</Button>}
         {!page.exam&&<><Button small onClick={() => sessionAction(() => setPanel('checks'))}>Checks{detail.view.dueCards > 0 ? ' · ' + detail.view.dueCards + ' due' : ''}</Button>

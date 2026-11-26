@@ -1,12 +1,12 @@
 import type {ProjectSummary} from '../types'
 import type {ExamHomeSitting} from './contract'
-import {getExamApi} from './queries'
+import {getDemoExamApi} from './queries'
 import {planExam} from '../../../supabase/functions/_shared/exam/plan'
 import {modeOf,projectTime,studyDay} from '../../../supabase/functions/_shared/adaptive/time'
 import {improvedExamRows,recentExamReturn} from '../../../supabase/functions/_shared/exam/return'
 
 export async function demoExamHome(projects:ProjectSummary[]):Promise<{sittings:ExamHomeSitting[]}>{
- const now=Date.now(),api=getExamApi()
+ const now=Date.now(),api=getDemoExamApi()
  const rows=await Promise.all(projects.map(async project=>{
   const snapshot=await api.read(project.id,project.slug)
   const visible=snapshot.sittings.filter(sitting=>
