@@ -43,23 +43,23 @@ export default function ReviewRunV6(){
  },[settings.data,card]);
  useEffect(()=>{
   let cancelled=false;
-  setLoading(true);
+  setLoading(true);setPending(null);
   void (async()=>{
    const loaded=runId?await getRun(runId):await resumeRun();
    if(cancelled)return;
    if(!loaded){setMessage(null);return}
-   const receipt=pendingGrade();
-   if(receipt?.runId===loaded.id){
+   const receipt=pendingGrade(loaded.id);
+   if(receipt){
     const current=loaded.items[loaded.position];
     if(current?.id===receipt.itemId){
      setPending(receipt);
      // The grade already committed: only retry the advance.
      try{
       const next=await advanceGrade(loaded,current.id,receipt.reviewId);
-      clearPendingGrade();if(!cancelled){setPending(null);setRun(next)}
+      clearPendingGrade(receipt);if(!cancelled){setPending(null);setRun(next)}
       return;
      }catch{if(!cancelled)setMessage('The grade was saved. Retry advancing; do not grade again.')}
-    }else clearPendingGrade();
+    }else clearPendingGrade(receipt);
    }
    if(!cancelled)setRun(loaded);
   })().catch(error=>{if(!cancelled)setMessage(error instanceof Error?error.message:'Could not restore review')})
@@ -74,11 +74,11 @@ export default function ReviewRunV6(){
    navigate('/review/done?run='+encodeURIComponent(result.id));
  };
  async function retryAdvance(){
-  if(!run||!item||!pending||busy)return;
+  if(!run||!item||pending?.runId!==run.id||pending.itemId!==item.id||busy)return;
   setBusy(true);setMessage(null);
   try{
    const result=await advanceGrade(run,item.id,pending.reviewId);
-   clearPendingGrade();setPending(null);done(result);
+   clearPendingGrade(pending);setPending(null);done(result);
   }catch(error){setMessage(error instanceof Error?error.message:'Could not advance saved grade')}
   finally{setBusy(false)}
  }
@@ -100,7 +100,7 @@ export default function ReviewRunV6(){
    setPending(receipt);
    writePendingGrade(receipt);
    const advanced=await advanceGrade(run,item.id,reviewed.reviewId);
-   clearPendingGrade();setPending(null);done(advanced);
+   clearPendingGrade(receipt);setPending(null);done(advanced);
   }catch(error){setMessage(error instanceof Error?error.message:'Review could not be saved')}
   finally{setBusy(false)}
  }

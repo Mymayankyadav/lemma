@@ -98,12 +98,14 @@ type FixtureRun={id:string;user_id:string;position:number;status:'running'|'paus
 
 /** Stateful PostgREST boundary: exercises the production adapter and persisted UI recovery.
  * Actual RLS, concurrent transactions and membership are independently tested by first-study*.mjs. */
-async function reviewFixture(page:Page,options:{count:number;paused?:boolean;future?:boolean;loseGradeAck?:boolean;otherPath?:boolean;released?:boolean}){
+async function reviewFixture(page:Page,options:{count:number;paused?:boolean;future?:boolean;loseGradeAck?:boolean;otherPath?:boolean;released?:boolean;
+ legacyGradeError?:(cardId:string,rating:number)=>string|undefined|Promise<string|undefined>}){
  const ownerId=id(1),otherOwner=id(2),pathId=id(10),checkpointId=id(20),conceptId=id(30);
  const future=new Date(NOW.getTime()+90*86400000).toISOString();
  let session=authSession(ownerId),runNumber=100,reviewNumber=0;
  const runs:FixtureRun[]=[],gradeRequests:Record<string,unknown>[]=[],startRequests:Record<string,unknown>[]=[],exactReads:string[]=[];
  const receipts=new Map<string,Record<string,unknown>>();
+ const previousCards=new Map<number,WireCard>();
  const records:FixtureCard[]=Array.from({length:options.count+(options.otherPath?1:0)},(_,index)=>{
   const other=index>=options.count;
   return {card:{id:id(1000+index),note_id:id(2000+index),user_id:ownerId,ord:1,version:1,state:2,
@@ -160,7 +162,7 @@ async function reviewFixture(page:Page,options:{count:number;paused?:boolean;fut
    const run=materialize(chosen,{target:{kind,id:scopeId},targetLabel:label});
    return reply({operationId:body.p_operation_id,status:'applied',runId:run.id,runVersion:run.version,actionNo:1});
   }
-  if(table==='rpc/review_runs_command'){
+  if(table==='rpc/review_runs_command'||table==='rpc/review_runs_undo_last'){
    const command=body.p;
    let run:FixtureRun|undefined;
    if(command.operation==='start'){
@@ -170,14 +172,39 @@ async function reviewFixture(page:Page,options:{count:number;paused?:boolean;fut
    }else{
     run=visibleRuns().find(row=>row.id===command.target.id);
     expect(run).toBeDefined();expect(command.expectedVersion).toBe(run!.version);
-    expect(['pause','resume']).toContain(command.operation);
-    run!.status=command.operation==='pause'?'paused':'running';run!.version++;
+    if(command.operation==='advance'){
+     const item=run!.items[run!.position];
+     expect(command.patch).toMatchObject({kind:'graded',item_id:item.id});
+     expect(previousCards.get(command.patch.review_id)?.id).toBe(item.card_id);
+     item.state='graded';item.review_id=command.patch.review_id;run!.position++;
+     if(run!.position===run!.items.length){run!.status='exhausted';run!.ended_at=NOW.toISOString();}
+    }else if(command.operation==='undo_last'){
+     const item=run!.items[run!.position-1];
+     expect(command.patch.item_id).toBe(item.id);
+     const card=records.find(row=>row.card.id===item.card_id)!.card;
+     Object.assign(card,previousCards.get(item.review_id!),{version:card.version+1});
+     item.expected_card_version=card.version;item.state='pending';item.review_id=null;run!.position--;
+    }else{
+     expect(['pause','resume']).toContain(command.operation);
+     run!.status=command.operation==='pause'?'paused':'running';
+    }
+    run!.version++;
    }
    return reply({status:'ok',actionNo:1,run,changed:[{resource:'review_runs',id:run!.id,version:run!.version}]});
   }
   if(table==='rpc/study_run_item_available'){
    const run=visibleRuns().find(row=>row.id===body.p_run),item=run?.items[run.position];
    return reply(!!item&&item.id===body.p_item&&item.card_id===body.p_card);
+  }
+  if(table==='rpc/record_review'){
+   gradeRequests.push(body);
+   const error=await options.legacyGradeError?.(body.p_card,body.p_rating);
+   if(error)return route.fulfill({status:400,json:{message:error}});
+   const card=records.find(row=>row.card.id===body.p_card)!.card;
+   const {expected_version,...next}=body.p_next;
+   expect(expected_version).toBe(card.version);
+   previousCards.set(++reviewNumber,{...card});Object.assign(card,next,{version:card.version+1});
+   return reply(reviewNumber);
   }
   if(table==='rpc/grade_study_run_item'){
    gradeRequests.push(body);
@@ -218,6 +245,7 @@ async function reviewFixture(page:Page,options:{count:number;paused?:boolean;fut
   return reply([]);
  });
  return {ownerId,otherOwner,pathId,checkpointId,conceptId,records,runs,gradeRequests,startRequests,exactReads,
+  createRun:(start=0)=>materialize(records.slice(start)),
   reviewCount:()=>reviewNumber,
   async switchOwner(nextOwner:string){
    session=authSession(nextOwner);
@@ -226,6 +254,67 @@ async function reviewFixture(page:Page,options:{count:number;paused?:boolean;fut
     const channel=new BroadcastChannel(authKey);channel.postMessage({event:'SIGNED_IN',session});channel.close();
    },{authKey,session});
   }};
+}
+
+test('legacy grade retry stays on the revealed card and clears when Undo restores the previous card',async({page})=>{
+ let rejectAgain=true;
+ const fixture=await reviewFixture(page,{count:3,released:false,
+  legacyGradeError:(_card,rating)=>rating===1&&rejectAgain?'Could not save this Again grade':undefined});
+ const run=fixture.createRun();
+ await page.clock.setFixedTime(NOW);await page.goto(live('/review/run?run='+run.id));
+ const question=page.getByRole('group',{name:'Question',exact:true});
+ const retry=page.getByRole('button',{name:'Retry saving answer',exact:true});
+ const reveal=page.getByRole('button',{name:'Show answer',exact:true});
+ await expect(question).toHaveText('Topology question 1');
+ await reveal.click();await page.getByRole('button',{name:/^Good/}).click();
+ await expect(question).toHaveText('Topology question 2');
+ await reveal.click();await page.getByRole('button',{name:/^Again/}).click();
+ await expect(retry).toBeEnabled();
+ await page.getByRole('button',{name:'Undo last answer'}).click();
+ await expect(question).toHaveText('Topology question 1');
+ await expect(reveal).toBeVisible();
+ await expect(retry).toHaveCount(0);
+ await expect(page.getByText('Could not save this Again grade',{exact:true})).toHaveCount(0);
+
+ await reveal.click();await page.getByRole('button',{name:/^Again/}).click();
+ await expect(retry).toBeEnabled();
+ rejectAgain=false;
+ await retry.click();
+ await expect(question).toHaveText('Topology question 2');
+ await expect(retry).toHaveCount(0);
+ expect(fixture.gradeRequests.map(({p_card,p_rating})=>[p_card,p_rating])).toEqual([
+  [run.items[0].card_id,3],[run.items[1].card_id,1],[run.items[0].card_id,1],[run.items[0].card_id,1],
+ ]);
+ expect(fixture.reviewCount()).toBe(2);
+});
+
+for(const rejected of [true,false]){
+ test('a late legacy grade '+(rejected?'failure':'success')+' stays in its own round',async({page})=>{
+  let respond!:()=>void;
+  const response=new Promise<void>(resolve=>{respond=resolve;});
+  const fixture=await reviewFixture(page,{count:4,released:false,legacyGradeError:async()=>{
+   await response;return rejected?'Late error from the first round':undefined;
+  }});
+  const first=fixture.createRun(),next=fixture.createRun(2);
+  await page.clock.setFixedTime(NOW);await page.goto(live('/review/run?run='+first.id));
+  const question=page.getByRole('group',{name:'Question',exact:true});
+  const reveal=page.getByRole('button',{name:'Show answer',exact:true});
+  const again=page.getByRole('button',{name:/^Again/});
+  try{
+   await expect(question).toHaveText('Topology question 1');
+   await reveal.click();await again.click();
+   await expect.poll(()=>fixture.gradeRequests.length).toBe(1);
+   await page.evaluate(id=>{location.hash='/review/run?run='+id;},next.id);
+   await expect(question).toHaveText('Topology question 3');
+   await reveal.click();
+  }finally{respond();}
+  await expect(again).toBeEnabled();
+  await expect(question).toHaveText('Topology question 3');
+  await expect(page.getByRole('button',{name:'Retry saving answer',exact:true})).toHaveCount(0);
+  await expect(page.getByText('Late error from the first round',{exact:true})).toHaveCount(0);
+  expect(first.position).toBe(rejected?0:1);
+  expect(next.position).toBe(0);
+ });
 }
 
 test('one signed-in due card starts from Review, grades once and stays complete after reload',async({page})=>{

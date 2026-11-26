@@ -147,3 +147,49 @@ test('turning Beta off in Settings preserves an open editor in another tab',asyn
   await expect(page.locator('dialog[open]')).toHaveCount(2);
   await page.keyboard.press('Escape');await expect(due).toBeFocused();
 });
+
+test('desktop checkpoint picker moves between search and options before leaving the list',async({page})=>{
+  await page.setViewportSize({width:1024,height:768});
+  await page.goto(visit('/pad?path=stress-project-3').replace('demo=1','demo=stress'));
+  const chooser=page.getByRole('region',{name:'Choose a Pad checkpoint'});
+  const trigger=chooser.getByRole('button',{name:/^Checkpoint:/});
+  const path=chooser.getByRole('button',{name:/^Path:/});
+  const list=page.getByRole('listbox',{name:'Checkpoint',exact:true});
+  const search=list.getByRole('searchbox',{name:'Search checkpoint'});
+  const options=list.getByRole('option');
+  await trigger.click();
+  await expect(options.nth(8)).toBeVisible();
+  await expect(options.first()).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(options.last()).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(search).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(options.first()).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(list).toHaveCount(0);
+  await expect(trigger).not.toBeFocused();
+
+  await trigger.click();
+  await page.keyboard.press('Shift+Tab');
+  await expect(search).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(list).toHaveCount(0);
+  await expect(path).toBeFocused();
+
+  await trigger.click();
+  await page.keyboard.press('Shift+Tab');
+  await search.fill('no matching checkpoint');
+  await expect(options).toHaveCount(0);
+  await page.keyboard.press('Tab');
+  await expect(list).toHaveCount(0);
+
+  await trigger.click();
+  await expect(search).toHaveValue('');
+  await page.keyboard.press('Escape');
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await path.click();
+  await expect(list).toHaveCount(0);
+  await expect(page.getByRole('listbox',{name:'Path',exact:true})).toBeVisible();
+});

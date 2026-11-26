@@ -8,7 +8,7 @@ const fixture=vi.hoisted(()=>({
  navigate:vi.fn(),queryClient:{invalidateQueries:vi.fn()},resumeRun:vi.fn(),getRun:vi.fn(),openStudyTarget:vi.fn(),targetFromLink:vi.fn(),
 }));
 vi.mock('../../../src/data/StudyUiRelease',()=>({useStudyUi:()=>fixture.released}));
-vi.mock('../../../src/data/authBoundary',()=>({authOwner:()=>null,onAccountChange:()=>()=>{}}));
+vi.mock('../../../src/data/authBoundary',()=>({authOwner:()=>null,authGeneration:()=>0,onAccountChange:()=>()=>{}}));
 vi.mock('../../../src/data/mode',()=>({getMode:()=>'live'}));
 vi.mock('react-router',()=>({useNavigate:()=>fixture.navigate,useSearchParams:()=>[new URLSearchParams(fixture.link)]}));
 vi.mock('@tanstack/react-query',()=>({useQuery:()=>({data:null,isPending:false}),

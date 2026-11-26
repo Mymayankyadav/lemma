@@ -1,13 +1,16 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useLayoutEffect,useState} from 'react';
 import {durations} from '../ui/v7/motion';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {v7ScreenFor} from './v7Kit';
 import BootReady from './BootReady';
 import {useSurfaceBeta} from './surfaceBeta';
 import {isFlagOn} from '../flags';
+import {resetFailedLazyComponents} from './lazyModule';
 
 export default function RouteError(){
  const location=useLocation(),navigate=useNavigate();
+ // Once the boundary shows the error, Retry and either form of Back can remount the failed chunks.
+ useLayoutEffect(resetFailedLazyComponents);
  return <RouteErrorScreen onRetry={()=>{void navigate(location.pathname+location.search+location.hash,{replace:true,state:location.state});}}/>;
 }
 

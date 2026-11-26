@@ -144,10 +144,26 @@ function OpenChoice({title, onClose, anchor, children, role = 'dialog', classNam
     if (event.key === 'Escape') {
       event.preventDefault(); event.stopPropagation(); dismissTopLayer('escape',panel.ownerDocument); return;
     }
-    const stops = event.key==='Tab' && wide && role==='dialog' ? Array.from(panel.querySelectorAll<HTMLElement>('button,input,textarea,[tabindex]'))
-      .filter(el=>el.tabIndex>=0 && !el.matches(':disabled') && el.getClientRects().length) : [];
-    const edge = event.shiftKey ? stops[0] : stops.at(-1);
-    if (event.key === 'Tab' && wide && (role !== 'dialog' || !!panel.querySelector('[role="menu"]') || panel.ownerDocument.activeElement === edge)) {
+    if (event.key === 'Tab' && wide) {
+      const active = panel.ownerDocument.activeElement;
+      const search = role === 'listbox' ? panel.querySelector<HTMLInputElement>('input[type="search"]') : null;
+      if (search) {
+        const rows = Array.from(panel.querySelectorAll<HTMLElement>(rowSelector));
+        const option = rows.find(row=>row.getAttribute('aria-selected') === 'true') ?? rows[0];
+        const next = event.shiftKey && active?.matches(rowSelector) ? search
+          : !event.shiftKey && active === search ? option : undefined;
+        if (next) {
+          event.preventDefault(); event.stopPropagation();
+          next.focus({preventScroll:true}); next.scrollIntoView?.({block:'nearest'});
+          return;
+        }
+      }
+      if (role === 'dialog' && !panel.querySelector('[role="menu"]')) {
+        const stops = Array.from(panel.querySelectorAll<HTMLElement>('button,input,textarea,[tabindex]'))
+          .filter(el=>el.tabIndex>=0 && !el.matches(':disabled') && el.getClientRects().length);
+        const edge = event.shiftKey ? stops[0] : stops.at(-1);
+        if (active !== edge) return;
+      }
       event.preventDefault(); event.stopPropagation(); requestLayerClose(panel, 'tab'); tabFromLayer(trigger.current, event.shiftKey); return;
     }
     const rows = Array.from(panel.querySelectorAll<HTMLElement>(rowSelector));

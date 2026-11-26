@@ -21,5 +21,6 @@ export function createIntentRead<T,P>(load:(params:P)=>Promise<T>,key:(params:P)
    clear();
    return result??load(params);
   },
+  invalidate:clear,
  };
 }

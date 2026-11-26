@@ -1,7 +1,7 @@
 import {focusedMilliseconds} from '../../../lib/studyTime';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {useSearchParams} from 'react-router';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState,useSyncExternalStore} from 'react';
 import {ChevronLeft,ChevronRight,Download,Pencil,Scissors,Ban,RotateCcw} from 'lucide-react';
 import {getStudyApi} from '../../../data/study';
 import type {StudyEntryRecord,StudyRange} from '../../../data/study/contract';
@@ -28,6 +28,19 @@ import '../../insights/v7/progress.css';
 import './log.css';
 
 const entries=createIntentRead((range:StudyRange)=>getStudyApi().listStudyEntries(range),range=>range.start+':'+range.end);
+let entryRevision=0;
+const entryListeners=new Set<()=>void>();
+const currentEntryRevision=()=>entryRevision;
+function subscribeToEntries(listener:()=>void){
+ entryListeners.add(listener);
+ return ()=>{entryListeners.delete(listener);};
+}
+function refreshAfterWrite(){
+ // A write can change two weeks and can complete after the Log has remounted.
+ entries.invalidate();
+ entryRevision++;
+ for(const listener of entryListeners)listener();
+}
 export function warmTimeLog(zone:string){
  entries.warm(visibleLogRange(weekStartDay(civilDay(new Date(),zone)),zone));
 }
@@ -45,12 +58,14 @@ export default function TimeLogV7(){
  const [week,setWeek]=useState(()=>weekStartDay(selected??today)),[rows,setRows]=useState<StudyEntryRecord[]>([]),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[reload,setReload]=useState(0);
  const [editing,setEditing]=useState<StudyEntryRecord|null>(null),[voiding,setVoiding]=useState<StudyEntryRecord|null>(null),[adding,setAdding]=useState(false),[busy,setBusy]=useState(false);
  const [intent,setIntent]=useState(''),[day,setDay]=useState(today),[start,setStart]=useState('09:00'),[end,setEnd]=useState('09:50'),[problem,setProblem]=useState('');
+ const revision=useSyncExternalStore(subscribeToEntries,currentEntryRevision,currentEntryRevision);
  const range=useMemo(()=>visibleLogRange(week,zone),[week,zone]);
  useEffect(()=>{
   let alive=true;setStatus('loading');
-  void entries.read(range).then(all=>{if(alive){setRows(visibleLogRecords(all));setStatus('ready');}}).catch(()=>{if(alive)setStatus('error');});
+  const current=()=>alive&&revision===currentEntryRevision();
+  void entries.read(range).then(all=>{if(current()){setRows(visibleLogRecords(all));setStatus('ready');}}).catch(()=>{if(current())setStatus('error');});
   return()=>{alive=false;};
- },[api,range,reload]);
+ },[api,range,reload,revision]);
  useEffect(()=>{if(selected)setWeek(weekStartDay(selected));},[selected]);
  useEffect(()=>{if(selected&&status==='ready')document.getElementById('log-'+selected)?.scrollIntoView?.({block:'start'});},[selected,status,rows]);
  const days=Array.from({length:7},(_,index)=>addDays(week,index));
@@ -65,15 +80,15 @@ export default function TimeLogV7(){
   try{
    if(!intent.trim())throw Error('Write what you studied.');
    await api.createManualStudyEntry({intent:intent.trim(),reflection:null,intervals:[manualFocusInterval(day,start,end,zone)]});
-   setAdding(false);setIntent('');setReload(value=>value+1);notify('Time added',{tone:'success'});
+   setAdding(false);setIntent('');refreshAfterWrite();notify('Time added',{tone:'success'});
   }catch(error){setProblem(error instanceof Error?error.message:'Could not add the time.');}finally{setBusy(false);}
  }
  async function voidEntry(entry:StudyEntryRecord){
   setBusy(true);
   try{
    const result=await api.voidStudyEntry(entry.id,entry.version);
-   setVoiding(null);setReload(value=>value+1);
-   notify('Entry voided',{tone:'success',action:{label:'Undo',onClick:()=>{void api.restoreStudyEntry(entry.id,result.record.version).then(()=>setReload(value=>value+1)).catch(()=>notify('Could not restore the entry',{tone:'danger'}));}}});
+   setVoiding(null);refreshAfterWrite();
+   notify('Entry voided',{tone:'success',action:{label:'Undo',onClick:()=>{void api.restoreStudyEntry(entry.id,result.record.version).then(refreshAfterWrite).catch(()=>notify('Could not restore the entry',{tone:'danger'}));}}});
   }catch{notify('Could not void the entry',{tone:'danger'});}finally{setBusy(false);}
  }
  const weekTotal=rows.filter(entry=>!entry.voidedAt).reduce((sum,entry)=>sum+focusMinutes(entry),0);
@@ -110,7 +125,7 @@ export default function TimeLogV7(){
      {label:'Void',icon:<Ban aria-hidden="true"/>,onClick:()=>setVoiding(entry)},
     ]}/>
    </li>;})}</ul></section>):<EmptyMoment title="No study time this week">Focus sessions land here. Use Add time for study you did without the timer.</EmptyMoment>)}
-  {editing&&<EntrySheetV7 key={editing.id+'-'+editing.version} entry={editing} busy={busy} onClose={()=>setEditing(null)} onChange={async()=>{setEditing(null);setReload(value=>value+1);}}/>}
+  {editing&&<EntrySheetV7 key={editing.id+'-'+editing.version} entry={editing} busy={busy} onClose={()=>setEditing(null)} onChange={async()=>{setEditing(null);refreshAfterWrite();}}/>}
   <Sheet open={!!voiding} onClose={()=>setVoiding(null)} title={voiding?'Void “'+voiding.intent+'”?':'Void entry'}
    footer={<><Button variant="ghost" onClick={()=>setVoiding(null)}>Keep entry</Button><Button variant="primary" destructive loading={busy} onClick={()=>{if(voiding)void voidEntry(voiding);}}>Void entry</Button></>}>
    <p>Its time stops counting. You can restore it from the log.</p>

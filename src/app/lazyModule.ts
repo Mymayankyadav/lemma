@@ -1,4 +1,4 @@
-import {lazy, type ComponentType} from 'react';
+import {createElement, lazy, type ComponentProps, type ComponentType} from 'react';
 
 const delays=[500,1500];
 let attemptNumber=0;
@@ -39,13 +39,33 @@ export function createLazyModule<T>(load:()=>Promise<T>){
  return {read,peek:()=>resolved,warm:()=>{void read().catch(()=>undefined);}};
 }
 
-export function retryLazy<P>(load:()=>Promise<{default:ComponentType<P>}>){
- return lazy(createLazyModule(load).read);
+const failedComponents=new Set<()=>void>();
+
+/** React.lazy keeps a rejected promise even when the module loader can read again. */
+export function resetFailedLazyComponents(){
+ for(const reset of failedComponents)reset();
+ failedComponents.clear();
 }
 
-export function retryNamed<T,P>(load:()=>Promise<T>,select:(module:T)=>ComponentType<P>){
+type ImportableComponent=ComponentType<any>;
+
+export function lazyFromModule<C extends ImportableComponent>(read:()=>Promise<{default:C}>){
+ const load=()=>read().catch(error=>{
+  failedComponents.add(reset);
+  throw error;
+ });
+ let Body=lazy(load);
+ function reset(){Body=lazy(load);}
+ return function RetryableComponent(props:ComponentProps<typeof Body>){return createElement(Body,props);};
+}
+
+export function retryLazy<C extends ImportableComponent>(load:()=>Promise<{default:C}>){
+ return lazyFromModule(createLazyModule(load).read);
+}
+
+export function retryNamed<T,C extends ImportableComponent>(load:()=>Promise<T>,select:(module:T)=>C){
  const chunk=createLazyModule(load);
- return lazy(()=>chunk.read().then(module=>({default:select(module)})));
+ return lazyFromModule<C>(()=>chunk.read().then(module=>({default:select(module)})));
 }
 
 /** Warm after paint so speculative downloads never hold up the initial render. */

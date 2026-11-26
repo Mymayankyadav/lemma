@@ -1,5 +1,4 @@
-import {lazy} from 'react';
-import {createLazyModule} from '../lazyModule';
+import {createLazyModule,lazyFromModule} from '../lazyModule';
 
 export const v7Modules={
  today:createLazyModule(()=>import('../../features/home/v7/V7Today')),
@@ -27,11 +26,11 @@ export const v7Modules={
  tasks:createLazyModule(()=>import('../../features/tasks/v7/TasksV7')),
 };
 
-export const ReviewRoundScreen=lazy(v7Modules.reviewRun.read);
-export const PathScreen=lazy(v7Modules.path.read);
-export const PathsScreen=lazy(v7Modules.paths.read);
-export const CardsScreen=lazy(v7Modules.cards.read);
-export const CardScreen=lazy(v7Modules.card.read);
+export const ReviewRoundScreen=lazyFromModule(v7Modules.reviewRun.read);
+export const PathScreen=lazyFromModule(v7Modules.path.read);
+export const PathsScreen=lazyFromModule(v7Modules.paths.read);
+export const CardsScreen=lazyFromModule(v7Modules.cards.read);
+export const CardScreen=lazyFromModule(v7Modules.card.read);
 
 /** Warm the exact chunk the route will need when an input signals intent. */
 export function warmV7Screen(screen:keyof typeof v7Modules):void{

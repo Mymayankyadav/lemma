@@ -14,7 +14,7 @@ import {useNavigate,useSearchParams} from 'react-router';
 import {Undo2,X} from 'lucide-react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
-import {authOwner,onAccountChange} from '../../../data/authBoundary';
+import {authGeneration,authOwner,onAccountChange} from '../../../data/authBoundary';
 import {getMode} from '../../../data/mode';
 import {openStudyTarget,skipChangedStudyItem,targetFromLink} from './scopedRound';
 import {saveGrade,savedGrade,confirmGrade,type GradeIntent} from './gradeIntent';
@@ -51,6 +51,8 @@ export function swipeGrade(dx:number,dy:number,threshold=96):Rating|null{
 }
 type SwipeOffset={dx:number;dy:number};
 type CommittedSwipe=SwipeOffset&{speed:number};
+type AnswerIdentity={link:string;repair:boolean;atomic:boolean;generation:number;runId?:string;version?:number;itemId?:string};
+type FailedGrade={answer:AnswerIdentity;rating:Rating;message:string};
 export function gradeDirection(rating:Rating):SwipeOffset{
  return rating===1?{dx:-1,dy:0}:rating===2?{dx:0,dy:1}:rating===3?{dx:1,dy:0}:{dx:0,dy:-1};
 }
@@ -78,7 +80,7 @@ export default function ReviewRoundV7(){
  const navigate=useNavigate(),[search]=useSearchParams(),queries=useQueryClient(),home=useHome();
  const settings=useSettings(),cards=useReviewItems(filter),record=useRecordReview();
  const [run,setRun]=useState<DurableRun|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
- const [failedGrade,setFailedGrade]=useState<Rating|null>(null);
+ const [failedGrade,setFailedGrade]=useState<FailedGrade|null>(null);
  const [message,setMessage]=useState<string|null>(null),[revealed,setRevealed]=useState(false),[confidence,setConfidence]=useState<Confidence>(null);
  const [startTime,setStartTime]=useState(Date.now()),[pending,setPending]=useState<PendingGrade|null>(null);
  const [grades,setGrades]=useState<Record<string,Rating>>({});
@@ -102,10 +104,20 @@ export default function ReviewRoundV7(){
  const alive=useRef(true);
  useEffect(()=>{alive.current=true;return ()=>{alive.current=false;};},[]);
  const runId=search.get('run'),link=search.toString(),repair=studyRepair;
- const signedIn=useSyncExternalStore(onAccountChange,authOwner,authOwner);
+ const generation=useSyncExternalStore(onAccountChange,authGeneration,authGeneration),signedIn=authOwner();
  const atomic=studyRepair&&getMode()==='live';
  const [frozen,setFrozen]=useState<GradeIntent|null>(null),[changedItem,setChangedItem]=useState<string|null>(null);
  const item=run?.items[run.position],exactId=run?.targetCardId??(run?.target?item?.cardId:undefined);
+ const answer=useMemo<AnswerIdentity>(()=>({link,repair,atomic,generation,runId:run?.id,version:run?.version,itemId:item?.id}),
+  [link,repair,atomic,generation,run?.id,run?.version,item?.id]);
+ const currentAnswer=useRef<AnswerIdentity|null>(null);
+ useLayoutEffect(()=>{
+  currentAnswer.current=answer;
+  return ()=>{currentAnswer.current=null;};
+ },[answer]);
+ const sameAccount=()=>authGeneration()===generation;
+ const isCurrentAnswer=()=>currentAnswer.current===answer&&sameAccount();
+ const failed=failedGrade?.answer===answer?failedGrade:null;
  // Do not fetch singleton faces from the global quota-ranked prefix.
  const exact=useQuery({queryKey:['review-exact-card',run?.id,exactId],enabled:!!exactId&&!!item,
   queryFn:async()=>{
@@ -133,7 +145,7 @@ export default function ReviewRoundV7(){
    }
    const target=repair?await targetFromLink(parameters):null;
    const loaded=target?await openStudyTarget(target):runId?await getRun(runId):await resumeRun();
-   if(cancelled)return;
+   if(cancelled||authGeneration()!==generation)return;
    if(!loaded){setMessage(target?'There are no eligible cards in this review selection.':null);return;}
    if(target&&target.kind!=='round'){
     navigate('/review/run?run='+encodeURIComponent(loaded.id),{replace:true});return;
@@ -153,19 +165,23 @@ export default function ReviewRoundV7(){
     }catch{if(!cancelled)setMessage('The grade could not be confirmed. Retry to recover this answer.');}
     return;
    }
-   const receipt=pendingGrade();
-   if(receipt?.runId===loaded.id){
+   const receipt=pendingGrade(loaded.id);
+   if(receipt){
     const current=loaded.items[loaded.position];
     if(current?.id===receipt.itemId){
      setPending(receipt);
-     try{const next=await advanceGrade(loaded,current.id,receipt.reviewId);clearPendingGrade();if(!cancelled){setPending(null);setRun(next);}return;}
+     try{
+      const next=await advanceGrade(loaded,current.id,receipt.reviewId);
+      if(authGeneration()===generation)clearPendingGrade(receipt);
+      if(!cancelled){setPending(null);setRun(next);}return;
+     }
      catch{if(!cancelled)setMessage('The grade was saved. Retry advancing; do not grade again.');}
-    }else clearPendingGrade();
+    }else if(authGeneration()===generation)clearPendingGrade(receipt);
    }
    if(!cancelled)setRun(loaded);
   })().catch(error=>{if(!cancelled)setMessage(error instanceof Error?error.message:'Could not restore review');}).finally(()=>{if(!cancelled)setLoading(false);});
   return ()=>{cancelled=true;};
- },[runId,link,repair,atomic,signedIn,queries,navigate]);
+ },[runId,link,repair,atomic,signedIn,generation,queries,navigate]);
  useEffect(()=>{setRevealed(false);setConfidence(null);setStartTime(Date.now());setDrag(null);},[run?.id,run?.position]);
  useLayoutEffect(()=>{
   if(revealed)cardNode.current?.querySelector<HTMLElement>('.v7-review-back')?.focus({preventScroll:true});
@@ -188,10 +204,11 @@ export default function ReviewRoundV7(){
    incoming.current={itemId:next.id,from};
    setRevealed(false);setConfidence(null);setStartTime(Date.now());
   }
-  pendingCard.current=null;setDrag(null);setRun(result);
+  pendingCard.current=null;setFailedGrade(null);setDrag(null);setRun(result);
   if(result.progress.done)navigate('/review/done?run='+encodeURIComponent(result.id));
  };
- async function done(result:DurableRun){
+ async function done(result:DurableRun,isCurrent=()=>alive.current){
+  if(!isCurrent())return;
   const motion=pendingRef.current,node=cardNode.current;
   let exit:Animation|undefined;
   if(reviewMotion&&!reduced&&!queuedUndo.current&&motion&&motion.itemId===item?.id&&node&&typeof node.animate==='function'){
@@ -207,17 +224,18 @@ export default function ReviewRoundV7(){
    ],{duration,easing:`cubic-bezier(${curve.join(',')})`,fill:'forwards'});
    await exit.finished.catch(()=>undefined);
   }
+  if(!isCurrent()){exit?.cancel();return;}
   const request=queuedUndo.current;
   queuedUndo.current=null;
   if(alive.current&&request?.runId===result.id&&request.itemId===lastGraded(result)?.id){
    exit?.cancel();
    try{
-    const restored=await undoGrade(result,request.itemId,motion?.rating);
-    showRun(restored,motion?gradeDirection(motion.rating):undefined,true);
+    const restored=await undoGrade(result,request.itemId,motion?.rating,isCurrent);
+    if(isCurrent())showRun(restored,motion?gradeDirection(motion.rating):undefined,true);
     return;
-   }catch(error){setMessage(error instanceof Error?error.message:'Could not undo the last answer');}
+   }catch(error){if(isCurrent())setMessage(error instanceof Error?error.message:'Could not undo the last answer');}
   }
-  showRun(result);
+  if(isCurrent())showRun(result);
  }
  async function recover(intent:GradeIntent){
   const saved=await confirmGrade(intent);
@@ -238,8 +256,8 @@ export default function ReviewRoundV7(){
   catch{if(authOwner()===frozen.ownerId)setMessage('The grade could not be confirmed. Retry to recover this answer.');}
   finally{gradeLock.current=false;pendingRef.current=null;queuedUndo.current=null;setBusy(false);}
  }
- async function grade(rating:Rating,swipe?:CommittedSwipe){
-  if(!run||!item||!card||!choices||!settings.data||busy||gradeLock.current||pending||frozen)return;
+ async function grade(rating:Rating,{swipe,redo=false}:{swipe?:CommittedSwipe;redo?:boolean}={}){
+  if((!revealed&&!redo)||!run||!item||!card||!choices||!settings.data||busy||gradeLock.current||pending||frozen||!isCurrentAnswer())return;
   gradeLock.current=true;pendingRef.current={itemId:item.id,rating,swipe};pendingCard.current={itemId:item.id,card};
   if(swipe)setDrag(swipe);
   setBusy(true);setMessage(null);setFailedGrade(null);
@@ -247,6 +265,7 @@ export default function ReviewRoundV7(){
   void playSound('tick',soundsOn(settings.data.ui));
   // AW6: Good, Hard or Easy is one click, Again two light ticks.
   haptic(rating===1?'gradeAgain':'grade');
+  let receipt:PendingGrade|undefined;
   try{
    if(getMode()==='live'&&run.target&&!atomic){
     setMessage('Reconnect to confirm review is available.');return;
@@ -261,43 +280,72 @@ export default function ReviewRoundV7(){
     return;
    }
    const currentVersion=await cardVersion(item.cardId);
-   if(currentVersion!==null&&currentVersion!==item.expectedCardVersion){await done(await advanceSkip(run,item.id,'Card changed after run started'));setMessage('Changed card skipped; no duplicate grade recorded.');return;}
+   if(!isCurrentAnswer())return;
+   if(currentVersion!==null&&currentVersion!==item.expectedCardVersion){
+    await done(await advanceSkip(run,item.id,'Card changed after run started'),isCurrentAnswer);
+    if(isCurrentAnswer())setMessage('Changed card skipped; no duplicate grade recorded.');
+    return;
+   }
    const reviewed=await record.mutateAsync({cardId:item.cardId,expectedVersion:item.expectedCardVersion,rating,confidence,durationMs:Math.min(600000,Math.max(0,Date.now()-startTime)),next:choices[rating].card});
-   const receipt={runId:run.id,itemId:item.id,reviewId:reviewed.reviewId};
-   setPending(receipt);writePendingGrade(receipt);
-   const nextGrades={...grades,[item.id]:rating};setGrades(nextGrades);writeGrades(run.id,nextGrades);
+   if(!sameAccount())return;
+   // A save that completed after navigation still advances its original round.
+   // Only the screen that started it can update the visible answer and retry state.
+   receipt={runId:run.id,itemId:item.id,reviewId:reviewed.reviewId};
+   if(isCurrentAnswer())setPending(receipt);
+   writePendingGrade(receipt);
+   const nextGrades={...grades,[item.id]:rating};
+   if(isCurrentAnswer())setGrades(nextGrades);
+   writeGrades(run.id,nextGrades);
    const advanced=await advanceGrade(run,item.id,reviewed.reviewId);
-   clearPendingGrade();setPending(null);await done(advanced);
-  }catch(error){setMessage(error instanceof Error?error.message:'Review could not be saved');setFailedGrade(rating);}
+   if(sameAccount())clearPendingGrade(receipt);
+   if(isCurrentAnswer())setPending(null);
+   await done(advanced,isCurrentAnswer);
+  }catch(error){
+   if(!isCurrentAnswer())return;
+   const reason=error instanceof Error?error.message:'Review could not be saved';
+   if(receipt)setMessage(reason);
+   else setFailedGrade({answer,rating,message:reason});
+  }
   finally{gradeLock.current=false;pendingRef.current=null;queuedUndo.current=null;setDrag(null);setBusy(false);}
  }
+ function retrySavingAnswer(){
+  if(failed&&revealed&&isCurrentAnswer())void grade(failed.rating);
+ }
  async function retryAdvance(){
-  if(!run||!item||!pending||busy||gradeLock.current)return;gradeLock.current=true;setBusy(true);setMessage(null);
+  if(!run||!item||pending?.runId!==run.id||pending.itemId!==item.id||busy||gradeLock.current||!isCurrentAnswer())return;
+  gradeLock.current=true;setBusy(true);setMessage(null);
   const rating=grades[item.id];if(rating)pendingRef.current={itemId:item.id,rating};
-  try{const result=await advanceGrade(run,item.id,pending.reviewId);clearPendingGrade();setPending(null);await done(result);}
-  catch(error){setMessage(error instanceof Error?error.message:'Could not advance saved grade');}
+  try{
+   const result=await advanceGrade(run,item.id,pending.reviewId);
+   if(sameAccount())clearPendingGrade(pending);
+   if(isCurrentAnswer())setPending(null);
+   await done(result,isCurrentAnswer);
+  }
+  catch(error){if(isCurrentAnswer())setMessage(error instanceof Error?error.message:'Could not advance saved grade');}
   finally{gradeLock.current=false;pendingRef.current=null;queuedUndo.current=null;setBusy(false);}
  }
- async function undoGrade(source:DurableRun,itemId:string,rating:Rating|undefined){
+ async function undoGrade(source:DurableRun,itemId:string,rating:Rating|undefined,isCurrent=()=>alive.current){
   const result=await undoLast(source);
-  if(!alive.current)return result;
+  if(!sameAccount())return result;
   const nextGrades={...grades};
-  delete nextGrades[itemId];setGrades(nextGrades);writeGrades(source.id,nextGrades);
+  delete nextGrades[itemId];writeGrades(source.id,nextGrades);
+  if(!isCurrent())return result;
+  setGrades(nextGrades);
   void queries.invalidateQueries();
   notify('Answer undone',{action:rating?{label:'Redo',onClick:()=>setRedo({runId:result.id,version:result.version,itemId,rating})}:undefined});
   return result;
  }
  async function undo(){
-  if(!run)return;
+  if(!run||!isCurrentAnswer())return;
   const attempt=pendingRef.current;
-  if(gradeLock.current&&attempt){queuedUndo.current={runId:run.id,itemId:attempt.itemId};return;}
+  if(gradeLock.current&&attempt&&attempt.itemId===item?.id){queuedUndo.current={runId:run.id,itemId:attempt.itemId};return;}
   const graded=lastGraded(run);
   if(busy||gradeLock.current||pending||frozen||!graded)return;
   gradeLock.current=true;setBusy(true);setMessage(null);
   try{
-   const rating=grades[graded.id],result=await undoGrade(run,graded.id,rating);
-   showRun(result,rating?gradeDirection(rating):undefined);
-  }catch(error){setMessage(error instanceof Error?error.message:'Could not undo the last answer');}
+   const rating=grades[graded.id],result=await undoGrade(run,graded.id,rating,isCurrentAnswer);
+   if(isCurrentAnswer())showRun(result,rating?gradeDirection(rating):undefined);
+  }catch(error){if(isCurrentAnswer())setMessage(error instanceof Error?error.message:'Could not undo the last answer');}
   finally{gradeLock.current=false;setBusy(false);}
  }
  async function skip(){
@@ -321,7 +369,7 @@ export default function ReviewRoundV7(){
   if(redo.runId!==run.id||redo.version!==run.version||redo.itemId!==item?.id){setRedo(null);return;}
   if(!card||!choices)return;
   setRedo(null);
-  void grade(redo.rating);
+  void grade(redo.rating,{redo:true});
  },[redo,run,item,card,choices,busy,pending,frozen]);
  const keys=useRef({revealed,grade,undo,reveal});keys.current={revealed,grade,undo,reveal};
  useEffect(()=>{
@@ -361,7 +409,7 @@ export default function ReviewRoundV7(){
   if(!choices||gradeLock.current){setDrag(null);return;}
   const direction=gradeDirection(rating);
   const speed=event.timeStamp-start.at<80?Math.max(0,direction.dx*start.velocity.dx+direction.dy*start.velocity.dy):0;
-  void grade(rating,{...offset,speed});
+  void grade(rating,{swipe:{...offset,speed}});
  };
  const swiping=drag&&revealed?swipeGrade(drag.dx,drag.dy,48):null;
  const project=home.data?.projects.find(entry=>entry.slug===card?.projectSlug),subject=kitSubject(project?.subject.name??'');
@@ -373,7 +421,7 @@ export default function ReviewRoundV7(){
    <Button variant="primary" onClick={()=>navigate('/review')}>Start review</Button></div>
  </main>;
  const total=Math.max(1,run.progress.total),shown=Math.min(run.progress.total,run.progress.position+1);
- const savingGrade=busy?pendingRef.current:null;
+ const savingGrade=busy&&pendingRef.current?.itemId===item?.id?pendingRef.current:null;
  const canQueueUndo=!!savingGrade;
  return <main id="main-content" className="v7-review" aria-label="Review round" data-revealed={revealed?'true':'false'} data-review-motion={reviewMotion||undefined} data-spread={isFlagOn('v7Spread')?'':undefined}>
   <ImmersiveHeader leave={<button type="button" className="v7-icon-button" aria-label="Leave" onClick={()=>{void leave();}}><X aria-hidden="true"/></button>}
@@ -381,8 +429,8 @@ export default function ReviewRoundV7(){
    more={<button type="button" className="v7-icon-button" aria-label="Undo last answer" title="Undo last answer (U)" disabled={!canQueueUndo&&(busy||!!pending||!!frozen||!lastGraded(run))} onClick={()=>{void undo();}}><Undo2 aria-hidden="true"/></button>}/>
   <ol className="v7-review-progress" aria-hidden="true">{progressMarks}</ol>
   {run.scopeLabel&&<p className="v7-review-message">{run.scopeLabel}</p>}
-  {message&&<p role="alert" className="v7-review-message">{message}</p>}
-  {failedGrade!==null&&!pending&&!frozen&&<Button small disabled={busy} onClick={()=>{void grade(failedGrade);}}>Retry saving answer</Button>}
+  {(message||failed)&&<p role="alert" className="v7-review-message">{message??failed?.message}</p>}
+  {failed&&revealed&&!pending&&!frozen&&<Button small disabled={busy} onClick={retrySavingAnswer}>Retry saving answer</Button>}
   {/* N157 · U1 S11 (flag v7Margin): why this card and its source, beside the round; never the answer. */}
   {card&&revealed&&<Margin notes={[
    ...(project?[{title:'Why this card',body:<p>{project.title}{card.checkpointTitle?' · '+card.checkpointTitle:''}</p>}]:[]),

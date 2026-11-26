@@ -1,5 +1,4 @@
-import {lazy} from 'react';
-import {createLazyModule} from '../lazyModule';
+import {createLazyModule,lazyFromModule} from '../lazyModule';
 
 export const libraryChunk=createLazyModule(()=>import('./LibrarySplit'));
-export const LibrarySplit=lazy(libraryChunk.read);
+export const LibrarySplit=lazyFromModule(libraryChunk.read);

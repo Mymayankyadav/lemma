@@ -195,6 +195,19 @@ test('the default navigation path uses the in-place fallback and keeps local ret
  await expect(page.getByRole('heading',{name:'Progress',level:1})).toBeVisible();
 });
 
+test('the shared shell can open Today after its module exhausted its retries',async({page})=>{
+ let available=false;
+ await page.route(chunk('V7Shell'),route=>available?route.continue():route.abort());
+ await page.goto(at('/projects'));
+ const back=page.getByRole('link',{name:'Back to Today',exact:true});
+ await expect(back).toBeVisible({timeout:10000});
+ await page.evaluate(()=>{document.documentElement.dataset.shellRecovery='original';});
+ available=true;
+ await back.click();
+ await expect(page.getByRole('main',{name:'Today',exact:true})).toBeVisible();
+ await expect(page.locator('html')).toHaveAttribute('data-shell-recovery','original');
+});
+
 test('a persistent overlay failure leaves a dirty Capture in the same document',async({page})=>{
  await enableSurfaceBeta(page);
  await page.route(chunk('SearchSheet'),route=>route.abort());
