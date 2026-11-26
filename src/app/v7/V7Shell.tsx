@@ -1,11 +1,11 @@
-import {warmV7Screen} from './routeScreens';
 import {afterPaintOnIdle,createLazyModule} from '../lazyModule';
 import BootReady from '../BootReady';
+import {useSurfaceBeta} from '../surfaceBeta';
 import LazyOverlay from './LazyOverlay';
-import RoutePending from './RoutePending';
+import RoutePending,{updatePendingTab} from './RoutePending';
 import {useRouteIntent} from './routeIntent';
 import {dismissTopLayer,hasOpenLayer,restoreLayerFocus,topLayerOwnsHistory} from '../../ui/v7/layers';
-import {Children,isValidElement,Fragment,useContext,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type MouseEvent,type ReactNode,type RefObject} from 'react';
+import {Children,isValidElement,Fragment,useCallback,useContext,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type MouseEvent,type ReactNode,type RefObject} from 'react';
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {useDeviceCommands} from '../../platform/useDeviceCommands';
 import {Link,UNSAFE_DataRouterContext,useBlocker,useLocation,useNavigate,useNavigationType} from 'react-router';
@@ -19,6 +19,7 @@ import {SubjectMark,subjectClass} from '../../ui/v7/Subject';
 import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useFocusChangeListener,useNow} from './focus';
 import {useRoutePresentation} from './useRoutePresentation';
+import {useRouteLinkFocus} from './useRouteLinkFocus';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {Dock} from '../../ui/v7/Dock';
 import OfflineBanner from '../OfflineBanner';
@@ -149,21 +150,27 @@ function useTabLabelsFit(ref:RefObject<HTMLElement|null>,wide:boolean,enabled:bo
 export default function V7Shell({children,immersive=false,capture=true}:{children:ReactNode;immersive?:boolean;capture?:boolean}){
  const location=useLocation(),navigate=useNavigate(),navigation=useNavigationType(),home=useHome(),{entry}=useActiveFocus();
  const dataRouter=useContext(UNSAFE_DataRouterContext);
- const intent=useRouteIntent(),warm=useRef(intent.warm);
+ const beta=useSurfaceBeta(),intent=useRouteIntent(beta),warm=useRef(intent.warm);
  warm.current=intent.warm;
  useEffect(()=>afterPaintOnIdle(()=>{
   if(navigator.onLine===false)return;
   captureModule.warm();searchModule.warm();
-  for(const {to} of tabs)warm.current(to);
  }),[]);
+ useEffect(()=>{if(beta)return afterPaintOnIdle(()=>{for(const {to} of tabs)warm.current(to);});},[beta]);
  useFocusChangeListener();
  const shell=useRef<HTMLDivElement>(null);
- useRoutePresentation(shell,location.pathname,location.key,navigation);
+ const presentation=useRoutePresentation(shell,location.pathname,location.key,navigation,beta);
+ const {announcement,remember,prepareKeyboardNavigation}=useRouteLinkFocus(shell,location.pathname,location.key,navigation,beta);
  const [searching,setSearching]=useState<SearchVisit|null>(null),[shortcuts,setShortcuts]=useState(false);
  const key=location.pathname+location.search+'\n'+location.key;
  const searchBack=useRef(new Map<string,SearchVisit>()),previousKey=useRef(key);
  const wide=useMinWidth(700);
  const tabbar=useRef<HTMLElement>(null),labelsFit=useTabLabelsFit(tabbar,wide,!immersive,Boolean(entry),capture);
+ const indicateTab=useCallback((path:string)=>{
+  if(!beta)return;
+  updatePendingTab(tabbar.current,tabs.findIndex(tab=>tab.to===path),tabs.some(tab=>tab.to===location.pathname)&&path!==location.pathname);
+ },[beta,location.pathname]);
+ useLayoutEffect(()=>{updatePendingTab(tabbar.current,-1,false);},[beta,location.key]);
  // A subject colour chosen in Settings redraws every screen in that colour (PLAN §6.14).
  const colours=useSubjectColours();
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
@@ -244,6 +251,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   back.set(key,{...searching,initial});
   if(back.size>8){const oldest=back.keys().next().value;if(oldest)back.delete(oldest);}
   setSearching(null);
+  intent.warm(item.to);
   navigate(item.to,{state:{v7SearchFocus:true,v7SearchDestination:item.group==='Settings'}});
  }
  // A route outside the five destinations (Inbox, Settings) highlights none of them; the Library link shows where you are.
@@ -255,26 +263,36 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
    if(!wide)return;
    if(event.ctrlKey||event.metaKey||event.altKey)return;
    if(event.key==='?'){event.preventDefault();setShortcuts(true);}
-   else if(!immersive&&/^[1-5]$/.test(event.key)){event.preventDefault();navigate(tabs[Number(event.key)-1].to);}
+   else if(!immersive&&/^[1-5]$/.test(event.key)){
+    event.preventDefault();prepareKeyboardNavigation();const {to}=tabs[Number(event.key)-1];indicateTab(to);warm.current(to);navigate(to);
+   }
    else if(!immersive&&event.key.toLowerCase()==='n'&&capture){event.preventDefault();window.dispatchEvent(new Event('v7:capture'));}
    else if(!immersive&&event.key.toLowerCase()==='f'){event.preventDefault();navigate(entry?'/focus':'/?quick=1');}
   };
   window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
- },[wide,immersive,capture,navigate,entry]);
- return <div ref={shell} className="v7-shell" data-surface-role={immersive?'S7':'S0'} data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
+ },[wide,immersive,capture,navigate,entry,prepareKeyboardNavigation,indicateTab]);
+ return <div ref={shell} className="v7-shell" data-surface-role={immersive?'S7':'S0'} data-immersive={immersive?'true':'false'} onPointerOverCapture={event=>{if(event.pointerType==='mouse')intent.warmLink(event.target,false);}}
+  onPointerDownCapture={event=>{if(event.button===0)intent.warmLink(event.target);}}
+  onFocusCapture={event=>intent.warmLink(event.target)} onClickCapture={event=>{
+   const link=remember(event);
+   if(link?.classList.contains('v7-tab'))indicateTab(link.hash.slice(1));
+  }}
+  data-session={entry?'true':'false'} data-route-motion={presentation.motion}
+  data-route-alternate={presentation.alternate&&beta?'':undefined} data-travel={presentation.travel}>
   <BootReady/>
   <OfflineBanner/>
-  {dataRouter&&<><LayerBack/><RoutePending/></>}
+  {beta&&<div ref={announcement} className="v7-sr-only" aria-live="polite"/>}
+  {dataRouter&&<><LayerBack/>{beta&&<RoutePending shell={shell} tabs={tabs}/>}</>}
   <Fragment key={colours}>{children}</Fragment>
   {searching?.key===key&&<LazyOverlay key={key} title="Search" full className="v7-search-dialog"
    onClose={()=>setSearching(null)} returnTarget={searchOpener} source={searchModule}
    bodyProps={{onPick:pickSearchItem,initial:searching.initial}}/>}
   {!immersive&&<Dock className="v7-dock">
-   <div className="v7-rail-head"><Link to="/" {...intent.handlers('/')} className="v7-rail-brand" aria-label="Lemma home"><EllMark size={22}/><span>Lemma</span></Link><button type="button" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
+   <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home"><EllMark size={22}/><span>Lemma</span></Link><button type="button" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
    <div className="v7-dock-row">
    <nav ref={tabbar} aria-label="Main navigation" className="v7-tabbar" data-labels={labelsFit?'all':'selected'} style={{'--v7-tab-index':Math.max(0,active)} as CSSProperties}>
     {active>=0&&<span className="v7-tab-pill" aria-hidden="true"/>}
-    {tabs.map(({to,label,Icon},index)=><Link key={label} to={to} {...intent.handlers(to)} className="v7-tab" aria-current={index===active?'page':undefined}>
+    {tabs.map(({to,label,Icon},index)=><Link key={label} to={to} className="v7-tab" aria-current={index===active?'page':undefined}>
      <span className="v7-tab-icon"><Icon aria-hidden="true"/>{label==='Review'&&due>0&&<span className="v7-tab-pip" aria-label={due+' cards due'}>{due>99?'99+':due}</span>}</span>
      <span className="v7-tab-label">{label}</span>
     </Link>)}
@@ -283,9 +301,9 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
    {capture&&<Capture/>}
    </div>
    <nav className="v7-rail-library" aria-label="Library"><p className="v7-eyebrow">Library</p>
-    {([['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']] as const).map(([to,label])=><Link key={to} to={to} {...intent.handlers(to)} aria-current={location.pathname===to||location.pathname.startsWith(to+'/')?'page':undefined}>{label}</Link>)}
+    {([['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']] as const).map(([to,label])=><Link key={to} to={to} aria-current={location.pathname===to||location.pathname.startsWith(to+'/')?'page':undefined}>{label}</Link>)}
    </nav>
-   <Link className="v7-rail-settings" to="/settings" {...intent.handlers('/settings')}><Settings aria-hidden="true"/><span>Settings</span></Link>
+   <Link className="v7-rail-settings" to="/settings"><Settings aria-hidden="true"/><span>Settings</span></Link>
   </Dock>}
   <Sheet open={shortcuts} onClose={()=>setShortcuts(false)} title="Keyboard shortcuts" footer={<Button variant="primary" onClick={()=>setShortcuts(false)}>Done</Button>}>
    <dl className="v7-shortcuts">{[['⌘ / Ctrl K','Search'],['N','Capture'],['1–5','Switch destinations'],['F','Start or return to focus'],['Space','Pause focus / reveal answer'],['1–4','Grade an answer'],['U','Undo last answer'],['Esc','Close the top layer'],['?','Show shortcuts']].map(([key,label])=><div key={key}><dt><kbd>{key}</kbd></dt><dd>{label}</dd></div>)}</dl>
@@ -336,7 +354,7 @@ export function HubHeader({title,date,settings=false,display=false,control,title
  const actions=<nav aria-label="Page actions" className="v7-page-actions">
     <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
-    {settings&&<Link to="/settings" onPointerDown={()=>warmV7Screen('settings')} onFocus={()=>warmV7Screen('settings')} onMouseEnter={()=>warmV7Screen('settings')} aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
+    {settings&&<Link to="/settings" aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
     {extraAction}
    </nav>;
  if(!display)return <>
@@ -361,11 +379,22 @@ export function DetailHeader({title,back,action,extraAction,compact}:{title:stri
  // twice; it appears once the large title scrolls under the bar. Pages without a visible H1 always show it.
  const [pageTitleVisible,setPageTitleVisible]=useState(false);
  useEffect(()=>{
-  const heading=ref.current?.parentElement?.querySelector<HTMLElement>('h1:not(.v7-sr-only)');
-  if(!heading||typeof IntersectionObserver==='undefined'){setPageTitleVisible(false);return;}
-  const bar=ref.current?.getBoundingClientRect().height??56;
-  const observer=new IntersectionObserver(([entry])=>setPageTitleVisible(entry.isIntersecting),{rootMargin:'-'+Math.round(bar)+'px 0px 0px 0px'});
-  observer.observe(heading);return ()=>observer.disconnect();
+  const header=ref.current,heading=header?.parentElement?.querySelector<HTMLElement>('h1:not(.v7-sr-only)');
+  if(!header||!heading||typeof IntersectionObserver==='undefined'){setPageTitleVisible(false);return;}
+  let observer:IntersectionObserver|undefined,margin=-1;
+  function observe(height:number){
+   const rounded=Math.round(height);
+   if(rounded===margin)return;
+   margin=rounded;observer?.disconnect();
+   observer=new IntersectionObserver(([entry])=>setPageTitleVisible(entry.isIntersecting),{rootMargin:'-'+rounded+'px 0px 0px 0px'});
+   observer.observe(heading!);
+  }
+  const size=typeof ResizeObserver==='undefined'?null:new ResizeObserver(([entry])=>{
+   observe(entry.borderBoxSize?.[0]?.blockSize??entry.contentRect.height);
+  });
+  if(size)size.observe(header);
+  else observe(56);
+  return ()=>{size?.disconnect();observer?.disconnect();};
  },[title,location.pathname,location.search]);
  return <header data-surface-role="S1" className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
   <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>

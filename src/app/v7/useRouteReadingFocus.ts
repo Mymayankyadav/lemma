@@ -7,10 +7,11 @@ export function useRouteReadingFocus(path: string, enabled: boolean) {
     if (!enabled || !mount) return;
     const root = mount;
     let anchor: HTMLElement | null = null;
-    let frame = 0;
+    let frame = 0, task = 0;
     const observer = new MutationObserver(() => { if (!anchor?.isConnected) schedule(); });
     function stop() {
       cancelAnimationFrame(frame);
+      clearTimeout(task);
       observer.disconnect();
       document.removeEventListener('focusin', onFocus, true);
     }
@@ -18,7 +19,7 @@ export function useRouteReadingFocus(path: string, enabled: boolean) {
       if (event.target !== anchor) stop();
     }
     function focus() {
-      frame = 0;
+      task = 0;
       if (document.activeElement !== document.body || root.querySelector('[data-layer-active], dialog[open]')) {
         stop();
         return;
@@ -41,7 +42,11 @@ export function useRouteReadingFocus(path: string, enabled: boolean) {
       }
     }
     function schedule() {
-      if (!frame) frame = requestAnimationFrame(focus);
+      if (!frame && !task) frame = requestAnimationFrame(() => {
+        frame = 0;
+        // Reading focus need not initiate synchronous layout before the destination's first paint.
+        task = window.setTimeout(focus, 0);
+      });
     }
     document.addEventListener('focusin', onFocus, true);
     schedule();

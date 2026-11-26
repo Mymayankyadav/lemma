@@ -1,4 +1,5 @@
 import {expect,test,type Page} from '@playwright/test';
+import {enableSurfaceBeta} from './helpers/surface-preview';
 import {at,NOW} from './v7-scenes';
 
 const go=(page:Page,route:string)=>page.goto(at(route).replace('#',',v7Room,v7Ruler,v7Qed#'));
@@ -63,4 +64,19 @@ test('Close the day has an opaque sticky header',async({page})=>{
   await expect(header).toBeVisible();
   await expect(header).toHaveCSS('position','sticky');
   await expect(header).toHaveCSS('background-color',await main.evaluate(node=>getComputedStyle(node).backgroundColor));
+});
+
+test('Planner Change time expands in place and Done restores focus',async({page})=>{
+ await enableSurfaceBeta(page);
+ await go(page,'/calendar?view=day&date=2026-11-09&plan=1');
+ const sheet=page.getByRole('dialog',{name:'Plan study tasks'});
+ const row=sheet.locator('.v7-plan-row').filter({has:page.getByRole('button',{name:'Change time',exact:true})}).first();
+ const trigger=row.getByRole('button',{name:'Change time',exact:true});
+ await trigger.focus();
+ await trigger.press('Enter');
+ await expect(trigger).toHaveAttribute('aria-expanded','true');
+ await expect(row.getByRole('textbox',{name:'Start',exact:true})).toBeFocused();
+ await row.getByRole('button',{name:'Done',exact:true}).click();
+ await expect(trigger).toBeFocused();
+ await expect(trigger).toHaveAttribute('aria-expanded','false');
 });

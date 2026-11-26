@@ -113,3 +113,5 @@ html[data-v7][data-v7-focus-turn]:not([data-motion="reduced"])::view-transition-
 html[data-v7][data-v7-focus-turn]:not([data-motion="reduced"])::view-transition-old(root) {display:none;}
 html[data-v7][data-v7-focus-turn]:not([data-motion="reduced"])::view-transition-new(root) {animation:none;}
 html[data-v7][data-v7-focus-turn]:not([data-motion="reduced"])::view-transition {pointer-events:none;}
+
+:where(html[data-v7]) .v7-focus-clock-exit {z-index:var(--v7-z-sticky);}

@@ -8,7 +8,6 @@ import {useAddSource,useDeleteSource,useUpdateSource,useSourceTranscriptionStats
 import {SourceTranscriptionView} from './SourceTranscriptionView';
 import type {IngestProgress,Source,SourceKind} from '../../data/types';
 import {cancelIngest,isSourceFile,resetIngestCancellation} from '../../pdf/ingest';
-import {Rail} from '../../ui/Rail';
 import {visibleUploadQueue} from './uploadQueue';
 import {useToast} from '../../ui/Toast';
 import {Button, Picker} from '../../ui/v7/components';
@@ -19,6 +18,14 @@ const kinds:SourceKind[]=['book','notes','slides','problems','syllabus','exam','
 const limit=50*1024*1024;
 const formatSize=(bytes:number)=>bytes<=0?'0 KB':bytes>=1024*1024?(bytes/1024/1024).toFixed(1)+' MB':Math.max(1,Math.ceil(bytes/1024))+' KB';
 const storageLimit=1024*1024*1024;
+function SourceUploadProgress({progress,label}:{progress:IngestProgress;label:string}){
+ const percent=Math.max(0,Math.min(100,progress.pageCount?progress.page/progress.pageCount*100:0));
+ return <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(percent)}
+  className="mt-2 h-1.5 overflow-hidden rounded-full source-track">
+  <div className="h-full rounded-full source-meter-fill" style={{width:percent+'%'}}/>
+ </div>;
+}
+
 export function SourcesPanel(props:{projectId:string;sources:Source[];focusSourceId?:string|null}){
  return isFlagOn('v6Shell')?<V6Sources {...props} manage={<LegacySourcesPanel {...props}/>}/>:<LegacySourcesPanel {...props}/>;
 }
@@ -174,7 +181,7 @@ function LegacySourcesPanel({projectId,sources,focusSourceId,v7=false}:{projectI
     <p className="mt-1 text-caption source-text-secondary">{formatSize(item.bytes)}{item.progress?.pageCount?' · '+item.pagesRead+'/'+item.progress.pageCount+' pages read':''}</p>
     {(item.phase==='queued'||item.phase==='reading')&&<Control type="button" className="min-h-11 px-3 text-label font-semibold source-text-secondary" onClick={()=>cancel(item)}>Cancel reading</Control>}
     {item.progress?.pageCount&&item.progress.pageCount>1200&&<p role="alert" className="mt-1 text-label source-warning">This PDF has {item.progress.pageCount} pages. Reading may be slow; consider splitting it by chapter.</p>}
-    {item.progress&&item.phase!=='ready'&&item.phase!=='cancelled'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Upload '+item.name}/>}
+    {item.progress&&item.phase!=='ready'&&item.phase!=='cancelled'&&<SourceUploadProgress progress={item.progress} label={'Upload '+item.name}/>}
     {item.error&&<p role="alert" className="text-label source-danger">{item.error} {item.file&&<Control type="button" className="min-h-11 min-w-11 px-2 source-text-secondary" onClick={()=>patch(item.id,{phase:'queued',error:null})}>Retry</Control>}</p>}
    </li>)}
   {queue.length>visibleQueue.length&&<p className="text-label source-text-secondary">{queue.length-visibleQueue.length} earlier queue entries hidden.</p>}

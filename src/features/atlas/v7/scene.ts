@@ -134,12 +134,20 @@ export class AtlasScene{
  /** Camera centred on one star, close enough to read its neighbourhood. */
  focusCamera(index:number,k=Math.max(this.camera.k,1.4)):Camera{return {x:this.layout.x[index],y:this.layout.y[index],k:Math.min(MAX_ZOOM,k)};}
  /** Pan only far enough to keep the selected point clear of the inspector and controls. */
- revealCamera(index:number,sheetHeight:number):Camera{
+ revealCamera(index:number,sheet:Insets):Camera{
   const [x,y]=this.toScreen(this.layout.x[index],this.layout.y[index]);
   const margin=this.labelMargin,padding=32;
   const left=Math.min(this.width/2,margin.left+padding),right=Math.max(left,this.width-margin.right-padding);
-  const top=Math.min(this.height/2,margin.top+padding),bottom=Math.max(top,this.height-Math.max(sheetHeight,margin.bottom)-padding);
-  const keepX=Math.max(left,Math.min(right,x)),keepY=Math.max(top,Math.min(bottom,y));
+  const top=Math.min(this.height/2,margin.top+padding),bottom=Math.max(top,this.height-padding);
+  let keepX=Math.max(left,Math.min(right,x)),keepY=Math.max(top,Math.min(bottom,y));
+  const edges={left:sheet.left-padding,right:sheet.right+padding,top:sheet.top-padding,bottom:sheet.bottom+padding};
+  if(keepX>edges.left&&keepX<edges.right&&keepY>edges.top&&keepY<edges.bottom){
+   const options=[
+    {x:edges.left,y:keepY},{x:edges.right,y:keepY},{x:keepX,y:edges.top},{x:keepX,y:edges.bottom},
+   ].filter(point=>point.x>=left&&point.x<=right&&point.y>=top&&point.y<=bottom)
+    .sort((a,b)=>Math.hypot(x-a.x,y-a.y)-Math.hypot(x-b.x,y-b.y));
+   if(options[0]){keepX=options[0].x;keepY=options[0].y;}
+  }
   return {x:this.camera.x+(x-keepX)/this.camera.k,y:this.camera.y+(y-keepY)/this.camera.k,k:this.camera.k};
  }
  /** U3: frame one subject with room for every concept label, instead of fitting the whole sky on a phone. */

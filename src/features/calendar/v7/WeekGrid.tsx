@@ -5,7 +5,7 @@ import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/con
 import {calendarRange,shiftDay} from '../model';
 import {dayMinutes,layoutDayIntervals} from '../grid/layout';
 import {dayCapacity} from '../model';
-import {weekCells} from './dayModel';
+import {elapsedMinuteAt,wallMinuteAt,weekCells} from './dayModel';
 import {SessionGaps,type BlockLook,type SuggestedBlock} from './DayGrid';
 import {loggedSessions,sessionCaption} from './loggedSessions';
 import {formatDuration} from '../../../lib/format';
@@ -35,17 +35,22 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
    .filter(item=>Date.parse(item.end)>Date.parse(range.start)&&Date.parse(item.start)<Date.parse(range.end));
   return {cell,range,whole:dayMinutes(range),items:layoutDayIntervals(inputs,range,WEEK_HOUR_PX),sessions:new Map(sessions.map(session=>[session.id,session])),capacity:dayCapacity(cell.day,zone,entries,blocks)};
  }),[cells,zone,blocks,entries]);
- const first=Math.min(360,...columns.flatMap(column=>column.items.map(item=>Math.floor(item.startMinute/60)*60)));
+ const anchor=columns.find(column=>column.cell.day===date)?.range.start??columns[0].range.start;
+ const from=Date.parse(anchor);
+ const openingAnchor=useRef(timeAnchor?.current),programmaticScroll=useRef<number|null>(null);
+ const anchored=openingAnchor.current!=null?elapsedMinuteAt(date,zone,from,openingAnchor.current):null;
+ const first=Math.min(anchored===null?360:Math.floor(anchored/60)*60,360,...columns.flatMap(column=>column.items.map(item=>Math.floor(item.startMinute/60)*60)));
  const whole=Math.max(...columns.map(column=>column.whole));
  const height=(whole-first)*WEEK_HOUR_PX/60;
- const anchor=columns.find(column=>column.cell.day===date)?.range.start??columns[0].range.start;
  const ticks=Array.from({length:Math.ceil((whole-first)/60)+1},(_,index)=>first+index*60).filter(minute=>minute<whole);
  const byId=useMemo(()=>new Map(blocks.map(block=>[block.id,block])),[blocks]);
  useLayoutEffect(()=>{
   const node=scroll.current;if(!node)return;
-  node.scrollTop=Math.max(0,((timeAnchor?.current??450)-first)*WEEK_HOUR_PX/60);
-  if(timeAnchor)timeAnchor.current=first+node.scrollTop*60/WEEK_HOUR_PX;
- },[weekStart,zone,first,timeAnchor]);
+  const minute=timeAnchor?.current!=null?elapsedMinuteAt(date,zone,from,timeAnchor.current):450;
+  node.scrollTop=Math.max(0,(minute-first)*WEEK_HOUR_PX/60);
+  programmaticScroll.current=node.scrollTop;
+  if(timeAnchor&&timeAnchor.current==null)timeAnchor.current=wallMinuteAt(from+(first+node.scrollTop*60/WEEK_HOUR_PX)*MINUTE,zone);
+ },[weekStart,date,zone,from,first,timeAnchor]);
  return <section className="v7-wk" aria-label="Week calendar">
   <div className="v7-wk-head" role="group" aria-label="Week">
    <span aria-hidden="true"/>
@@ -55,7 +60,12 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
    </button>)}
   </div>
   <div ref={scroll} className="v7-wk-scroll" role="region" aria-label="Week time grid" tabIndex={0}
-   onScroll={event=>{if(timeAnchor)timeAnchor.current=first+event.currentTarget.scrollTop*60/WEEK_HOUR_PX;}}>
+   onScroll={event=>{
+    const scrollTop=event.currentTarget.scrollTop;
+    if(programmaticScroll.current===scrollTop){programmaticScroll.current=null;return;}
+    programmaticScroll.current=null;
+    if(timeAnchor)timeAnchor.current=wallMinuteAt(from+(first+scrollTop*60/WEEK_HOUR_PX)*MINUTE,zone);
+   }}>
    <div className="v7-wk-plane" style={{height}}>
     <div className="v7-wk-gutter" aria-hidden="true">{ticks.map(minute=>{const at=new Date(Date.parse(anchor)+minute*MINUTE).toISOString();
      return <time key={minute} dateTime={at} style={{top:(minute-first)*WEEK_HOUR_PX/60-7}}>{clock(at)}</time>;})}</div>

@@ -1,3 +1,4 @@
+import {enableSurfaceBeta} from './helpers/surface-preview';
 import { test, expect } from "@playwright/test";
 test("connector visibility, app setup, memory setting and backup", async ({
   page,
@@ -162,4 +163,69 @@ test('week start applies immediately and offers Undo', async({page})=>{
  await expect(row).toBeFocused();
  await page.getByRole('button',{name:'Undo',exact:true}).click();
  await expect(row).toContainText(before);
+});
+
+test('Beta testing applies immediately, persists on this device and can be turned off',async({page})=>{
+ await page.goto('/lemma/?demo=1&flags=v7Shell#/settings');
+ await expect(page.getByRole('link',{name:/^Advanced.*Beta testing/})).toBeVisible();
+ await page.getByRole('navigation',{name:'Page actions'}).getByRole('button',{name:'Search',exact:true}).click();
+ await page.getByRole('combobox',{name:'Search'}).fill('Beta testing');
+ await page.getByRole('option',{name:'Beta testing',exact:true}).click();
+ await expect(page).toHaveURL(/settings\?section=advanced$/);
+ const setting=page.getByRole('switch',{name:'Beta testing',exact:true});
+ await expect(setting).not.toBeChecked();
+ await page.evaluate(()=>Object.assign(window,{betaSameDocument:true}));
+ await setting.click();
+ await expect(setting).toBeChecked();
+ expect(await page.evaluate(()=>Reflect.get(window,'betaSameDocument'))).toBe(true);
+ await page.reload();
+ await expect(setting).toBeChecked();
+ await setting.click();
+ await expect(setting).not.toBeChecked();
+ await page.reload();
+ await expect(setting).not.toBeChecked();
+});
+
+test('keyboard disclosure focuses the first new control and restores its trigger without shifting it',async({page})=>{
+ await enableSurfaceBeta(page);
+ await page.goto('/lemma/?demo=1&flags=v7Shell#/p/real-analysis');
+ const disclosure=page.locator('.v7-path-map .v7-disclosure-trigger').first();
+ const panel=page.locator('.v7-path-map .v7-disclosure').first();
+ const first=panel.locator('.v7-expand-panel :is(a[href],button):not([disabled])').first();
+ await expect(disclosure).toBeVisible();
+ await disclosure.focus();
+ const closed=await disclosure.boundingBox();
+ await disclosure.press('Enter');
+ await expect(disclosure).toHaveAttribute('aria-expanded','true');
+ await expect(first).toBeFocused();
+ expect(Math.abs((await disclosure.boundingBox())!.y-closed!.y)).toBeLessThanOrEqual(8);
+ await first.press('Escape');
+ await expect(disclosure).toHaveAttribute('aria-expanded','false');
+ await expect(disclosure).toBeFocused();
+ await expect(panel).toBeVisible();
+});
+
+test('the hub title uses scroll hysteresis without moving the next section',async({page})=>{
+ await enableSurfaceBeta(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.setViewportSize({width:390,height:480});
+ await page.goto('/lemma/?demo=1&flags=v7Shell#/settings');
+ const title=page.getByRole('heading',{name:'Settings',exact:true,level:1});
+ const header=page.locator('.v7-hub-bar');
+ const first=page.getByRole('link',{name:/^Appearance/});
+ await expect(title).toBeVisible();
+ await expect(first).toBeVisible();
+ const height=(await header.boundingBox())!.height;
+ const documentTop=await first.evaluate(link=>link.getBoundingClientRect().top+scrollY);
+ const step=async(y:number,collapsed:boolean)=>{
+  await page.evaluate(offset=>window.scrollTo(0,offset),y);
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(y);
+  await expect(header).toHaveAttribute('data-collapsed',String(collapsed));
+  expect((await header.boundingBox())!.height).toBe(height);
+  expect(await first.evaluate(link=>link.getBoundingClientRect().top+scrollY)).toBeCloseTo(documentTop,0);
+ };
+ await step(30,false);
+ await step(34,true);
+ await step(24,true);
+ await step(7,false);
 });

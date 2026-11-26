@@ -1,4 +1,5 @@
-import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
+import {retryLazy,retryNamed} from '../../app/lazyModule';
+import {Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {AlertTriangle,Check,Copy,FileText,Plus,Trash2} from 'lucide-react';
 import {planPrompt} from '../../lib/chat';
@@ -13,10 +14,10 @@ import {v7Screen} from '../../app/v7Kit';
 
 // The KaTeX preview is only needed after the owner types maths. Do not
 // evaluate its renderer on an empty cold New project form.
-const MathPreview=lazy(()=>import('../../ui/MathPreview').then(module=>({default:module.MathPreview})));
-const ProjectsPage=lazy(()=>import('../projects/Page'));
+const MathPreview=retryNamed(()=>import('../../ui/MathPreview'),module=>module.MathPreview);
+const ProjectsPage=retryLazy(()=>import('../projects/Page'));
 // v7: the Paths hub opens its own New path sheet over the list (PLAN §6.8).
-const PathsV7=lazy(()=>import('../projects/v7/PathsV7'));
+const PathsV7=retryLazy(()=>import('../projects/v7/PathsV7'));
 
 function BackdropFallback(){
  return <Screen tabBar className="gap-4"><header className="flex min-h-11 items-center">

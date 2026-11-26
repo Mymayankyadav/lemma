@@ -39,6 +39,13 @@ export function retainSheetExit(dialog: HTMLDialogElement) {
     panel.setAttribute('data-v7-lifted','');
     curtain.dataset.child = '';
   }
+  const distance = dialog.style.getPropertyValue('--v7-release-distance');
+  if (distance) {
+    curtain.dataset.release = '';
+    curtain.style.setProperty('--v7-release-distance',distance);
+    curtain.style.setProperty('--v7-release-duration',dialog.style.getPropertyValue('--v7-release-duration'));
+    curtain.style.setProperty('--v7-pull-scrim',dialog.style.getPropertyValue('--v7-pull-scrim'));
+  }
   curtain.append(panel);
   doc.body.append(curtain);
   if (native) curtain.showPopover();

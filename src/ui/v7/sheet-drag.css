@@ -2,3 +2,8 @@
 @media (max-width: 699px) {
   :where(html[data-v7]) dialog.v7-sheet :is(.v7-grabber, .v7-sheet-header) {touch-action: none;}
 }
+
+:where(html[data-v7]) dialog.v7-sheet[open][data-sheet-pull]::backdrop {
+  opacity:var(--v7-pull-scrim,1);
+  transition:none;
+}

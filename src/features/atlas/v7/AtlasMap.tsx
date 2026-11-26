@@ -9,7 +9,7 @@ import {AtlasScene,MAX_ZOOM,MIN_ZOOM,type Camera,type Insets,type ScenePalette} 
 
 export interface AtlasCamera{camera:Camera;labelCluster:number|null}
 export interface AtlasMapHandle{
- recentre():void;zoomBy(factor:number):void;flyTo(index:number,inspectorHeight?:number):void;flyToCluster(cluster:number):void;
+ recentre():void;zoomBy(factor:number):void;flyTo(index:number,inspector?:DOMRect):void;flyToCluster(cluster:number):void;
  camera():AtlasCamera|null;restoreCamera(view:AtlasCamera):void;
 }
 interface Props{
@@ -24,7 +24,8 @@ interface Props{
 const DOUBLE_TAP_MS=300,TAP_SLOP=6;
 const zoomDuration=()=>durations.layout*1000;
 export function cameraFlight(from:Camera,to:Camera,width:number,height:number){
- const distance=Math.hypot((to.x-from.x)*from.k/Math.max(width,1),(to.y-from.y)*from.k/Math.max(height,1),Math.log2(to.k/from.k)*.25);
+ const distance=Math.max(Math.abs(to.x-from.x)*from.k/Math.max(width,1),
+  Math.abs(to.y-from.y)*from.k/Math.max(height,1),Math.abs(Math.log2(to.k/from.k))*.25);
  const min=durations.cameraMin*1000,max=durations.cameraMax*1000;
  return {duration:distance<=1?min+60*distance:Math.min(max,min+60+(max-min-60)*(distance-1)/2),long:distance>1};
 }
@@ -85,7 +86,12 @@ export default function AtlasMap({model,layout,source,selected,reduced,paused=fa
   recentre:()=>{const current=scene.current;if(current)moveTo(focusCluster!==null?current.clusterCamera(focusCluster):current.fitCamera());},
   zoomBy:factor=>{const current=scene.current,box=wrap.current?.getBoundingClientRect();if(current&&box)moveTo(current.zoomCamera(box.width/2,box.height/2,factor),zoomDuration());},
   flyToCluster:cluster=>{const current=scene.current;if(current){current.labelCluster=cluster;moveTo(current.clusterCamera(cluster));}},
-  flyTo:(index,inspectorHeight)=>{const current=scene.current;if(current)moveTo(inspectorHeight===undefined?current.focusCamera(index):current.revealCamera(index,inspectorHeight));},
+  flyTo:(index,inspector)=>{
+   const current=scene.current,box=wrap.current?.getBoundingClientRect();
+   if(!current)return;
+   if(!inspector||!box){moveTo(current.focusCamera(index));return;}
+   moveTo(current.revealCamera(index,{left:inspector.left-box.left,right:inspector.right-box.left,top:inspector.top-box.top,bottom:inspector.bottom-box.top}));
+  },
   camera:()=>scene.current?{camera:{...scene.current.camera},labelCluster:scene.current.labelCluster}:null,
   restoreCamera:({camera,labelCluster})=>{if(scene.current)scene.current.labelCluster=labelCluster;moveTo(camera);},
  }));

@@ -1,10 +1,11 @@
+import {retryNamed} from '../../../app/lazyModule';
 import {isFlagOn} from '../../../flags';
 import {cardMode,cardModes,type CardMode} from '../../../data/exam/contract';
 import {InfoTip} from '../../../ui/v7/InfoTip';
 import {RulerTime} from '../../../ui/v7/RulerTime';
 import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {WeekdayCapacity} from '../../adaptive/WeekdayCapacity';
-import {lazy,Suspense,useLayoutEffect,useRef,useState,type KeyboardEvent,type MouseEvent,type ReactNode} from 'react';
+import {Suspense,useLayoutEffect,useRef,useState,type KeyboardEvent,type MouseEvent,type ReactNode} from 'react';
 import {Check,ChevronLeft,ChevronRight} from 'lucide-react';
 import {useUpdateSettings} from '../../../data/hooks';
 import {usePlanRelease} from '../../../data/usePlanRelease';
@@ -23,8 +24,8 @@ import {requestNotificationPermission} from '../../../platform/permissions';
 import {requestTestNotice,serverDelivers} from '../../../platform/push';
 import {reminderKindRows} from './reminderKinds';
 // N123: phone-only rows load only inside the Android app.
-const PhoneReminders=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneReminders})));
-const PhonePlanning=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhonePlanning})));
+const PhoneReminders=retryNamed(()=>import('./PhoneSettings'),module=>module.PhoneReminders);
+const PhonePlanning=retryNamed(()=>import('./PhoneSettings'),module=>module.PhonePlanning);
 
 /**
  * Release plan R1 · F03: Settings as grouped lists. A row shows its label and current value with a chevron, or an inline
@@ -64,7 +65,7 @@ export function useSaveSettings(){
  return {busy:update.isPending,save:async(patch:SettingsPatch,undo?:SettingsPatch,message='Saved')=>{
   try{
    await update.mutateAsync(patch);
-   notify(message,{tone:'success',...(undo?{action:{label:'Undo',onClick:()=>{void update.mutateAsync(undo).catch(()=>notify('We couldn’t undo that change. Try again.',{tone:'danger'}));}}}:{})});
+   notify(message,{tone:'success',...(undo?{action:{label:'Undo',onClick:()=>update.mutateAsync(undo).catch(()=>{notify('We couldn’t undo that change. Try again.',{tone:'danger'});})}}:{})});
    return true;
   }catch{notify('We couldn’t save that change. Try again.',{tone:'danger'});return false;}
  }};

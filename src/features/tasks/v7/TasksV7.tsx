@@ -7,6 +7,7 @@ import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
 import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,GripVertical,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
 import {useStudyUi} from '../../../data/StudyUiRelease';
+import {createIntentRead} from '../../../app/v7/intentRead';
 import {getTaskApi,onTaskChange} from '../../../data/tasks';
 import type {TaskPatch,TaskRecord} from '../../../data/tasks/contract';
 import {HubHeader} from '../../../app/v7/V7Shell';
@@ -32,6 +33,8 @@ import {overdueParts} from '../../../ui/v7/room';
 
 const PAGE=50;
 const statuses:TaskRecord['status'][]=['backlog','in_progress','completed','cancelled'];
+const firstPage=createIntentRead(()=>getTaskApi().listTasks({limit:PAGE,status:statuses}),()=>'tasks');
+export const warmTasks=()=>firstPage.warm(undefined);
 const merge=(old:TaskRecord[],next:readonly TaskRecord[])=>{
  const map=new Map(old.map(task=>[task.id,task]));
  for(const task of next)map.set(task.id,task);
@@ -56,7 +59,7 @@ export default function TasksV7(){
  useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),60_000);return()=>window.clearInterval(timer);},[]);
  useEffect(()=>{
   let live=true;const mine=++epoch.current;pageReady.current=false;setPhase('loading');
-  void getTaskApi().listTasks({limit:PAGE,status:statuses}).then(page=>{
+  void firstPage.read(undefined).then(page=>{
    if(!live||epoch.current!==mine)return;
    pageReady.current=true;setPage({rows:merge([],page.items),total:page.total,cursor:page.nextCursor});setPhase('ready');
   }).catch(error=>{if(!live||epoch.current!==mine)return;pageReady.current=false;setMessage(error instanceof Error?error.message:'Erratum: tasks didn’t load. Try again.');setPhase('error');});
@@ -89,9 +92,8 @@ export default function TasksV7(){
   try{
    const receipt=await api.updateTask(task.id,task.version,patch);
    put(receipt.record);
-   if(done)notify(done.message,{tone:'success',action:{label:'Undo',onClick:()=>{
-    void api.updateTask(receipt.record.id,receipt.record.version,done.undo).then(back=>put(back.record)).catch(()=>{setReload(value=>value+1);});
-   }}});
+   if(done)notify(done.message,{tone:'success',undoConflictKey:'task:'+task.id,action:{label:'Undo',onClick:()=>
+    api.updateTask(receipt.record.id,receipt.record.version,done.undo).then(back=>put(back.record)).catch(()=>{setReload(value=>value+1);})}});
   }catch(error){
    const value=error as {code?:string;message?:string};
    if(value?.code==='conflict'||/conflict|version|stale/i.test(value?.message??'')){setMessage('Task changed elsewhere. The latest version was loaded.');setReload(count=>count+1);}
@@ -104,10 +106,9 @@ export default function TasksV7(){
   try{
    const api=getTaskApi(),receipt=await api.deleteTask(task.id,task.version);
    if(!repair)drop(task.id);
-   notify('Task deleted',{tone:'success',action:{label:'Undo',onClick:()=>{
-    void api.restoreDeletedTask?.(task,receipt.actionNo).then(record=>{if(!repair)add(record);})
-     .catch(()=>notify('Could not restore the task.',{tone:'danger'}));
-   }}});
+   notify('Task deleted',{tone:'success',undoConflictKey:'task:'+task.id,action:{label:'Undo',onClick:()=>
+    api.restoreDeletedTask?.(task,receipt.actionNo).then(record=>{if(!repair)add(record);})
+     .catch(()=>notify('Could not restore the task.',{tone:'danger'}))}});
   }
   catch(error){setMessage(error instanceof Error?error.message:'Could not delete this task.');}
   finally{setBusy(false);}

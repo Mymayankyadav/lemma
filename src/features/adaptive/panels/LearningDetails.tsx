@@ -70,7 +70,7 @@ export function PathEstimateDetails({projectId}:{projectId:string}){
  if(!isFlagOn('atlasV3')||!data)return null;
  const checkpoints=data.checkpoints.filter(checkpoint=>checkpoint.project_id===projectId&&data.durations[checkpoint.id]);
  if(!checkpoints.length&&!data.fits[projectId])return null;
- return <Disclosure label="Plan estimates"><div className="v7-learning-details">
+ return <Disclosure label="Plan estimates" mountWhenOpen><div className="v7-learning-details">
   {data.fits[projectId]&&<FitMeter {...data.fits[projectId]}/>}
   <ul>{checkpoints.map(checkpoint=><li key={checkpoint.id}><strong>{checkpoint.title}</strong> <EstimateRange {...data.durations[checkpoint.id]}/></li>)}</ul>
  </div></Disclosure>;

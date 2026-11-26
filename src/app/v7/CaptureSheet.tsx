@@ -26,6 +26,7 @@ import {takeCaptureText} from '../../platform/share';
 import {useNativeVoice} from '../../platform/voice';
 import {OverlayFrame} from './LazyOverlay';
 import type {SheetProps} from '../../ui/v7/Sheet';
+import {surfaceBetaEnabled} from '../surfaceBeta';
 import {motionReduced} from '../../ui/v7/effects';
 import {durations,easings} from '../../ui/v7/motion';
 import {openCalendarAfterSheet} from './calendarHandoff';
@@ -62,6 +63,7 @@ export default function CaptureSheet({onClose,initialKind=null,picker=false}:{on
  const chooseType=picker&&!text&&!chosen;
  const repair=useStudyUi();
  const firstCardEnabled=getMode()==='demo'?getDemoProfile()==='first-use':repair&&!!authOwner();
+ const [beta]=useState(surfaceBetaEnabled);
  const [details,setDetails]=useState<Details|null>(null);
  const [thought,setThought]=useState('');
  const [blockKind,setBlockKind]=useState<'study'|'busy'>('study');
@@ -71,7 +73,8 @@ export default function CaptureSheet({onClose,initialKind=null,picker=false}:{on
  const heightMotion=useRef<Animation|null>(null);
  function showDetails(next:Details|null){
   const node=panel.current,content=node?.firstElementChild;
-  if(node&&content instanceof HTMLElement&&!motionReduced()&&typeof node.animate==='function'){
+  if(beta&&node)node.dataset.stepTransition='';
+  if(beta&&node&&content instanceof HTMLElement&&!motionReduced()&&typeof node.animate==='function'){
    const copy=content.cloneNode(true) as HTMLElement;
    copy.inert=true;copy.setAttribute('aria-hidden','true');copy.classList.add('v7-capture-step-exit');
    copy.querySelectorAll('[id], [name], [autofocus]').forEach(element=>{
@@ -144,7 +147,8 @@ export default function CaptureSheet({onClose,initialKind=null,picker=false}:{on
   try{
    if(kind==='task'){
     const draft=taskDraft(),api=getTaskApi(),made=await api.createTask(taskInput(draft.values,draft.zone));
-    notify('Task added',{tone:'success',action:{label:'Undo',onClick:()=>{void api.deleteTask(made.record.id,made.record.version).catch(()=>notify('Could not undo the task. Reopen it to check its current version.',{tone:'danger'}));}}});
+    notify('Task added',{tone:'success',undoConflictKey:'task:'+made.record.id,action:{label:'Undo',onClick:()=>
+     api.deleteTask(made.record.id,made.record.version).catch(()=>notify('Could not undo the task. Reopen it to check its current version.',{tone:'danger'}))}});
    }else if(kind==='block'){
     const api=getStudyApi(),minutes=parse.minutes??30,startsAt=instantAt(start.date,start.time,zone);
     const type=repair?blockKind:'study';

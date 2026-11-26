@@ -1,10 +1,15 @@
 import {expect,test} from '@playwright/test';
 import {at,NOW,DATE} from './v7-scenes';
+import {enableSurfaceBeta} from './helpers/surface-preview';
+import {REDUCE_EFFECTS_KEY} from '../../src/ui/v7/effects';
 
-test.beforeEach(async({page})=>await page.clock.setFixedTime(NOW));
+test.beforeEach(async({page})=>{
+ await enableSurfaceBeta(page);
+});
 
 test('Calendar view selection and the requested date survive the full view loop',async({page})=>{
  await page.setViewportSize({width:1440,height:900});
+ await page.clock.setFixedTime(NOW);
  await page.goto(at('/calendar?view=day&date='+DATE));
  const choices=page.getByRole('radiogroup',{name:'Calendar view'});
  const region=page.getByRole('region',{name:'Day time grid'});
@@ -30,25 +35,27 @@ test('Atlas neighbour picks keep the detent and focus, and Back restores the pre
  const atlas=page.getByRole('main',{name:'Atlas',exact:true}),sheet=atlas.locator('.v7-atlas-sheet');
  await sheet.getByRole('button',{name:'Show neighbours and actions'}).click();
  const heading=sheet.getByRole('heading',{level:2});
+ const conceptName=heading.locator('.v7-atlas-title-text:not([data-exiting])');
  const neighbour=sheet.locator('.v7-atlas-sheet-content:not([data-exiting]) .v7-atlas-neighbours').getByRole('button').first();
  const pickNeighbour=async()=>{
-  const previous=await heading.textContent();
+  const previous=await conceptName.textContent();
   await neighbour.click();
-  await expect(heading).not.toHaveText(previous!);
+  await expect(conceptName).not.toHaveText(previous!);
   await expect(heading).toBeFocused();
   await expect(sheet).toHaveAttribute('data-expanded','true');
-  return (await heading.textContent())!;
+  return (await conceptName.textContent())!;
  };
  const first=await pickNeighbour();
  await pickNeighbour();
  await atlas.getByRole('button',{name:'Back',exact:true}).click();
- await expect(heading).toHaveText(first);
+ await expect(conceptName).toHaveText(first);
  await expect(heading).toBeFocused();
  await expect(sheet).toHaveAttribute('data-expanded','true');
 });
 
 test('Review continues a committed swipe from the release point and focuses the next question',async({page})=>{
  await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.clock.setFixedTime(NOW);
  await page.goto(at('/review'));
  await page.getByRole('button',{name:/^(Start review, \d+ cards?|Resume)/}).first().click();
  await page.getByRole('button',{name:'Show answer'}).click();
@@ -81,6 +88,7 @@ test('Review continues a committed swipe from the release point and focuses the 
 });
 
 test('rapid review grade keys are accepted once per revealed card',async({page})=>{
+ await page.clock.setFixedTime(NOW);
  await page.goto(at('/review'));
  await page.getByRole('button',{name:/^(Start review, \d+ cards?|Resume)/}).first().click();
  const progress=page.getByRole('progressbar',{name:'Review progress',exact:true});
@@ -93,4 +101,136 @@ test('rapid review grade keys are accepted once per revealed card',async({page})
   await expect(progress).toHaveAttribute('aria-valuenow',String(number));
   await expect(page.getByRole('button',{name:'Show answer'})).toBeVisible();
  }
+});
+
+test('Undo waits for a grade in flight and restores the same question',async({page})=>{
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.clock.setFixedTime(NOW);
+ await page.goto(at('/review'));
+ await page.getByRole('button',{name:/^(Start review, \d+ cards?|Resume)/}).first().click();
+ const question=page.getByRole('group',{name:'Question',exact:true}),original=await question.textContent();
+ await page.getByRole('button',{name:'Show answer'}).click();
+ await page.evaluate(()=>{
+  const native=HTMLElement.prototype.animate;
+  HTMLElement.prototype.animate=function(keyframes,options){
+   const animation=native.call(this,keyframes,options);
+   if(this.matches('.v7-review-card')&&Array.isArray(keyframes)&&keyframes.at(-1)?.opacity===0){
+    animation.pause();
+    document.addEventListener('finish-review-exit',()=>animation.finish(),{once:true});
+    document.documentElement.dataset.reviewExitHeld='';
+   }
+   return animation;
+  };
+ });
+ await page.keyboard.press('3');
+ await expect(page.locator('html')).toHaveAttribute('data-review-exit-held','');
+ await page.keyboard.press('u');
+ await page.evaluate(()=>document.dispatchEvent(new Event('finish-review-exit')));
+ await expect(page.getByRole('progressbar',{name:'Review progress'})).toHaveAttribute('aria-valuenow','0');
+ await expect(page.locator('.v7-review-progress [data-grade]')).toHaveCount(0);
+ await expect(question).toHaveText(original!);
+ await expect(question).toBeFocused();
+});
+
+for(const preference of ['system','settings'] as const){
+ test('Review overlaps the outgoing and incoming fades with '+preference+' reduced motion',async({page})=>{
+  await page.emulateMedia({reducedMotion:preference==='system'?'reduce':'no-preference'});
+  if(preference==='settings')await page.addInitScript(key=>localStorage.setItem(key,'1'),REDUCE_EFFECTS_KEY);
+  await page.clock.setFixedTime(NOW);
+  await page.goto(at('/review'));
+  await page.getByRole('button',{name:/^(Start review, \d+ cards?|Resume)/}).first().click();
+  await page.getByRole('button',{name:'Show answer'}).click();
+  const card=page.getByRole('article',{name:'Review card',exact:true});
+  await card.evaluate(old=>{
+   const stage=old.parentElement!;
+   const observer=new MutationObserver(()=>{
+    const next=stage.querySelector('.v7-review-card:not([data-exiting])');
+    if(!old.hasAttribute('data-exiting')||next===old||!next)return;
+    const transform=getComputedStyle(next).transform;
+    document.documentElement.dataset.reviewCrossfade=transform;
+    observer.disconnect();
+   });
+   observer.observe(stage,{childList:true,subtree:true,attributes:true,attributeFilter:['data-exiting']});
+  });
+  await page.keyboard.press('3');
+  await expect(page.getByRole('group',{name:'Question',exact:true})).toBeFocused();
+  await expect(page.locator('html')).toHaveAttribute('data-review-crossfade','none');
+ });
+}
+
+for(const preference of ['full','system','settings'] as const){
+ const reduced=preference!=='full';
+ test('Atlas camera '+(reduced?'jumps with '+preference+' reduced motion':'stops on pointer down'),async({page})=>{
+  await page.emulateMedia({reducedMotion:preference==='system'?'reduce':'no-preference'});
+  if(preference==='settings')await page.addInitScript(key=>localStorage.setItem(key,'1'),REDUCE_EFFECTS_KEY);
+  await page.setViewportSize({width:1280,height:800});
+  await page.goto(at('/atlas?view=map&id=concept-compactness'));
+  const sky=page.locator('.v7-atlas-sky'),canvas=sky.locator('canvas');
+  const other=page.getByRole('button',{name:'Go to Linear Algebra',exact:true});
+  await expect(sky).toHaveAttribute('data-zoom','1.40');
+  await expect(other).toBeVisible();
+  const box=(await canvas.boundingBox())!;
+  if(!reduced){
+   await page.mouse.move(box.x+box.width/3,box.y+75);
+   await canvas.evaluate(node=>node.addEventListener('pointerdown',()=>{
+    document.documentElement.dataset.atlasCancelled=String(!node.parentElement?.hasAttribute('data-camera-moving'));
+   },{once:true}));
+  }
+  const motion=await other.evaluate(button=>{
+   (button as HTMLButtonElement).click();
+   return document.querySelector('.v7-atlas-sky')?.getAttribute('data-camera-moving');
+  });
+  if(reduced){
+   expect(motion).toBeNull();
+   await expect(sky).not.toHaveAttribute('data-zoom','1.40');
+   return;
+  }
+  expect(Number(motion)).toBeGreaterThanOrEqual(240);
+  expect(Number(motion)).toBeLessThanOrEqual(600);
+  await page.mouse.down();
+  await expect(page.locator('html')).toHaveAttribute('data-atlas-cancelled','true');
+  await page.mouse.up();
+ });
+}
+
+test('two Inbox decisions in one Undo window both roll back',async({page})=>{
+ await page.goto(at('/proposals'));
+ const position=page.locator('.v7-inbox-position');
+ await expect(position).toHaveText('1 of 5');
+ await page.keyboard.press('a');
+ await expect(position).toHaveText('1 of 4');
+ await page.keyboard.press('r');
+ await expect(position).toHaveText('1 of 3');
+ const group=page.locator('.v7-app-toast').filter({hasText:'2 changes'});
+ await group.getByRole('button',{name:'Undo',exact:true}).click();
+ await expect(position).toHaveText('1 of 5');
+});
+
+test('the undo countdown and commit stay together after hovering',async({page})=>{
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto(at('/proposals'));
+ await page.getByRole('button',{name:'Approve',exact:true}).click();
+ const toast=page.locator('.v7-app-toast');
+ const line=toast.locator('.v7-app-toast-countdown');
+ await line.waitFor({state:'attached'});
+ await toast.hover();
+ const paused=await line.evaluate(node=>getComputedStyle(node).transform);
+ await page.waitForTimeout(2000);
+ expect(await line.evaluate(node=>getComputedStyle(node).transform)).toBe(paused);
+ const measured=toast.evaluate(node=>new Promise<number>((resolve,reject)=>{
+  const line=node.querySelector('.v7-app-toast-countdown')!;
+  let end:number|null=null;
+  const limit=setTimeout(()=>reject(Error('Toast did not expire after resuming')),8000);
+  const sample=()=>{
+   const animation=line.getAnimations()[0],duration=animation?.effect?.getTiming().duration;
+   if(animation&&typeof animation.startTime==='number'&&typeof duration==='number')end=animation.startTime+duration;
+   if(node.isConnected&&!node.hasAttribute('aria-hidden')){requestAnimationFrame(sample);return;}
+   clearTimeout(limit);
+   if(end===null){reject(Error('The countdown did not resume'));return;}
+   resolve(Math.abs(performance.now()-end));
+  };
+  requestAnimationFrame(sample);
+ }));
+ await page.mouse.move(0,0);
+ expect(await measured).toBeLessThanOrEqual(50);
 });

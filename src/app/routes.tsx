@@ -2,6 +2,7 @@ import {isFlagOn} from '../flags';
 import {createLazyModule} from './lazyModule';
 import {eagerRoute,lazyRoute} from './lazyRoute';
 import {v7Modules} from './v7/routeScreens';
+import {libraryChunk} from './v7/libraryChunk';
 // N150 (bug #1375): keeps an E pressed on the Inbox before its code has loaded.
 import '../features/proposals/v7/inboxEarlyKeys';
 import HomePage from '../features/home/Page';
@@ -10,10 +11,11 @@ import AtlasPage from '../features/atlas/Page';
 
 const v7=isFlagOn('v7Shell');
 const split=v7&&isFlagOn('v7Room');
-const preparePaths=split?v7Modules.paths.read:undefined;
-const preparePath=split?v7Modules.path.read:undefined;
-const prepareCards=split?v7Modules.cards.read:undefined;
-const prepareCard=split?v7Modules.card.read:undefined;
+const prepareLibrary=(screen:'paths'|'path'|'cards'|'card')=>split
+ ?()=>Promise.all([libraryChunk.read(),v7Modules[screen].read()])
+ :undefined;
+const preparePaths=prepareLibrary('paths'),preparePath=prepareLibrary('path');
+const prepareCards=prepareLibrary('cards'),prepareCard=prepareLibrary('card');
 
 /** The canonical route inventory from design.md §6. */
 export const screenRoutes=[

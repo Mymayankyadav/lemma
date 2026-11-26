@@ -49,6 +49,22 @@ it('merges matching and distinct notifications without dropping either Undo acti
  expect(calls).toEqual(['third','second','first']);
 });
 
+it('supersedes an incompatible task Undo and keeps unrelated actions',async()=>{
+ vi.useFakeTimers();
+ const calls:string[]=[];
+ const push=(message:string,entity:string)=>toast(message,{undoConflictKey:entity,
+  action:{label:'Undo',onClick:()=>calls.push(message)}});
+ await act(async()=>root.render(<ToastHost/>));
+ await act(async()=>{
+  push('Task saved','task:one');
+  push('Task completed','task:two');
+  push('Task deleted','task:one');
+ });
+ expect(host.textContent).toContain('2 changes');
+ await act(async()=>host.querySelector<HTMLButtonElement>('.v7-app-toast-action')?.click());
+ expect(calls).toEqual(['Task deleted','Task completed']);
+});
+
 it('moves a committed swipe farther along its release direction',()=>{
  expect(swipeExit({dx:111,dy:-17},3,300)).toEqual({dx:411,dy:-17});
  expect(swipeExit({dx:-111,dy:17},1,300)).toEqual({dx:-411,dy:0});
@@ -57,7 +73,7 @@ it('moves a committed swipe farther along its release direction',()=>{
 
 it('scales Atlas flights by screen distance and keeps nearby moves within 300 ms',()=>{
  const origin={x:0,y:0,k:1};
- expect(cameraFlight(origin,{x:500,y:0,k:1},500,600)).toEqual({duration:300,long:false});
+ expect(cameraFlight(origin,{x:500,y:600,k:1},500,600)).toEqual({duration:300,long:false});
  expect(cameraFlight(origin,{x:900,y:0,k:1},500,600)).toMatchObject({long:true});
  expect(cameraFlight(origin,{x:2000,y:0,k:1},500,600).duration).toBe(600);
 });

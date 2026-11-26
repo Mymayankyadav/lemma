@@ -7,7 +7,8 @@ import {haptic} from '../../../ui/v7/haptics';
 import {useMotionReduced} from '../../../ui/v7/effects';
 import {durations,easings} from '../../../ui/v7/motion';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
-import {calendarRange} from '../model';
+import {calendarRange,dayKey} from '../model';
+import {elapsedMinuteAt,wallMinuteAt} from './dayModel';
 import {dayMinutes,layoutDayIntervals,moveInterval,resizeInterval,snapDragMinutes,type GridItem} from '../grid/layout';
 
 // This grid is also lazy-loaded by Today; it owns its presentation at either entry.
@@ -75,15 +76,19 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  const sessionById=useMemo(()=>new Map(sessions.map(session=>[session.id,session])),[sessions]);
  const inputs=useMemo(()=>[...visible.map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt})),...sessions.map(session=>({id:session.id,start:session.start,end:session.end}))],[visible,sessions]);
  const items=useMemo(()=>layoutDayIntervals(inputs,range,HOUR_PX),[inputs,range,HOUR_PX]);
- const first=Math.min(360,...items.map(item=>Math.floor(item.startMinute/60)*60),scrubTo===null?360:Math.floor(scrubTo/60)*60);
+ const openingAnchor=useRef(anchor?.current);
+ const anchored=openingAnchor.current!=null?elapsedMinuteAt(date,zone,from,openingAnchor.current):null;
+ const programmaticScroll=useRef<number|null>(null);
+ const first=Math.min(anchored===null?360:Math.floor(anchored/60)*60,360,...items.map(item=>Math.floor(item.startMinute/60)*60),scrubTo===null?360:Math.floor(scrubTo/60)*60);
  const height=(whole-first)*HOUR_PX/60;
  const ticks=Array.from({length:Math.ceil((whole-first)/60)+1},(_,index)=>first+index*60).filter(minute=>minute<whole);
  const sameDay=now>=from&&now<until,nowY=(now-from)/(60*MINUTE)*HOUR_PX-first/60*HOUR_PX;
  useLayoutEffect(()=>{
   const node=scroll.current;if(!node)return;
-  node.scrollTop=anchor?.current!=null?Math.max(0,(anchor.current-first)*HOUR_PX/60):openingScroll({sameDay,nowY,viewport:node.clientHeight||480,
+  node.scrollTop=anchor?.current!=null?Math.max(0,(elapsedMinuteAt(date,zone,from,anchor.current)-first)*HOUR_PX/60):openingScroll({sameDay,nowY,viewport:node.clientHeight||480,
    firstBlockTop:items.length?items[0].top-first*HOUR_PX/60:null,windowTop:(480-first)*HOUR_PX/60});
-  if(anchor)anchor.current=first+node.scrollTop*60/HOUR_PX;
+  programmaticScroll.current=node.scrollTop;
+  if(anchor&&anchor.current==null)anchor.current=wallMinuteAt(from+(first+node.scrollTop*60/HOUR_PX)*MINUTE,zone);
   // Clock ticks must not steal the reader's scroll.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[date,zone,first,HOUR_PX,anchor]);
@@ -92,13 +97,15 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   const node=[...(scroll.current?.querySelectorAll<HTMLElement>('[data-block-id]')??[])].find(card=>card.dataset.blockId===rollback.block.id);
   if(!node||typeof node.animate!=='function')return;
   const before=Date.parse(rollback.block.startsAt),after=Date.parse(rollback.startsAt);
-  const start=Math.max(from,Math.min(until,after)),offset=(start-Math.max(from,before))*HOUR_PX/(60*MINUTE);
-  const oldHeight=Math.min(until,Date.parse(rollback.endsAt))-start;
+  const targetDay=dayKey(new Date(after),zone),targetMinute=wallMinuteAt(after,zone);
+  const rollbackStart=targetDay===date?after:from+elapsedMinuteAt(date,zone,from,targetMinute)*MINUTE;
+  const start=Math.max(from,Math.min(until,rollbackStart)),offset=(start-Math.max(from,before))*HOUR_PX/(60*MINUTE);
+  const oldHeight=Math.min(until,rollbackStart+Date.parse(rollback.endsAt)-after)-start;
   const newHeight=Math.min(until,Date.parse(rollback.block.endsAt))-Math.max(from,before);
   node.animate([{transform:`translateY(${offset}px)`,height:`${Math.max(15,oldHeight*HOUR_PX/(60*MINUTE))}px`},
    {transform:'none',height:`${Math.max(15,newHeight*HOUR_PX/(60*MINUTE))}px`}],
    {duration:durations.base*1000,easing:`cubic-bezier(${easings.standard.join(',')})`});
- },[rollback,reduced,from,until,HOUR_PX]);
+ },[rollback,reduced,date,zone,from,until,HOUR_PX]);
  useEffect(()=>{
   const node=scroll.current;if(!node||scrubTo===null)return;
   node.scrollTop=Math.max(0,(scrubTo-first)*HOUR_PX/60-node.clientHeight/3);
@@ -248,7 +255,12 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   onKeyDown={event=>{if(event.key==='Escape'&&movingByTap){event.stopPropagation();setMovingByTap(null);}}}>
   {movingByTap&&<p className="v7-cal-move-hint v7-meta" role="status">Choose a time for {blockOf(movingByTap)?.title}.</p>}
   <div ref={scroll} role="region" aria-label="Day time grid" tabIndex={0} className="v7-cal-scroll"
-   onScroll={event=>{if(anchor)anchor.current=first+event.currentTarget.scrollTop*60/HOUR_PX;}}
+   onScroll={event=>{
+    const scrollTop=event.currentTarget.scrollTop;
+    if(programmaticScroll.current===scrollTop){programmaticScroll.current=null;return;}
+    programmaticScroll.current=null;
+    if(anchor)anchor.current=wallMinuteAt(from+(first+scrollTop*60/HOUR_PX)*MINUTE,zone);
+   }}
    onTouchStart={event=>{
     const t=event.touches[0];
     swipe.current=fromEdge(t.clientX)?null:{x:t.clientX,y:t.clientY};

@@ -3,6 +3,18 @@ import {join} from 'node:path';
 import {gzipSync} from 'node:zlib';
 import {expect, type CDPSession,type Page,type Request,type TestInfo} from '@playwright/test';
 
+/** Freeze the fixture's calendar date without replacing animation clocks or PerformanceObserver time. */
+export async function fixAuditDate(page:Page,instant:Date){
+  await page.addInitScript(timestamp=>{
+    const NativeDate=Date;
+    window.Date=new Proxy(NativeDate,{
+      apply:()=>new NativeDate(timestamp).toString(),
+      construct(target,args,newTarget){return Reflect.construct(target,args.length?args:[timestamp],newTarget);},
+      get(target,prop,receiver){return prop==='now'?()=>timestamp:Reflect.get(target,prop,receiver);},
+    });
+  },instant.getTime());
+}
+
 type Frame={timestamp:number;data:string};
 type Snapshot={url:string;layers:string[];modal:number;focus:string;loading:string[]};
 async function state(page:Page):Promise<Snapshot>{
@@ -53,8 +65,9 @@ async function compareFrames(page:Page,frames:Frame[]){
     return metrics;
   },frames);
 }
+type CaptureWindow={markers:{kind:string;at:number}[];peakFrameMs:number;frames:number;blankFrames:number};
 type Row={chapter:string;action:string;family?:string;before?:Snapshot;after?:Snapshot;settleMs?:number;
-  performance?:{layoutShift:number;longestTaskMs:number};inputAt?:number;frames?:Awaited<ReturnType<typeof compareFrames>>;changeRuns?:number;latencyMs?:number|null;error?:string};
+  trace?:CaptureWindow;performance?:{layoutShift:number;longestTaskMs:number};inputAt?:number;frames?:Awaited<ReturnType<typeof compareFrames>>;changeRuns?:number;latencyMs?:number|null;error?:string};
 export class MotionAudit {
   private rows:Row[]=[];
   private inflight=new Set<Request>();
@@ -90,6 +103,31 @@ export class MotionAudit {
       const events:{event:string;name:string;at:number;duration:number;surface?:string}[]=[];
       const perf={layoutShift:0,longestTaskMs:0};
       Object.assign(window,{__surfaceEvents:events,__surfacePerf:perf,__surfaceInputAt:0});
+      let trace:CaptureWindow, handle=0, previous=0, hadContent=false;
+      let markers=new WeakSet<Element>();
+      function sample(time:number){
+        if(previous){trace.peakFrameMs=Math.max(trace.peakFrameMs,time-previous);trace.frames++;}
+        previous=time;
+        const content=Array.from(document.querySelectorAll<HTMLElement>('main,[data-loading-surface="route-skeleton"],[data-route-departure]'))
+          .some(el=>el.getBoundingClientRect().height>0&&(el.childElementCount>0||!!el.textContent?.trim()));
+        if(hadContent&&!content)trace.blankFrames++;
+        if(content)hadContent=true;
+        for(const el of document.querySelectorAll<HTMLElement>('[data-loading-surface]')){
+          if(markers.has(el)||!el.getClientRects().length)continue;
+          const style=getComputedStyle(el);
+          if(style.visibility!=='visible'||Number(style.opacity)===0)continue;
+          markers.add(el);
+          trace.markers.push({kind:el.dataset.loadingSurface!,at:performance.timeOrigin+time});
+        }
+        handle=requestAnimationFrame(sample);
+      }
+      function begin(){
+        cancelAnimationFrame(handle);previous=0;hadContent=false;markers=new WeakSet();
+        trace={markers:[],peakFrameMs:0,frames:0,blankFrames:0};handle=requestAnimationFrame(sample);
+      }
+      function end(){cancelAnimationFrame(handle);return trace;}
+      Object.assign(window,{__beginSurfaceTrace:begin,__endSurfaceTrace:end});
+      begin(); // A new document includes the first cold paint.
       const markInput=()=>{
         if(!Reflect.get(window,'__surfaceInputAt'))Reflect.set(window,'__surfaceInputAt',performance.timeOrigin+performance.now());
       };
@@ -150,6 +188,7 @@ export class MotionAudit {
       await this.page.evaluate(()=>{
         const perf=Reflect.get(window,'__surfacePerf');if(perf){perf.layoutShift=0;perf.longestTaskMs=0;}
         Reflect.set(window,'__surfaceInputAt',0);
+        Reflect.get(window,'__beginSurfaceTrace')?.();
       });
       if(client){
         client.on('Page.screencastFrame',onFrame);
@@ -211,11 +250,15 @@ export class MotionAudit {
           }
         }
         row.frames=await compareFrames(this.page,frames);
-        const changed=row.frames.map((frame,i)=>frame.changed>.001?i:-1).filter(i=>i>=0);
+        // A CDP screencast drops idle frames. Group by the actual 25 fps timebase used by the supplied audit.
+        const origin=row.inputAt??row.frames[0]?.at??0;
+        const changed=[...new Set(row.frames.filter(frame=>frame.at>=origin&&frame.changed>.001)
+          .map(frame=>Math.floor((frame.at-origin)/40)))];
         row.changeRuns=changed.filter((value,i)=>!i||value-changed[i-1]>2).length;
         const feedback=row.frames.find(frame=>frame.changed>.001&&frame.at>=(row.inputAt??0));
         row.latencyMs=feedback?Math.round(feedback.at-(row.inputAt??0)):null;
       }
+      row.trace=await this.page.evaluate(()=>Reflect.get(window,'__endSurfaceTrace')?.()).catch(()=>undefined);
       this.rows.push(row);
     }
     return row;
@@ -223,18 +266,18 @@ export class MotionAudit {
   async finish(){
     this.page.off('request',this.request).off('requestfinished',this.finished).off('requestfailed',this.failed)
       .off('domcontentloaded',this.navigation).off('response',this.response);
-    await this.cdp?.detach();
+    await this.cdp?.detach().catch(()=>{});
     const events=await this.page.evaluate(()=>(window as Window & {__surfaceEvents?:unknown}).__surfaceEvents??[]).catch(()=>[]);
     const seen=new Set<string>();
     const entries=this.rows.map(row=>{
-      const key=[row.family,row.before?.url,row.after?.url,row.action].join('|');
+      const key=[row.family,row.before?.url,row.after?.url,row.action.replace(/ \(warm\)$/,'')].join('|');
       const repeat=!!row.family&&seen.has(key);if(row.family)seen.add(key);return {...row,repeat};
     });
-    const csv=[['chapter','action','family','repeat','settle_ms','latency_ms','frames','change_runs','error'],
-      ...entries.map(r=>[r.chapter,r.action,r.family,r.repeat,r.settleMs,r.latencyMs,r.frames?.length,r.changeRuns,r.error])]
+    const csv=[['chapter','action','family','repeat','settle_ms','latency_ms','frames','change_runs','peak_frame_ms','longest_task_ms','layout_shift','visible_loading_markers','error'],
+      ...entries.map(r=>[r.chapter,r.action,r.family,r.repeat,r.settleMs,r.latencyMs,r.frames?.length,r.changeRuns,r.trace?.peakFrameMs,r.performance?.longestTaskMs,r.performance?.layoutShift,r.trace?.markers.map(m=>m.kind).join('|'),r.error])]
       .map(line=>line.map(value=>'"'+String(value??'').replaceAll('"','""')+'"').join(',')).join('\n')+'\n';
     const json=JSON.stringify({commit:process.env.GITHUB_SHA??null,viewport:this.page.viewportSize(),test:this.info.title,engine:this.page.context().browser()?.browserType().name(),version:this.page.context().browser()?.version(),cpu:process.env.LEMMA_AUDIT_CPU??'1',network:process.env.LEMMA_AUDIT_NETWORK??'default',
-      documentLoads:this.navigations,assetFailures:this.failures,events,entries},null,2);
+      input:await this.page.evaluate(()=>({touchPoints:navigator.maxTouchPoints,devicePixelRatio,contrast:document.documentElement.dataset.contrast,theme:document.documentElement.dataset.theme,reduced:matchMedia('(prefers-reduced-motion:reduce)').matches})).catch(()=>null),documentLoads:this.navigations,assetFailures:this.failures,events,entries},null,2);
     for(const [name,body,type] of [['metrics.csv',csv,'text/csv'],['record.json',json,'application/json']]){
       await this.info.attach(name,{body,contentType:type});
       // The normal PR gate retains the JUnit directory even on a successful run.

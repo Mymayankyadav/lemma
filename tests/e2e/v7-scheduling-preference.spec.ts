@@ -74,6 +74,13 @@ test('live Planning persists each owner choice through reload and leaves existin
     else if (resource === 'rpc/exam_home_summary') payload = {resume: null, due: 0, pendingProposals: 0, projects: [], exam: {sittings: []}}
     else if (resource === 'rpc/changes_since') payload = {changes: [], nextCursor: request.postDataJSON().p_cursor, reset: false}
     else if (resource === 'rpc/register_app_device') payload = null
+    // These read-only RPCs use POST in PostgREST. Keep all unexpected writes rejected.
+    else if (request.method() === 'POST' && (resource === 'rpc/project_summaries' || resource === 'rpc/review_items')) payload = []
+    else if (request.method() === 'POST' && resource === 'rpc/home_review_outlook') payload = {decks: [], forecast: []}
+    else if (request.method() === 'POST' && resource === 'rpc/insights') payload = {
+      days: request.postDataJSON().p_days, reviews: 0, right: 0, reviewDays: [], calibration: [],
+      sessions: 0, minutes: 0, typicalSession: null, subjectMinutes: [], checkpointDays: [], mostRevisited: null,
+    }
     else if (resource === 'study_goals' && request.method() === 'HEAD') return route.fulfill({headers:{'content-range':'*/0'},body:''})
     else if (resource === 'settings') {
       expect(url.searchParams.get('user_id')).toBe(`eq.${owner}`)

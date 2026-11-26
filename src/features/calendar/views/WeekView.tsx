@@ -24,8 +24,12 @@ function label(date: string, zone: string): string {
     .format(new Date(calendarRange(date,zone).start));
 }
 export function formatCalendarTime(instant: string, zone: string, clock24h = true): string {
-  return new Intl.DateTimeFormat('en', {timeZone: zone, hour:'numeric',
-    minute:'2-digit', hourCycle:clock24h?'h23':'h12'}).format(new Date(instant));
+  return calendarTimeFormatter(zone,clock24h)(instant);
+}
+export function calendarTimeFormatter(zone: string, clock24h = true): (instant: string) => string {
+  const formatter = new Intl.DateTimeFormat('en', {timeZone: zone, hour:'numeric',
+    minute:'2-digit', hourCycle:clock24h?'h23':'h12'});
+  return instant=>formatter.format(new Date(instant));
 }
 /** Seven civil days; each block is rendered independently even if times overlap. */
 export function WeekView({date,zone,entries,blocks,dues={deadlines:[],topics:[]},

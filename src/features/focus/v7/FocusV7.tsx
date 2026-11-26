@@ -1,7 +1,6 @@
 import {deviceToken} from '../../../data/study/live';
 import {focusedMilliseconds} from '../../../lib/studyTime';
 import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
-import {flushSync} from 'react-dom';
 import {haptic} from '../../../ui/v7/haptics';
 import {playPhaseChime} from '../../../ui/v7/chime';
 import {useMotionReduced} from '../../../ui/v7/effects';
@@ -27,7 +26,7 @@ import {kitSubject} from '../../atlas/v7/model';
 import {clockTime} from '../../home/v7/todayModel';
 import {useToast} from '../../../ui/Toast';
 import {isFlagOn} from '../../../flags';
-import {useDeskLandscape,useWakeLock} from './deskClock';
+import {turnDeskClock,useDeskLandscape,useWakeLock} from './deskClock';
 import './focus.css';
 import {Loader} from '../../../ui/v7/Loader';
 
@@ -125,9 +124,16 @@ export default function FocusV7(){
  // N157 · U4 S16 (flag v7DeskClock): the desk clock in landscape or with one tap; the screen stays awake while it runs;
  // a tap anywhere shows the controls for a while.
  const deskFlag=isFlagOn('v7DeskClock'),landscape=useDeskLandscape(),[deskChosen,setDeskChosen]=useState<boolean|null>(null);
+ const [deskLandscape,setDeskLandscape]=useState(landscape),clockSurface=useRef<HTMLElement>(null);
+ useEffect(()=>{
+  if(landscape===deskLandscape)return;
+  if(!deskFlag||!entry||deskChosen!==null||reduced){setDeskLandscape(landscape);return;}
+  const frame=requestAnimationFrame(()=>turnDeskClock(clockSurface.current,()=>setDeskLandscape(landscape),false));
+  return ()=>cancelAnimationFrame(frame);
+ },[deskFlag,landscape,deskLandscape,deskChosen,entry?.id,reduced]);
  const [deskControls,setDeskControls]=useState(false),[chromeFocused,setChromeFocused]=useState(false),[pointerDown,setPointerDown]=useState(false);
  const layerOpen=useSyncExternalStore(subscribeLayers,hasOpenLayer,()=>false);
- const desk=deskFlag&&!!entry&&(deskChosen??landscape);
+ const desk=deskFlag&&!!entry&&(deskChosen??deskLandscape);
  const showChrome=deskControls||chromeFocused||menu||finishing||layerOpen;
  const holdChrome=menu||finishing||editing||chromeFocused||pointerDown||layerOpen;
  useWakeLock(desk&&entry?.status==='running');
@@ -151,14 +157,7 @@ export default function FocusV7(){
   };
  },[desk]);
  function toggleDesk(){
-  const apply=()=>{setDeskControls(true);setDeskChosen(!desk);};
-  const root=document.documentElement;
-  if(reduced||!document.startViewTransition||root.hasAttribute('data-v7-theme-turn')){apply();return;}
-  root.setAttribute('data-v7-focus-turn','');
-  try{
-   const transition=document.startViewTransition(()=>flushSync(apply));
-   void transition.finished.catch(()=>undefined).finally(()=>root.removeAttribute('data-v7-focus-turn'));
-  }catch{root.removeAttribute('data-v7-focus-turn');apply();}
+  turnDeskClock(clockSurface.current,()=>{setDeskControls(true);setDeskChosen(!desk);},reduced);
  }
  // N123: "Finish" on the Android lock screen pauses the session and opens this screen with ?finish=1 to log it.
  const [params,setParams]=useSearchParams();
@@ -204,7 +203,7 @@ export default function FocusV7(){
    ]}/>
   <h1 className="v7-sr-only">Focus · {word}</h1>
   <DriftCard entryId={entry.id}/>
-  <section className="v7-focus-centre" aria-label="Timer">
+  <section ref={clockSurface} className="v7-focus-centre" aria-label="Timer">
    {/* FO1/KC23: the emblem is centred on the timer, with the kit's Night hero glow; eyebrow, timer and intention are one block. */}
    <div className="v7-focus-emblem" aria-hidden="true" data-still={reduced||onBreak?'true':undefined}>
     {onBreak?<span className="v7-focus-breath" data-still={reduced?'true':undefined}/>:<Emblem subject={subject} seed={entry.projectId??entry.id} size={520} animate={false}/>}

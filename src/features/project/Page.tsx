@@ -1,7 +1,8 @@
+import {retryLazy,retryNamed} from '../../app/lazyModule';
 import {ProjectScheduler} from '../adaptive/Views';
 import {FastTex as Tex} from '../../ui/FastTex';
 import {useQuery} from '@tanstack/react-query';
-import {lazy,Suspense,useEffect,useState} from 'react';
+import {Suspense,useEffect,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
 import {ArrowLeft,BookOpen,ChevronRight,Check,Layers,MessageCircle,Pause,Play,Waypoints} from 'lucide-react';
@@ -27,10 +28,10 @@ import {isFlagOn} from '../../flags';
 import {v7Screen} from '../../app/v7Kit';
 // PDF ingestion and transcription are only needed on the Sources tab.
 // Keep the cold Path route free of that module while retaining the complete UI.
-const V7Path=lazy(()=>import('./v7/V7Path'));
-const V6Project=lazy(()=>import('./v6/V6Project'));
-const SourcesPanel=lazy(()=>import('./SourcesPanel').then(module=>({default:module.SourcesPanel})));
-const ProjectSwitcher=lazy(()=>import('./ProjectSwitcher').then(module=>({default:module.ProjectSwitcher})));
+const V7Path=retryLazy(()=>import('./v7/V7Path'));
+const V6Project=retryLazy(()=>import('./v6/V6Project'));
+const SourcesPanel=retryNamed(()=>import('./SourcesPanel'),module=>module.SourcesPanel);
+const ProjectSwitcher=retryNamed(()=>import('./ProjectSwitcher'),module=>module.ProjectSwitcher);
 
 function copyAndChat(prompt:string,client:'claude'|'chatgpt',notify:ReturnType<typeof useToast>){
  void navigator.clipboard?.writeText(prompt).then(()=>notify('Tutor prompt copied',{tone:'success'}))

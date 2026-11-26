@@ -22,8 +22,8 @@ export function calendarRangeQuery(identity:string,range:StudyRange){
   },
  });
 }
-export function useCalendarRange(identity:string,range:StudyRange){
- return useQuery({...calendarRangeQuery(identity,range),placeholderData:(previous,query)=>query?.queryKey[1]===identity?previous:undefined});
+export function useCalendarRange(identity:string,range:StudyRange,retainPrevious:boolean){
+ return useQuery({...calendarRangeQuery(identity,range),placeholderData:(previous,query)=>retainPrevious&&query?.queryKey[1]===identity?previous:undefined});
 }
 export function useCalendarRangeCache(identity:string){
  const client=useQueryClient();

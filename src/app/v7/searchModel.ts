@@ -5,6 +5,7 @@ export interface SearchItem{id:string;group:SearchGroupName;title:string;parent?
 export const settingResults:readonly SearchItem[]=[
  {id:'setting:Settings',group:'Settings',title:'Settings',to:'/settings'},
  {id:'setting:Reminders',group:'Settings',title:'Reminders',aliases:['Notifications'],to:'/settings?section=reminders'},
+ {id:'setting:Beta testing',group:'Settings',title:'Beta testing',to:'/settings?section=advanced'},
  {id:'setting:Appearance',group:'Settings',title:'Appearance',to:'/settings?section=appearance'},
  {id:'setting:Data',group:'Settings',title:'Data and account',to:'/settings?section=data'},
 ];

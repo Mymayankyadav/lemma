@@ -4,6 +4,7 @@ import {Picker} from '../../ui/v7/components';
 import {useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Link, useLocation, useNavigate, useParams, useSearchParams} from 'react-router';
+import {useSurfaceBeta} from '../../app/surfaceBeta';
 import {setShellRoot} from '../../app/shellRoot';
 import {useRouteReadingFocus} from '../../app/v7/useRouteReadingFocus';
 import {loadShellFonts} from '../../app/shellFonts';
@@ -27,6 +28,8 @@ const padAddress = (slug: string, code?: string) => '/pad?' + new URLSearchParam
 export default function OfflinePadPage() {
   useSyncExternalStore(subscribeDevicePad, devicePadSnapshot);
   const v7 = isFlagOn('v7Shell');
+  const beta = useSurfaceBeta();
+  const [entrance] = useState(beta);
   useLayoutEffect(() => {
     if (!v7) return;
     setShellRoot('v7');
@@ -49,7 +52,7 @@ export default function OfflinePadPage() {
     search.set('online', search.get('online') === '1' ? '2' : '1');
     void navigate({pathname: location.pathname, search: '?' + search}, {state: {padLoadOnline: true}});
   }
-  return <main id="main-content" className={v7 ? 'v7-page local-pad-page' : 'local-pad-page'} data-offline={!online} aria-label="Device Pad">
+  return <main id="main-content" className={v7 ? 'v7-page local-pad-page' : 'local-pad-page'} data-route-motion={entrance?'immersive':undefined} data-surface-role={v7?'S7':undefined} data-offline={!online} aria-label="Device Pad">
     {v7 && <DetailHeader title="Lemma Pad" back="/settings?section=data"/>}
     <header className="local-pad-page-header"><div><p className="local-pad-eyebrow">Your working space</p><h1>Lemma Pad</h1></div>
       {!v7 && <Link to="/">Return to Lemma</Link>}</header>
@@ -123,6 +126,8 @@ function CheckpointPicker({slug, selectedCode, demo, online, owner, generation}:
   const paths = (projects.data ?? []).filter(path => !path.system && path.status !== 'archived');
   const checkpoints = (project.data?.checkpoints ?? []).filter(checkpoint => checkpoint.ui !== 'proposed' && !checkpoint.id.startsWith('proposed:'));
   const v7 = isFlagOn('v7Shell');
+  const beta = useSurfaceBeta();
+  const [entrance] = useState(beta);
   const pathLabel = (path: (typeof paths)[number]) => paths.some(other => other.id !== path.id && other.title === path.title)
     ? path.title + ' · ' + path.slug : path.title;
   const checkpointLabel = (checkpoint: (typeof checkpoints)[number]) => checkpoint.code + ' · ' + checkpoint.title;

@@ -1,9 +1,10 @@
-import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {retryLazy,retryNamed} from '../../app/lazyModule';
+import {Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
 import {isFlagOn} from '../../flags';
 import AtlasV6 from './v6/AtlasV6';
 import {v7Screen} from '../../app/v7Kit';
-const AtlasV7=lazy(()=>import('./v7/AtlasV7'));
+const AtlasV7=retryLazy(()=>import('./v7/AtlasV7'));
 import {ArrowLeft,ChevronRight,Info,MessageCircle,RotateCcw,Search,X} from 'lucide-react';
 import {getMode} from '../../data/mode';
 import {useAtlas} from '../../data/hooks';
@@ -25,8 +26,8 @@ import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocusedCached,build
 // Optional surfaces should not load motion-backed sheets or four illustration
 // modules on the cold, nonempty 2,500-idea Atlas route. The first real open
 // loads them; after opening, keep Sheet mounted through its exit animation.
-const LazySheet=lazy(()=>import('../../ui/Sheet').then(module=>({default:module.Sheet})));
-const LazyEmptyState=lazy(()=>import('../../ui/EmptyState').then(module=>({default:module.EmptyState})));
+const LazySheet=retryNamed(()=>import('../../ui/Sheet'),module=>module.Sheet);
+const LazyEmptyState=retryNamed(()=>import('../../ui/EmptyState'),module=>module.EmptyState);
 function Sheet(props:SheetProps){
  const [activated,setActivated]=useState(props.open);
  useEffect(()=>{if(props.open)setActivated(true)},[props.open]);

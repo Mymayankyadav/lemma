@@ -1,6 +1,6 @@
 // Runs with check-kit in the branch gate. Surface owners supply presence, focus and dismissal for every caller.
 import {readFileSync, readdirSync} from 'node:fs';
-import {join} from 'node:path';
+import {dirname,join,normalize} from 'node:path';
 import ts from 'typescript';
 const issues = [];
 const report = (file, desc) => issues.push(file+' – '+desc);
@@ -8,11 +8,56 @@ function files(dir) {
   return readdirSync(dir, {withFileTypes:true}).flatMap(entry=>entry.isDirectory()?files(join(dir,entry.name)):[join(dir,entry.name)]);
 }
 const sources = files('src');
-const migrated = /^(?:src\/app\/RouteError\.tsx|src\/features\/(?:pad\/(?:PadNavigationGuard|PadMathKeyboard|OfflinePadPage|LocalPadWorkspace|LocalPadEditor|LocalPadInk)\.tsx|sources\/v7\/))/;
+const allFiles = new Set(sources);
+const directV7 = file => file.includes('/v7/') || file === 'src/app/RouteError.tsx';
+// Migration roots are deliberately the settings, Pad and Sources contracts. Follow rendered
+// JSX imports, not data helpers or the legacy shell dependency graph.
+const sharedSurface = /^(?:src\/features\/(?:pad\/|settings\/|project\/(?:SourcesPanel|SourceTranscriptionView)))/;
+const parse = file => ts.createSourceFile(file,readFileSync(file,'utf8'),ts.ScriptTarget.Latest,true,file.endsWith('tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
+const modules = new Map();
+function tree(file) {
+  if (!modules.has(file)) modules.set(file,parse(file));
+  return modules.get(file);
+}
+function resolveImport(file,specifier) {
+  if (!specifier.startsWith('.')) return null;
+  const path = normalize(join(dirname(file),specifier));
+  return [path,path+'.tsx',path+'.ts',join(path,'index.tsx'),join(path,'index.ts')].find(candidate=>allFiles.has(candidate))??null;
+}
+const inspected = new Set(sources.filter(directV7));
+for (const file of inspected) {
+  if (!/\.tsx?$/.test(file)) continue;
+  const ast = tree(file), imports = new Map();
+  for (const statement of ast.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+    const target = resolveImport(file,statement.moduleSpecifier.text);
+    if (!target) continue;
+    if (target.endsWith('.css')) {
+      if (directV7(target) || sharedSurface.test(file) || directV7(file)) inspected.add(target);
+      continue;
+    }
+    if (!sharedSurface.test(target)) continue;
+    const clause = statement.importClause;
+    if (!clause || clause.isTypeOnly) continue;
+    if (clause.name) imports.set(clause.name.text,target);
+    if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings)) imports.set(clause.namedBindings.name.text,target);
+    if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+      for (const element of clause.namedBindings.elements) if (!element.isTypeOnly) imports.set(element.name.text,target);
+    }
+  }
+  function findRenderedImport(node) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const target = imports.get(node.tagName.getText(ast).split('.')[0]);
+      if (target && target.endsWith('.tsx')) inspected.add(target);
+    }
+    ts.forEachChild(node,findRenderedImport);
+  }
+  findRenderedImport(ast);
+}
 const legacyColor = /var\(\s*--(?:obsidian(?:-deep)?|slab|tile|well|ink(?:-[2-4])?|amber|paper(?:-2)?|edge(?:-[23])?|fill-[12]|hair|line|control-edge|glass-strong)\s*[,)]/;
-const legacyClass = /(?:^|\s)(?:bg-(?:slab|tile|obsidian|well)|text-(?:ink(?:-[234])?|amber)|border-edge|btn-primary|legacy-sheet)(?=\s|$)/;
+const legacyClass = /(?:^|[\s:])(?:bg-(?:slab|tile|obsidian|well|fill-[12])|text-(?:ink(?:-[234])?|amber)|border-edge(?:-[23])?|btn-primary|legacy-sheet)(?=\s|$)/;
 const roleOwners = new Set(['src/ui/v7/Sheet.tsx','src/ui/v7/ChoiceSurface.tsx']);
-for (const file of sources.filter(file=>file.includes('/v7/') || migrated.test(file))) {
+for (const file of inspected) {
   if (!/\.(?:css|tsx?)$/.test(file)) continue;
   const source = readFileSync(file,'utf8');
   if (file.endsWith('.css')) {
@@ -22,9 +67,9 @@ for (const file of sources.filter(file=>file.includes('/v7/') || migrated.test(f
     if (legacyColor.test(css)) report(file,'use a v7 colour role');
     continue;
   }
-  const ast=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,file.endsWith('tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
+  const ast=tree(file);
   function inspect(node) {
-    if (ts.isImportDeclaration(node) && /(?:^|\/)ui\/Sheet$/.test(node.moduleSpecifier.text))
+    if (directV7(file) && ts.isImportDeclaration(node) && /(?:^|\/)ui\/Sheet$/.test(node.moduleSpecifier.text))
       report(file,'import the registered v7 Sheet directly');
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const tag=node.tagName.getText(ast);
@@ -45,6 +90,7 @@ for (const file of sources.filter(file=>file.includes('/v7/') || migrated.test(f
       }
     }
     if (ts.isStringLiteralLike(node) && legacyColor.test(node.text)) report(file,'legacy colour variable');
+    if (ts.isStringLiteralLike(node) && legacyClass.test(node.text)) report(file,'legacy colour class');
     ts.forEachChild(node,inspect);
   }
   inspect(ast);

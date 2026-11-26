@@ -1,3 +1,5 @@
+import {Button,Picker} from '../../../ui/v7/components';
+import '../section-controls.css';
 // N79: typed focus preferences. Server N39 JSON remains the authoritative
 // validation and unknown-key-preserving merge; this screen sends only known keys.
 import {useState,type FormEvent} from 'react';
@@ -5,8 +7,8 @@ import type {FocusDefaultsPrefs,ReviewBudgetPrefs,AttentionPrefs,Settings} from 
 import type {SettingsPatch} from '../../../data/api';
 import {useUpdateSettings} from '../../../data/hooks';
 
-const field='min-h-11 rounded-ctl border border-edge bg-well px-3 text-body';
-const btn='min-h-11 rounded-ctl border border-edge px-3 font-semibold disabled:opacity-50';
+const field='min-h-11 rounded-ctl border settings-section-field px-3 text-body';
+const btn='min-h-11 rounded-ctl border settings-section-button px-3 font-semibold disabled:opacity-50';
 const number=(raw:string,min:number,max:number,name:string):number=>{
  if(!/^(0|[1-9][0-9]*)$/.test(raw)||!Number.isSafeInteger(Number(raw))||
   Number(raw)<min||Number(raw)>max)throw Error(name+' must be '+min+'–'+max+' whole minutes');
@@ -36,6 +38,7 @@ export function validateReviewBudgetValues(raw:Record<string,string>):ReviewBudg
   reserve_in_plans:raw.reserveInPlans==='true',
  };
 }
+const focusModes={pomodoro:'Pomodoro',flowtime:'Flowtime',open:'Open'};
 const defaults:FocusDefaultsPrefs={
  mode:'pomodoro',focus_minutes:25,break_minutes:5,long_break_minutes:15,
  cycles:4,flowtime_break_ratio:0.2,long_session_guard_minutes:120,
@@ -49,7 +52,7 @@ function values(s:Settings):Record<string,string>{
   longSessionGuardMinutes:String(f.long_session_guard_minutes),
   cards:String(r.cards),minutes:String(r.minutes),reserveInPlans:String(r.reserve_in_plans)};
 }
-export default function Focus({settings}:{settings:Settings}){
+export default function Focus({settings,v7=false}:{settings:Settings;v7?:boolean}){
  const [form,setForm]=useState(()=>values(settings));
  const [driftPrompt,setDriftPrompt]=useState(settings.attention?.drift_prompt??false);
  const [urgePrompt,setUrgePrompt]=useState(settings.attention?.urge_prompt??false);
@@ -69,17 +72,19 @@ export default function Focus({settings}:{settings:Settings}){
   try{await update.mutateAsync(patch);setNotice('Focus preferences saved')}
   catch(e){setError(e instanceof Error?e.message:'Could not save focus preferences')}
  };
+ const Control=v7?Button:'button';
  return <section aria-label="Focus preferences" className="space-y-3">
   <h2 className="text-title-s font-semibold">Focus preferences</h2>
   <form noValidate onSubmit={event=>{void submit(event)}} className="space-y-4">
-   <label className="block text-label">Focus mode
+   {v7?<Picker label="Focus mode" value={focusModes[form.mode as keyof typeof focusModes]} options={Object.values(focusModes)}
+    onChange={value=>set('mode',value.toLowerCase())}/>:<label className="block text-label">Focus mode
     <select className={field+' ml-2'} aria-label="Focus mode"
      value={form.mode} onChange={e=>set('mode',e.target.value)}>
      <option value="pomodoro">Pomodoro</option>
      <option value="flowtime">Flowtime</option>
      <option value="open">Open</option>
     </select>
-   </label>
+   </label>}
    <div className="grid grid-cols-2 gap-3">
     {([
      ['focusMinutes','Focus minutes',480],
@@ -122,7 +127,7 @@ export default function Focus({settings}:{settings:Settings}){
    </label>
    {error?<p role="alert">{error}</p>:null}
    {notice?<p role="status">{notice}</p>:null}
-   <button type="submit" disabled={busy} className={btn}>Save focus preferences</button>
+   <Control type="submit" disabled={busy} className={btn}>Save focus preferences</Control>
   </form>
  </section>;
 }

@@ -4,6 +4,19 @@ import type { CalendarBlockRecord, StudyEntryRecord, StudyRange } from '../../da
 
 const millis = (iso: string) => Date.parse(iso);
 const hourMs = 60 * 60 * 1000;
+const recentCalendarDays = new Map<string, StudyRange>();
+
+function calendarDayBounds(date: string, zone: string): StudyRange {
+  const key = zone + '|' + date;
+  const cached = recentCalendarDays.get(key);
+  if (cached) return cached;
+  const bounds = dayBounds(date, zone);
+  // Calendar views reuse the same civil days across the strip, grids and
+  // capacity calculations. Keep repeated time-zone lookups off their render path.
+  if (recentCalendarDays.size >= 128) recentCalendarDays.delete(recentCalendarDays.keys().next().value!);
+  recentCalendarDays.set(key, bounds);
+  return bounds;
+}
 
 /** Civil dates must never be derived by slicing a UTC ISO timestamp. */
 export function dayKey(instant: Date, zone: string): string {
@@ -26,7 +39,8 @@ export function shiftDay(date: string, amount: number): string {
 }
 
 export function calendarRange(date: string, zone: string, days = 1): StudyRange {
-  return { start: dayBounds(date, zone).start, end: dayBounds(shiftDay(date, days - 1), zone).end };
+  const first = calendarDayBounds(date, zone);
+  return { start: first.start, end: days === 1 ? first.end : calendarDayBounds(shiftDay(date, days - 1), zone).end };
 }
 
 export function overlaps(start: string, end: string, range: StudyRange): boolean {

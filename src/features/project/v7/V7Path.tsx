@@ -55,6 +55,7 @@ import '../../exam/exam.css';
 
 const sourcesModule=createLazyModule(()=>import('./SourcesV7'));
 const SourcesPanel=lazy(sourcesModule.read);
+export const warmSources=sourcesModule.warm;
 const switchPath=createLazyModule(()=>import('../ProjectSwitcher'));
 const tabs=['Plan','Sessions','Sources','Cards','Exam'] as const;
 type Tab=typeof tabs[number];

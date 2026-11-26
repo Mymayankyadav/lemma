@@ -1,8 +1,9 @@
 import {expect,test} from '@playwright/test';
 import {at,NOW} from './v7-scenes';
 
-for(const touch of [false,true]){
- test.describe(touch?'desk clock on a touch screen':'desk clock on desktop',()=>{
+for(const input of ['mouse','touch','keyboard'] as const){
+ const touch=input==='touch';
+ test.describe('desk clock with '+input,()=>{
   test.use({hasTouch:touch,viewport:touch?{width:390,height:844}:{width:1440,height:900}});
   test('Timer details stays operable at 0, 4, 8 and 15 seconds',async({page})=>{
    await page.clock.install({time:NOW});
@@ -23,8 +24,13 @@ for(const touch of [false,true]){
     if(seconds)await page.clock.fastForward(seconds*1000);
     await expect(chrome).toHaveCSS('opacity','1');
     await expect(footer).toHaveCSS('opacity','1');
+    const hit=await leave.evaluate(node=>{
+     const box=node.getBoundingClientRect();
+     return node.contains(document.elementFromPoint(box.left+box.width/2,box.top+box.height/2));
+    });
+    expect(hit).toBe(true);
     if(touch)await leave.tap();
-    else if(seconds>0)await leave.press('Enter');
+    else if(input==='keyboard')await leave.press('Enter');
     else await leave.click();
     await expect(focus).not.toHaveAttribute('data-desk','');
     await expect(timer).toBeFocused();

@@ -1,9 +1,10 @@
+import {retryNamed} from '../../../app/lazyModule';
 import {setTutorAutomatic,setTutorRecognition,useTutorInputPreferences} from '../../tutor/input/inputPreferences';
 import {WritingAidSettings} from '../../tutor/writingAid/WritingAidSettings';
 import {PlanningGoals} from '../../insights/v7/GoalEditor';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {Diagnostics} from '../../adaptive/panels/Diagnostics';
-import {lazy,Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
+import {Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {setHapticsEnabled} from '../../../ui/v7/haptics';
 import {applyReduceEffects} from '../../../ui/v7/effects';
@@ -14,6 +15,7 @@ import type {Settings,Subject as DataSubject,UiPreferences} from '../../../data/
 import {getMode} from '../../../data/mode';
 import {usePlanRelease} from '../../../data/usePlanRelease';
 import {applyAppearance,readAppearance} from '../../../styles/appearance';
+import {setSurfaceBeta,useSurfaceBeta} from '../../../app/surfaceBeta';
 import {DetailHeader,HubHeader} from '../../../app/v7/V7Shell';
 import {chooseForSession,chosenColours,effectiveColours} from '../../../app/v7/subjectColours';
 import {Button,Field,Sheet,Skeleton,Switch} from '../../../ui/v7/components';
@@ -26,7 +28,7 @@ import {ConnectorAddress} from '../ConnectorAddress';
 import StudyDefaults from '../v6/StudyDefaults';
 import Activities from '../v6/Activities';
 import Focus from '../v6/Focus';
-import {Group,InfoRow,PlanningLists,ReminderLists,StudyLists} from './SettingsLists';
+import {Group,InfoRow,PlanningLists,ReminderLists,StudyLists,SettingsSaveButtons,SwitchRow} from './SettingsLists';
 import {DataAccount} from './DataAccount';
 import './settings.css';
 import {isNative} from '../../../platform/native';
@@ -34,7 +36,7 @@ import {useMinWidth} from '../../../app/v7/useMinWidth';
 import {isFlagOn} from '../../../flags';
 import {PAPERS,SKIES,choosePaper,chooseSky,readPaper,readSky,type Paper,type Sky} from '../../../ui/v7/paper';
 // AW3: the app's version and updates, only inside the Android app.
-const PhoneAbout=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneAbout})));
+const PhoneAbout=retryNamed(()=>import('./PhoneSettings'),module=>module.PhoneAbout);
 
 type Mode='auto'|'day'|'night';
 type Section='appearance'|'tutor'|'study'|'planning'|'reminders'|'subjects'|'data'|'advanced';
@@ -48,7 +50,7 @@ const modeWord:Record<Mode,string>={auto:'Auto',day:'Day',night:'Night'};
 export function settingsSummary(section:Section,settings:Settings|undefined,subjectCount:number,mode:Mode,systemNight:boolean,tutorReleased=false):string{
  if(!settings)return '';
  switch(section){
-  case 'advanced':return 'Diagnostics';
+  case 'advanced':return 'Beta testing and diagnostics';
   case 'appearance':return mode==='auto'?(systemNight?'Night':'Day')+' · follows the system':modeWord[mode];
   case 'tutor':
    if(tutorReleased)return settings.connectorLastSeenAt?'Checkpoint chat · Connector used':'Checkpoint chat';
@@ -118,7 +120,9 @@ function Appearance({settings}:{settings:Settings}){
 function SubjectSheet({subject,taken,current,onClose}:{subject:DataSubject;taken:Map<Subject,string>;current:Subject;onClose:()=>void}){
  const settings=useSettings(),update=useUpdateSettings(),edit=useUpdateSubject(),notify=useToast(),list=useSubjects();
  const [colour,setColour]=useState<Subject>(current),[glyph,setGlyph]=useState(subject.glyph),[busy,setBusy]=useState(false);
+ const dirty=colour!==current||glyph.trim()!==subject.glyph;
  async function save(){
+  if(!dirty||busy||!glyph.trim())return;
   setBusy(true);
   try{
    if(glyph.trim()&&glyph.trim()!==subject.glyph)await edit.mutateAsync({id:subject.id,patch:{name:subject.name,glyph:glyph.trim()}});
@@ -129,7 +133,8 @@ function SubjectSheet({subject,taken,current,onClose}:{subject:DataSubject;taken
    notify('Subject saved',{tone:'success'});onClose();
   }catch{notify('Could not save the subject.',{tone:'danger'});}finally{setBusy(false);}
  }
- return <Sheet open onClose={onClose} title={subject.name} footer={<Button variant="primary" loading={busy} onClick={()=>{void save();}}>Save</Button>}>
+ return <Sheet open onClose={()=>{if(!busy)onClose();}} title={subject.name} dirty={dirty&&!busy}
+  footer={<SettingsSaveButtons changed={dirty&&!!glyph.trim()} busy={busy} onSave={()=>void save()}/>}>
   <div className={'v7-subject-preview '+subjectClass(colour)} aria-label="Preview"><Emblem subject={colour} seed={'subject-'+subject.id} size={96} animate={false}/><span className="v7-tag"><SubjectMark subject={colour}/><span>{subject.name}</span></span></div>
   <fieldset className="v7-subject-colours"><legend>Colour and emblem</legend>
    {kitSubjects.map(item=>{const owner=taken.get(item);const other=owner&&owner!==subject.id;
@@ -184,11 +189,17 @@ function Tutor({settings,released}:{settings:Settings;released:boolean}){
     <Button small loading={rotate.isPending} onClick={()=>{void rotate.mutateAsync().then(()=>notify('New address created; reconnect your tutor',{tone:'success'})).catch(()=>notify('Could not rotate the address',{tone:'danger'}));}}><RefreshCw aria-hidden="true"/>New address</Button>
    </div>
   </div>
-  <Legacy><StudyDefaults v7 settings={settings} part="tutor"/></Legacy>
+  <SettingsCard><StudyDefaults v7 settings={settings} part="tutor"/></SettingsCard>
  </div>;
 }
-/** The existing section forms, on v7 surfaces, until each is rebuilt with v7 fields. */
-function Legacy({children}:{children:ReactNode}){return <div className="v7-settings-card v7-settings-legacy">{children}</div>;}
+function BetaTesting(){
+ const enabled=useSurfaceBeta();
+ return <Group title="Beta testing" note="Try new navigation, sheets and study transitions on this device. Changes apply immediately.">
+  <SwitchRow label="Beta testing" checked={enabled} onChange={setSurfaceBeta}/>
+ </Group>;
+}
+
+function SettingsCard({children}:{children:ReactNode}){return <div className="v7-settings-card v7-settings-embedded">{children}</div>;}
 
 /** PLAN §6.14 Settings: grouped index rows with the current value; Appearance and Subjects rebuilt; the other sections keep
  *  their forms on v7 pages with their `?section=` links. */
@@ -216,19 +227,20 @@ export default function SettingsV7(){
    <Link className="v7-settings-row" to={'/settings?section='+item} aria-current={item===current?'page':undefined}><span className="v7-settings-icon" aria-hidden="true"><Icon/></span>
     <span><strong>{sectionTitle[item]}</strong><small>{settingsSummary(item,settings.data,subjects.data?.length??0,mode,systemNight,tutorReleased)}</small></span><ChevronRight aria-hidden="true"/></Link></li>;})}</ul>)}
  </>;
- const content=(section:Section)=>!data?<Skeleton/>:<>
+ const content=(section:Section)=>section==='advanced'
+  ?<div className="v7-settings-body"><BetaTesting/><h2 className="v7-subhead">Diagnostics</h2><Diagnostics/></div>
+  :!data?<Skeleton/>:<>
   {section==='appearance'&&<Appearance settings={data}/>}
   {section==='subjects'&&<Subjects settings={data}/>}
   {section==='tutor'&&<Tutor settings={data} released={tutorReleased}/>}
   {section==='study'&&(params.get('advanced')==='1'
-   ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults v7 settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
+   ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><SettingsCard><StudyDefaults v7 settings={data} part="study"/></SettingsCard><SettingsCard><Focus v7 settings={data}/></SettingsCard><SettingsCard><Activities v7/></SettingsCard></div>
    :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
   {section==='planning'&&<><PlanningLists settings={data} capacityRequested={params.get('capacity')==='1'} onCapacityOpen={()=>{
    const next=new URLSearchParams(params);
    next.delete('capacity');
    setParams(next,{replace:true});
   }}/><PlanningGoals/></>}
-  {section==='advanced'&&<><h2 className="v7-subhead">Diagnostics</h2><Diagnostics/></>}
   {section==='reminders'&&<ReminderLists settings={data}/>}
   {section==='data'&&<>
    <DataAccount demo={getMode()==='demo'} signingOut={signOut.isPending} onSignOut={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}/>

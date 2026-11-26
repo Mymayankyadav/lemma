@@ -2,6 +2,8 @@
 /* PLAN §6.5 Calendar Day. Role tokens only; subject colour arrives through .v7-subject-N. */
 @layer v7-components {
 :where(html[data-v7]) .v7-cal {--v7-gap:6px;display:grid;gap:var(--v7-gap);align-content:start;}
+:where(html[data-v7]) .v7-cal-content-slot {position:relative;min-width:0;}
+:where(html[data-v7]) .v7-cal-pane[data-exiting] {position:absolute;inset:0 0 auto;pointer-events:none;}
 :where(html[data-v7]) .v7-cal-navigation {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-cal-navigation .v7-hub-tabs {flex:1;min-width:0;}
 :where(html[data-v7]) .v7-cal-period-actions {display:flex;flex:none;}

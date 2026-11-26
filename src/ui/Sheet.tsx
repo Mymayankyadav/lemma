@@ -45,7 +45,7 @@ function LegacySheet({open,onClose,title,children,footer,route=false}:SheetProps
   style={route?{bottom:'var(--lemma-nav-height)'}:undefined}>
  <motion.div aria-hidden="true" initial="hidden" animate="visible" exit="exit"
   variants={variantFor(fade,reduce)} className="absolute inset-0 ui-sheet-scrim" onClick={onClose}/>
- <motion.div ref={panel} tabIndex={-1} role="dialog" aria-modal="true"
+ <motion.div ref={panel} data-legacy-sheet="" tabIndex={-1} role="dialog" aria-modal="true"
   data-sheet-route={route?'':undefined} aria-labelledby={title?labelId:undefined}
   aria-label={title?undefined:'Details'} initial="hidden" animate="visible" exit="exit"
   variants={variantFor(sheet,reduce)} className="ui-sheet relative w-full min-w-0">
@@ -60,7 +60,7 @@ function LegacySheet({open,onClose,title,children,footer,route=false}:SheetProps
  return createPortal(<AnimatePresence>
  {open&&<div className="fixed inset-0 z-40 flex items-end justify-center" role="presentation">
  <motion.div aria-hidden="true" initial="hidden" animate="visible" exit="exit" variants={variantFor(fade,reduce)} className="absolute inset-0 ui-sheet-scrim" onClick={onClose}/>
- <motion.div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={title?labelId:undefined} aria-label={title?undefined:'Details'} initial="hidden" animate="visible" exit="exit"
+ <motion.div ref={panel} data-legacy-sheet="" tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={title?labelId:undefined} aria-label={title?undefined:'Details'} initial="hidden" animate="visible" exit="exit"
  variants={variantFor(sheet,reduce)} drag={reduce?false:'y'} dragConstraints={{top:0,bottom:0}} dragElastic={{top:0,bottom:0.5}} onDragEnd={(_,info)=>{if(info.offset.y>100||info.velocity.y>500)onClose()}}
  className="ui-sheet relative max-h-[90dvh] w-full max-w-[528px] overflow-y-auto rounded-t-sheet border border-edge bg-glass-strong px-6 pb-[calc(24px+env(safe-area-inset-bottom))] pt-4 shadow-[var(--e-float)]">
  <div aria-hidden="true" className="mx-auto mb-5 h-[5px] w-10 rounded-full bg-edge-3"/>

@@ -6,14 +6,13 @@ import {applySelectedDecisions} from '../v6/Selection';
 import type {Decision} from './inboxModel';
 
 const WINDOW=6000;
-interface Pending{ids:string[];action:Decision;edit?:{front:string;back:string;type?:NoteType;kind?:NoteKind};timer:number;dismiss:()=>void}
+interface Pending{ids:string[];action:Decision;edit?:{front:string;back:string;type?:NoteType;kind?:NoteKind};dismiss:()=>void}
 
-/** PLAN §6.10: every decision waits 6 s with Undo before it is sent; the next card shows at once. A new decision, leaving the
- *  page or closing the tab sends the waiting one immediately (the same contract as the v6 Inbox, N121 A7). */
+/** The toast owns the Undo deadline. Off-screen, any undisputed decisions settle immediately. */
 export function useInboxDecisions({onUndo,onSettled}:{onUndo:(ids:string[])=>void;onSettled:()=>void}){
  const approve=useApproveProposal(),reject=useRejectProposal(),notify=useToast();
  const [held,setHeld]=useState<ReadonlySet<string>>(()=>new Set());
- const waiting=useRef<Pending|null>(null);
+ const waiting=useRef(new Set<Pending>());
  const release=useCallback((ids:readonly string[])=>setHeld(previous=>{const next=new Set(previous);for(const id of ids)next.delete(id);return next;}),[]);
  const send=useRef<(entry:Pending)=>Promise<void>>(async()=>{});
  send.current=async entry=>{
@@ -29,29 +28,29 @@ export function useInboxDecisions({onUndo,onSettled}:{onUndo:(ids:string[])=>voi
    notify('Could not confirm the decision. Refresh to check whether it was saved.',{tone:'danger'});
   }finally{release(entry.ids);onSettled();}
  };
- const flush=useCallback(()=>{
-  const entry=waiting.current;
-  if(!entry)return;
-  waiting.current=null;window.clearTimeout(entry.timer);entry.dismiss();void send.current(entry);
+ const settle=useCallback((entry:Pending)=>{
+  if(waiting.current.delete(entry))void send.current(entry);
  },[]);
+ const flush=useCallback(()=>{
+  for(const entry of waiting.current){entry.dismiss();settle(entry);}
+ },[settle]);
  useEffect(()=>{
   const leave=()=>flush();
   window.addEventListener('pagehide',leave);
   return()=>{window.removeEventListener('pagehide',leave);leave();};
  },[flush]);
  const decide=useCallback((items:readonly Proposal[],action:Decision,edit?:{front:string;back:string;type?:NoteType;kind?:NoteKind})=>{
-  if(!items.length)return;
-  flush();
-  const ids=items.map(item=>item.id);
-  setHeld(previous=>{const next=new Set(previous);for(const id of ids)next.add(id);return next;});
-  const entry:Pending={ids,action,edit,timer:0,dismiss:()=>{}};
-  entry.timer=window.setTimeout(()=>{if(waiting.current===entry){waiting.current=null;void send.current(entry);}},WINDOW);
+  const pendingIds=new Set([...waiting.current].flatMap(entry=>entry.ids));
+  const ids=items.map(item=>item.id).filter(id=>!pendingIds.has(id));
+  if(!ids.length)return;
+  setHeld(previous=>new Set([...previous,...ids]));
+  const entry:Pending={ids,action,edit,dismiss:()=>{}};
+  waiting.current.add(entry);
   const message=ids.length===1?(action==='approve'?'Approved':'Rejected'):(action==='approve'?ids.length+' approved':ids.length+' rejected');
-  entry.dismiss=notify(message,{duration:WINDOW,action:{label:'Undo',onClick:()=>{
-   if(waiting.current!==entry)return;
-   window.clearTimeout(entry.timer);waiting.current=null;entry.dismiss();release(ids);onUndo(ids);
+  entry.dismiss=notify(message,{duration:WINDOW,onExpire:()=>settle(entry),action:{label:'Undo',onClick:()=>{
+   if(!waiting.current.delete(entry))return;
+   release(ids);onUndo(ids);
   }}});
-  waiting.current=entry;
- },[flush,notify,release,onUndo]);
+ },[settle,notify,release,onUndo]);
  return {held,decide,flush,busy:approve.isPending||reject.isPending};
 }

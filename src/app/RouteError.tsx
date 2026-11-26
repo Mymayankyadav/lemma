@@ -3,6 +3,7 @@ import {durations} from '../ui/v7/motion';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {v7ScreenFor} from './v7Kit';
 import BootReady from './BootReady';
+import {useSurfaceBeta} from './surfaceBeta';
 
 export default function RouteError(){
  const location=useLocation(),navigate=useNavigate();
@@ -35,12 +36,14 @@ export function markLoadingSurface(element:HTMLElement|null){
 }
 
 export function RouteFallback(){
- const {pathname}=useLocation();
+ const {pathname}=useLocation(),beta=useSurfaceBeta();
  const [visible,setVisible]=useState(false);
  useEffect(()=>{
+  if(!beta)return;
   const timer=window.setTimeout(()=>setVisible(true),durations.skeletonDelay*1000);
   return()=>window.clearTimeout(timer);
- },[]);
+ },[beta]);
+ if(!beta)return <main className="v7-page lemma-route-fallback" role="status" data-loading-surface="route-generic"><h1>Loading screen…</h1></main>;
  return <main className="v7-page lemma-route-fallback" aria-label="Opening screen" aria-busy="true">
   {visible&&<div ref={markLoadingSurface} data-loading-surface="route-skeleton"><RouteSkeleton path={pathname}/></div>}
  </main>;

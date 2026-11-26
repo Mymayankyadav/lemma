@@ -1,4 +1,6 @@
+import {contrastAt} from './helpers/contrast';
 import {test, expect} from '@playwright/test';
+import {enableSurfaceBeta} from './helpers/surface-preview';
 
 for (const width of [390, 1280]) {
   test(`paper grid is painted in both themes without moving the shell at ${width}px`, async ({page}) => {
@@ -68,4 +70,47 @@ test('legacy variables used by v7 surfaces resolve at the document root', async(
   expect(values['e-float']).toBe(values['e-card']);
   expect(values['blur-glass']).toBe('none');
  }
+});
+
+for(const theme of ['day','night'])test('editable Settings and Tutor rules keep readable text and control edges in '+theme,async({page})=>{
+ await enableSurfaceBeta(page);
+ await page.goto('/lemma/?demo=1&flags=v7Shell&mode='+theme+'#/settings?section=study&advanced=1');
+ const focus=page.getByRole('region',{name:'Focus preferences',exact:true});
+ const activities=page.getByRole('region',{name:'Activities',exact:true});
+ for(const control of [focus.getByRole('spinbutton',{name:'Focus minutes',exact:true}),activities.getByRole('textbox',{name:'Activity name',exact:true})]){
+  const paint=await contrastAt(control);
+  expect(paint.text).toBeGreaterThanOrEqual(4.5);
+  expect(paint.border).toBeGreaterThanOrEqual(1);
+  expect(paint.edge).toBeGreaterThanOrEqual(3);
+ }
+ await page.goto('/lemma/?demo=1&flags=v7Shell&mode='+theme+'#/settings?section=tutor');
+ await page.getByRole('button',{name:'Tutor rules',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Tutor rules',exact:true});
+ const rules=dialog.getByRole('textbox',{name:'Tutor rules text'});
+ const cancel=dialog.getByRole('button',{name:'Cancel',exact:true});
+ await expect(dialog).toBeVisible();
+ await expect(page.locator('[data-legacy-sheet]')).toHaveCount(0);
+ for(const control of [rules,cancel]){
+  const paint=await contrastAt(control);
+  expect(paint.text).toBeGreaterThanOrEqual(4.5);
+  expect(paint.border).toBeGreaterThanOrEqual(1);
+  expect(paint.edge).toBeGreaterThanOrEqual(3);
+ }
+});
+
+test('a Night popover lifts above its sheet and its hovered option stays readable',async({page})=>{
+ await enableSurfaceBeta(page);
+ await page.setViewportSize({width:1000,height:844});
+ await page.goto('/lemma/?demo=1&flags=v7Shell&mode=night#/tasks?new=1');
+ const editor=page.getByRole('dialog',{name:'New task',exact:true});
+ await editor.getByRole('button',{name:/^Due:/}).click();
+ const popover=page.getByRole('listbox',{name:'Due',exact:true});
+ await expect(popover).toBeVisible();
+ const option=popover.getByRole('option').last();
+ await option.hover();
+ const panel=await contrastAt(popover);
+ const row=await contrastAt(option);
+ expect(panel.fill).toBeGreaterThanOrEqual(1.14);
+ expect(row.fill).toBeGreaterThanOrEqual(1.10);
+ expect(row.text).toBeGreaterThanOrEqual(4.5);
 });

@@ -62,12 +62,12 @@ const visible = (el: Target | undefined): el is HTMLElement => !!el?.isConnected
   && (el.getClientRects().length > 0 || (!el.ownerDocument.documentElement.getClientRects().length
     && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden'));
 
-export function restoreLayerFocus(trigger: Target, fallback?: Target | (() => Target)) {
+export function restoreLayerFocus(trigger: Target, fallback?: Target | (() => Target), ancestors: Target[] = []) {
   const doc = trigger?.ownerDocument ?? document;
   const owner = top(doc)?.element;
   const root = owner ?? doc;
   const requested = typeof fallback === 'function' ? fallback() : fallback;
-  const candidates = [trigger, requested, ...root.querySelectorAll<HTMLElement>('[data-return-anchor]'),
+  const candidates = [trigger, requested, ...ancestors, ...root.querySelectorAll<HTMLElement>('[data-return-anchor]'),
     ...root.querySelectorAll<HTMLElement>(owner ? '[data-v7-autofocus],button:not(:disabled),input,h2' : 'main h1,h1,main[tabindex]')];
   for (const el of candidates) {
     if (!visible(el) || (owner && !owner.contains(el))) continue;
@@ -79,6 +79,8 @@ export function restoreLayerFocus(trigger: Target, fallback?: Target | (() => Ta
 
 export function registerLayer(layer: Layer) {
   const {element, role} = layer, doc = element.ownerDocument;
+  // Discard may close a guard and its editor in one commit. Keep the surviving launcher chain.
+  const launchers = stack.filter(item=>item.element.ownerDocument===doc).map(item=>item.trigger).reverse();
   // An already-open child may register first when React mounts an entire branch in one commit.
   const child = stack.findIndex(item => element.contains(item.element));
   if (child < 0) stack.push(layer);
@@ -109,16 +111,19 @@ export function registerLayer(layer: Layer) {
     }
     notify();
     if (restore && wasTop) {
-      const previousTop = top(doc);
+      const previousTop = top(doc), nativeFocus = doc.activeElement;
       queueMicrotask(() => {
         // A handoff or navigation may already have installed and focused its own content.
         if (top(doc) !== previousTop) return;
         const active=doc.activeElement instanceof HTMLElement ? doc.activeElement : null;
+        // A committed edit can deliberately move the caret to its field in React's layout phase.
+        if (active !== nativeFocus && visible(active) && !element.contains(active)
+          && (!previousTop || previousTop.element.contains(active))) return;
         // A guard can return to a different step. Its launcher was removed, and the step
         // has already focused its replacement row during the same layout commit.
         if (!visible(layer.trigger) && previousTop && visible(active)
           && active !== previousTop.element && previousTop.element.contains(active) && !element.contains(active)) return;
-        restoreLayerFocus(layer.trigger, layer.returnTarget);
+        restoreLayerFocus(layer.trigger, layer.returnTarget, launchers);
       });
     }
   };

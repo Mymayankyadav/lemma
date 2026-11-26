@@ -21,10 +21,7 @@
 :where(html[data-v7]) .v7-change-card p {max-width:var(--v7-reading);}
 :where(html[data-v7]) .v7-kit-version {font:500 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-mono);color:var(--v7-role-text-secondary);}
 :where(html[data-v7]) .v7-kit-action-row {display:flex;flex-wrap:wrap;align-items:center;gap:var(--v7-space-3);}
-:where(html[data-v7]) .v7-kit .v7-segmented {background:var(--v7-role-state-hover);border:var(--v7-hairline) solid var(--v7-role-border-subtle);gap:var(--v7-space-1);}
 :where(html[data-v7]) .v7-kit .v7-segmented button {min-height:var(--v7-touch);padding-inline:var(--v7-space-2);}
-:where(html[data-v7])[data-theme="graph-night"] .v7-kit-header .v7-segmented [aria-checked="true"],
-:where(html[data-v7]) .v7-split-panel[data-theme="graph-night"] .v7-segmented [aria-checked="true"] {background:var(--v7-role-surface-muted-hover);}
 :where(html[data-v7]) .v7-kit .v7-tabs {gap:var(--v7-space-4);overflow-x:auto;}
 :where(html[data-v7]) .v7-kit .v7-tabs button {flex:1;min-width:var(--v7-touch);white-space:normal;}
 :where(html[data-v7]) .v7-kit .v7-tabs [aria-selected="true"] {border-color:var(--v7-role-action-bg);}

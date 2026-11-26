@@ -40,6 +40,7 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,on
  const initialInstant=task?.due.kind==='instant'?localWallParts(task.due.at,zone):null;
  const [saving,setSaving]=useState(false),[error,setError]=useState('');
  const [title,setTitle]=useState(task?.title??draft?.title??initialTitle??'');
+ const originalTitle=useRef(title);
  const [estimate,setEstimate]=useState(task?.estimateMinutes==null?draft?.estimate??'':String(task.estimateMinutes));
  const [priority,setPriority]=useState<TaskPriority>(task?.priority??draft?.priority??'normal');
  const [dueKind,setDueKind]=useState<TaskDue['kind']>(task?.due.kind??draft?.dueKind??'none');
@@ -70,7 +71,8 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,on
    const api=getTaskApi();
    const saved=task?await api.updateTask(task.id,task.version,input):await api.createTask(input);
    if(task)notify('Task updated',{tone:'success'});
-   else notify('Task saved',{tone:'success',action:{label:'Undo',onClick:()=>{void api.deleteTask(saved.record.id,saved.record.version).catch(()=>notify('Task changed elsewhere. Open your tasks to check it.',{tone:'danger'}));}}});
+   else notify('Task saved',{tone:'success',undoConflictKey:'task:'+saved.record.id,action:{label:'Undo',onClick:()=>
+    api.deleteTask(saved.record.id,saved.record.version).catch(()=>notify('Task changed elsewhere. Open your tasks to check it.',{tone:'danger'}))}});
    onSaved?.(saved.record);onDismiss();
   }catch(e){
    const failure=e as {code?:string;message?:string};
@@ -79,7 +81,7 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,on
   }finally{busy.current=false;setSaving(false);}
  }
  const titleError=/title/i.test(error)?error:undefined;
- const dirty=title!==(task?.title??draft?.title??'')||estimate!==(task?.estimateMinutes==null?draft?.estimate??'':String(task.estimateMinutes))||
+ const dirty=title!==originalTitle.current||estimate!==(task?.estimateMinutes==null?draft?.estimate??'':String(task.estimateMinutes))||
   priority!==(task?.priority??draft?.priority??'normal')||dueKind!==(task?.due.kind??draft?.dueKind??'none')||dueEdited.current||
   subjectId!==(task?.subjectId??draft?.subjectId??'')||projectId!==(task?.projectId??draft?.projectId??'');
  return <Frame open onClose={onDismiss} dirty={dirty} eyebrow="Task" title={task?'Edit task':'New task'}

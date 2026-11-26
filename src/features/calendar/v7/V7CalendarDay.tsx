@@ -3,6 +3,7 @@ import {AnimatePresence,motion,useIsPresent} from 'motion/react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {authSignedOut} from '../../../data/authBoundary';
 import {calendarRangeQuery,useCalendarIdentity,useCalendarRange,useCalendarRangeCache,type CalendarRangeData} from '../../../data/study/calendarRange';
+import {useSurfaceBeta} from '../../../app/surfaceBeta';
 import {useMotionReduced} from '../../../ui/v7/effects';
 import {distances,durations,easings} from '../../../ui/v7/motion';
 import {Disclosure} from '../../../ui/v7/Disclosure';
@@ -29,7 +30,7 @@ import BlockSheetActions from '../block-sheet/BlockSheetActions';
 import {dueForDay,emptyCalendarDues,type CalendarDues} from '../deadlines/DueDayItems';
 import {loadCalendarDues} from '../deadlines/load';
 import {calendarRange,dayKey,savedSlices,shiftDay,validDayKey,weekStartDay} from '../model';
-import {formatCalendarTime} from '../views/WeekView';
+import {calendarTimeFormatter} from '../views/WeekView';
 import DayGrid,{type BlockLook,type SuggestedBlock} from './DayGrid';
 import WeekGrid from './WeekGrid';
 import MonthGrid from './MonthGrid';
@@ -53,7 +54,7 @@ type PageAnchor={view:CalendarView;date:string;identity:string;data:CalendarRang
 
 /** PLAN §6.5: the shape of the day, with a week strip above and a time grid below. */
 export default function V7CalendarDay(){
- const atlas=useAtlasModel();
+ const atlas=useAtlasModel(),continuity=useSurfaceBeta();
  const navigate=useNavigate(),location=useLocation();
  const home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams();
@@ -64,14 +65,15 @@ export default function V7CalendarDay(){
  const identity=useCalendarIdentity(),currentIdentity=useRef(identity);currentIdentity.current=identity;
  const client=useQueryClient(),cache=useCalendarRangeCache(identity);
  const range=useMemo(()=>loadRange(view,date,zone,firstDay),[view,date,zone,firstDay]);
- const schedule=useCalendarRange(identity,range);
+ const schedule=useCalendarRange(identity,range,continuity);
  const dueQuery=useQuery({queryKey:['calendar-dues',identity],enabled:()=>!authSignedOut(),staleTime:30_000,
   queryFn:()=>loadCalendarDues().catch(()=>emptyCalendarDues)});
  const lastPage=useRef<PageAnchor|null>(null);
  const last=lastPage.current?.identity===identity?lastPage.current:null;
- const data=schedule.data??last?.data;
+ const data=schedule.data??(continuity?last?.data:undefined);
  const entries=data?.entries??noEntries,dues=dueQuery.data??emptyCalendarDues;
  const [reload,setReload]=useState(0),[saving,setSaving]=useState(false),[actionError,setActionError]=useState('');
+ const undoVersions=useRef(new Map<string,CalendarBlockRecord>());
  const [pendingMove,setPendingMove]=useState<Move|null>(null),[rollback,setRollback]=useState<Move|null>(null),moving=useRef(false);
  const refresh=()=>{setReload(value=>value+1);void cache.refresh();void client.invalidateQueries({queryKey:['calendar-dues',identity]});};
  const rawBlocks=data?.blocks??noBlocks;
@@ -87,7 +89,7 @@ export default function V7CalendarDay(){
  const [addedSlots,setAddedSlots]=useState<ReadonlyMap<string,CalendarBlockRecord>>(new Map()),changingSlot=useRef(false);
  const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
  const ready=!!schedule.data&&!schedule.isPlaceholderData;
- const shown=ready?{view,date}:last;
+ const shown=ready?{view,date}:continuity?last:null;
  const swap=useRef<'earlier'|'later'|'view'>('view');
  if(ready&&last){
   if(last.view!==view)swap.current='view';
@@ -98,14 +100,14 @@ export default function V7CalendarDay(){
  const waiting=!ready&&!schedule.isError,waitKey=[identity,view,range.start,range.end].join('|');
  useEffect(()=>{
   setLoadingSignal(null);
-  if(!waiting)return;
+  if(!waiting||!continuity)return;
   const timer=window.setTimeout(()=>setLoadingSignal({key:waitKey,at:Date.now()}),durations.skeletonDelay*1000);
   return ()=>window.clearTimeout(timer);
- },[waiting,waitKey]);
+ },[waiting,waitKey,continuity]);
  const loadingAt=waiting&&loadingSignal?.key===waitKey?loadingSignal.at:null;
- const showSkeleton=loadingAt!==null&&(!shown||shown.view!==view);
+ const showSkeleton=continuity?loadingAt!==null&&(!shown||shown.view!==view):waiting;
  const anchor=useRef<number|null>(null),reduced=useMotionReduced();
- const paneMotion={swap:swap.current,reduced};
+ const paneMotion={swap:swap.current,reduced,continuity};
  const handoff=!!location.state?.calendarBlockDraft;
  const [handoffReady,setHandoffReady]=useState<string|null>(null);
  useEffect(()=>{
@@ -116,10 +118,19 @@ export default function V7CalendarDay(){
  const planOpen=params.get('plan')==='1';
  const blockMinutes=lengthFromParam(params.get('len'))??DEFAULT_LENGTH;
  const weekStart=weekStartDay(date,firstDay),cells=useMemo(()=>weekCells(weekStart),[weekStart]);
+ const monthStart=date.slice(0,8)+'01';
+ const miniMonth=useMemo(()=>{
+  if(!desktop)return [];
+  const start=weekStartDay(monthStart,firstDay);
+  return Array.from({length:42},(_,index)=>{
+   const day=shiftDay(start,index);
+   return {day,label:formatShortDate(day,{zone})};
+  });
+ },[desktop,firstDay,monthStart,today,zone]);
  const enter=useEnterMarks(blocks.map(block=>block.id),ready,date+'|'+view);
  useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),30_000);return()=>window.clearInterval(timer);},[]);
  useEffect(()=>{
-  if(!ready||authSignedOut())return;
+  if(!continuity||!ready||authSignedOut())return;
   const prefetch=()=>{
    for(const direction of [-1,1]){
     const adjacent=loadRange(view,adjacentPeriod(view,date,direction),zone,firstDay);
@@ -132,13 +143,13 @@ export default function V7CalendarDay(){
   }
   const id=window.setTimeout(prefetch,0);
   return ()=>window.clearTimeout(id);
- },[ready,view,date,zone,firstDay,identity,client]);
+ },[continuity,ready,view,date,zone,firstDay,identity,client]);
  const projects=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system),[home.data]);
  const lookOf=useCallback((block:CalendarBlockRecord):BlockLook=>{
   const project=projects.find(candidate=>candidate.id===block.projectId);
   return project?{subjectClass:subjectClass(kitSubject(project.subject.name)),path:project.title}:{subjectClass:'',path:''};
  },[projects]);
- const clock=useCallback((instant:string)=>formatCalendarTime(instant,zone,clock24h),[zone,clock24h]);
+ const clock=useMemo(()=>calendarTimeFormatter(zone,clock24h),[zone,clock24h]);
  const shownDay=shown?.date??date,shownView=shown?.view??view;
  const dayRange=useMemo(()=>calendarRange(shownDay,zone),[shownDay,zone]);
  const dayBlocks=useMemo(()=>blocks.filter(block=>block.status!=='cancelled'&&Date.parse(block.endsAt)>Date.parse(dayRange.start)&&Date.parse(block.startsAt)<Date.parse(dayRange.end)),[blocks,dayRange]);
@@ -191,7 +202,7 @@ export default function V7CalendarDay(){
   if(patch.startsAt===block.startsAt&&patch.endsAt===block.endsAt)return;
   void saveMove({identity,block,startsAt:patch.startsAt,endsAt:patch.endsAt,day,origin:date});
  }
- async function saveMove(move:Move){
+ async function saveMove(move:Move,retrying=false){
   if(moving.current||changingSlot.current||currentIdentity.current!==move.identity)return;
   moving.current=true;
   const {block,startsAt,endsAt,day,origin}=move,api=getStudyApi(),before={startsAt:block.startsAt,endsAt:block.endsAt};
@@ -199,32 +210,55 @@ export default function V7CalendarDay(){
   const jump=(destination:string)=>{
    const next=new URLSearchParams(currentPage.current.params);next.set('view','day');next.set('date',destination);setParams(next);
   };
-  if(day)jump(day);
+  if(day&&currentPage.current.date===origin&&currentPage.current.view==='day')jump(day);
+  function isConflict(error:unknown){
+   const reason=error as {code?:string;message?:string}|null;
+   return reason?.code==='conflict'||/conflict|version|stale/i.test(reason?.message??'');
+  }
+  async function save(){
+   try{return {moved:(await api.updateCalendarBlock(block.id,block.version,{startsAt,endsAt})).record,confirmed:true};}
+   catch(error){
+    // A lost response can leave a confirmed move behind. Verify the target after a conflicting retry.
+    if(!retrying||!isConflict(error)||currentIdentity.current!==identity)throw error;
+    const matching=(await api.listCalendarBlocks(calendarRange(dayKey(new Date(startsAt),zone),zone))).find(candidate=>
+     candidate.id===block.id&&candidate.version===block.version+1&&candidate.status===block.status
+      &&Date.parse(candidate.startsAt)===Date.parse(startsAt)&&Date.parse(candidate.endsAt)===Date.parse(endsAt));
+    if(!matching)throw error;
+    return {moved:matching,confirmed:false};
+   }
+  }
   try{
-   const receipt=await api.updateCalendarBlock(block.id,block.version,{startsAt,endsAt});
+   const {moved,confirmed}=await save();
    if(currentIdentity.current!==identity)return;
-   await cache.changeBlock(receipt.record);
+   undoVersions.current.delete(block.id);
+   await cache.changeBlock(moved);
+   if(!confirmed){notify('The block is already at that time.',{tone:'success'});return;}
    notify(movedLabel(startsAt,endsAt,clock),{tone:'success',action:{label:'Undo',onClick:async()=>{
     try{
      if(currentIdentity.current!==identity)return;
-     const restored=await api.updateCalendarBlock(block.id,receipt.record.version,before);
-     await cache.changeBlock(restored.record);notify('Calendar change undone',{tone:'success'});
+     const newestUndo=undoVersions.current.get(block.id);
+     const version=newestUndo&&Date.parse(newestUndo.startsAt)===Date.parse(moved.startsAt)&&Date.parse(newestUndo.endsAt)===Date.parse(moved.endsAt)?newestUndo.version:moved.version;
+     const restored=await api.updateCalendarBlock(block.id,version,before);
+     undoVersions.current.set(block.id,restored.record);
+     await cache.changeBlock(restored.record);
     }catch{notify('Could not undo the move. Reload the calendar and try again.',{tone:'danger'});}
    }}});
   }catch(error){
    if(currentIdentity.current!==identity)return;
-   const text=(error as {code?:string;message?:string}|null);
-   const conflict=text?.code==='conflict'||/conflict|version|stale/i.test(text?.message??'');
+   const conflict=isConflict(error);
    setRollback(move);
    if(day&&currentPage.current.date===day&&currentPage.current.view==='day')jump(origin);
    notify(conflict?'This block changed elsewhere. Reload the calendar to try again.':'Could not move the block.',{
-    tone:'danger',action:conflict?{label:'Reload',onClick:refresh}:{label:'Retry',onClick:()=>saveMove(move)},
+    tone:'danger',action:conflict?{label:'Reload',onClick:refresh}:{label:'Retry',onClick:()=>saveMove(move,true)},
    });
   }finally{
    moving.current=false;setPendingMove(null);setSaving(false);
   }
  }
- const dropDay=(block:CalendarBlockRecord,day:string,delta:number)=>adjust(block,moveToDay(block,date,day,delta,zone),day);
+ const dropDay=(block:CalendarBlockRecord,day:string,delta:number)=>{
+  try{adjust(block,moveToDay(block,date,day,delta,zone),day);}
+  catch{notify('That local time does not exist on the selected day.',{tone:'danger'});}
+ };
  const monthWord=monthLabel(date);
  const movePeriod=(direction:number)=>go('date',adjacentPeriod(view,date,direction));
  useEffect(()=>setCollapsed(false),[view]);
@@ -261,7 +295,7 @@ export default function V7CalendarDay(){
   return dotClasses(blocks.filter(block=>Date.parse(block.startsAt)<Date.parse(range.end)&&Date.parse(block.endsAt)>Date.parse(range.start)),block=>lookOf(block).subjectClass);
  };
 
- return <main id="main-content" className="v7-page v7-cal" aria-label="Calendar" data-calendar-view={view}>
+ return <main id="main-content" className="v7-page v7-cal" aria-label="Calendar" data-calendar-view={view} data-calendar-continuity={continuity||undefined}>
   {/* N220 (Owner report): the same header as every hub (title, Search, Inbox, then the page's ⋯), the sections as tabs
       beneath it, and the view and the period arrows on their own toolbar row. */}
   <HubHeader title="Calendar" titleFollowsTab={false} extraAction={<MoreActions label="Calendar actions" title="Calendar" items={[
@@ -285,8 +319,8 @@ export default function V7CalendarDay(){
   {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
    <h2 className="v7-headline">{monthWord}</h2>
    <div className="v7-mini-month" role="group" aria-label="Choose a date">
-    {Array.from({length:42},(_,index)=>shiftDay(weekStartDay(date.slice(0,8)+'01',firstDay),index)).map(day=><button key={day} type="button" aria-pressed={day===date} aria-current={day===today?'date':undefined}
-     data-outside={day.slice(0,7)!==date.slice(0,7)||undefined} aria-label={formatShortDate(day,{zone})} onClick={()=>go('date',day)}>{Number(day.slice(8))}</button>)}
+    {miniMonth.map(({day,label})=><button key={day} type="button" aria-pressed={day===date} aria-current={day===today?'date':undefined}
+     data-outside={day.slice(0,7)!==date.slice(0,7)||undefined} aria-label={label} onClick={()=>go('date',day)}>{Number(day.slice(8))}</button>)}
    </div>
    <h3 className="v7-subhead">{formatShortDate(date,{zone})}</h3>
    {dueQuery.isPending?null:dueToday.length?<ul className="v7-mini-dues">{dueRows}</ul>:<p className="v7-meta">Nothing due on this day.</p>}
@@ -327,20 +361,20 @@ export default function V7CalendarDay(){
   </Sheet>
   <div className="v7-cal-content-slot" data-updating={loadingAt!==null&&shown&&!showSkeleton?true:undefined}>
    <AnimatePresence initial={false} custom={paneMotion}>
-    {showSkeleton?<CalendarPane key={'loading:'+view} transition={paneMotion}><CalendarSkeleton view={view} shownAt={loadingAt}/></CalendarPane>
+    {showSkeleton?<CalendarPane key={'loading:'+view} transition={paneMotion}><CalendarSkeleton view={view} shownAt={loadingAt} shaped={continuity}/></CalendarPane>
     :shown&&<CalendarPane key={shownView+'|'+shownDay} transition={paneMotion} busy={!ready}>
      {shownView==='week'&&<WeekGrid weekStart={weekStartDay(shownDay,firstDay)} date={shownDay} today={today} zone={zone} clock={clock} entries={entries} blocks={blocks} now={now} lookOf={lookOf}
-      anchor={anchor} pendingId={pendingMove?.identity===identity?pendingMove.block.id:undefined} suggested={[...suggested,...visibleSlots]} onDay={openDay} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry}/>}
+      anchor={continuity?anchor:undefined} pendingId={pendingMove?.identity===identity?pendingMove.block.id:undefined} suggested={[...suggested,...visibleSlots]} onDay={openDay} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry}/>}
      {shownView==='month'&&<MonthSection date={shownDay} today={today} zone={zone} firstDay={firstDay} clock={clock} entries={entries} blocks={blocks} dues={dues} lookOf={lookOf}
       onPick={day=>go('date',day)} onOpen={openDay} onEdit={block=>sheetParams(undefined,block.id)}/>}
      {shownView==='agenda'&&<AgendaList date={shownDay} today={today} zone={zone} clock={clock} clock24h={clock24h} entries={entries} blocks={blocks} dues={dues} projects={projects}
       lookOf={lookOf} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry} onAdd={day=>{
        const next=new URLSearchParams(params);next.set('view','day');next.set('date',day);next.set('quick','1');next.delete('new');next.delete('edit');next.delete('start');setParams(next);}}/>}
-     {shownView==='day'&&<div className="v7-cal-day-stack" onWheel={()=>setCollapsed(true)} onTouchMove={()=>setCollapsed(true)}>
+     {shownView==='day'&&<div className="v7-cal-day-stack" onWheel={()=>setCollapsed(true)} onTouchMove={event=>{if(!(event.target as Element).closest('[data-grid-move],[data-grid-resize]'))setCollapsed(true);}}>
       <DayGrid scrubTo={scrub?.date===shownDay?scrub.minute:null} enterOf={enter} suggested={[...suggested,...visibleSlots]}
        draft={ready&&params.get('new')==='block'?{start:quickStart(date,zone,params.get('start')),minutes:blockMinutes}:null}
        date={shownDay} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
-       anchor={anchor} pendingId={pendingMove?.identity===identity?pendingMove.block.id:undefined} rollback={rollback?.identity===identity?rollback:null}
+       anchor={continuity?anchor:undefined} pendingId={pendingMove?.identity===identity?pendingMove.block.id:undefined} rollback={continuity&&rollback?.identity===identity?rollback:null}
        onCreate={startsAt=>sheetParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry} onAdjust={adjust}
        onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
       {dayBlocks.length===0&&savedSlices(entries,dayRange).length===0&&displayedDues.length===0&&!suggested.length&&!visibleSlots.length&&
@@ -358,21 +392,22 @@ export default function V7CalendarDay(){
  </main>;
 }
 
-type PaneMotion={swap:'earlier'|'later'|'view';reduced:boolean};
+type PaneMotion={swap:'earlier'|'later'|'view';reduced:boolean;continuity:boolean};
 const paneVariants={
  enter:({swap,reduced}:PaneMotion)=>({opacity:0,x:reduced||swap==='view'?0:(swap==='later'?1:-1)*distances.swapShift}),
  ready:({reduced}:PaneMotion)=>({opacity:1,x:0,transition:{duration:reduced?durations.reduced:durations.quick,ease:easings.enter}}),
- exit:({reduced}:PaneMotion)=>({opacity:0,transition:{duration:reduced?durations.reduced:durations.instant,ease:easings.exit}}),
+ exit:({swap,reduced}:PaneMotion)=>({opacity:0,transition:{duration:reduced?durations.reduced:swap==='view'?durations.quick:durations.instant,ease:easings.exit}}),
 };
 function CalendarPane({children,busy=false,transition}: {children:ReactNode;busy?:boolean;transition:PaneMotion}){
  const present=useIsPresent();
+ if(!transition.continuity)return present?<div className="v7-cal-pane">{children}</div>:null;
  return <motion.div className="v7-cal-pane" data-exiting={!present||undefined} inert={!present||busy}
   aria-hidden={!present||undefined} aria-busy={busy||undefined}
   custom={transition} variants={paneVariants} initial="enter" animate="ready" exit="exit">{children}</motion.div>;
 }
-function CalendarSkeleton({view,shownAt}:{view:CalendarView;shownAt:number}){
- const cells=view==='month'?42:view==='week'?49:view==='day'?7:4;
- return <div className="v7-cal-skeleton" data-view={view} data-loading-surface="section" data-shown-at={shownAt} role="status" aria-label={viewLabel(view)+' calendar loading'}>
+function CalendarSkeleton({view,shownAt,shaped}:{view:CalendarView;shownAt:number|null;shaped:boolean}){
+ const cells=!shaped?3:view==='month'?42:view==='week'?49:view==='day'?7:4;
+ return <div className="v7-cal-skeleton" data-view={shaped?view:undefined} data-loading-surface={shaped?'section':undefined} data-shown-at={shownAt??undefined} role="status" aria-label={shaped?viewLabel(view)+' calendar loading':'Loading calendar'}>
   {Array.from({length:cells},(_,index)=><span key={index} aria-hidden="true"/>)}
  </div>;
 }

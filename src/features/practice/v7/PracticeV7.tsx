@@ -18,12 +18,15 @@ import {Button,Segmented,Sheet} from '../../../ui/v7/components';
 import {formatShortDate as formatDay,ownerZone} from '../../../lib/format';
 import {useToast} from '../../../ui/Toast';
 import {clock} from '../../review/v7/reviewModel';
+import {createIntentRead} from '../../../app/v7/intentRead';
 import {loadAllPracticeEvents,loadAllPracticeTopics,parsePracticeCadence} from '../Page';
 import {cadenceText,dueChip,lastText,ratingNames} from './practiceModel';
 import './practice.css';
 
 const ratings:PracticeRating[]=[1,2,3,4];
 const kinds=['Every few days','Depends on my rating'] as const;
+const topics=createIntentRead(()=>loadAllPracticeTopics(),()=>'practice');
+export const warmPractice=()=>topics.warm(undefined);
 
 /** PLAN §6.13 Practice: one card per topic, a small Practice button, and a sheet to record how it went. */
 export default function PracticeV7(){
@@ -38,7 +41,7 @@ export default function PracticeV7(){
  useEffect(()=>{const again=()=>setReload(value=>value+1);window.addEventListener('focus',again);return()=>window.removeEventListener('focus',again);},[]);
  useEffect(()=>{
   let live=true;
-  void loadAllPracticeTopics().then(rows=>{if(live){setItems(rows);setError('');setLoading(false);}})
+  void topics.read(undefined).then(rows=>{if(live){setItems(rows);setError('');setLoading(false);}})
    .catch(failure=>{if(live){setError(failure instanceof Error?failure.message:'Erratum: practice topics didn’t load. Try again.');setLoading(false);}});
   return()=>{live=false;};
  },[reload]);

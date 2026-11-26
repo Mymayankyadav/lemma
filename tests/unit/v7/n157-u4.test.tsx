@@ -61,7 +61,8 @@ describe('S2–S4 · S6 · S14 · S16 · S15', () => {
     expect(stars.filter(star => star.lit)).toHaveLength(3);
     expect(stars[5].r).toBe(6);
     expect(weekRoute.path).toBe('/week');
-    expect(typeof weekRoute.lazy).toBe('function');
+    expect(typeof weekRoute.loader).toBe('function');
+    expect(typeof weekRoute.Component).toBe('function');
     expect(readFileSync('src/app/App.tsx', 'utf8')).toContain(' weekRoute,');
   });
 });

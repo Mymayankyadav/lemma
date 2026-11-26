@@ -1,3 +1,4 @@
+import {enableSurfaceBeta} from './helpers/surface-preview';
 import {expect,test} from '@playwright/test';
 import {at,NOW} from './v7-scenes';
 
@@ -36,6 +37,7 @@ for(const [width,height,scale] of [[320,640,100],[390,844,160],[844,390,100],[39
 }
 
 test('Atlas editor retains every operation and searches targets in the same phone sheet',async({page})=>{
+ await enableSurfaceBeta(page);
  await page.setViewportSize({width:390,height:844});
  await page.goto(at('/atlas?view=list'));
  await page.locator('.v7-atlas-subject li button').filter({hasText:'Compactness'}).first().click();

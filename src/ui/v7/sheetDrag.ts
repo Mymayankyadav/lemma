@@ -26,14 +26,45 @@ export function releaseVelocity(samples:readonly [number,number][],y:number,time
  return elapsed>0?(y-first[0])/elapsed*1000:0;
 }
 
-function settle(dialog:HTMLDialogElement){
- dialog.style.transition=motionReduced()?'':'transform var(--motion-quick) var(--ease-standard)';
- dialog.style.transform='';
- window.setTimeout(()=>{dialog.style.transition='';},durations.quick*1000);
+function resetDrag(dialog:HTMLDialogElement){
+ delete dialog.dataset.sheetPull;
+ dialog.style.removeProperty('--v7-pull-scrim');
+ dialog.style.removeProperty('--v7-release-distance');
+ dialog.style.removeProperty('--v7-release-duration');
+ dialog.style.removeProperty('transform');
+ dialog.style.removeProperty('transition');
+}
+
+export function releaseDuration(remaining:number,velocity:number,minMs:number,maxMs:number){
+ return Math.min(maxMs,Math.max(minMs,remaining/Math.max(1,velocity)*1000));
+}
+
+function draw(drag:Drag,y:number){
+ drag.distance=Math.max(0,y-drag.startY);
+ const dialog=drag.dialog;
+ dialog.style.transform=drag.distance?`translateY(${drag.distance}px)`:'';
+ if(dialog.hasAttribute('data-beta-sheet')){
+  dialog.dataset.sheetPull='';
+  dialog.style.setProperty('--v7-pull-scrim',String(Math.max(0,1-drag.distance/drag.height)));
+ }
 }
 
 export function installSheetDrag(doc:Document=document):()=>void{
  let drag:Drag|null=null;
+ const settling=new Map<HTMLDialogElement,number>();
+ const pending=new Set<number>();
+ function clear(dialog:HTMLDialogElement){
+  window.clearTimeout(settling.get(dialog));settling.delete(dialog);
+  resetDrag(dialog);
+ }
+ function settle(dialog:HTMLDialogElement){
+  if(motionReduced()||!dialog.isConnected||!dialog.open){clear(dialog);return;}
+  dialog.style.transition='transform var(--motion-base) var(--ease-standard)';
+  dialog.style.transform='';
+  dialog.removeAttribute('data-sheet-pull');
+  window.clearTimeout(settling.get(dialog));
+  settling.set(dialog,window.setTimeout(()=>clear(dialog),durations.base*1000));
+ }
  const down=(event:PointerEvent)=>{
   if(drag||event.button!==0||event.isPrimary===false)return;
   const target=event.target instanceof Element?event.target:null;
@@ -43,13 +74,13 @@ export function installSheetDrag(doc:Document=document):()=>void{
   if(top && top!==dialog)return;
   const box=dialog.getBoundingClientRect(),bottom=doc.defaultView?.innerHeight??0;
   if(box.height<=0||box.bottom<bottom-1)return;
+  clear(dialog);
   drag={dialog,id:event.pointerId,startY:event.clientY,height:box.height,distance:0,samples:[[event.clientY,event.timeStamp]],past:false};
   dialog.style.transition='none';
  };
  const move=(event:PointerEvent)=>{
   if(!drag||event.pointerId!==drag.id)return;
-  drag.distance=Math.max(0,event.clientY-drag.startY);
-  drag.dialog.style.transform=drag.distance?`translateY(${drag.distance}px)`:'';
+  draw(drag,event.clientY);
   // AW6: a light tick when the pull passes the point where letting go closes the sheet (and again if it comes back).
   const past=dismissSheet(drag.distance,drag.height,0);
   if(past!==drag.past){drag.past=past;if(past)haptic('sheetThreshold');}
@@ -59,25 +90,37 @@ export function installSheetDrag(doc:Document=document):()=>void{
  const up=(event:PointerEvent)=>{
   if(!drag||event.pointerId!==drag.id)return;
   const current=drag;drag=null;
-  const distance=Math.max(0,event.clientY-current.startY),velocity=releaseVelocity(current.samples,event.clientY,event.timeStamp);
+  draw(current,event.clientY);
+  const distance=current.distance,velocity=releaseVelocity(current.samples,event.clientY,event.timeStamp);
   if(distance>0&&dismissSheet(distance,current.height,velocity)){
    const dialog=current.dialog;
-   // The sheet leaves from where it was let go; its styles are cleared once it has closed.
-   dialog.addEventListener('close',()=>{dialog.style.transform='';dialog.style.transition='';},{once:true});
+   if(dialog.hasAttribute('data-beta-sheet')){
+    const remaining=Math.max(0,(doc.defaultView?.innerHeight??0)-dialog.getBoundingClientRect().top);
+    dialog.style.setProperty('--v7-release-distance',remaining+'px');
+    dialog.style.setProperty('--v7-release-duration',releaseDuration(remaining,velocity,durations.quickExit*1000,durations.dismissMax*1000)+'ms');
+   }
    if(topLayerElement(doc) === dialog) requestLayerClose(dialog,'drag');
    else dialog.dispatchEvent(new Event('cancel',{cancelable:true}));
-   requestAnimationFrame(()=>{if(dialog.open)settle(dialog);});
+   // A dirty guard keeps this dialog open. Restore it below the guard; a dismissed one has already yielded its pixels.
+   const frame=requestAnimationFrame(()=>{pending.delete(frame);if(dialog.open)settle(dialog);else clear(dialog);});
+   pending.add(frame);
   }else if(distance>0)settle(current.dialog);
-  else current.dialog.style.transition='';
+  else clear(current.dialog);
  };
  const cancel=(event:PointerEvent)=>{
   if(!drag||event.pointerId!==drag.id)return;
   const current=drag;drag=null;settle(current.dialog);
  };
+ const closed=(event:Event)=>{if(event.target instanceof HTMLDialogElement)clear(event.target);};
+ doc.addEventListener('close',closed,true);
  doc.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move);
  doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',cancel);
  return()=>{
+  doc.removeEventListener('close',closed,true);
   doc.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);
   doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',cancel);
+  if(drag)clear(drag.dialog);
+  settling.forEach((_,dialog)=>clear(dialog));
+  pending.forEach(frame=>cancelAnimationFrame(frame));
  };
 }

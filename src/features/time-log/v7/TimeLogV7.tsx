@@ -4,7 +4,7 @@ import {useSearchParams} from 'react-router';
 import {useEffect,useMemo,useState} from 'react';
 import {ChevronLeft,ChevronRight,Download,Pencil,Scissors,Ban,RotateCcw} from 'lucide-react';
 import {getStudyApi} from '../../../data/study';
-import type {StudyEntryRecord} from '../../../data/study/contract';
+import type {StudyEntryRecord,StudyRange} from '../../../data/study/contract';
 import {useProjects,useSettings} from '../../../data/hooks';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {isFlagOn} from '../../../flags';
@@ -20,11 +20,17 @@ import {kitSubject} from '../../atlas/v7/model';
 import {weekStartDay} from '../../calendar/model';
 import {civilDay,addDays} from '../../progress-v6/model';
 import {ProgressTabs} from '../../insights/v7/ProgressV7';
+import {createIntentRead} from '../../../app/v7/intentRead';
 import {csvLog,logDate,visibleLogRange,visibleLogRecords} from '../Page';
 import {weekRangeLabel} from './weekLabel';
 import {manualFocusInterval} from '../local-time';
 import '../../insights/v7/progress.css';
 import './log.css';
+
+const entries=createIntentRead((range:StudyRange)=>getStudyApi().listStudyEntries(range),range=>range.start+':'+range.end);
+export function warmTimeLog(zone:string){
+ entries.warm(visibleLogRange(weekStartDay(civilDay(new Date(),zone)),zone));
+}
 
 const focusMinutes=(entry:StudyEntryRecord)=>focusedMilliseconds(entry)/60000;
 const spanOf=(entry:StudyEntryRecord)=>{const closed=entry.intervals.filter(i=>i.end);return closed.length?{start:closed[0].start,end:closed[closed.length-1].end!}:null;};
@@ -42,7 +48,7 @@ export default function TimeLogV7(){
  const range=useMemo(()=>visibleLogRange(week,zone),[week,zone]);
  useEffect(()=>{
   let alive=true;setStatus('loading');
-  void api.listStudyEntries(range).then(all=>{if(alive){setRows(visibleLogRecords(all));setStatus('ready');}}).catch(()=>{if(alive)setStatus('error');});
+  void entries.read(range).then(all=>{if(alive){setRows(visibleLogRecords(all));setStatus('ready');}}).catch(()=>{if(alive)setStatus('error');});
   return()=>{alive=false;};
  },[api,range,reload]);
  useEffect(()=>{if(selected)setWeek(weekStartDay(selected));},[selected]);

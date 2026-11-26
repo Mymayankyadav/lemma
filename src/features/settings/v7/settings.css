@@ -36,9 +36,9 @@
  :where(html[data-v7]) .v7-subject-swatch small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/1 var(--v7-sans);}
  :where(html[data-v7]) .v7-subject-swatch[aria-checked="true"] {border-color:var(--v7-subject);box-shadow:0 0 0 1px var(--v7-subject);}
  :where(html[data-v7]) .v7-settings-danger h2 {margin:0;color:var(--v7-role-status-danger);font:600 var(--v7-type-subhead)/1.25 var(--v7-sans);}
- /* Older section forms inherit the document-level palette aliases. */
- :where(html[data-v7]) .v7-settings-legacy {padding:var(--v7-space-4);}
- :where(html[data-v7]) .v7-settings-legacy [data-teaching-styles] [aria-checked="true"] {background:var(--v7-role-state-pressed);color:var(--v7-role-selection-fg);}
+ /* The shared section forms use the kit fields and semantic colours. */
+ :where(html[data-v7]) .v7-settings-embedded {padding:var(--v7-space-4);}
+ :where(html[data-v7]) .v7-settings-embedded [data-teaching-styles] [aria-checked="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
  /* R1 · F03 grouped lists: an overline per group, rows of 56 px with the label, the current value and a chevron, or a switch. */
  :where(html[data-v7]) .v7-set-group {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-set-group > h2 {margin:0 0 0 var(--v7-space-1);}
@@ -64,7 +64,7 @@
  :where(html[data-v7]) .v7-pick-row > svg {flex:none;width:20px;height:20px;color:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-pick-row[aria-checked="true"] .v7-set-label {font-weight:600;}
  /* R2 · F31: hosted Advanced forms sit flat inside their one card, never card-in-card. */
- :where(html[data-v7]) .v7-settings-legacy :is(.rounded-slab,section[class*="border"]) {border:0;padding-inline:0;background:transparent;}
+ :where(html[data-v7]) .v7-settings-embedded :is(.rounded-slab,.settings-section-card) {border:0;padding-inline:0;background:transparent;}
  :where(html[data-v7]) .v7-set-switch .v7-switch-choice > span {font:500 var(--v7-type-body)/1.3 var(--v7-sans);}
  /* N157 · U1: from 840 px the index stays on the left (280 px) and the chosen section opens on the right. */
  :where(html[data-v7]) .v7-settings-split {display:grid;grid-template-columns:minmax(240px,280px) minmax(0,1fr);gap:var(--v7-space-6);align-items:start;}
@@ -107,32 +107,28 @@
 /* N220 (Owner report) · the hosted advanced forms (study defaults, focus, activities) in the kit's measures: headings in
    the sans on one scale, kit radii and heights for fields and buttons, the activity cards as kit cards, and an activity's
    order field sized to its digits beside its actions. */
-:where(html[data-v7]) .v7-settings-legacy :is(h2,h3,h4) {margin:0;color:var(--v7-role-text-primary);font-family:var(--v7-sans);letter-spacing:0;}
-:where(html[data-v7]) .v7-settings-legacy h2 {font:600 var(--v7-type-reading)/1.35 var(--v7-sans);}
-:where(html[data-v7]) .v7-settings-legacy h3 {font:600 var(--v7-type-body)/1.35 var(--v7-sans);}
-:where(html[data-v7]) .v7-settings-legacy h4 {font:600 var(--v7-type-supporting)/1.35 var(--v7-sans);}
-:where(html[data-v7]) .v7-settings-legacy :is(.text-label,label) {font-size:var(--v7-type-supporting);line-height:var(--v7-leading-supporting);}
-:where(html[data-v7]) .v7-settings-legacy .rounded-slab {border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
-:where(html[data-v7]) .v7-settings-legacy .rounded-ctl {border-radius:var(--v7-radius-2);}
-:where(html[data-v7]) .v7-settings-legacy :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select) {min-height:var(--v7-touch);border-color:var(--v7-role-border-default);font-size:var(--v7-type-body);}
-:where(html[data-v7]) .v7-settings-legacy button.rounded-ctl {display:inline-flex;align-items:center;justify-content:center;min-height:var(--v7-touch);padding-inline:var(--v7-space-4);
- border-color:var(--v7-role-border-default);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/1 var(--v7-sans);}
-:where(html[data-v7]) .v7-settings-legacy button.rounded-ctl[type="submit"] {background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
-:where(html[data-v7]) .v7-settings-legacy article .flex.items-end {align-items:center;}
+:where(html[data-v7]) .v7-settings-embedded :is(h2,h3,h4) {margin:0;color:var(--v7-role-text-primary);font-family:var(--v7-sans);letter-spacing:0;}
+:where(html[data-v7]) .v7-settings-embedded h2 {font:600 var(--v7-type-reading)/1.35 var(--v7-sans);}
+:where(html[data-v7]) .v7-settings-embedded h3 {font:600 var(--v7-type-body)/1.35 var(--v7-sans);}
+:where(html[data-v7]) .v7-settings-embedded h4 {font:600 var(--v7-type-supporting)/1.35 var(--v7-sans);}
+:where(html[data-v7]) .v7-settings-embedded :is(.text-label,label) {font-size:var(--v7-type-supporting);line-height:var(--v7-leading-supporting);}
+:where(html[data-v7]) .v7-settings-embedded .rounded-slab {border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
+:where(html[data-v7]) .v7-settings-embedded .rounded-ctl {border-radius:var(--v7-radius-2);}
+:where(html[data-v7]) .v7-settings-embedded :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select) {min-height:var(--v7-touch);border-color:var(--v7-role-border-default);font-size:var(--v7-type-body);}
+:where(html[data-v7]) .v7-settings-embedded article .flex.items-end {align-items:center;}
 /* A field's label sits above it, one way everywhere (the hosted forms mixed inline and stacked labels). */
-:where(html[data-v7]) .v7-settings-legacy label:not(.flex) {display:grid;gap:var(--v7-space-1);align-content:start;color:var(--v7-role-text-secondary);}
-:where(html[data-v7]) .v7-settings-legacy label:not(.flex) > :is(input:not([type="checkbox"]):not([type="radio"]),select) {width:100%;margin:0;color:var(--v7-role-text-primary);}
-:where(html[data-v7]) .v7-settings-legacy label.flex {gap:var(--v7-space-3);color:var(--v7-role-text-primary);}
-:where(html[data-v7]) .v7-settings-legacy :is(input[type="checkbox"],input[type="radio"]) {flex:none;width:20px;height:20px;margin:0;accent-color:var(--v7-role-action-bg);}
-:where(html[data-v7]) .v7-settings-legacy input[type="range"] {accent-color:var(--v7-role-action-bg);}
-:where(html[data-v7]) .v7-settings-legacy article {display:grid;gap:var(--v7-space-1);border-color:var(--v7-role-border-default);}
-:where(html[data-v7]) .v7-settings-legacy .activity-order {color:var(--v7-role-text-secondary);}
-:where(html[data-v7]) .v7-settings-legacy .activity-order input {width:4.5rem;margin:0;text-align:center;}
+:where(html[data-v7]) .v7-settings-embedded label:not(.flex) {display:grid;gap:var(--v7-space-1);align-content:start;color:var(--v7-role-text-secondary);}
+:where(html[data-v7]) .v7-settings-embedded label:not(.flex) > :is(input:not([type="checkbox"]):not([type="radio"]),select) {width:100%;margin:0;color:var(--v7-role-text-primary);}
+:where(html[data-v7]) .v7-settings-embedded label.flex {gap:var(--v7-space-3);color:var(--v7-role-text-primary);}
+:where(html[data-v7]) .v7-settings-embedded :is(input[type="checkbox"],input[type="radio"]) {flex:none;width:20px;height:20px;margin:0;accent-color:var(--v7-role-action-bg);}
+:where(html[data-v7]) .v7-settings-embedded input[type="range"] {accent-color:var(--v7-role-action-bg);}
+:where(html[data-v7]) .v7-settings-embedded article {display:grid;gap:var(--v7-space-1);border-color:var(--v7-role-border-default);}
+:where(html[data-v7]) .v7-settings-embedded .activity-order {color:var(--v7-role-text-secondary);}
+:where(html[data-v7]) .v7-settings-embedded .activity-order input {width:4.5rem;margin:0;text-align:center;}
 
 :where(html[data-v7]) .v7-settings-step [hidden] {display:none;}
 :where(html[data-v7]:not([data-motion="reduced"])) .v7-settings-step > .v7-form-stack {animation:v7-settings-step-in var(--motion-quick) var(--ease-enter) both;}
 :where(html[data-v7]) .v7-settings-staged-field {display:grid;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-settings-staged-field textarea {min-height:8rem;resize:vertical;}
-:where(html[data-v7]) .v7-settings-legacy button.rounded-ctl:not(:disabled):hover {background:var(--v7-role-state-hover);color:var(--v7-role-text-primary);}
 :where(html[data-v7]) .v7-pick-row:hover {background:var(--v7-role-state-hover);}
 @keyframes v7-settings-step-in {from{opacity:0;translate:calc(2 * var(--nudge)) 0;}}

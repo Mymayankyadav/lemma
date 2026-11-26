@@ -1,6 +1,6 @@
 import {lazy,Suspense,useLayoutEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {useMotionReduced} from './v7/effects';
-import {durations} from './v7/motion';
+import {distances,durations,easings} from './v7/motion';
 import {AnimatePresence,motion,useIsPresent,useReducedMotion} from 'motion/react';
 import {CircleAlert,CircleCheck,Info,X} from 'lucide-react';
 
@@ -18,13 +18,17 @@ function ToastText({source}:{source:string}){
 
 export interface ToastOptions{action?:{label:string;onClick:()=>unknown};tone?:'normal'|'success'|'danger';
  /** N121 A7: how long a toast stays (default 4 s), e.g. the length of an Undo window. */
- duration?:number}
+ duration?:number;
+ /** An Undo for this entity supersedes older inverses that cannot be replayed together. */
+ undoConflictKey?:string;
+ /** A deferred write settles when its undo window expires or another notification replaces it. */
+ onExpire?:()=>void}
 export interface ToastProps extends ToastOptions{message:string;id:number}
 type UndoEntry={id:number;message:string;options:ToastOptions};
 type PauseReason='pointer'|'focus'|'details';
 type ToastClock={
  duration:number; remaining:number; deadline:number|null; timer?:ReturnType<typeof setTimeout>;
- paused:Set<PauseReason>; undo?:UndoEntry[]; updatedAt:number;
+ paused:Set<PauseReason>; undo?:UndoEntry[]; onExpire?:()=>void; updatedAt:number;
 };
 const DEFAULT_DURATION=4000,UNDO_GROUP_WINDOW=1000;
 let counter=0;
@@ -43,15 +47,23 @@ function forget(id:number){
  const clock=clocks.get(id);
  if(clock)stop(clock);
  clocks.delete(id);
+ return clock;
 }
-function dismiss(id:number){
- if(!clocks.has(id))return;
- forget(id);snapshot=snapshot.filter(item=>item.id!==id);notify();
+function settle(clock:ToastClock|undefined){
+ if(clock?.undo){
+  for(const entry of clock.undo)entry.options.onExpire?.();
+ }else clock?.onExpire?.();
+}
+function dismiss(id:number,settled=false){
+ const clock=forget(id);
+ if(!clock)return;
+ snapshot=snapshot.filter(item=>item.id!==id);notify();
+ if(settled)settle(clock);
 }
 function schedule(id:number,clock:ToastClock){
  if(clock.paused.size)return;
  clock.deadline=Date.now()+clock.remaining;
- clock.timer=setTimeout(()=>dismiss(id),clock.remaining);
+ clock.timer=setTimeout(()=>dismiss(id,true),clock.remaining);
 }
 function holdToast(id:number,reason:PauseReason,hold:boolean){
  const clock=clocks.get(id);
@@ -90,23 +102,30 @@ export function toast(message:string,options:ToastOptions={}){
  const latest=snapshot.at(-1),active=latest?clocks.get(latest.id):undefined;
  const undo=v7&&options.action?.label==='Undo'?{id:++counter,message,options}:undefined;
  if(undo&&latest&&active?.undo&&now-active.updatedAt<=UNDO_GROUP_WINDOW){
-  active.undo=[...active.undo,undo];
-  snapshot=[withUndo(latest.id,active.undo)];
-  refreshClock(latest.id,active,Math.max(duration,active.duration),now);notify();
-  return ()=>dismissUndo(latest.id,undo.id);
+  const entries=active.undo;
+  const conflicts=(entry:UndoEntry)=>!!options.undoConflictKey&&entry.options.undoConflictKey===options.undoConflictKey;
+  const compatible=entries.filter(entry=>!conflicts(entry));
+  if(compatible.length){
+   active.undo=[...compatible,undo];
+   snapshot=[withUndo(latest.id,active.undo)];
+   refreshClock(latest.id,active,Math.max(duration,active.duration),now);notify();
+   for(const entry of entries)if(conflicts(entry))entry.options.onExpire?.();
+   return ()=>dismissUndo(latest.id,undo.id);
+  }
  }
  const same=undo?undefined:snapshot.find(item=>item.message===message&&item.tone===options.tone&&item.action?.label===options.action?.label);
- if(same){
+ if(same&&!options.onExpire){
   snapshot=snapshot.map(item=>item.id===same.id?{...item,...options}:item);
   const clock=clocks.get(same.id);
   if(clock)refreshClock(same.id,clock,duration,now);
   notify();return ()=>dismiss(same.id);
  }
  const id=undo?.id??++counter;
- for(const item of v7?snapshot:snapshot.slice(0,-2))forget(item.id);
+ const replaced=(v7?snapshot:snapshot.slice(0,-2)).map(item=>forget(item.id));
  snapshot=[...(v7?[]:snapshot.slice(-2)),{id,message,...options}];
- const clock:ToastClock={duration,remaining:duration,deadline:null,paused:new Set(),undo:undo?[undo]:undefined,updatedAt:now};
+ const clock:ToastClock={duration,remaining:duration,deadline:null,paused:new Set(),undo:undo?[undo]:undefined,onExpire:options.onExpire,updatedAt:now};
  clocks.set(id,clock);schedule(id,clock);notify();
+ replaced.forEach(settle);
  return undo?()=>dismissUndo(id,undo.id):()=>dismiss(id);
 }
 /** F13: errors do not follow you to another screen; the v7 shell clears them on navigation. */
@@ -136,15 +155,15 @@ function V7ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
  },[deadline,remaining,total,reduce]);
  return <motion.div role={item.tone==='danger'?'alert':'status'} className="v7-app-toast" data-surface-role="S6" data-v7-lifted="" data-tone={item.tone??'normal'}
   inert={!present} aria-hidden={present?undefined:true}
-  initial={{opacity:0,y:reduce?0:12}} animate={{opacity:1,y:0,transition:{duration:reduce?durations.reduced:durations.base}}}
-  exit={{opacity:0,transition:{duration:reduce?durations.reduced:durations.quickExit}}}
+  initial={{opacity:0,y:reduce?0:distances.riseSmall}} animate={{opacity:1,y:0,transition:{duration:reduce?durations.reduced:durations.quick,ease:easings.enter}}}
+  exit={{opacity:0,transition:{duration:reduce?0:durations.quickExit,ease:easings.exit}}}
   onPointerEnter={()=>holdToast(item.id,'pointer',true)} onPointerLeave={()=>holdToast(item.id,'pointer',false)}
   onFocus={()=>holdToast(item.id,'focus',true)}
   onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))holdToast(item.id,'focus',false);}}>
   <Icon className="v7-app-toast-icon" aria-hidden="true"/>
   <span className="v7-app-toast-text"><ToastText source={item.message}/></span>
   {item.action&&<button type="button" className="v7-app-toast-action" onClick={()=>{dismiss(item.id);item.action?.onClick();}}><ToastText source={item.action.label}/></button>}
-  <button type="button" aria-label="Dismiss notification" className="v7-app-toast-close" onClick={()=>dismiss(item.id)}><X aria-hidden="true"/></button>
+  <button type="button" aria-label="Dismiss notification" className="v7-app-toast-close" onClick={()=>dismiss(item.id,true)}><X aria-hidden="true"/></button>
   {item.action&&!reduce&&<span ref={countdown} className="v7-app-toast-countdown" aria-hidden="true"/>}
  </motion.div>;
 }

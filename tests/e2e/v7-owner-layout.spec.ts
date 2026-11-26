@@ -203,6 +203,9 @@ test('Settings sliders announce and display their count, not only a unit',async(
   await slider.press('ArrowRight');
   await expect(dialog.locator('output')).toHaveText((initial+1)+' '+unit);
   await page.keyboard.press('Escape');
+  const guard=page.getByRole('dialog',{name:'Discard changes?',exact:true});
+  await guard.getByRole('button',{name:'Discard changes',exact:true}).click();
+  await expect(dialog).toBeHidden();
  }
 });
 

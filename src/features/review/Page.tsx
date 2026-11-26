@@ -1,3 +1,4 @@
+import {retryLazy} from '../../app/lazyModule';
 import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect,useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
@@ -24,10 +25,10 @@ import {useReviewSession} from '../review-run/store';
 import {useReminderRound} from './reminder-round';
 import {isFlagOn} from '../../flags';
 import ReviewV6 from './v6/ReviewV6';
-import {lazy,Suspense} from 'react';
+import {Suspense} from 'react';
 import {v7Screen} from '../../app/v7Kit';
 
-const ReviewHubV7=lazy(()=>import('./v7/ReviewHubV7'));
+const ReviewHubV7=retryLazy(()=>import('./v7/ReviewHubV7'));
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 

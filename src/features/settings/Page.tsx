@@ -1,3 +1,4 @@
+import {retryLazy} from '../../app/lazyModule';
 import {isFlagOn} from '../../flags';
 import V6Settings from './v6/Page';
 import {SectionHeading} from '../../ui/SectionHeading';
@@ -613,7 +614,7 @@ function LegacySettingsPage() {
 }
 
 /** N28: the existing Settings implementation remains untouched when v6Shell is off. */
-const SettingsV7 = lazy(() => import('./v7/SettingsV7'));
+const SettingsV7 = retryLazy(()=>import('./v7/SettingsV7'));
 export default function Page(){
   // v7 Settings (PLAN §6.14) behind v7Shell; v6 and legacy stay for rollback.
   if (v7Screen() === 'settings') return <Suspense fallback={<div role="status" aria-label="Settings loading" className="min-h-dvh"/>}><SettingsV7/></Suspense>;

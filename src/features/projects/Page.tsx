@@ -1,5 +1,6 @@
+import {retryLazy} from '../../app/lazyModule';
 import {SectionHeading} from '../../ui/SectionHeading';
-import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
@@ -115,7 +116,7 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
 }
 
 /** Keep the flag wrapper above the legacy implementation: cold-route prefetch source checks inspect this section. */
-const PathsV7=lazy(()=>import('./v7/PathsV7'));
+const PathsV7=retryLazy(()=>import('./v7/PathsV7'));
 export default function Page(){
  // v7 Paths hub (PLAN §6.8) behind v7Shell; v6 and legacy stay for rollback.
  if(v7Screen()==='paths')return <Suspense fallback={<div role="status" aria-label="Paths loading" className="min-h-dvh"/>}><PathsV7/></Suspense>;

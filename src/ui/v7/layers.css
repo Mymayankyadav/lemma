@@ -1,3 +1,4 @@
+:where(html[data-v7]) :is(.v7-sheet,.v7-layer-exit) {--v7-pull-scrim:1;--v7-release-duration:var(--motion-base-exit);--v7-release-distance:0px;}
 :where(html[data-v7]) .v7-popover {
   box-sizing:border-box; position:fixed; inset:auto; margin:0; z-index:var(--v7-menu-layer);
   top:var(--v7-space-2); left:var(--v7-space-2); width:min(360px,calc(100vw - 16px)); max-height:min(60vh,420px);
@@ -11,7 +12,8 @@
 :where(html[data-v7]) .v7-sheet[data-v7-lifted]::backdrop {background:rgb(0 0 0 / 16%);}
 :where(html[data-v7][data-theme=graph-night]) .v7-sheet[data-v7-lifted]::backdrop {background:rgb(0 0 0 / 24%);}
 :where(html[data-v7]) .v7-sheet[data-choice-step] > :is(.v7-sheet-header,.v7-sheet-body,.v7-sheet-footer) {display:none;}
-:where(html[data-v7]) .v7-choice-step {display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+:where(html[data-v7]) .v7-choice-step[hidden] {display:none;}
+:where(html[data-v7]) .v7-choice-step:not([hidden]) {display:flex;flex-direction:column;min-height:0;overflow:hidden;}
 :where(html[data-v7]) .v7-step-header {align-items:center;justify-content:flex-start;}
 :where(html[data-v7]) .v7-layer-exit {position:fixed;inset:0;display:block;box-sizing:border-box;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;z-index:var(--v7-toast-layer,100);overflow:hidden;background:transparent;}
 :where(html[data-v7]) .v7-layer-exit::before {content:"";position:absolute;inset:0;background:var(--v7-backdrop);animation:v7-scrim-out var(--motion-base-exit) var(--ease-exit) both;}
@@ -19,8 +21,11 @@
 :where(html[data-v7][data-theme=graph-night]) .v7-layer-exit[data-child]::before {background:rgb(0 0 0 / 24%);}
 :where(html[data-v7]) .v7-layer-exit > .v7-exiting-panel {position:absolute;inset:auto;display:flex;flex-direction:column;max-width:none;max-height:none;margin:0;pointer-events:none;animation:v7-panel-out var(--motion-base-exit) var(--ease-exit) both;}
 :where(html[data-v7]) .v7-sheet[data-layer-handoff]::backdrop {animation:none;}
-@keyframes v7-scrim-out {to {opacity:0;}}
-@keyframes v7-panel-out {to {opacity:0;transform:translateY(var(--rise));}}
+@keyframes v7-scrim-out {from {opacity:var(--v7-pull-scrim,1);}to {opacity:0;}}
+:where(html[data-v7]) .v7-layer-exit[data-release]::before {animation-duration:var(--v7-release-duration);animation-timing-function:linear;}
+:where(html[data-v7]) .v7-layer-exit[data-release] > .v7-exiting-panel {animation:v7-drag-away var(--v7-release-duration) var(--ease-exit) both;}
+@keyframes v7-drag-away {from {transform:translateY(0);}to {transform:translateY(var(--v7-release-distance));}}
+@keyframes v7-panel-out {to {opacity:0;transform:translateY(8px);}}
 @media(min-width:700px){
   :where(html[data-v7]) .v7-sheet[data-v7-lifted] {width:min(480px,calc(100% - var(--v7-space-10)));top:48px;}
   @keyframes v7-panel-out {to {opacity:0;transform:scale(.98);}}

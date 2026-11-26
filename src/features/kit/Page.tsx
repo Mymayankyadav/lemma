@@ -1,6 +1,7 @@
-import {lazy,Suspense} from 'react';
+import {retryLazy} from '../../app/lazyModule';
+import {Suspense} from 'react';
 import {isV7Kit} from '../../app/v7Kit';
-const V7Page=lazy(()=>import('./V7Page'));
+const V7Page=retryLazy(()=>import('./V7Page'));
 import {CompassArt} from '../../ui/art/CompassArt';
 import {CardFanArt} from '../../ui/art/CardFanArt';
 import {PlugArt} from '../../ui/art/PlugArt';

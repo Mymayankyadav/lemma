@@ -66,7 +66,7 @@ export default function AgendaList({date,today,zone,clock,entries,blocks,dues,pr
    const due=dueForDay(group.day,date,zone,dues);
    return <section key={group.day} className="v7-ag-day" aria-labelledby={'ag-'+group.day}>
     <h2 id={'ag-'+group.day} className="v7-ag-heading">{label(group.day)}</h2>
-    {open.length>0&&<OverlapMarkers zone={zone} controls={controls} clock24h={clock24h} windows={open}/>}
+    {open.length>0&&<OverlapMarkers v7 zone={zone} controls={controls} clock24h={clock24h} windows={open}/>}
     <ul>
      {/* N168: one row per saved session, pauses included in its span; tap for the session's details. */}
      {loggedSessions(entries,calendarRange(group.day,zone)).map(session=>{const look=lookOf({projectId:session.entry.projectId} as CalendarBlockRecord);

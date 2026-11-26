@@ -176,7 +176,7 @@ export function Segmented({
   useEffect(() => setMode(menu ? "menu" : "segments"), [menu]);
   const control = (measure: boolean) => (
     <div
-      ref={measure ? box : undefined}
+      ref={measure && !tabs ? box : undefined}
       className={(tabs ? "v7-tabs" : "v7-segmented") + (measure && menu ? " v7-segmented-measure" : "")}
       role={measure && menu ? undefined : tabSemantics ? "tablist" : "radiogroup"}
       aria-label={measure && menu ? undefined : label}

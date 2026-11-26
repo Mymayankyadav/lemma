@@ -1,4 +1,5 @@
-import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
+import {retryLazy} from '../../app/lazyModule';
+import {Suspense,useEffect,useMemo,useState} from 'react';
 import {v7Screen} from '../../app/v7Kit';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {CalendarDays,Clock3,RotateCcw,Target} from 'lucide-react';
@@ -165,7 +166,7 @@ function NothingReviewed(){
   <button className="min-h-11 text-label text-[var(--link)] underline" onClick={()=>navigate('/review')}>Back to Review</button>
  </main>;
 }
-const RoundCompleteV7=lazy(()=>import('./v7/RoundCompleteV7'));
+const RoundCompleteV7=retryLazy(()=>import('./v7/RoundCompleteV7'));
 export default function Page(){
  const [search]=useSearchParams();
  const answers=useReviewSession(s=>s.answers);

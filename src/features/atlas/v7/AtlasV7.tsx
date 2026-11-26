@@ -67,6 +67,20 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
  const studyRepair=useStudyUi();
  const star=model.stars[index],checkpoint=star.checkpoints[0];
  const drag=useRef<{y:number;moved:boolean}|null>(null),dragged=useRef(false),[offset,setOffset]=useState(0);
+ const detentTop=useRef<number|null>(null);
+ const changeDetent=(next:boolean)=>{
+  if(next===expanded)return;
+  detentTop.current=sheetRef.current?.getBoundingClientRect().top??null;
+  onExpand(next);
+ };
+ useLayoutEffect(()=>{
+  const node=sheetRef.current,previous=detentTop.current;detentTop.current=null;
+  if(!node||typeof node.animate!=='function'||previous===null||reduced)return;
+  const dy=previous-node.getBoundingClientRect().top;
+  if(dy)node.animate([{transform:`translateY(${dy}px)`},{transform:'none'}],{
+   duration:durations.slow*1000,easing:getComputedStyle(node).getPropertyValue('--spring-sheet').trim()||'ease-out',
+  });
+ },[expanded,reduced,sheetRef]);
 
  // The map's legend and controls sit above the sheet: tell them how tall it really is.
  useEffect(()=>{
@@ -86,7 +100,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
  const handleUp=(event:ReactPointerEvent<HTMLButtonElement>)=>{
   const state=drag.current;drag.current=null;setOffset(0);dragged.current=!!state?.moved;if(!state?.moved)return;
   const dy=event.clientY-state.y;
-  if(dy<-40)onExpand(true);else if(dy>60&&!expanded)onClose();else if(dy>40)onExpand(false);
+  if(dy<-40)changeDetent(true);else if(dy>60&&!expanded)onClose();else if(dy>40)changeDetent(false);
  };
  const group=(title:string,items:number[])=>items.length>0&&<div className="v7-atlas-neighbours">
   <h3 className="v7-atlas-eyebrow">{title} · {items.length}</h3>
@@ -97,12 +111,14 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
  return <section ref={sheetRef} className="v7-atlas-sheet" data-surface-role="S2" data-expanded={expanded} data-dragging={offset!==0||undefined} aria-labelledby="v7-atlas-sheet-title"
   style={offset?{transform:`translateY(${offset}px)`}:undefined}>
   <div className="v7-atlas-sheet-head">
-   <h2 id="v7-atlas-sheet-title" tabIndex={-1} className="v7-atlas-sheet-title"><FastTex source={star.name}/></h2>
+   <h2 id="v7-atlas-sheet-title" tabIndex={-1} className="v7-atlas-sheet-title">
+    <AnimatePresence initial={false}><InspectorTitle key={star.id} name={star.name} reduced={reduced}/></AnimatePresence>
+   </h2>
    <div className="v7-atlas-sheet-controls">
     <button type="button" className="v7-icon-button v7-atlas-handle" aria-expanded={expanded} aria-controls={expanded?`v7-atlas-sheet-more-${star.id}`:undefined}
      aria-label={expanded?'Show less':'Show neighbours and actions'} onPointerDown={handleDown} onPointerMove={handleMove} onPointerUp={handleUp}
      onPointerCancel={()=>{drag.current=null;setOffset(0);}}
-     onClick={()=>{if(dragged.current){dragged.current=false;return;}onExpand(!expanded);}}>
+     onClick={()=>{if(dragged.current){dragged.current=false;return;}changeDetent(!expanded);}}>
      {expanded?<ChevronDown aria-hidden="true"/>:<ChevronUp aria-hidden="true"/>}
     </button>
     <IconButton label="Close details" onClick={onClose}><X aria-hidden="true"/></IconButton>
@@ -133,6 +149,11 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
   </AnimatePresence>
   </div>
  </section>;
+}
+function InspectorTitle({name,reduced}:{name:string;reduced:boolean}){
+ const present=useIsPresent();
+ return <motion.span className="v7-atlas-title-text" data-exiting={!present||undefined} aria-hidden={!present||undefined}
+  initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:reduced?durations.reduced:durations.quick}}><FastTex source={name}/></motion.span>;
 }
 function InspectorContent({children,reduced}:{children:ReactNode;reduced:boolean}){
  const present=useIsPresent();
@@ -251,7 +272,7 @@ export default function AtlasV7(){
    if(mapVisible&&previous.camera)map.current?.restoreCamera(previous.camera);
    focusResult.current=id;
   }else if(neighbourTarget.current===id&&mapVisible){
-   map.current?.flyTo(selected,panel?.getBoundingClientRect().height??PEEK);
+   map.current?.flyTo(selected,panel?.getBoundingClientRect());
   }
   if(neighbourTarget.current===id)neighbourTarget.current=null;
  },[location.key,mapVisible,model,selected]);

@@ -1,6 +1,7 @@
+import {retryLazy} from '../../app/lazyModule';
 import {isFlagOn} from '../../flags';
 import ProgressV6,{progressRange,rangeOptions,rangeWords} from '../progress-v6/Page';
-import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
+import {Suspense,useEffect,useMemo,useState} from 'react';
 import {v7Screen} from '../../app/v7Kit';
 import {getStudyApi} from '../../data/study';
 import {periodFor,effortSummary,type EffortRange} from '../progress-v6/model';
@@ -138,7 +139,7 @@ function ProgressNotebook(){
 }
 
 /** Flag-off Insights stays exactly as before; v6 shows the mockup Progress notebook. */
-const ProgressV7=lazy(()=>import('./v7/ProgressV7'));
+const ProgressV7=retryLazy(()=>import('./v7/ProgressV7'));
 export default function Page(){
  // v7 Progress (PLAN §6.13) behind v7Shell; v6 and legacy stay for rollback.
  if(v7Screen()==='progress')return <Suspense fallback={<div role="status" aria-label="Progress loading" className="min-h-dvh"/>}><ProgressV7/></Suspense>;

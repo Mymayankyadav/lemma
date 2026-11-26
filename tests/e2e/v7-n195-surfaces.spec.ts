@@ -1,3 +1,4 @@
+import {enableSurfaceBeta} from './helpers/surface-preview';
 import {expect,test,type Page,type TestInfo} from '@playwright/test';
 import {writeFile} from 'node:fs/promises';
 import {at,NOW} from './v7-scenes';
@@ -96,6 +97,7 @@ for(const width of [360,390])test(`Atlas dialogs contain keyboard focus and rest
 });
 
 test('source search opens and focuses the matching source and Back restores the search',async({page},info)=>{
+ await enableSurfaceBeta(page);
  await largePhone(page,360);await page.goto(repair('/'));
  await page.getByRole('button',{name:'Search',exact:true}).click();
  const search=page.getByRole('combobox',{name:'Search',exact:true});

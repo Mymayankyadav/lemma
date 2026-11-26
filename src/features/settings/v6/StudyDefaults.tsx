@@ -1,3 +1,4 @@
+import '../section-controls.css';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useReviewLog, useStyles, useUpdateSettings } from '../../../data/hooks';
 import type { SettingsPatch } from '../../../data/api';
@@ -9,8 +10,8 @@ import {Button, Sheet} from '../../../ui/v7/components';
 import {requestSettingsClose} from '../v7/SettingsLists';
 import { useToast } from '../../../ui/Toast';
 
-const button = 'min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold text-ink focus-visible:outline-2 focus-visible:outline-amber disabled:opacity-50';
-const field = 'mt-2 min-h-32 w-full rounded-ctl border border-edge bg-well p-3 text-body text-ink';
+const button = 'min-h-11 rounded-ctl border settings-section-button px-3 py-2 text-label font-semibold settings-section-text focus-visible:outline-2  disabled:opacity-50';
+const field = 'mt-2 min-h-32 w-full rounded-ctl border settings-section-field p-3 text-body settings-section-text';
 type OptimizerResult = Extract<OptimizerMessage, { type: 'result' }>['result'];
 type Editor = 'rules' | 'macros' | 'optimizer' | null;
 
@@ -136,39 +137,39 @@ export default function StudyDefaults({ settings, part = 'all', v7 = false }: { 
     if(result&&!result.skipped&&await save({fsrsWeights:result.w,fsrsTunedAt:new Date().toISOString()},'Memory model updated'))
       closeOptimizer();
   };
+  const Control=v7?Button:'button';
   const preview = renderMarkdown('$\\R \\quad \\norm{x}$', { macros });
 
   return <section aria-labelledby="v6-study-title" className="flex flex-col gap-4 pb-8">
-    <h2 id="v6-study-title" className="text-title-s font-semibold text-ink">{part === 'tutor' ? 'Teaching style' : 'Study defaults'}</h2>
-    {part !== 'study' && <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
-      {part==='all'&&<h3 className="mb-2 text-body font-semibold text-ink">Teaching style</h3>}
+    <h2 id="v6-study-title" className="text-title-s font-semibold settings-section-text">{part === 'tutor' ? 'Teaching style' : 'Study defaults'}</h2>
+    {part !== 'study' && <section className="rounded-slab border settings-section-card p-4">
+      {part==='all'&&<h3 className="mb-2 text-body font-semibold settings-section-text">Teaching style</h3>}
       {styles.isPending ? <p role="status">Loading teaching styles…</p> :
         styles.isError ? <div role="alert">Teaching styles unavailable.
-          <button type="button" className={button} onClick={() => void styles.refetch()}>Retry styles</button>
+          <Control type="button" className={button} onClick={() => void styles.refetch()}>Retry styles</Control>
         </div> : !styles.data?.length ? <p>No teaching styles available.</p> :
         <div role="radiogroup" aria-label="Teaching style" data-teaching-styles className="flex flex-col gap-2">
           {styles.data.map((style, index) => <button key={style.key} type="button" role="radio"
             aria-checked={settings.defaultStyle === style.key} disabled={busy}
-            className="flex min-h-11 w-full items-center gap-3 rounded-[8px] px-2 text-left text-body text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)] disabled:opacity-50"
+            className="flex min-h-11 w-full items-center gap-3 rounded-[8px] px-2 text-left text-body settings-section-text settings-section-radio focus-visible:outline-2  disabled:opacity-50"
             onKeyDown={event => moveStyle(event, index)}
             onClick={() => {
               if(settings.defaultStyle!==style.key)void save({defaultStyle:style.key},v7?'Teaching style set to '+style.name:undefined,
                 v7?{defaultStyle:settings.defaultStyle}:undefined);
             }}>
-            <span aria-hidden="true" className={'flex size-5 shrink-0 items-center justify-center rounded-full border-2 ' + (settings.defaultStyle === style.key ? 'border-[var(--accent)]' : 'border-[var(--control-edge)]')}>
-              {settings.defaultStyle === style.key && <span className="size-2.5 rounded-full bg-[var(--accent)]"/>}</span>
+            <span aria-hidden="true" className="settings-section-radio-mark flex size-5 shrink-0 items-center justify-center rounded-full border-2"/>
             {style.name}
           </button>)}
         </div>}
-      <button type="button" className={button + ' mt-3'} disabled={busy} onClick={openRules}>Tutor rules</button>
+      <Control type="button" className={button + ' mt-3'} disabled={busy} onClick={openRules}>Tutor rules</Control>
     </section>}
-    {part !== 'tutor' && <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
-      <h3 className="mb-3 text-body font-semibold text-ink">Memory</h3>
-      <label className="flex items-center justify-between gap-2 text-label font-semibold text-ink" htmlFor="v6-retention">
+    {part !== 'tutor' && <section className="rounded-slab border settings-section-card p-4">
+      <h3 className="mb-3 text-body font-semibold settings-section-text">Memory</h3>
+      <label className="flex items-center justify-between gap-2 text-label font-semibold settings-section-text" htmlFor="v6-retention">
         <span>Target recall</span><output htmlFor="v6-retention">{Math.round((retention ?? settings.desiredRetention) * 100)}%</output>
       </label>
       <input id="v6-retention" aria-label="Target recall" type="range" min="80" max="97" step="1"
-        className="my-3 min-h-11 w-full accent-amber"
+        className="my-3 min-h-11 w-full settings-section-accent"
         disabled={busy} value={Math.round((retention ?? settings.desiredRetention) * 100)}
         onChange={event => setRetention(Number(event.target.value) / 100)}
         onPointerUp={event => saveRetention(Number(event.currentTarget.value) / 100)}
@@ -176,30 +177,30 @@ export default function StudyDefaults({ settings, part = 'all', v7 = false }: { 
           if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key))
             saveRetention(Number(event.currentTarget.value) / 100);
         }}/>
-      <p className="text-caption text-ink-2">Higher recall means more reviews each day.</p>
+      <p className="text-caption settings-section-meta">Higher recall means more reviews each day.</p>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <span className="text-label font-semibold text-ink">New cards a day</span>
+        <span className="text-label font-semibold settings-section-text">New cards a day</span>
         <div className="flex items-center gap-3">
-          <button type="button" aria-label="Fewer new cards" className={button} disabled={busy || settings.newPerDay <= 0}
-            onClick={() => { void save({ newPerDay: Math.max(0, settings.newPerDay - 5) }); }}>−</button>
+          <Control type="button" aria-label="Fewer new cards" className={button} disabled={busy || settings.newPerDay <= 0}
+            onClick={() => { void save({ newPerDay: Math.max(0, settings.newPerDay - 5) }); }}>−</Control>
           <output className="min-w-7 text-center tabular-nums">{settings.newPerDay}</output>
-          <button type="button" aria-label="More new cards" className={button} disabled={busy || settings.newPerDay >= 60}
-            onClick={() => { void save({ newPerDay: Math.min(60, settings.newPerDay + 5) }); }}>+</button>
+          <Control type="button" aria-label="More new cards" className={button} disabled={busy || settings.newPerDay >= 60}
+            onClick={() => { void save({ newPerDay: Math.min(60, settings.newPerDay + 5) }); }}>+</Control>
         </div>
       </div>
       {reviews.isPending ? <p role="status" className="mt-3 text-label">Loading review history…</p> :
         reviews.isError ? <div role="alert" className="mt-3 text-label">Review history unavailable.
-          <button type="button" className={button} onClick={() => void reviews.refetch()}>Retry reviews</button>
-        </div> : !canTune ? <p className="mt-3 text-label text-ink-2">
+          <Control type="button" className={button} onClick={() => void reviews.refetch()}>Retry reviews</Control>
+        </div> : !canTune ? <p className="mt-3 text-label settings-section-meta">
           Needs 400 reviews (you have {reviewCount ?? 0})
         </p> : null}
-      <button type="button" className={button + ' mt-3 w-full'} disabled={busy || !canTune} onClick={tune}>
+      <Control type="button" className={button + ' mt-3 w-full'} disabled={busy || !canTune} onClick={tune}>
         Tune to my reviews
-      </button>
+      </Control>
     </section>}
-    {part !== 'tutor' && <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
-      <h3 className="mb-3 text-body font-semibold text-ink">Math shortcuts</h3>
-      <button type="button" className={button} disabled={busy} onClick={openMacros}>Edit math shortcuts</button>
+    {part !== 'tutor' && <section className="rounded-slab border settings-section-card p-4">
+      <h3 className="mb-3 text-body font-semibold settings-section-text">Math shortcuts</h3>
+      <Control type="button" className={button} disabled={busy} onClick={openMacros}>Edit math shortcuts</Control>
     </section>}
     {v7 ? <>
       <Sheet open={editor==='rules'} onClose={()=>{if(!busy)setEditor(null);}} title="Tutor rules" dirty={rulesChanged&&!busy}
@@ -236,7 +237,7 @@ export default function StudyDefaults({ settings, part = 'all', v7 = false }: { 
         <button type="button" className={button} disabled={busy}
           onClick={async () => { if (await save({ tutorRules: rules.trim() || null }, 'Tutor rules saved')) setEditor(null); }}>Save rules</button>
       </>}>
-      <label className="text-label text-ink">Rules
+      <label className="text-label settings-section-text">Rules
         <textarea aria-label="Tutor rules text" className={field} value={rules}
           onChange={event => setRules(event.target.value)}/>
       </label>
@@ -244,11 +245,11 @@ export default function StudyDefaults({ settings, part = 'all', v7 = false }: { 
     <LegacySheet open={editor === 'macros'} onClose={() => setEditor(null)} title="Math shortcuts" footer={
       <button type="button" className={button + ' w-full'} disabled={busy}
         onClick={async () => { if (await save({ macros }, 'Math shortcuts saved')) setEditor(null); }}>Save shortcuts</button>}>
-      <label className="text-label text-ink">KaTeX macros
+      <label className="text-label settings-section-text">KaTeX macros
         <textarea aria-label="Math shortcuts text" className={field + ' font-mono'} value={macros}
           onChange={event => setMacros(event.target.value)}/>
       </label>
-      <p className="mt-3 text-label text-ink-2">Preview</p>
+      <p className="mt-3 text-label settings-section-meta">Preview</p>
       <div className="lemma-math my-3" dangerouslySetInnerHTML={{ __html: preview }}/>
     </LegacySheet>
     <LegacySheet open={editor === 'optimizer'} onClose={closeOptimizer} title="Tune to your reviews">

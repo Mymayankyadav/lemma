@@ -1,6 +1,7 @@
-import {useContext, useId, useLayoutEffect, useRef, useSyncExternalStore, type KeyboardEvent, type ReactNode} from 'react';
+import {useContext, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {Sheet, SheetHost, StepHeader} from './Sheet';
+import {Sheet, SheetHost, StepHeader, presentSheetStep} from './Sheet';
+import {surfaceBetaEnabled} from '../../app/surfaceBeta';
 import {finishChoiceExit, retainChoiceExit} from './sheetPresence';
 import {dismissTopLayer, layerLauncher, registerLayer, requestLayerClose, tabFromLayer, topLayerElement, type DismissReason} from './layers';
 const wideQuery = '(min-width:700px)';
@@ -26,27 +27,47 @@ function positionMenu(panel: HTMLElement, trigger: HTMLElement, name: string) {
     trigger.style.setProperty('anchor-name', name);
     panel.style.setProperty('position-anchor', name);
   }
+  const host = trigger.closest<HTMLDialogElement>('dialog[open]');
+  const header = host?.querySelector<HTMLElement>(':scope > .v7-sheet-header');
+  const footer = host ? host.querySelector<HTMLElement>(':scope > .v7-sheet-footer')
+    : trigger.closest('main')?.querySelector<HTMLElement>('.v7-pinned-dock');
+  const viewport = win.visualViewport;
   function measure() {
-    const box = trigger.getBoundingClientRect(), edge = 8, gap = 4;
-    const width = Math.min(Math.max(240, box.width), 360, win.innerWidth - 2*edge);
-    const below = win.innerHeight - box.bottom - edge - gap, above = box.top - edge - gap;
-    const limit = Math.min(win.innerHeight * .6, 420);
-    panel.style.width = width + 'px';
-    const up = below < Math.min(panel.scrollHeight + 2, limit) && above > below;
-    panel.style.maxHeight = Math.max(1, Math.min(limit, up ? above : below)) + 'px';
-    const left = Math.max(edge, Math.min(box.left, win.innerWidth - width - edge));
-    panel.style.left = anchors && left === box.left ? 'anchor(left)' : left + 'px';
-    panel.style.top = up ? 'auto' : anchors ? 'calc(anchor(bottom) + 4px)' : box.bottom + gap + 'px';
-    panel.style.bottom = !up ? 'auto' : anchors ? 'calc(anchor(top) + 4px)' : win.innerHeight - box.top + gap + 'px';
+    // Rectangles use viewport pixels. CSS zoom also scales lengths assigned to the popover.
+    const scale = (panel as HTMLElement & {currentCSSZoom?:number}).currentCSSZoom
+      || (panel.offsetWidth ? panel.getBoundingClientRect().width/panel.offsetWidth : 1) || 1;
+    const box = trigger.getBoundingClientRect(), edge = 8*scale, gap = 4*scale;
+    const originX = viewport?.offsetLeft ?? 0, originY = viewport?.offsetTop ?? 0;
+    const vw = viewport?.width ?? win.innerWidth, vh = viewport?.height ?? win.innerHeight;
+    const hostBox = host?.getBoundingClientRect();
+    const minX = Math.max(originX,hostBox?.left ?? originX) + edge;
+    const maxX = Math.min(originX + vw,hostBox?.right ?? originX + vw) - edge;
+    const minY = Math.max(originY,header?.getBoundingClientRect().bottom ?? hostBox?.top ?? originY) + edge;
+    const maxY = Math.min(originY + vh,footer?.getBoundingClientRect().top ?? hostBox?.bottom ?? originY + vh) - edge;
+    const width = Math.max(1,Math.min(Math.max(240*scale,box.width),360*scale,maxX-minX));
+    const rtl = getComputedStyle(trigger).direction === 'rtl';
+    const aligned = rtl ? box.right-width : box.left;
+    const left = Math.max(minX,Math.min(aligned,maxX-width));
+    const belowStart = Math.min(maxY,Math.max(minY,box.bottom+gap));
+    const aboveEnd = Math.max(minY,Math.min(maxY,box.top-gap));
+    const below = maxY-belowStart, above = aboveEnd-minY, limit = Math.min(vh*.6,420*scale);
+    panel.style.width = width/scale+'px';
+    const up = below < Math.min((panel.scrollHeight+2)*scale,limit) && above>below;
+    panel.style.maxHeight = Math.max(1,Math.min(limit,up?above:below)/scale)+'px';
+    panel.style.left = anchors && !rtl && left===box.left ? 'anchor(left)' : left/scale+'px';
+    panel.style.top = up ? 'auto' : anchors && belowStart===box.bottom+gap ? 'calc(anchor(bottom) + 4px)' : belowStart/scale+'px';
+    panel.style.bottom = !up ? 'auto' : anchors && aboveEnd===box.top-gap ? 'calc(anchor(top) + 4px)' : (win.innerHeight-aboveEnd)/scale+'px';
   }
   measure();
   const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
-  observer?.observe(trigger);
-  observer?.observe(panel);
-  win.addEventListener('resize', measure);
-  win.addEventListener('scroll', measure, true);
+  for (const node of [trigger,panel,host,header,footer]) if (node) observer?.observe(node);
+  win.addEventListener('resize',measure);
+  win.addEventListener('scroll',measure,true);
+  viewport?.addEventListener('resize',measure);
+  viewport?.addEventListener('scroll',measure);
   return () => {
-    observer?.disconnect(); win.removeEventListener('resize', measure); win.removeEventListener('scroll', measure, true);
+    observer?.disconnect(); win.removeEventListener('resize',measure); win.removeEventListener('scroll',measure,true);
+    viewport?.removeEventListener('resize',measure); viewport?.removeEventListener('scroll',measure);
     if (anchors) {
       if (oldAnchor) trigger.style.setProperty('anchor-name', oldAnchor);
       else trigger.style.removeProperty('anchor-name');
@@ -67,7 +88,9 @@ function OpenChoice({title, onClose, anchor, children, role = 'dialog', classNam
   const trigger = useRef<HTMLElement | null>(null);
   const typeAhead = useRef({value:'', at:0});
   const ignoreReturn = useRef(false);
-  const step = !!host && !wide;
+  // Keep the presentation of an open chooser stable if the preference changes in another tab.
+  const [beta] = useState(surfaceBetaEnabled);
+  const step = beta && !!host && !wide;
   useLayoutEffect(() => {
     const panel = ref.current;
     if (!panel) return;
@@ -76,9 +99,8 @@ function OpenChoice({title, onClose, anchor, children, role = 'dialog', classNam
     trigger.current = launcher;
     const owner = host ?? topLayerElement(doc);
     finishChoiceExit(doc);
-    const native = wide && typeof panel.showPopover === 'function';
-    const previousTitle = host?.getAttribute('aria-labelledby');
-    if (step && host) { host.dataset.choiceStep = ''; host.setAttribute('aria-labelledby', id); }
+    const native = beta && wide && typeof panel.showPopover === 'function';
+    const restoreStep = step && host ? presentSheetStep(host,panel,id) : undefined;
     if (native) { panel.popover = 'auto'; panel.showPopover(); }
     const unposition = wide && launcher ? positionMenu(panel, launcher, '--v7-anchor-'+id.replace(/[^a-z\d_-]/gi,'')) : undefined;
     const release = registerLayer({element:panel, owner, role:step ? 'step' : 'S4', trigger:launcher, dismiss:(reason: DismissReason) => {
@@ -108,16 +130,13 @@ function OpenChoice({title, onClose, anchor, children, role = 'dialog', classNam
     if (native) panel.addEventListener('toggle',toggle);
     return () => {
       if (wide) doc.removeEventListener('pointerdown', outside, true);
-      if (wide && topLayerElement(doc) === panel) retainChoiceExit(panel);
+      if (beta && wide && topLayerElement(doc) === panel) retainChoiceExit(panel);
       if (native) { panel.removeEventListener('toggle',toggle); panel.hidePopover(); }
       unposition?.();
-      if (step && host) {
-        delete host.dataset.choiceStep;
-        if (previousTitle) host.setAttribute('aria-labelledby',previousTitle);
-      }
+      restoreStep?.();
       release(!ignoreReturn.current);
     };
-  }, [host, wide, step, id]);
+  }, [host, wide, step, id, beta]);
 
   function keys(event: KeyboardEvent<HTMLDivElement>) {
     if (event.defaultPrevented) return;

@@ -142,7 +142,8 @@
  :where(html[data-v7]) .v7-atlas-handle {touch-action:none;}
  :where(html[data-v7]) .v7-atlas-sheet-head {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-atlas-sheet-controls {display:flex;flex:none;}
- :where(html[data-v7]) .v7-atlas-sheet-title {margin:0;font:600 var(--v7-type-subhead)/1.3 var(--v7-sans);letter-spacing:-.005em;min-width:0;overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-atlas-sheet-title {position:relative;margin:0;font:600 var(--v7-type-subhead)/1.3 var(--v7-sans);letter-spacing:-.005em;min-width:0;overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-atlas-title-text[data-exiting] {position:absolute;inset:0;pointer-events:none;}
  :where(html[data-v7]) .v7-atlas-sheet-meta {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-atlas-counts {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-atlas-actions,:where(html[data-v7]) .v7-atlas-more-actions {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}

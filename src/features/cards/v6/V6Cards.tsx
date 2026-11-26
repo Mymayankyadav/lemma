@@ -1,5 +1,6 @@
+import {retryNamed} from '../../../app/lazyModule';
 import { plainCardText } from '../../proposals/v6/plain-card-text';
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -14,7 +15,7 @@ import { canRenderPlainCardFront } from '../plainCardFront';
 import type { EditorValue } from '../Editor';
 import CardFiltersSheet, { clearCardFilters, type CardFilters } from './CardFiltersSheet';
 
-const Editor = lazy(() => import('../Editor').then(module => ({ default: module.Editor })));
+const Editor = retryNamed(()=>import('../Editor'),module=>module.Editor);
 const button = 'min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-transparent px-4 py-2 text-body text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)]';
 const hasFilters = (filters: CardFilters) => Boolean(filters.projectSlug || filters.checkpointCode ||
   filters.state || filters.noteStatus || filters.hasOpenComments);

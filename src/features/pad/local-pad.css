@@ -6,6 +6,7 @@
 }
 .local-pad-paper {
   width:100%; min-height:8rem; resize:vertical;
+  border-color:var(--v7-role-border-default);
   background-color:var(--v7-role-surface-sunken); color:inherit; font:inherit;
   background-image:linear-gradient(to right, var(--v7-role-border-subtle) 1px, transparent 1px),
     linear-gradient(to bottom, var(--v7-role-border-subtle) 1px, transparent 1px);

@@ -1,4 +1,5 @@
-import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
+import {retryLazy} from '../../app/lazyModule';
+import {Suspense,useEffect,useMemo,useState} from 'react';
 import {v7Screen} from '../../app/v7Kit';
 import {ChevronLeft,ChevronRight} from 'lucide-react';
 import {getApi} from '../../data';
@@ -160,7 +161,7 @@ export function EntryDialog({entry,onChange,onClose,busy}:{entry:StudyEntryRecor
   </section>
  </Dialog>;
 }
-const TimeLogV7=lazy(()=>import('./v7/TimeLogV7'));
+const TimeLogV7=retryLazy(()=>import('./v7/TimeLogV7'));
 export default function TimeLog(){
  // v7 Time log (PLAN §6.13) behind v7Shell; the v6 log stays for rollback.
  if(v7Screen()==='log')return <Suspense fallback={<div role="status" aria-label="Time log loading" className="min-h-dvh"/>}><TimeLogV7/></Suspense>;

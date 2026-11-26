@@ -29,7 +29,9 @@ describe('FIX #632: Today entry does not eagerly import unrelated routes',()=>{
   const paths=new Set([...routes.matchAll(/(?:lazyRoute|eagerRoute)\('([^']+)'/g)].map(match=>match[1]));
   expect([...paths]).toEqual(screens.map(([path])=>path));
   expect(boundary).toContain('errorElement:<RouteError/>');
-  expect(boundary).toContain('Component:await load()');
+  expect(boundary).toContain('Component:Screen');
+  expect(boundary).toContain('=>surfaceBetaEnabled()');
+  expect(boundary).toContain('?load().then');
   expect(routes).not.toContain('<Suspense');
  });
 });

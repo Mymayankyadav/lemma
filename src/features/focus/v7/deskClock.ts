@@ -1,4 +1,6 @@
 import {useEffect, useState} from 'react';
+import {flushSync} from 'react-dom';
+import {durations,easings} from '../../../ui/v7/motion';
 
 /** N157 · U4 S16: the phone in landscape (a short window held sideways) shows the desk clock without a tap. */
 export const DESK_QUERY = '(orientation: landscape) and (max-height: 500px)';
@@ -12,6 +14,34 @@ export function useDeskLandscape() {
     return () => media.removeEventListener('change', change);
   }, []);
   return matches;
+}
+
+/** The clock switches on manual selection and rotation, with the same opacity-only fallback. */
+export function turnDeskClock(clock:HTMLElement|null,update:()=>void,reduced:boolean){
+ const root=document.documentElement;
+ if(reduced||!clock||root.hasAttribute('data-v7-theme-turn')||root.hasAttribute('data-v7-focus-turn')){update();return;}
+ if(typeof document.startViewTransition==='function'){
+  root.setAttribute('data-v7-focus-turn','');
+  try{
+   const turn=document.startViewTransition(()=>flushSync(update));
+   void turn.finished.catch(()=>undefined).finally(()=>root.removeAttribute('data-v7-focus-turn'));
+   return;
+  }catch{root.removeAttribute('data-v7-focus-turn');}
+ }
+ if(typeof clock.animate!=='function'){update();return;}
+ const box=clock.getBoundingClientRect(),before=clock.closest<HTMLElement>('.v7-focus');
+ const prior=document.createElement('div'),copy=clock.cloneNode(true) as HTMLElement;
+ copy.removeAttribute('id');copy.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+ prior.inert=true;prior.setAttribute('aria-hidden','true');
+ prior.className=(before?.className??'v7-focus')+' v7-focus-clock-exit';
+ prior.toggleAttribute('data-desk',!!before?.hasAttribute('data-desk'));
+ Object.assign(prior.style,{position:'fixed',display:'block',top:box.top+'px',left:box.left+'px',width:box.width+'px',height:box.height+'px',margin:'0',minHeight:'0',pointerEvents:'none'});
+ prior.append(copy);document.body.append(prior);
+ flushSync(update);
+ const timing={duration:durations.base*1000,easing:`cubic-bezier(${easings.standard.join(',')})`};
+ clock.animate([{opacity:0},{opacity:1}],timing);
+ const exit=prior.animate([{opacity:1},{opacity:0}],{...timing,fill:'forwards'});
+ void exit.finished.catch(()=>undefined).finally(()=>prior.remove());
 }
 
 type Sentinel = {release(): Promise<void>; addEventListener?(type: 'release', listener: () => void): void};

@@ -1,6 +1,6 @@
 import {StudyUiRelease} from '../data/StudyUiRelease';
 import { onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { createHashRouter, RouterProvider,Navigate,Outlet } from 'react-router'
+import { createHashRouter, RouterProvider,Navigate,Outlet,type RouteObject } from 'react-router'
 import { LemmaError } from '../data/api'
 import { getMode } from '../data/mode'
 import AppShell from './AppShell'
@@ -19,6 +19,7 @@ import {createLazyModule} from './lazyModule'
 import {lazyRoute} from './lazyRoute'
 import {V7MotionConfig} from '../ui/v7/MotionConfig'
 import BootReady from './BootReady'
+import RouteHandoff from './v7/RouteHandoff'
 import {trackPendingInbox} from '../features/proposals/v7/inboxEarlyKeys'
 const OfflinePadPage=createLazyModule(()=>import('../features/pad/OfflinePadPage'))
 const PracticePage=createLazyModule(()=>import('../features/practice/Page'))
@@ -37,7 +38,7 @@ const queryClient = new QueryClient({defaultOptions: {queries: {
 }, mutations: {networkMode, retry: false}}})
 const allowKit=import.meta.env.DEV||import.meta.env.MODE==='test'||import.meta.env.VITE_ALLOW_FLAG_OVERRIDES==='1';
 const v7=isFlagOn('v7Shell');
-const router = createHashRouter([{element: <AuthGate><StudyUiRelease><AppShell /></StudyUiRelease></AuthGate>, errorElement: <RouteError />, HydrateFallback:()=>null,children: [
+const routes = [{element: <AuthGate><StudyUiRelease><AppShell /></StudyUiRelease></AuthGate>, errorElement: <RouteError />, HydrateFallback:()=>null,children: [
  ...screenRoutes.filter(route=>route.path!=='/kit'||allowKit),
  calendarRoute,
  tasksRoute,
@@ -57,7 +58,8 @@ const router = createHashRouter([{element: <AuthGate><StudyUiRelease><AppShell /
 ]}, ...(v7&&isFlagOn('padLocal')?[{
  element:<><BootReady/><Outlet/></>,HydrateFallback:()=>null,
  children:[lazyRoute('/pad/:checkpointId?',OfflinePadPage)],
-}]:[])])
+}]:[])] satisfies RouteObject[]
+const router = createHashRouter(v7?[{element:<RouteHandoff/>,HydrateFallback:()=>null,children:routes}]:routes)
 router.subscribe(({navigation,location})=>trackPendingInbox(navigation.location?.pathname,location.pathname));
 export default function App(){
  return <ErrorBoundary><QueryClientProvider client={queryClient}><V7MotionConfig>

@@ -37,7 +37,10 @@ const settle = (page: Page, selector: string) => page.locator(selector).first().
 
 async function openCapture(page: Page) {
   await page.getByRole('button', {name: 'Capture', exact: true}).first().click()
-  await expect(page.locator('dialog.v7-sheet[open]')).toBeVisible()
+  const dialog = page.getByRole('dialog', {name:'Capture',exact:true})
+  await expect(dialog).toBeVisible()
+  // The shell opens immediately; settled content includes the lazy editor in every motion mode.
+  await expect(dialog.getByRole('textbox',{name:'What do you want to add?'})).toBeVisible()
 }
 
 test('A1 a sheet rises and fades in on the spring when motion is allowed', async ({page}) => {

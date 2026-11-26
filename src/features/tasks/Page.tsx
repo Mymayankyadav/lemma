@@ -1,4 +1,5 @@
-import {lazy,Suspense,useEffect,useRef,useState} from 'react';
+import {retryLazy} from '../../app/lazyModule';
+import {Suspense,useEffect,useRef,useState} from 'react';
 import {v7Screen} from '../../app/v7Kit';
 import {Navigate,useSearchParams} from 'react-router';
 import {Check,Ellipsis} from 'lucide-react';
@@ -190,7 +191,7 @@ function Backlog(){
    onConflict={()=>{setMessage('Task changed elsewhere. The latest version was reloaded.');refresh();dismissEdit();}}/>}
  </section>;
 }
-const TasksV7=lazy(()=>import('./v7/TasksV7'));
+const TasksV7=retryLazy(()=>import('./v7/TasksV7'));
 export default function TasksPage(){
  if(v7Screen()==='tasks')return <Suspense fallback={<div role="status" aria-label="Tasks loading" className="min-h-dvh"/>}><TasksV7/></Suspense>;
  if(!isFlagOn('v6Shell'))return <Navigate to="/" replace/>;

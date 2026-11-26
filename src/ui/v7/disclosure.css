@@ -4,13 +4,14 @@
  grid-template-columns:minmax(0,1fr);
  grid-template-rows:0fr;
  visibility:hidden;
- transition:grid-template-rows var(--motion-layout) var(--ease-standard),visibility var(--motion-none) var(--motion-layout);
 }
 :where(html[data-v7]) .v7-expand-panel[data-open="true"] {
  grid-template-rows:1fr;
  visibility:visible;
- transition-delay:var(--motion-none);
 }
 :where(html[data-v7]) .v7-expand-panel > div {min-inline-size:0;min-block-size:0;overflow:clip;}
-:where(html[data-v7]) .v7-disclosure-trigger > svg {transition:transform var(--motion-layout) var(--ease-standard);}
-:where(html[data-v7][data-motion="reduced"]) :is(.v7-expand-panel,.v7-disclosure-trigger > svg) {transition:none;}
+:where(html[data-v7][data-v7-beta]:not([data-motion="reduced"])) .v7-expand-panel {
+ transition:grid-template-rows var(--motion-layout) var(--ease-standard),visibility var(--motion-none) var(--motion-layout);
+}
+:where(html[data-v7][data-v7-beta]) .v7-expand-panel[data-open="true"] {transition-delay:var(--motion-none);}
+:where(html[data-v7][data-v7-beta]:not([data-motion="reduced"])) .v7-disclosure-trigger > svg {transition:transform var(--motion-quick) var(--ease-standard);}

@@ -13,10 +13,11 @@ import {useRouteReadingFocus} from './v7/useRouteReadingFocus';
 import OfflineBanner from './OfflineBanner';
 import {RouteFallback} from './RouteError';
 import {retryLazy} from './lazyModule';
+import {isRouteChunkFailure} from './lazyRoute';
+import {LibrarySplit} from './v7/libraryChunk';
 import BootReady from './BootReady';
 // Lazy, so flag-off builds never load the v7 shell or its styles on first paint.
 const V7Shell=retryLazy(()=>import('./v7/V7Shell'));
-const LibrarySplit=retryLazy(()=>import('./v7/LibrarySplit'));
 const LegacyStyles=retryLazy(()=>import('./LegacyStyles'));
 import DemoChip from './DemoChip';
 import {Ground} from '../ui/Ground';
@@ -26,7 +27,8 @@ const tabPaths=new Set(['/','/projects','/review','/insights']);
 export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
  // V32: the catch-all route (an address Lemma does not know) is a v7 page of its own when v7 is on.
- const notFound=useMatches().some(match=>(match.handle as {notFound?:boolean}|undefined)?.notFound===true);
+ const matches=useMatches();
+ const notFound=matches.some(match=>(match.handle as {notFound?:boolean}|undefined)?.notFound===true);
  const screen=notFound&&isFlagOn('v7Shell')?'not-found':v7Screen(location.pathname,location.search),v7=screen!==null,v6=isFlagOn('v6Shell')&&!v7;
  useRouteReadingFocus(location.pathname,v7);
  useLayoutEffect(()=>{setShellRoot(v7?'v7':v6?'v6':'legacy');if(!v7)setV6Root(v6);loadShellFonts(v7);return ()=>setShellRoot('legacy');},[v6,v7]);
@@ -37,7 +39,7 @@ export default function AppShell(){
  // The kit, sign-in and first run stand alone: no tab bar or capture.
  if(screen==='kit'||screen==='sign-in'||screen==='welcome')return <><BootReady/><OfflineBanner/><Suspense fallback={<RouteFallback/>}>{outlet}</Suspense></>;
  if(v7)return <Suspense fallback={<RouteFallback/>}><V7Shell immersive={V7_DETAIL_SCREENS.has(screen)} capture={screen!=='atlas'&&screen!=='path'&&screen!=='checkpoint'&&screen!=='tutor'&&screen!=='session'&&screen!=='card'}>
-  <Suspense fallback={<RouteFallback/>}>{isFlagOn('v7Room')&&/^(?:\/projects(?:\/new)?|\/p\/[^/]+|\/cards(?:\/\d+)?)$/.test(location.pathname)?<LibrarySplit>{outlet}</LibrarySplit>:outlet}</Suspense>
+  <Suspense fallback={<RouteFallback/>}>{isFlagOn('v7Room')&&!matches.some(match=>isRouteChunkFailure(match.loaderData))&&/^(?:\/projects(?:\/new)?|\/p\/[^/]+|\/cards(?:\/\d+)?)$/.test(location.pathname)?<LibrarySplit>{outlet}</LibrarySplit>:outlet}</Suspense>
  </V7Shell></Suspense>;
  return <Suspense fallback={null}><LegacyStyles><BootReady/><OfflineBanner/><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
  {fullBleed&&!v6&&<DemoChip floating/>}

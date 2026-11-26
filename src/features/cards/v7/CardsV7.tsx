@@ -1,7 +1,7 @@
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
-import {useInfiniteQuery} from '@tanstack/react-query';
+import {infiniteQueryOptions,useInfiniteQuery,type QueryClient} from '@tanstack/react-query';
 import {Pause} from 'lucide-react';
 import {getApi} from '../../../data';
 import {useCreateNote,useHome,useProject,useProjects,useSettings} from '../../../data/hooks';
@@ -20,6 +20,16 @@ import {CardEditorSheet} from './CardEditorSheet';
 import FirstCardPanel from './FirstCardPanel';
 import {cardFilters,cardMeta,isDueToday,sortCards,stateWords,type CardSort,type CardStateFilter} from './cardsModel';
 import './cards.css';
+
+const cardPage=(filters:ReturnType<typeof cardFilters>)=>infiniteQueryOptions({
+ queryKey:['v7-cards',filters],initialPageParam:0,staleTime:30_000,
+ queryFn:({pageParam})=>getApi().searchCardsPage({...filters,offset:pageParam}),
+ getNextPageParam:last=>last.nextOffset??undefined,
+});
+
+export function warmCards(cache:QueryClient){
+ return cache.prefetchInfiniteQuery(cardPage(cardFilters({query:'',slug:'',checkpoint:'',state:'all',comments:false})));
+}
 
 function Choice({title,open,onClose,options,value,onChange}:{title:string;open:boolean;onClose:()=>void;options:{value:string;label:string}[];value:string;onChange:(value:string)=>void}){
  return <Sheet open={open} onClose={onClose} title={title} footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
@@ -70,11 +80,7 @@ export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boo
  useEffect(()=>{const timer=setTimeout(()=>setQuery(search),250);return()=>clearTimeout(timer);},[search]);
  useEffect(()=>{const open=()=>setCreating(true);window.addEventListener('v7:new-card',open);return()=>window.removeEventListener('v7:new-card',open);},[]);
  const filters=cardFilters({query,slug,checkpoint,state,comments});
- const cards=useInfiniteQuery({
-  queryKey:['v7-cards',filters],initialPageParam:0,staleTime:30_000,
-  queryFn:({pageParam})=>getApi().searchCardsPage({...filters,offset:pageParam}),
-  getNextPageParam:last=>last.nextOffset??undefined,
- });
+ const cards=useInfiniteQuery(cardPage(filters));
  const loaded=useMemo(()=>cards.data?.pages.flatMap(page=>page.rows)??[],[cards.data]);
  const rows=useMemo(()=>sortCards(state==='due'?loaded.filter(row=>row.status!=='suspended'&&isDueToday(row,now,zone)):loaded,sort),[loaded,state,sort,now,zone]);
  useEffect(()=>{if(cards.isSuccess)onFirst?.(rows[0]?.noteNo??null);},[cards.isSuccess,rows,onFirst]);

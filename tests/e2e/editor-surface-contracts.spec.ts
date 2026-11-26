@@ -1,4 +1,7 @@
 import {expect,test} from '@playwright/test';
+import {enableSurfaceBeta} from './helpers/surface-preview';
+
+test.beforeEach(async({page})=>{await enableSurfaceBeta(page);});
 import {NOW} from './v7-scenes';
 
 const visit=(route:string,theme='day')=>'/lemma/?demo=1&flags=v7Shell,v6Shell&mode='+theme+'#'+route;
@@ -16,9 +19,10 @@ for(const width of [390,700,840,1024,1440]){
       await expect(list).toBeVisible();
       expect(await list.evaluate(el=>el.matches(':popover-open'))).toBe(true);
       await page.keyboard.press('End');await expect(list.getByRole('option').last()).toBeFocused();
+      await page.keyboard.press('Home');await expect(list.getByRole('option').first()).toBeFocused();
       const fits=await list.evaluate(el=>{
-        const box=el.getBoundingClientRect();
-        return box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight;
+        const box=el.getBoundingClientRect(),footer=el.closest('dialog')?.querySelector('.v7-sheet-footer');
+        return box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=Math.min(innerHeight,footer?.getBoundingClientRect().top??innerHeight)+1;
       });
       expect(fits).toBe(true);
     }else{
@@ -97,3 +101,49 @@ for(const scenario of [
     if(field)await expect(field).toHaveValue(value!);
   });
 }
+
+test('the Wrap up picker stays above its dock and all options remain reachable at 200% zoom',async({page})=>{
+  await page.setViewportSize({width:1440,height:900});await page.clock.setFixedTime(NOW);
+  await page.goto(visit('/today/close'));
+  const main=page.getByRole('main',{name:'Close the day'});
+  await expect(main).toBeVisible();
+  const next=main.getByRole('button',{name:'Next',exact:true});
+  const field=main.getByRole('button',{name:/^First task tomorrow:/});
+  await expect(field.or(next)).toBeVisible();
+  if(await next.count()){await next.click();await next.click();}
+  await page.evaluate(()=>{document.documentElement.style.zoom='2';});
+  await field.click();
+  const choices=page.getByRole('listbox',{name:'First task tomorrow'});
+  await expect(choices).toBeVisible();
+  await page.keyboard.press('End');await expect(choices.getByRole('option').last()).toBeFocused();
+  await page.keyboard.press('Home');await expect(choices.getByRole('option').first()).toBeFocused();
+  const geometry=await choices.evaluate(el=>{
+    const box=el.getBoundingClientRect(),dock=document.querySelector('.v7-cd-footer')!.getBoundingClientRect();
+    return {right:box.right,width:innerWidth,bottom:box.bottom,top:box.top,limit:Math.min(dock.top,innerHeight)};
+  });
+  expect(geometry.right).toBeLessThanOrEqual(geometry.width+1);
+  expect(geometry.top).toBeGreaterThanOrEqual(0);expect(geometry.bottom).toBeLessThanOrEqual(geometry.limit+1);
+  await page.keyboard.press('Escape');await expect(field).toBeFocused();
+});
+
+test('turning Beta off in Settings preserves an open editor in another tab',async({page,context})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto(visit('/tasks?new=1'));
+  const title=page.getByRole('textbox',{name:'Title',exact:true});
+  await title.fill('Keep my draft');
+  const due=page.getByRole('button',{name:/^Due:/});
+  await due.click();
+  await expect(page.locator('dialog[open][data-choice-step]')).toHaveCount(1);
+  const settings=await context.newPage();
+  await settings.goto(visit('/settings?section=advanced'));
+  const beta=settings.getByRole('switch',{name:'Beta testing',exact:true});
+  await expect(beta).toBeChecked();
+  await beta.click();await expect(beta).not.toBeChecked();
+  await expect(page.locator('html[data-v7-beta]')).toHaveCount(0);
+  await settings.close();await page.bringToFront();
+  await expect(page.locator('dialog[open][data-choice-step]')).toHaveCount(1);
+  await page.keyboard.press('Escape');await expect(title).toHaveValue('Keep my draft');
+  await due.click();
+  await expect(page.locator('dialog[open]')).toHaveCount(2);
+  await page.keyboard.press('Escape');await expect(due).toBeFocused();
+});
