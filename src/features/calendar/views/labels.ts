@@ -22,13 +22,19 @@ export function civilMonthLabel(day:string):string{
  return new Intl.DateTimeFormat('en',{timeZone:'UTC',month:'long',year:'numeric'}).format(utc(day));
 }
 /** Deterministic subject colour from the token palette (N121 B3/B6); no stripe without a subject. */
-const palette=['var(--subject-sky-stroke)','var(--subject-ochre-stroke)','var(--subject-teal-stroke)','var(--subject-sage-stroke)','var(--subject-lavender-stroke)'];
-export function subjectColor(subjectId:string|null|undefined):string|null{
+const familyColours=[
+ ['analysis','sky'],['algebra','ochre'],['topology','teal'],['number-theory','copper'],
+ ['geometry','lavender'],['logic','sage'],['probability','periwinkle'],['combinatorics','olive'],
+] as const;
+export function subjectColor(subjectId:string|null|undefined,name?:string):string|null{
  if(!subjectId)return null;
+ const slug=(name??subjectId).toLowerCase().replace(/[\s_]+/g,'-');
+ const family=familyColours.find(([key])=>slug.includes(key));
+ if(family)return 'var(--subject-'+family[1]+'-stroke)';
  let hash=0;for(const char of subjectId)hash=(hash*31+char.charCodeAt(0))>>>0;
- return palette[hash%palette.length];
+ return 'var(--subject-'+familyColours[hash%familyColours.length][1]+'-stroke)';
 }
-export function subjectStripe(subjectId:string|null|undefined):CSSProperties|undefined{
- const color=subjectColor(subjectId);
+export function subjectStripe(subjectId:string|null|undefined,name?:string):CSSProperties|undefined{
+ const color=subjectColor(subjectId,name);
  return color?{boxShadow:'inset -4px 0 0 '+color}:undefined;
 }

@@ -2,13 +2,13 @@ import {test,expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
 
 const subjects=[
- {title:'Real Analysis',light:{stroke:'rgb(51, 113, 162)',tile:'rgb(230, 242, 253)'},dark:{stroke:'rgb(128, 180, 225)',tile:'rgb(50, 60, 68)'}},
+ {title:'Real Analysis',light:{stroke:'rgb(43, 113, 166)',tile:'rgb(230, 242, 253)'},dark:{stroke:'rgb(123, 179, 237)',tile:'rgb(50, 60, 68)'}},
  {title:'Linear Algebra',light:{stroke:'rgb(134, 102, 23)',tile:'rgb(246, 239, 225)'},dark:{stroke:'rgb(199, 170, 110)',tile:'rgb(63, 58, 47)'}},
  {title:'Topology',light:{stroke:'rgb(0, 126, 115)',tile:'rgb(226, 245, 242)'},dark:{stroke:'rgb(106, 192, 181)',tile:'rgb(47, 62, 60)'}},
 ];
 
 for(const width of [390,1280])for(const mode of ['light','dark'] as const){
- test(`subject chips, single-line emblems and progress use the supplied ${mode} palette at ${width}px`,async({page})=>{
+ test(`subject chips, single-line emblems and progress use the calibrated ${mode} palette at ${width}px`,async({page})=>{
   await page.setViewportSize({width,height:900});
   await page.clock.setFixedTime(new Date('2026-11-09T08:13:00Z'));
   await page.goto(`/lemma/?demo=1&flags=v7Shell,v6Shell&mode=${mode==='light'?'day':'night'}#/projects`);
@@ -44,7 +44,7 @@ test('standalone token HTML switches themes and exports both modes for review',a
  }
  const cssDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Download CSS',exact:true}).click();
  const css=readFileSync((await (await cssDownload).path())!,'utf8');
- expect(css).toContain('--subject-ochre-stroke: #c7aa6e');expect(css).toContain('--subject-sky-stroke: #3371a2');
+ expect(css).toContain('--subject-ochre-stroke: #c7aa6e');expect(css).toContain('--subject-sky-stroke: #2b71a6');
  const jsonDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Download JSON',exact:true}).click();
  const json=JSON.parse(readFileSync((await (await jsonDownload).path())!,'utf8'));
  expect(json.reviewStatus).toBe('Awaiting owner approval');expect(json.emblem.tileSizePx).toBe(72);

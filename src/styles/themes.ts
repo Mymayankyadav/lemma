@@ -21,9 +21,9 @@ export const themes = [
       "ink3": "#73726c",
       "accent": "#a8476d",
       "on": "#ffffff",
-      "warn": "#946112",
-      "bad": "#c4453d",
-      "good": "#5a7a3a",
+      "warn": "#935f04",
+      "bad": "#c54435",
+      "good": "#597a3c",
       "track": "#e8e6dc",
       "tab": "#f5f4ed"
     },
@@ -60,8 +60,8 @@ export const themes = [
       "accent": "#d885a2",
       "on": "#141413",
       "warn": "#e0a84f",
-      "bad": "#e5675f",
-      "good": "#8fae6b",
+      "bad": "#f17059",
+      "good": "#8baf78",
       "track": "#45453f",
       "tab": "#1f1e1d"
     },

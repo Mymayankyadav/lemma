@@ -93,7 +93,7 @@
       },
       "status.success": {
         "$type": "color",
-        "$value": "#5A7A3A"
+        "$value": "#597A3C"
       },
       "status.success-subtle": {
         "$type": "color",
@@ -101,15 +101,15 @@
       },
       "status.warning": {
         "$type": "color",
-        "$value": "#946112"
+        "$value": "#935F04"
       },
       "status.warning-subtle": {
         "$type": "color",
-        "$value": "#F4F0E7"
+        "$value": "#F4F0E6"
       },
       "status.danger": {
         "$type": "color",
-        "$value": "#C4453D"
+        "$value": "#C54435"
       },
       "status.danger-subtle": {
         "$type": "color",
@@ -117,15 +117,15 @@
       },
       "status.danger-solid": {
         "$type": "color",
-        "$value": "#C4453D"
+        "$value": "#C54435"
       },
       "status.danger-hover": {
         "$type": "color",
-        "$value": "#AA3E37"
+        "$value": "#AA3D30"
       },
       "subject.analysis": {
         "$type": "color",
-        "$value": "#3371A2"
+        "$value": "#2B71A6"
       },
       "subject.analysis-subtle": {
         "$type": "color",
@@ -141,7 +141,7 @@
       },
       "subject.logic": {
         "$type": "color",
-        "$value": "#4B7A40"
+        "$value": "#598637"
       },
       "subject.logic-subtle": {
         "$type": "color",
@@ -149,11 +149,11 @@
       },
       "subject.number-theory": {
         "$type": "color",
-        "$value": "#866617"
+        "$value": "#AC7059"
       },
       "subject.number-theory-subtle": {
         "$type": "color",
-        "$value": "#F6EFE1"
+        "$value": "#FDECE6"
       },
       "subject.algebra": {
         "$type": "color",
@@ -165,15 +165,15 @@
       },
       "subject.combinatorics": {
         "$type": "color",
-        "$value": "#4B7A40"
+        "$value": "#4A6103"
       },
       "subject.combinatorics-subtle": {
         "$type": "color",
-        "$value": "#E9F4E7"
+        "$value": "#EDF3E4"
       },
       "subject.geometry": {
         "$type": "color",
-        "$value": "#6D60A1"
+        "$value": "#795E92"
       },
       "subject.geometry-subtle": {
         "$type": "color",
@@ -181,11 +181,11 @@
       },
       "subject.probability": {
         "$type": "color",
-        "$value": "#6D60A1"
+        "$value": "#474C9C"
       },
       "subject.probability-subtle": {
         "$type": "color",
-        "$value": "#F0EEFD"
+        "$value": "#ECEFFE"
       },
       "viz.heat1": {
         "$type": "color",
@@ -311,11 +311,11 @@
       },
       "status.success": {
         "$type": "color",
-        "$value": "#8FAE6B"
+        "$value": "#8BAF78"
       },
       "status.success-subtle": {
         "$type": "color",
-        "$value": "#33362D"
+        "$value": "#33362F"
       },
       "status.warning": {
         "$type": "color",
@@ -327,23 +327,23 @@
       },
       "status.danger": {
         "$type": "color",
-        "$value": "#E5675F"
+        "$value": "#F17059"
       },
       "status.danger-subtle": {
         "$type": "color",
-        "$value": "#2A2725"
+        "$value": "#2B2824"
       },
       "status.danger-solid": {
         "$type": "color",
-        "$value": "#E5675F"
+        "$value": "#F17059"
       },
       "status.danger-hover": {
         "$type": "color",
-        "$value": "#E87D76"
+        "$value": "#F28570"
       },
       "subject.analysis": {
         "$type": "color",
-        "$value": "#80B4E1"
+        "$value": "#7BB3ED"
       },
       "subject.analysis-subtle": {
         "$type": "color",
@@ -359,7 +359,7 @@
       },
       "subject.logic": {
         "$type": "color",
-        "$value": "#91BC88"
+        "$value": "#9FCF84"
       },
       "subject.logic-subtle": {
         "$type": "color",
@@ -367,11 +367,11 @@
       },
       "subject.number-theory": {
         "$type": "color",
-        "$value": "#C7AA6E"
+        "$value": "#F1BAA6"
       },
       "subject.number-theory-subtle": {
         "$type": "color",
-        "$value": "#3F3A2F"
+        "$value": "#443732"
       },
       "subject.algebra": {
         "$type": "color",
@@ -383,15 +383,15 @@
       },
       "subject.combinatorics": {
         "$type": "color",
-        "$value": "#91BC88"
+        "$value": "#86A657"
       },
       "subject.combinatorics-subtle": {
         "$type": "color",
-        "$value": "#353D33"
+        "$value": "#383C31"
       },
       "subject.geometry": {
         "$type": "color",
-        "$value": "#AFA5E0"
+        "$value": "#C39ED6"
       },
       "subject.geometry-subtle": {
         "$type": "color",
@@ -399,11 +399,11 @@
       },
       "subject.probability": {
         "$type": "color",
-        "$value": "#AFA5E0"
+        "$value": "#8A92B6"
       },
       "subject.probability-subtle": {
         "$type": "color",
-        "$value": "#3A3944"
+        "$value": "#373A45"
       },
       "viz.heat1": {
         "$type": "color",
@@ -2901,9 +2901,9 @@
       "accent-hover": "#8f3a5b",
       "accent-subtle": "rgba(168, 71, 109, 0.10)",
       "on-accent": "#ffffff",
-      "success": "#5a7a3a",
-      "warning": "#946112",
-      "error": "#c4453d",
+      "success": "#597a3c",
+      "warning": "#935f04",
+      "error": "#c54435",
       "info": "#3b74ab",
       "progress-track": "#e8e6dc"
     },
@@ -2920,15 +2920,15 @@
       "accent-hover": "#e3a0b8",
       "accent-subtle": "rgba(216, 133, 162, 0.16)",
       "on-accent": "#141413",
-      "success": "#8fae6b",
+      "success": "#8baf78",
       "warning": "#e0a84f",
-      "error": "#e5675f",
+      "error": "#f17059",
       "info": "#6a9bcc",
       "progress-track": "#45453f"
     }
   },
   "subjectPalette": {
-    "description": "Five balanced subject colours; family glyphs and names remain distinct when a colour is shared.",
+    "description": "Each family has a distinct stroke. The shared OKLCH formula is the starting point. Strokes are adjusted for contrast and for separation under protanopia and deuteranopia. Tiles retain their low tint.",
     "formulaOklch": {
       "dark": {
         "stroke": {
@@ -2958,13 +2958,13 @@
     },
     "colors": {
       "sky": {
-        "hueDeg": 245,
+        "hueDeg": 248,
         "dark": {
-          "stroke": "#80b4e1",
+          "stroke": "#7bb3ed",
           "tile": "#323c44"
         },
         "light": {
-          "stroke": "#3371a2",
+          "stroke": "#2b71a6",
           "tile": "#e6f2fd"
         }
       },
@@ -2991,25 +2991,58 @@
         }
       },
       "sage": {
-        "hueDeg": 140,
+        "hueDeg": 134,
         "dark": {
-          "stroke": "#91bc88",
+          "stroke": "#9fcf84",
           "tile": "#353d33"
         },
         "light": {
-          "stroke": "#4b7a40",
+          "stroke": "#598637",
           "tile": "#e9f4e7"
         }
       },
       "lavender": {
-        "hueDeg": 292,
+        "hueDeg": 311,
         "dark": {
-          "stroke": "#afa5e0",
+          "stroke": "#c39ed6",
           "tile": "#3a3944"
         },
         "light": {
-          "stroke": "#6d60a1",
+          "stroke": "#795e92",
           "tile": "#f0eefd"
+        }
+      },
+      "copper": {
+        "hueDeg": 41,
+        "dark": {
+          "stroke": "#f1baa6",
+          "tile": "#443732"
+        },
+        "light": {
+          "stroke": "#ac7059",
+          "tile": "#fdece6"
+        }
+      },
+      "periwinkle": {
+        "hueDeg": 276,
+        "dark": {
+          "stroke": "#8a92b6",
+          "tile": "#373a45"
+        },
+        "light": {
+          "stroke": "#474c9c",
+          "tile": "#eceffe"
+        }
+      },
+      "olive": {
+        "hueDeg": 126,
+        "dark": {
+          "stroke": "#86a657",
+          "tile": "#383c31"
+        },
+        "light": {
+          "stroke": "#4a6103",
+          "tile": "#edf3e4"
         }
       }
     },
@@ -3022,11 +3055,11 @@
       "analysis": "sky",
       "algebra": "ochre",
       "topology": "teal",
-      "number-theory": "ochre",
+      "number-theory": "copper",
       "geometry": "lavender",
       "logic": "sage",
-      "probability": "lavender",
-      "combinatorics": "sage"
+      "probability": "periwinkle",
+      "combinatorics": "olive"
     }
   },
   "emblem": {

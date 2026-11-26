@@ -1,7 +1,7 @@
 // Generate Day/Night/HC CSS and Figma variable interchange from one DTCG source.
 import {readFileSync,writeFileSync} from 'node:fs';
 const generate=function generate(document){
- // Five owner-supplied hues feed all eight subject families. Keep the source roles and named palette in sync.
+ // Each of the eight subject families has a stroke and tile. Keep the source roles and named palette in sync.
  for(const [family,name] of Object.entries(document.subjectPalette.familyAssignments))for(const [mode,theme] of [['day','light'],['night','dark']])for(const [suffix,part] of [['','stroke'],['-subtle','tile']]){
   if(document.raw[mode]['subject.'+family+suffix].$value.toLowerCase()!==document.subjectPalette.colors[name][theme][part].toLowerCase())throw new Error('Subject palette mismatch: '+mode+' '+family+suffix);
  }

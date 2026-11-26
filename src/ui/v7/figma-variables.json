@@ -234,10 +234,10 @@
           "name": "status/success",
           "type": "COLOR",
           "modes": {
-            "day": "#5A7A3A",
-            "night": "#8FAE6B",
-            "day-hc": "#5A7A3A",
-            "night-hc": "#8FAE6B"
+            "day": "#597A3C",
+            "night": "#8BAF78",
+            "day-hc": "#597A3C",
+            "night-hc": "#8BAF78"
           }
         },
         {
@@ -245,18 +245,18 @@
           "type": "COLOR",
           "modes": {
             "day": "#F7F6F1",
-            "night": "#33362D",
+            "night": "#33362F",
             "day-hc": "#F7F6F1",
-            "night-hc": "#33362D"
+            "night-hc": "#33362F"
           }
         },
         {
           "name": "status/warning",
           "type": "COLOR",
           "modes": {
-            "day": "#946112",
+            "day": "#935F04",
             "night": "#E0A84F",
-            "day-hc": "#946112",
+            "day-hc": "#935F04",
             "night-hc": "#E0A84F"
           }
         },
@@ -264,9 +264,9 @@
           "name": "status/warning-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#F4F0E7",
+            "day": "#F4F0E6",
             "night": "#3C3629",
-            "day-hc": "#F4F0E7",
+            "day-hc": "#F4F0E6",
             "night-hc": "#3C3629"
           }
         },
@@ -274,10 +274,10 @@
           "name": "status/danger",
           "type": "COLOR",
           "modes": {
-            "day": "#C4453D",
-            "night": "#E5675F",
-            "day-hc": "#C4453D",
-            "night-hc": "#E5675F"
+            "day": "#C54435",
+            "night": "#F17059",
+            "day-hc": "#C54435",
+            "night-hc": "#F17059"
           }
         },
         {
@@ -285,39 +285,39 @@
           "type": "COLOR",
           "modes": {
             "day": "#F9F5F1",
-            "night": "#2A2725",
+            "night": "#2B2824",
             "day-hc": "#F9F5F1",
-            "night-hc": "#2A2725"
+            "night-hc": "#2B2824"
           }
         },
         {
           "name": "status/danger-solid",
           "type": "COLOR",
           "modes": {
-            "day": "#C4453D",
-            "night": "#E5675F",
-            "day-hc": "#C4453D",
-            "night-hc": "#E5675F"
+            "day": "#C54435",
+            "night": "#F17059",
+            "day-hc": "#C54435",
+            "night-hc": "#F17059"
           }
         },
         {
           "name": "status/danger-hover",
           "type": "COLOR",
           "modes": {
-            "day": "#AA3E37",
-            "night": "#E87D76",
-            "day-hc": "#AA3E37",
-            "night-hc": "#E87D76"
+            "day": "#AA3D30",
+            "night": "#F28570",
+            "day-hc": "#AA3D30",
+            "night-hc": "#F28570"
           }
         },
         {
           "name": "subject/analysis",
           "type": "COLOR",
           "modes": {
-            "day": "#3371A2",
-            "night": "#80B4E1",
-            "day-hc": "#3371A2",
-            "night-hc": "#80B4E1"
+            "day": "#2B71A6",
+            "night": "#7BB3ED",
+            "day-hc": "#2B71A6",
+            "night-hc": "#7BB3ED"
           }
         },
         {
@@ -354,10 +354,10 @@
           "name": "subject/logic",
           "type": "COLOR",
           "modes": {
-            "day": "#4B7A40",
-            "night": "#91BC88",
-            "day-hc": "#4B7A40",
-            "night-hc": "#91BC88"
+            "day": "#598637",
+            "night": "#9FCF84",
+            "day-hc": "#598637",
+            "night-hc": "#9FCF84"
           }
         },
         {
@@ -374,20 +374,20 @@
           "name": "subject/number-theory",
           "type": "COLOR",
           "modes": {
-            "day": "#866617",
-            "night": "#C7AA6E",
-            "day-hc": "#866617",
-            "night-hc": "#C7AA6E"
+            "day": "#AC7059",
+            "night": "#F1BAA6",
+            "day-hc": "#AC7059",
+            "night-hc": "#F1BAA6"
           }
         },
         {
           "name": "subject/number-theory-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#F6EFE1",
-            "night": "#3F3A2F",
-            "day-hc": "#F6EFE1",
-            "night-hc": "#3F3A2F"
+            "day": "#FDECE6",
+            "night": "#443732",
+            "day-hc": "#FDECE6",
+            "night-hc": "#443732"
           }
         },
         {
@@ -414,30 +414,30 @@
           "name": "subject/combinatorics",
           "type": "COLOR",
           "modes": {
-            "day": "#4B7A40",
-            "night": "#91BC88",
-            "day-hc": "#4B7A40",
-            "night-hc": "#91BC88"
+            "day": "#4A6103",
+            "night": "#86A657",
+            "day-hc": "#4A6103",
+            "night-hc": "#86A657"
           }
         },
         {
           "name": "subject/combinatorics-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#E9F4E7",
-            "night": "#353D33",
-            "day-hc": "#E9F4E7",
-            "night-hc": "#353D33"
+            "day": "#EDF3E4",
+            "night": "#383C31",
+            "day-hc": "#EDF3E4",
+            "night-hc": "#383C31"
           }
         },
         {
           "name": "subject/geometry",
           "type": "COLOR",
           "modes": {
-            "day": "#6D60A1",
-            "night": "#AFA5E0",
-            "day-hc": "#6D60A1",
-            "night-hc": "#AFA5E0"
+            "day": "#795E92",
+            "night": "#C39ED6",
+            "day-hc": "#795E92",
+            "night-hc": "#C39ED6"
           }
         },
         {
@@ -454,20 +454,20 @@
           "name": "subject/probability",
           "type": "COLOR",
           "modes": {
-            "day": "#6D60A1",
-            "night": "#AFA5E0",
-            "day-hc": "#6D60A1",
-            "night-hc": "#AFA5E0"
+            "day": "#474C9C",
+            "night": "#8A92B6",
+            "day-hc": "#474C9C",
+            "night-hc": "#8A92B6"
           }
         },
         {
           "name": "subject/probability-subtle",
           "type": "COLOR",
           "modes": {
-            "day": "#F0EEFD",
-            "night": "#3A3944",
-            "day-hc": "#F0EEFD",
-            "night-hc": "#3A3944"
+            "day": "#ECEFFE",
+            "night": "#373A45",
+            "day-hc": "#ECEFFE",
+            "night-hc": "#373A45"
           }
         },
         {
@@ -1382,10 +1382,10 @@
           "type": "COLOR",
           "description": "Completed or successful state",
           "modes": {
-            "day": "#5A7A3A",
-            "night": "#8FAE6B",
-            "day-hc": "#5A7A3A",
-            "night-hc": "#8FAE6B"
+            "day": "#597A3C",
+            "night": "#8BAF78",
+            "day-hc": "#597A3C",
+            "night-hc": "#8BAF78"
           }
         },
         {
@@ -1394,9 +1394,9 @@
           "description": "Semantic status success-subtle role",
           "modes": {
             "day": "#F7F6F1",
-            "night": "#33362D",
+            "night": "#33362F",
             "day-hc": "#F7F6F1",
-            "night-hc": "#33362D"
+            "night-hc": "#33362F"
           }
         },
         {
@@ -1404,9 +1404,9 @@
           "type": "COLOR",
           "description": "Attention required state",
           "modes": {
-            "day": "#946112",
+            "day": "#935F04",
             "night": "#E0A84F",
-            "day-hc": "#946112",
+            "day-hc": "#935F04",
             "night-hc": "#E0A84F"
           }
         },
@@ -1415,9 +1415,9 @@
           "type": "COLOR",
           "description": "Semantic status warning-subtle role",
           "modes": {
-            "day": "#F4F0E7",
+            "day": "#F4F0E6",
             "night": "#3C3629",
-            "day-hc": "#F4F0E7",
+            "day-hc": "#F4F0E6",
             "night-hc": "#3C3629"
           }
         },
@@ -1426,10 +1426,10 @@
           "type": "COLOR",
           "description": "Destructive or failed state",
           "modes": {
-            "day": "#C4453D",
-            "night": "#E5675F",
-            "day-hc": "#C4453D",
-            "night-hc": "#E5675F"
+            "day": "#C54435",
+            "night": "#F17059",
+            "day-hc": "#C54435",
+            "night-hc": "#F17059"
           }
         },
         {
@@ -1438,9 +1438,9 @@
           "description": "Semantic status danger-subtle role",
           "modes": {
             "day": "#F9F5F1",
-            "night": "#2A2725",
+            "night": "#2B2824",
             "day-hc": "#F9F5F1",
-            "night-hc": "#2A2725"
+            "night-hc": "#2B2824"
           }
         },
         {
@@ -1448,10 +1448,10 @@
           "type": "COLOR",
           "description": "Semantic status danger-solid role",
           "modes": {
-            "day": "#C4453D",
-            "night": "#E5675F",
-            "day-hc": "#C4453D",
-            "night-hc": "#E5675F"
+            "day": "#C54435",
+            "night": "#F17059",
+            "day-hc": "#C54435",
+            "night-hc": "#F17059"
           }
         },
         {
@@ -1459,10 +1459,10 @@
           "type": "COLOR",
           "description": "Semantic status danger-hover role",
           "modes": {
-            "day": "#AA3E37",
-            "night": "#E87D76",
-            "day-hc": "#AA3E37",
-            "night-hc": "#E87D76"
+            "day": "#AA3D30",
+            "night": "#F28570",
+            "day-hc": "#AA3D30",
+            "night-hc": "#F28570"
           }
         },
         {
@@ -1470,10 +1470,10 @@
           "type": "COLOR",
           "description": "Semantic subject analysis role",
           "modes": {
-            "day": "#3371A2",
-            "night": "#80B4E1",
-            "day-hc": "#3371A2",
-            "night-hc": "#80B4E1"
+            "day": "#2B71A6",
+            "night": "#7BB3ED",
+            "day-hc": "#2B71A6",
+            "night-hc": "#7BB3ED"
           }
         },
         {
@@ -1514,10 +1514,10 @@
           "type": "COLOR",
           "description": "Semantic subject logic role",
           "modes": {
-            "day": "#4B7A40",
-            "night": "#91BC88",
-            "day-hc": "#4B7A40",
-            "night-hc": "#91BC88"
+            "day": "#598637",
+            "night": "#9FCF84",
+            "day-hc": "#598637",
+            "night-hc": "#9FCF84"
           }
         },
         {
@@ -1536,10 +1536,10 @@
           "type": "COLOR",
           "description": "Semantic subject number-theory role",
           "modes": {
-            "day": "#866617",
-            "night": "#C7AA6E",
-            "day-hc": "#866617",
-            "night-hc": "#C7AA6E"
+            "day": "#AC7059",
+            "night": "#F1BAA6",
+            "day-hc": "#AC7059",
+            "night-hc": "#F1BAA6"
           }
         },
         {
@@ -1547,10 +1547,10 @@
           "type": "COLOR",
           "description": "Semantic subject number-theory-subtle role",
           "modes": {
-            "day": "#F6EFE1",
-            "night": "#3F3A2F",
-            "day-hc": "#F6EFE1",
-            "night-hc": "#3F3A2F"
+            "day": "#FDECE6",
+            "night": "#443732",
+            "day-hc": "#FDECE6",
+            "night-hc": "#443732"
           }
         },
         {
@@ -1580,10 +1580,10 @@
           "type": "COLOR",
           "description": "Semantic subject combinatorics role",
           "modes": {
-            "day": "#4B7A40",
-            "night": "#91BC88",
-            "day-hc": "#4B7A40",
-            "night-hc": "#91BC88"
+            "day": "#4A6103",
+            "night": "#86A657",
+            "day-hc": "#4A6103",
+            "night-hc": "#86A657"
           }
         },
         {
@@ -1591,10 +1591,10 @@
           "type": "COLOR",
           "description": "Semantic subject combinatorics-subtle role",
           "modes": {
-            "day": "#E9F4E7",
-            "night": "#353D33",
-            "day-hc": "#E9F4E7",
-            "night-hc": "#353D33"
+            "day": "#EDF3E4",
+            "night": "#383C31",
+            "day-hc": "#EDF3E4",
+            "night-hc": "#383C31"
           }
         },
         {
@@ -1602,10 +1602,10 @@
           "type": "COLOR",
           "description": "Semantic subject geometry role",
           "modes": {
-            "day": "#6D60A1",
-            "night": "#AFA5E0",
-            "day-hc": "#6D60A1",
-            "night-hc": "#AFA5E0"
+            "day": "#795E92",
+            "night": "#C39ED6",
+            "day-hc": "#795E92",
+            "night-hc": "#C39ED6"
           }
         },
         {
@@ -1624,10 +1624,10 @@
           "type": "COLOR",
           "description": "Semantic subject probability role",
           "modes": {
-            "day": "#6D60A1",
-            "night": "#AFA5E0",
-            "day-hc": "#6D60A1",
-            "night-hc": "#AFA5E0"
+            "day": "#474C9C",
+            "night": "#8A92B6",
+            "day-hc": "#474C9C",
+            "night-hc": "#8A92B6"
           }
         },
         {
@@ -1635,10 +1635,10 @@
           "type": "COLOR",
           "description": "Semantic subject probability-subtle role",
           "modes": {
-            "day": "#F0EEFD",
-            "night": "#3A3944",
-            "day-hc": "#F0EEFD",
-            "night-hc": "#3A3944"
+            "day": "#ECEFFE",
+            "night": "#373A45",
+            "day-hc": "#ECEFFE",
+            "night-hc": "#373A45"
           }
         },
         {

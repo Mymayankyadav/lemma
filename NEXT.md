@@ -9,7 +9,7 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 ## N254 Warm Lemma palette, responsive suggestion strip and iPad tutor keyboard
 
 Stage: Harden · Status: in progress · Needs: N252 · Assigned: chat-568402#d4nw
-Done = The supplied day and night palette covers the app, subject chips and brand assets. The UI token HTML shows both themes. The tutor keyboard echoes the typed word, preloads local prediction in a disposable worker, and docks to the iPad window with native key dimensions. A separate pin keeps Lemma open, the keyboard switch selects the device keyboard, and tutor-authored questions and choices render mathematical notation.
+Done = The warm day and night palette covers the app, subject chips and brand assets, with small adjustments for color separation. The UI token HTML shows both themes. The tutor keyboard echoes the typed word, preloads local prediction in a disposable worker, and docks to the iPad window with native key dimensions. A separate pin keeps Lemma open, the keyboard switch selects the device keyboard, and tutor-authored questions and choices render mathematical notation.
 Tests: Palette, subject emblems, tutor suggestions, iPad key geometry, keyboard switching and questionnaires.
 Scope: Shared theme, brand assets, subject components, tutor interface, local writing decoder, related regression tests and docs/current.
 Not: Publishing the app, changing the study algorithm, training models or changing server records.
