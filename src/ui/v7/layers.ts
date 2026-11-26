@@ -108,6 +108,11 @@ export function registerLayer(layer: Layer) {
       queueMicrotask(() => {
         // A handoff or navigation may already have installed and focused its own content.
         if (top(doc) !== previousTop) return;
+        const active=doc.activeElement instanceof HTMLElement ? doc.activeElement : null;
+        // A guard can return to a different step. Its launcher was removed, and the step
+        // has already focused its replacement row during the same layout commit.
+        if (!visible(layer.trigger) && previousTop && visible(active)
+          && active !== previousTop.element && previousTop.element.contains(active) && !element.contains(active)) return;
         restoreLayerFocus(layer.trigger, layer.returnTarget);
       });
     }

@@ -230,8 +230,7 @@ function TimeLogV6(){
  }
  const editing=rows.find(entry=>entry.id===selected)??null;
  const weekLabel=new Intl.DateTimeFormat('en',{timeZone:'UTC',month:'short',day:'numeric'}).format(new Date(day+'T12:00:00Z'));
- return <section aria-labelledby="time-log-title" className="flex min-w-0 flex-col gap-4 pb-8">
-  <h1 id="time-log-title" className="sr-only">Time log</h1>
+ return <section aria-label="Time log" className="flex min-w-0 flex-col gap-4 pb-8">
   <p className="text-label text-ink-2">Your saved focus time. Add time you studied without the timer, or correct an entry.</p>
   <nav aria-label="Time log week" className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
    <button type="button" aria-label="Previous week" className="flex size-11 items-center justify-center rounded-[8px] text-ink" onClick={()=>setDay(addDays(day,-7))}><ChevronLeft size={22} aria-hidden="true"/></button>

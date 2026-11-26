@@ -36,9 +36,10 @@ for(const width of [390,360] as const){
   expect(overlaps,'SVG chart labels must not overlap').toEqual([])
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
   await page.screenshot({path:'test-results/screens/fix-506-kit-'+profile+'-'+theme+'-'+width+'.png'})
-  // Insights uses its own ink-drawn recall chart, not the kit's LineArea.
+  // The kit stays visible while Insights loads and its sample has a similar name.
   await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/insights')
-  const recall=page.locator('svg[aria-label^="Recall over time"]')
+  await expect(page.getByRole('heading',{name:'Insights',exact:true})).toBeVisible({timeout:90_000})
+  const recall=page.getByRole('img',{name:/^Recall over time: \d+ periods with data,/})
   await expect(recall).toBeVisible({timeout:90_000})
   const recallSizes=await recall.locator('text').evaluateAll(nodes=>nodes.map(node=>
    Number.parseFloat(getComputedStyle(node).fontSize)))

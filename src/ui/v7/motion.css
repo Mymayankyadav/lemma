@@ -19,7 +19,6 @@
   --motion-progress-delay: 120ms;
   --motion-dismiss-max: 220ms;
   --motion-ambient: 2s;
-  --motion-path-halo: 3.2s;
   --motion-focus-orbit-tick: 1s;
   --motion-focus-breathe: 10s;
   --motion-focus-turn: 240s;
@@ -87,7 +86,6 @@
 :where(html[data-v7][data-motion="reduced"]) *,
 :where(html[data-v7][data-motion="reduced"]) *::before,
 :where(html[data-v7][data-motion="reduced"]) *::after {backdrop-filter: none !important;}
-:where(html[data-v7][data-motion="reduced"]) body {background-image: none;}
 :where(html[data-v7][data-motion="reduced"]) .v7-emblem path {stroke-dasharray: none;}
 
 /* The sheet may fade in without moving under reduced motion. Its exit is immediate. */

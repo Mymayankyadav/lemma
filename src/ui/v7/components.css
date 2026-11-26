@@ -4,7 +4,7 @@
 @import "./states.css";
 @layer v7-reset {
  :where(html[data-v7]) *, :where(html[data-v7]) *::before, :where(html[data-v7]) *::after {box-sizing:border-box;}
- :where(html[data-v7]) body {margin:0;background:var(--v7-role-surface-page);color:var(--v7-role-text-primary);font:inherit;font-variant-numeric:tabular-nums lining-nums;}
+ :where(html[data-v7]) body {margin:0;background-color:var(--v7-role-surface-page);color:var(--v7-role-text-primary);font:inherit;font-variant-numeric:tabular-nums lining-nums;}
  :where(html[data-v7]) :is(button,input,select) {font:inherit;}
  :where(html[data-v7]) :is(h1,h2,h3,p) {margin:0;}
  :where(html[data-v7]) svg {flex-shrink:0;}

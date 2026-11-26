@@ -270,22 +270,29 @@ export function PlanningLists({settings,capacityRequested,onCapacityOpen}:{setti
 }
 
 function PlanningAdvanced({open,onClose,editors}:{open:boolean;onClose:()=>void;editors:readonly (NumberEditor&{rowLabel?:string})[]}){
- const [step,setStep]=useState<number|null>(null),[draft,setDraft]=useState(0);
- const editor=step===null?null:editors[step]??null, dirty=editor!==null&&draft!==editor.value;
- const trigger=useRef<HTMLButtonElement|null>(null), pendingFocus=useRef(false),fields=useRef<HTMLDivElement|null>(null);
- const goBack=()=>{pendingFocus.current=true;setStep(null);};
+ const [step,setStep]=useState<string|null>(null),[draft,setDraft]=useState(0);
+ const editor=editors.find(item=>item.title===step), dirty=!!editor&&draft!==editor.value;
+ const rows=useRef(new Map<string,HTMLButtonElement>()), returnTo=useRef<string|null>(null);
+ const fields=useRef<HTMLDivElement|null>(null);
+ const goBack=()=>{returnTo.current=step;setStep(null);};
  const {saving,saveDraft}=useStagedSettingsSave(draft,value=>editor?.onSave(value),goBack);
  const close=()=>{if(!saving){if(editor)goBack();else onClose();}};
  useLayoutEffect(()=>{
-  if(step!==null)fields.current?.querySelector<HTMLElement>('input,[role="slider"]')?.focus({preventScroll:true});
-  else if(pendingFocus.current){pendingFocus.current=false;trigger.current?.focus({preventScroll:true});}
+  if(step!==null){
+   fields.current?.querySelector<HTMLElement>('input,[role="slider"]')?.focus({preventScroll:true});
+  }else if(returnTo.current!==null){
+   const row=rows.current.get(returnTo.current);
+   returnTo.current=null;
+   row?.focus({preventScroll:true});
+  }
  },[step]);
  return <Sheet open={open} title={editor?.title??'Advanced'} eyebrow="Planning" focusTitle onClose={close} dirty={dirty&&!saving}
   footer={editor&&<SettingsSaveButtons changed={dirty} busy={saving} onSave={()=>void saveDraft()}/>}>
   <div className="v7-settings-step">
-   <ul className="v7-settings-card v7-set-list" hidden={editor!==null}>
-    {editors.map((item,index)=><li key={item.title}><button type="button" className="v7-set-row"
-     onClick={event=>{trigger.current=event.currentTarget;setDraft(item.value);setStep(index);}}>
+   <ul className="v7-settings-card v7-set-list" hidden={!!editor}>
+    {editors.map(item=><li key={item.title}><button type="button" className="v7-set-row"
+     ref={node=>{if(node)rows.current.set(item.title,node);else rows.current.delete(item.title);}}
+     onClick={()=>{setDraft(item.value);setStep(item.title);}}>
      <span className="v7-set-label">{item.rowLabel??item.title}</span>
      <span className="v7-set-value">{item.value?formatDuration(item.value):'None'}</span><ChevronRight aria-hidden="true"/>
     </button></li>)}

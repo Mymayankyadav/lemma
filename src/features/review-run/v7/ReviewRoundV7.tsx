@@ -79,6 +79,7 @@ export default function ReviewRoundV7(){
  const incoming=useRef<{itemId:string;from?:SwipeOffset}|null>(null);
  const reduced=useMotionReduced();
  const pendingRef=useRef<{itemId:string;rating:Rating;swipe?:CommittedSwipe}|null>(null);
+ const queuedUndo=useRef<{runId:string;itemId:string}|null>(null);
  const pendingCard=useRef<{itemId:string;card:ReviewItem}|null>(null);
  const alive=useRef(true);
  useEffect(()=>{alive.current=true;return ()=>{alive.current=false;};},[]);
@@ -104,7 +105,7 @@ export default function ReviewRoundV7(){
  const faces=card?.type==='reverse'&&card.ord===2?{front:card.back,back:card.front}:{front:card?.front??'',back:card?.back??''};
  const choices=useMemo(()=>{if(!settings.data||!card)return null;try{return preview(card.state,Date.now(),scheduleConfig(settings.data));}catch{return null;}},[settings.data,card]);
  useEffect(()=>{
-  let cancelled=false;pendingCard.current=null;setLoading(true);setRun(null);setFrozen(null);setPending(null);setMessage(null);
+  let cancelled=false;pendingCard.current=null;queuedUndo.current=null;setLoading(true);setRun(null);setFrozen(null);setPending(null);setMessage(null);
   void (async()=>{
    const parameters=new URLSearchParams(link);
    // A scoped URL must never fall through to a different active round while its
@@ -158,11 +159,11 @@ export default function ReviewRoundV7(){
   node.animate([{opacity:0,transform:entry},{opacity:1,transform:reduced?undefined:'none'}],{
    duration:1000*(reduced?durations.reduced:durations.quick),easing:`cubic-bezier(${easings.enter.join(',')})`,
   });
- },[item?.id,card,reduced]);
- const showRun=(result:DurableRun,from?:SwipeOffset)=>{
+ },[item?.id,run?.version,card,reduced]);
+ const showRun=(result:DurableRun,from?:SwipeOffset,returning=false)=>{
   if(!alive.current)return;
   const next=result.items[result.position];
-  if(next&&next.id!==item?.id){
+  if(next&&(returning||next.id!==item?.id)){
    incoming.current={itemId:next.id,from};
    setRevealed(false);setConfidence(null);setStartTime(Date.now());
   }
@@ -171,6 +172,7 @@ export default function ReviewRoundV7(){
  };
  async function done(result:DurableRun){
   const motion=pendingRef.current,node=cardNode.current;
+  let exit:Animation|undefined;
   if(motion&&motion.itemId===item?.id&&node&&typeof node.animate==='function'){
    const extent=Math.max(node.offsetWidth,node.offsetHeight)+24;
    const from=motion.swipe?dragTransform(motion.swipe):'none';
@@ -178,10 +180,20 @@ export default function ReviewRoundV7(){
    const duration=1000*(reduced?durations.reduced:motion.swipe?durations.baseExit:durations.quickExit);
    const initialSlope=motion.swipe?Math.max(.35,Math.min(3,motion.swipe.speed*duration/extent)):0;
    const curve=motion.swipe&&!reduced?[.2,.2*initialSlope,.38,1]:easings.exit;
-   const animation=node.animate([
+   exit=node.animate([
     {opacity:1,transform:reduced?undefined:from},{opacity:0,transform:reduced?undefined:to},
    ],{duration,easing:`cubic-bezier(${curve.join(',')})`,fill:'forwards'});
-   await animation.finished.catch(()=>undefined);
+   await exit.finished.catch(()=>undefined);
+  }
+  const request=queuedUndo.current;
+  queuedUndo.current=null;
+  if(alive.current&&request?.runId===result.id&&request.itemId===lastGraded(result)?.id){
+   try{
+    const restored=await undoGrade(result,request.itemId,motion?.rating);
+    exit?.cancel();
+    showRun(restored,motion?gradeDirection(motion.rating):undefined,true);
+    return;
+   }catch(error){setMessage(error instanceof Error?error.message:'Could not undo the last answer');}
   }
   showRun(result);
  }
@@ -202,7 +214,7 @@ export default function ReviewRoundV7(){
   pendingRef.current={itemId:frozen.itemId,rating:frozen.rating};
   try{await recover(frozen);}
   catch{if(authOwner()===frozen.ownerId)setMessage('The grade could not be confirmed. Retry to recover this answer.');}
-  finally{gradeLock.current=false;pendingRef.current=null;setBusy(false);}
+  finally{gradeLock.current=false;pendingRef.current=null;queuedUndo.current=null;setBusy(false);}
  }
  async function grade(rating:Rating,swipe?:CommittedSwipe){
   if(!run||!item||!card||!choices||!settings.data||busy||gradeLock.current||pending||frozen)return;
@@ -235,25 +247,34 @@ export default function ReviewRoundV7(){
    const advanced=await advanceGrade(run,item.id,reviewed.reviewId);
    clearPendingGrade();setPending(null);await done(advanced);
   }catch(error){setMessage(error instanceof Error?error.message:'Review could not be saved');}
-  finally{gradeLock.current=false;pendingRef.current=null;setDrag(null);setBusy(false);}
+  finally{gradeLock.current=false;pendingRef.current=null;queuedUndo.current=null;setDrag(null);setBusy(false);}
  }
  async function retryAdvance(){
   if(!run||!item||!pending||busy||gradeLock.current)return;gradeLock.current=true;setBusy(true);setMessage(null);
   const rating=grades[item.id];if(rating)pendingRef.current={itemId:item.id,rating};
   try{const result=await advanceGrade(run,item.id,pending.reviewId);clearPendingGrade();setPending(null);await done(result);}
   catch(error){setMessage(error instanceof Error?error.message:'Could not advance saved grade');}
-  finally{gradeLock.current=false;pendingRef.current=null;setBusy(false);}
+  finally{gradeLock.current=false;pendingRef.current=null;queuedUndo.current=null;setBusy(false);}
+ }
+ async function undoGrade(source:DurableRun,itemId:string,rating:Rating|undefined){
+  const result=await undoLast(source);
+  if(!alive.current)return result;
+  const nextGrades={...grades};
+  delete nextGrades[itemId];setGrades(nextGrades);writeGrades(source.id,nextGrades);
+  void queries.invalidateQueries();
+  notify('Answer undone',{action:rating?{label:'Redo',onClick:()=>setRedo({runId:result.id,version:result.version,itemId,rating})}:undefined});
+  return result;
  }
  async function undo(){
-  if(!run||busy||gradeLock.current||pending||frozen||!lastGraded(run))return;gradeLock.current=true;setBusy(true);setMessage(null);
+  if(!run)return;
+  const attempt=pendingRef.current;
+  if(gradeLock.current&&attempt){queuedUndo.current={runId:run.id,itemId:attempt.itemId};return;}
+  const graded=lastGraded(run);
+  if(busy||gradeLock.current||pending||frozen||!graded)return;
+  gradeLock.current=true;setBusy(true);setMessage(null);
   try{
-   const graded=lastGraded(run),result=await undoLast(run);
-   const rating=graded?grades[graded.id]:undefined;
-   if(graded){const nextGrades={...grades};delete nextGrades[graded.id];setGrades(nextGrades);writeGrades(run.id,nextGrades);}
-   showRun(result,rating?gradeDirection(rating):undefined);await queries.invalidateQueries();
-   notify('Answer undone',{action:graded&&rating?{label:'Redo',onClick:()=>setRedo({
-    runId:result.id,version:result.version,itemId:graded.id,rating,
-   })}:undefined});
+   const rating=grades[graded.id],result=await undoGrade(run,graded.id,rating);
+   showRun(result,rating?gradeDirection(rating):undefined);
   }catch(error){setMessage(error instanceof Error?error.message:'Could not undo the last answer');}
   finally{gradeLock.current=false;setBusy(false);}
  }
@@ -330,10 +351,11 @@ export default function ReviewRoundV7(){
    <Button variant="primary" onClick={()=>navigate('/review')}>Start review</Button></div>
  </main>;
  const total=Math.max(1,run.progress.total),shown=Math.min(run.progress.total,run.progress.position+1);
+ const canQueueUndo=busy&&!!pendingRef.current;
  return <main id="main-content" className="v7-review" aria-label="Review round" data-revealed={revealed?'true':'false'} data-spread={isFlagOn('v7Spread')?'':undefined}>
   <ImmersiveHeader leave={<button type="button" className="v7-icon-button" aria-label="Leave" onClick={()=>{void leave();}}><X aria-hidden="true"/></button>}
    center={<p className="v7-review-count" role="progressbar" aria-label="Review progress" aria-valuemin={0} aria-valuemax={total} aria-valuenow={run.progress.position}>{shown} of {run.progress.total}</p>}
-   more={<button type="button" className="v7-icon-button" aria-label="Undo last answer" title="Undo last answer (U)" disabled={busy||!!pending||!!frozen||!lastGraded(run)} onClick={()=>{void undo();}}><Undo2 aria-hidden="true"/></button>}/>
+   more={<button type="button" className="v7-icon-button" aria-label="Undo last answer" title="Undo last answer (U)" disabled={!canQueueUndo&&(busy||!!pending||!!frozen||!lastGraded(run))} onClick={()=>{void undo();}}><Undo2 aria-hidden="true"/></button>}/>
   <ol className="v7-review-progress" aria-hidden="true">{run.items.map(entry=><li key={entry.id} data-grade={grades[entry.id]?gradeNames[grades[entry.id]-1].toLowerCase():entry.state==='graded'?'answered':entry.state==='stale'?'stale':undefined}/>)}</ol>
   {run.scopeLabel&&<p className="v7-review-message">{run.scopeLabel}</p>}
   {message&&<p role="alert" className="v7-review-message">{message}</p>}

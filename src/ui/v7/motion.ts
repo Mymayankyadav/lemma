@@ -51,6 +51,15 @@ export const distances = {
   get swapShift() {return numberToken('--swap-shift', 16);},
 };
 
+/** Route variants for consumers that animate their own page container. */
+export function routeMotion(reduced:boolean) {
+ if(reduced)return {initial:{opacity:0},animate:{opacity:1},exit:{opacity:0},transition:{duration:durations.reduced}};
+ return {
+  initial:{opacity:0,y:distances.riseSmall},animate:{opacity:1,y:0},exit:{opacity:0,y:-distances.riseSmall},
+  transition:{duration:durations.quick,ease:easings.standard},
+ };
+}
+
 /** Meter/figure interpolation skips counting for reduced-motion users (used by useAnimatedNumber). */
 export function interpolateNumber(from:number,to:number,progress:number,reduced=false):number {
  if(reduced)return to;

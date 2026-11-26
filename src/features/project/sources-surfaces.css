@@ -17,3 +17,7 @@
 [data-source-surface] .v7-button.source-danger {border-color:currentColor;}
 [data-source-surface] .v7-button.source-drop-edge {border-style:dashed;}
 [data-source-surface] .v7-button.source-group-toggle > span:first-child {width:100%;justify-content:space-between;}
+
+/* Both the native reader and the kit variant need the same 44 px touch targets.
+   An absolute minimum also holds when the shell sets a smaller root font size. */
+[data-source-transcription] button {min-width:44px;min-height:44px;}

@@ -20,7 +20,8 @@
   background-image:linear-gradient(to right,var(--v7-role-border-subtle) var(--v7-hairline),transparent var(--v7-hairline)),linear-gradient(to bottom,var(--v7-role-border-subtle) var(--v7-hairline),transparent var(--v7-hairline));
   background-size:var(--v7-space-6) var(--v7-space-6);
 }
-:where(html[data-v7])[data-motion="reduced"] body,
+/* The paper texture is still when OS reduced motion is enabled. Reduce effects also removes decoration. */
+:where(html[data-v7])[data-v7-reduce-effects] body,
 :where(html[data-v7])[data-contrast="high"] body {background-image:none;}
 /* Every focusable element uses the palette's accent focus ring. */
 :where(html[data-v7]) :focus-visible {outline-color:var(--v7-role-focus-ring);}

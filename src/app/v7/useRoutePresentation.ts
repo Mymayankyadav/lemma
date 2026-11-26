@@ -2,7 +2,7 @@ import {useLayoutEffect,useRef,type RefObject} from 'react';
 
 const primaryPaths=new Set(['/','/projects','/review','/calendar','/insights']);
 const immersive=(path:string)=>/^\/(?:focus|pad(?:\/.*)?|review\/run|p\/[^/]+(?:\/cp\/[^/]+)?\/tutor)$/.test(path);
-function routeMotion(from:string,to:string,navigation:string){
+function routeRole(from:string,to:string,navigation:string){
  if(immersive(from)||immersive(to))return 'immersive';
  if(primaryPaths.has(from)&&primaryPaths.has(to))return 'tab';
  return navigation==='POP'?'pop':'push';
@@ -27,7 +27,7 @@ export function useRoutePresentation(shell:RefObject<HTMLDivElement|null>,path:s
    delete root.dataset.routeMotion;
    // Restart the entrance when React Router reuses the same page element for another path.
    void root.offsetWidth;
-   root.dataset.routeMotion=routeMotion(from,path,navigation);
+   root.dataset.routeMotion=routeRole(from,path,navigation);
   }
   const saved=navigation==='POP'?positions.current.get(key):undefined;
   const target=saved??(changed?0:undefined);

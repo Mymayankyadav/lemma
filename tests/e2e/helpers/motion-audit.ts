@@ -119,7 +119,15 @@ export class MotionAudit {
       if(!busy&&!this.inflight.size&&Date.now()-this.lastNetwork>=300)return Date.now()-start;
       await new Promise(r=>setTimeout(r,40));
     }
-    throw new Error('Surface did not settle in 3 s');
+    const blockers=await this.page.evaluate(()=>({
+      animations:document.getAnimations()
+        .filter(a=>a.playState==='running'&&a.effect?.getComputedTiming().iterations!==Infinity)
+        .map(a=>a instanceof CSSAnimation?a.animationName:a instanceof CSSTransition?a.transitionProperty:a.id||'Web Animation'),
+      loading:[...document.querySelectorAll<HTMLElement>('[data-loading-surface]')]
+        .filter(el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden').map(el=>el.dataset.loadingSurface),
+    }));
+    const requests=Array.from(this.inflight,r=>new URL(r.url()).pathname);
+    throw new Error('Surface did not settle in 3 s: '+JSON.stringify({...blockers,requests,networkQuietMs:Date.now()-this.lastNetwork}));
   }
   async step(chapter:string,action:string,perform:()=>Promise<unknown>,verify:()=>Promise<unknown>,record=true){
     const row:Row={chapter,action},frames:Frame[]=[];
@@ -168,7 +176,11 @@ export class MotionAudit {
         expect(blocked).toEqual([]);
       }
       if(row.after.layers.length)expect(row.after.focus).not.toBe('BODY');
-    }catch(err){row.error=String(err);delete row.family;throw err;}
+    }catch(err){
+      row.error=String(err);delete row.family;
+      row.after=await state(this.page).catch(()=>undefined);
+      throw err;
+    }
     finally{
       if(client){
         await client.send('Page.stopScreencast').catch(()=>{});

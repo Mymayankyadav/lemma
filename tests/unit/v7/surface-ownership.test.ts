@@ -29,6 +29,17 @@ describe('surface ownership',()=>{
     expect(listener).toHaveBeenCalledTimes(6);
     stop();
   });
+  it('preserves the focus a surviving step places when a discard removes its original launcher',async()=>{
+    const owner=document.createElement('div'), guard=document.createElement('div');
+    const close=document.createElement('button'), original=document.createElement('button'), row=document.createElement('button');
+    owner.append(close,original);document.body.append(owner,guard);
+    const a=registerLayer({element:owner,role:'S3',trigger:null,dismiss:vi.fn()});
+    const b=registerLayer({element:guard,role:'S5',owner,trigger:original,dismiss:vi.fn()});
+    original.replaceWith(row);b();row.focus();
+    await Promise.resolve();
+    expect(document.activeElement).toBe(row);
+    a(false);
+  });
   it('keeps a child above its parent when React registers both in one layout commit',()=>{
     const parent=document.createElement('div'), child=document.createElement('div');
     parent.append(child);document.body.append(parent);

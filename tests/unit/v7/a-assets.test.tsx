@@ -62,18 +62,30 @@ describe('A3 coded moments', () => {
     document.documentElement.removeAttribute(THEME_TURN_ATTR);
     vi.unstubAllGlobals();
   });
-  it('L-20 the web splash is a still: inline, decorative, no animation', () => {
-    const html = readFileSync('index.html', 'utf8');
-    expect(html).toMatch(/<div id="root">[\s\S]*class="lemma-splash" aria-hidden="true"/);
-    const splash = html.slice(html.indexOf('lemma-splash'), html.indexOf('</style></div>'));
-    expect(splash).not.toMatch(/animation|@keyframes/);
+  it('L-20 the web splash stays still above the app root until the shell is ready', () => {
+    const page = new DOMParser().parseFromString(readFileSync('index.html', 'utf8'), 'text/html');
+    const splash = page.body.querySelector('.lemma-splash');
+    expect(splash?.previousElementSibling).toBe(page.getElementById('root'));
+    expect(splash?.getAttribute('aria-hidden')).toBe('true');
+    expect(splash?.getAttribute('data-loading-surface')).toBe('boot');
+    const mark = splash?.querySelector('svg');
+    expect(mark?.getAttribute('viewBox')).toBe('0 0 1024 1024');
+    expect([mark?.getAttribute('width'), mark?.getAttribute('height')]).toEqual(['72', '72']);
+    expect(mark?.querySelector('animate, animateTransform')).toBeNull();
+    const styles = page.body.querySelector('style')?.textContent ?? '';
+    expect(styles).not.toMatch(/animation|@keyframes/);
+    expect(styles).toMatch(/\.lemma-splash\[data-ready\]\s*\{\s*opacity:\s*0\s*\}/);
   });
   it('L-20 the splash paints the paper the build chose before first paint (incident #1376)', () => {
-    const html = readFileSync('index.html', 'utf8');
-    const splash = html.slice(html.indexOf('<div class="lemma-splash"'), html.indexOf('</style></div>'));
-    expect(splash).toContain('.lemma-splash{position:fixed;inset:0;display:grid;place-items:center;background:var(--lemma-paper);');
-    expect(splash).not.toMatch(/background:#/);
-    expect(html).toContain("document.documentElement.style.setProperty('--lemma-paper',colors[actual]);");
+    const page = new DOMParser().parseFromString(readFileSync('index.html', 'utf8'), 'text/html');
+    const styles = page.body.querySelector('style')?.textContent ?? '';
+    const splash = styles.match(/\.lemma-splash\s*\{([^}]*)\}/)?.[1] ?? '';
+    for (const style of ['position:fixed', 'inset:0', 'display:grid', 'place-items:center', 'background:var(--lemma-paper)']) {
+      expect(splash).toContain(style);
+    }
+    expect(styles).not.toMatch(/background:\s*#/);
+    expect(page.head.querySelector('script:not([type])')?.textContent)
+      .toContain("document.documentElement.style.setProperty('--lemma-paper',colors[actual]);");
   });
 });
 

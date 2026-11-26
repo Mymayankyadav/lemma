@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {describe, expect, it} from 'vitest';
 import {FLAG_DEFAULTS} from '../../../src/flags';
+import {weekRoute} from '../../../src/app/weekRoute';
 import {nextAfter, rulerSnap, rulerTicks, rulerTime} from '../../../src/features/home/v7/Ruler';
 import {weekStars} from '../../../src/features/week/v7/WeekV7';
 import {PAPERS, SKIES} from '../../../src/ui/v7/paper';
@@ -46,7 +47,7 @@ describe('S2–S4 · S6 · S14 · S16 · S15', () => {
     expect(SKIES).toEqual(['clear', 'stars']);
     const css = readFileSync('src/ui/v7/paper.css', 'utf8');
     expect(css).toContain('stroke-opacity=".07"');
-    expect(css.match(/:not\(\[data-motion="reduced"\]\)/g)).toHaveLength(4);
+    expect(css.match(/:not\(\[data-v7-reduce-effects\]\)/g)).toHaveLength(4);
   });
   it('the desk clock opens in landscape on a phone and keeps the screen awake', () => {
     expect(DESK_QUERY).toBe('(orientation: landscape) and (max-height: 500px)');
@@ -59,7 +60,8 @@ describe('S2–S4 · S6 · S14 · S16 · S15', () => {
     expect(stars).toHaveLength(7);
     expect(stars.filter(star => star.lit)).toHaveLength(3);
     expect(stars[5].r).toBe(6);
-    expect(readFileSync('src/app/weekRoute.tsx', 'utf8')).toContain("{path: '/week', element:");
+    expect(weekRoute.path).toBe('/week');
+    expect(typeof weekRoute.lazy).toBe('function');
     expect(readFileSync('src/app/App.tsx', 'utf8')).toContain(' weekRoute,');
   });
 });
