@@ -148,6 +148,7 @@ export function TutorComposer(props: Props) {
   const revision = useRef({editorRevision:0,selectionRevision:0,modeRevision:0});
   const phraseEdit = useRef<{at: number; editor: number; selection: number; mode: number} | undefined>(undefined);
   const pressedPhrase = useRef<WritingAidProposal | null>(null);
+  const pressedTabPhrase = useRef<WritingAidProposal | null>(null);
   const pendingSelection = useRef<PadEdit | null>(history.current.present);
   const authoredAnchor = useRef<WritingAidAnchor | null>(null);
   const acceptedSuggestion = useRef<{before: PadTextHistory; after: PadEdit; proposal: WritingAidProposal} | null>(null);
@@ -239,7 +240,7 @@ export function TutorComposer(props: Props) {
 
 
   const enhancedMenu = isFlagOn('typeaheadV2') || writingPrefs.fasterTyping;
-  const menuTrial = currentMenuTrial(enhancedMenu, writingPrefs.fasterTyping);
+  const menuTrial = currentMenuTrial(enhancedMenu);
   const arm = currentTypeaheadArm();
   const replayDiagnostics = typeaheadReplayEnabled();
   const tracePool = replayDiagnostics && new URLSearchParams(window.location.search).get('typeahead-trace') !== '0';
@@ -1418,7 +1419,7 @@ export function TutorComposer(props: Props) {
   const keysButton = <button className="sbtn" type="button" aria-label="Keys" onPointerDown={keepSelection}
     onClick={()=>{haptic('snap');selectSurface('keys');}}><Keyboard aria-hidden="true"/></button>;
   type KeyboardActions = Required<Pick<ComponentProps<typeof TutorKeyboard>, 'onView' | 'onInsert' | 'wordBefore' | 'onBrowse' | 'onDelete'
-    | 'onMove' | 'onTab' | 'onHide'>>;
+    | 'onMove' | 'onTab' | 'onTabPress' | 'onHide'>>;
   const keyboardActions = useRef<KeyboardActions | null>(null);
   useLayoutEffect(() => {
     const onInsert: KeyboardActions['onInsert'] = keyInkEnabled
@@ -1428,7 +1429,12 @@ export function TutorComposer(props: Props) {
       onInsert,
       // N252: the iPad's tab key does what Tab does on a hardware keyboard here (take the shown continuation, or go to
       // the next □), and otherwise types a tab, as iPadOS's own key does.
-      onTab: () => {
+      onTabPress: pressed => {pressedTabPhrase.current = pressed ? phrasePreview : null;},
+      onTab: fromPointer => {
+        const held = pressedTabPhrase.current;
+        pressedTabPhrase.current = null;
+        // A touch can only take the local phrase visible when Tab was pressed.
+        if (fromPointer && held !== phrasePreview) return;
         if (writingGhost) {keyInk.settle(); remember(); acceptWriting(writingGhost);}
         else if (findNotationSlot(history.current.present)) {keyInk.settle(); nextSlot();}
         else onInsert('\t', true);
@@ -1447,7 +1453,8 @@ export function TutorComposer(props: Props) {
     onBrowse: () => keyboardActions.current?.onBrowse(),
     onMove: (direction, count) => keyboardActions.current?.onMove(direction, count),
     wordBefore: () => keyboardActions.current?.wordBefore?.() ?? '',
-    onTab: () => keyboardActions.current?.onTab(),
+    onTab: fromPointer => keyboardActions.current?.onTab(fromPointer),
+    onTabPress: pressed => keyboardActions.current?.onTabPress(pressed),
     onHide: () => keyboardActions.current?.onHide(),
   }), []);
 

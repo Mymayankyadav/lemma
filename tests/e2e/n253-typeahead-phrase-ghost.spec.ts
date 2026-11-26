@@ -151,3 +151,61 @@ test('the held release flag keeps Faster Typing silent and the legacy flag uses 
   await expect(keyboard(legacyPage).locator('.strip [data-writing-aid-ghost]')).toBeVisible();
   expect(await read(legacyPage)).toBeNull();
 });
+
+test('iPad Tab ties a touch to its original phrase and supports accessible activation', async ({page}) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize({width: 820, height: 1110});
+  await page.addInitScript(() => {
+    Object.defineProperties(navigator, {
+      userAgent: {get: () => 'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'},
+      platform: {get: () => 'iPad'}, maxTouchPoints: {get: () => 5},
+    });
+  });
+  const answer = await open(page, 'lab');
+  await answer.focus();
+  const keys = keyboard(page);
+  await expect(keys.locator('.rows')).toHaveAttribute('data-layout', 'ipad');
+  const tab = keys.getByRole('button', {name: 'Tab', exact: true});
+  await onTime(page, answer, 'lab');
+  const pointer = {pointerType: 'touch', pointerId: 1, button: 0, isPrimary: true};
+  await tab.dispatchEvent('pointerdown', pointer);
+  await answer.pressSequentially('h');
+  await expect(ghost(page)).toHaveAttribute('data-typeahead-insert', 'er hand,');
+  await tab.dispatchEvent('pointerup', pointer);
+  await tab.dispatchEvent('click', {detail: 1});
+  await expect(answer).toHaveJSProperty('textContent', 'On the oth');
+  await tab.tap();
+  await expect(answer).toHaveJSProperty('textContent', 'On the other hand,');
+  await undo(page).click();
+
+  await onTime(page, answer, 'lab');
+  await tab.dispatchEvent('pointerdown', pointer);
+  await tab.dispatchEvent('pointercancel', pointer);
+  await tab.dispatchEvent('click', {detail: 1});
+  await expect(answer).toHaveJSProperty('textContent', 'On the ot');
+  await tab.press('Enter');
+  await expect(answer).toHaveJSProperty('textContent', 'On the other hand,');
+});
+
+test('the explicit lab phrase is available after a controlled PWA offline reload', async ({page, context}) => {
+  test.setTimeout(60_000);
+  await open(page, 'lab');
+  await page.evaluate(async () => {await navigator.serviceWorker.ready;});
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => {
+    for (const name of await caches.keys()) {
+      const cache = await caches.open(name);
+      if ((await cache.keys()).some(request => /\/phraseGhost\.worker-[\w-]+\.js$/u.test(new URL(request.url).pathname))) return true;
+    }
+    return false;
+  })).toBe(true);
+  await context.setOffline(true);
+  try {
+    await page.reload();
+    await page.getByRole('button', {name: 'Write a question', exact: true}).click();
+    const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+    await onTime(page, answer, 'lab');
+    await expect(ghost(page)).toHaveAttribute('data-typeahead-insert', 'her hand,');
+  } finally {await context.setOffline(false);}
+});

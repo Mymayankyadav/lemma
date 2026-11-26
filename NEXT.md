@@ -26,7 +26,7 @@ Owner task: "Ok, start working on it use two sol 6.2 agents and two 6.1 terra ag
 Stage: Build · Status: in progress · Needs: N238, N250 · Assigned: chat-681#p7s4
 Done = Implement the opt-in word and phrase candidates, signed Tutor ranking, exact grey-text evaluation and paired browser replay. Audit and compare training data at matched exposure. Record measured results and a separate release decision for the strip, grey text and optional student. Qualify promoted features on the physical phone and against their specified outcomes.
 Tests: existing Tutor keyboard, equation, drawing, model and replay suites plus focused menu, phrase-provider, corpus and two-action punctuation regressions.
-Scope: src/features/tutor/**; src/flags.ts; scripts/typeahead/**; public/models/typeahead/**; tests/unit/tutor/**; tests/e2e/**typeahead*; docs/current/N253.md; docs/implementation/typeahead-evidence/**; NEXT.md.
+Scope: src/features/tutor/**; src/flags.ts; vite.config.ts (optional phrase worker precache); scripts/typeahead/**; public/models/typeahead/**; tests/unit/tutor/**; tests/e2e/**typeahead*; docs/current/N253.md; docs/implementation/typeahead-evidence/**; NEXT.md.
 Not: keyboard layout changes, automatic proof choices or changing a default based only on offline scores.
 
 ## N251 Exam mode on by default in the app, with its screens polished

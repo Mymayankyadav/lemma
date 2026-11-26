@@ -1,9 +1,10 @@
 {
   "browser": "Chromium 156.0.8078.79, Debian Linux desktop",
   "build": "Bundled production-mode Vite with dev/test overrides and one Playwright worker",
+  "baseCommit": "9e1d2413",
   "fingerprint": "phrase-trie-v1:7824d55d316d13cebbee060ed821aad3be4227b7d1ecaaa85feb8d6b5f4e8a75:c6ee15a41c3f55d8133366b67eba1476b510b410c8d80c3fca1403789f9d096a",
   "testFile": "tests/e2e/n253-typeahead-phrase-ghost.spec.ts",
-  "checksPassed": 3,
+  "checksPassed": 4,
   "narrowViewport": {
     "widthCssPx": 320,
     "heightCssPx": 820,
@@ -19,13 +20,20 @@
     "Typing through the preview reused its exact remainder. A stale synthetic touch press could not apply it",
     "Caret motion, composition and equation mode cleared the offer",
     "Faster Typing opt-out and the held release flag left the lab lane silent",
-    "The legacy proof-assist flag kept its original path"
+    "The legacy proof-assist flag kept its original path",
+    "The lab produced an inline phrase after a controlled PWA reload with network access disabled"
   ],
   "workerAsset": {
+    "path": "assets/phraseGhost.worker-Bnq6X3iF.js",
     "bytes": 30543,
     "gzipBytes": 11568,
-    "sha256": "cd3c0aa076986d065faa415f9679301d47e0d94b163cda1e79242e36f8d1c0db",
-    "pwaPrecache": true
+    "sha256": "cd3c0aa076986d065faa415f9679301d47e0d94b163cda1e79242e36f8d1c0db"
+  },
+  "pwaPrecache": {
+    "baseCommit": "9e1d2413",
+    "source": "Exact asset membership in the generated Workbox manifests of two bundled builds with the phrase qualification held",
+    "ordinaryProduction": {"overridesEnabled": false, "entries": 434, "workerIncluded": false, "workerBytes": 0},
+    "overrideLab": {"overridesEnabled": true, "entries": 437, "workerIncluded": true, "workerBytes": 30543, "offlineReloadPassed": true}
   },
   "previewTiming": "The smoke exercised layout cutoff and genuine expirations on a shared desktop host. Visible-paint p90 and human completion-time estimates remain open.",
   "physicalAndroid": null,
