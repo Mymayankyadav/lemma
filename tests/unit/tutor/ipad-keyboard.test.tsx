@@ -60,7 +60,7 @@ function tap(button: Element) {
   button.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}));
 }
 
-test('the iPad rows follow iPadOS: tab and delete, caps lock and return, two shifts with !, and ?., then maths · .?123 · space · .?123 · hide', async () => {
+test('the iPad rows follow iPadOS with a pin beside the space bar', async () => {
   await mount();
   expect(host.querySelector('.rows')!.getAttribute('data-layout')).toBe('ipad');
   expect(rowLabels()).toEqual([

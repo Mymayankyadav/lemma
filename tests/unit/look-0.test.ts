@@ -3,10 +3,18 @@ import {describe,expect,it} from 'vitest'
 import {scheduleColor} from '../../src/lib/schedule'
 
 const css=readFileSync('src/styles/themes.css','utf8')
+const palette=readFileSync('src/styles/palette.css','utf8')
 function tokens(theme:'graph'|'graph-night'):Record<string,string>{
+ const shared=palette.match(new RegExp('^.*?\\[data-v7\\]\\[data-theme="'+theme+'"\\] \\{([^}]*)\\}', 'm'))?.[1]
  const block=css.match(new RegExp('html:not\\(\\[data-v7\\]\\)\\[data-theme="'+theme+'"\\] \\{([\\s\\S]*?)\\n\\}'))?.[1]
- if(!block)throw new Error('Missing theme '+theme)
- return Object.fromEntries([...block.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(([,key,value])=>[key,value.trim()]))
+ if(!shared||!block)throw new Error('Missing theme '+theme)
+ const roles=Object.fromEntries([...(shared+block).matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(([,key,value])=>[key,value.trim()]))
+ function resolve(key:string,seen=new Set<string>()):string{
+  if(!roles[key]||seen.has(key))throw new Error('Unresolved '+theme+' token '+key)
+  const alias=/^var\((--[\w-]+)\)$/.exec(roles[key])
+  return alias?resolve(alias[1],seen.add(key)):roles[key]
+ }
+ return Object.fromEntries(Object.keys(roles).map(key=>[key,resolve(key)]))
 }
 function lab(hex:string):[number,number,number]{
  const c=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4)
@@ -51,10 +59,11 @@ describe('LOOK-0 approved graph worlds',()=>{
    expect(t['--again']).toBe(t['--danger'])
    expect(t['--hard']).toBe(t['--late'])
    expect(t['--grade-good']).toBe(t['--early'])
-   expect(t['--easy']).toBe(t['--link'])
+   expect(t['--easy']).toBe(t['--info'])
+   expect(t['--link']).toBe(t['--accent'])
   }
  })
- it('separates red pencil, ochre lateness and danger by CIEDE2000 >= 20',()=>{
+ it('separates the accent, lateness and danger by CIEDE2000 >= 20',()=>{
   for(const theme of ['graph','graph-night'] as const){
    const t=tokens(theme),roles=['--accent','--late','--danger']
    for(let i=0;i<roles.length;i++)for(let j=i+1;j<roles.length;j++)

@@ -86,6 +86,7 @@ test('the keyboard switch preserves a middle selection and the separate pin keep
   await page.getByRole('button', {name: 'Use device keyboard', exact: true}).click();
   await expect(keyboard).toHaveCount(0);
   await expect(answer).toHaveAttribute('inputmode', 'text');
+  await expect(answer).not.toHaveAttribute('autocorrect', 'off');
   await expect(answer).toBeFocused();
   await expect.poll(() => page.evaluate(() => getSelection()?.toString())).toBe('n');
   await page.keyboard.type('sin');
@@ -97,6 +98,11 @@ test('the keyboard switch preserves a middle selection and the separate pin keep
   await page.getByRole('log', {name: 'Conversation'}).click({position: {x: 8, y: 8}});
   await expect(pin).toHaveAttribute('aria-pressed', 'true');
   await expect(answer).toBeFocused();
+  await keyboard.getByRole('button', {name: 'Maths symbols', exact: true}).click();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await pin.click();
+  await page.getByRole('log', {name: 'Conversation'}).click({position: {x: 8, y: 8}});
+  await expect(keyboard).toHaveCount(0);
 });
 
 test('on an iPad the keys type, hold for their grey characters, lock caps, tab to the next □, and hide the keyboard', async ({page}) => {

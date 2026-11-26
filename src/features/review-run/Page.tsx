@@ -25,7 +25,7 @@ import {useCalm} from '../../ui/useCalm';
 const ReviewRoundV7=lazy(()=>import('./v7/ReviewRoundV7'));
 const fallback:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const gradeNames=['Again','Hard','Good','Easy'] as const;
-const gradeColors=['var(--danger)','var(--late)','var(--early)','var(--link)'] as const;
+const gradeColors=['var(--danger)','var(--late)','var(--early)','var(--easy)'] as const;
 const confidenceOptions=[
  {value:'sure' as const,label:'Sure',icon:CircleCheck},
  {value:'unsure' as const,label:'Unsure',icon:CircleDashed},

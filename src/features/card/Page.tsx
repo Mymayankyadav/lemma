@@ -37,7 +37,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { Sparkline } from "../../ui/charts/Sparkline";
 import { useToast } from "../../ui/Toast";
-const reviewInk = ['var(--ink-2)', 'var(--danger)', 'var(--late)', 'var(--early)', 'var(--link)'] as const;
+const reviewInk = ['var(--ink-2)', 'var(--danger)', 'var(--late)', 'var(--early)', 'var(--easy)'] as const;
 function next(due: string | null) {
   if (!due) return "New";
   const days = Math.ceil((Date.parse(due) - Date.now()) / 86400000);

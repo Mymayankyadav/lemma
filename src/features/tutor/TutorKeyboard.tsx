@@ -45,7 +45,7 @@ interface KeyHold {
 /**
  * N252: on an iPad (layout `ipad`) the keys follow iPadOS's own full-size keyboard instead: tab and delete beside the top
  * row, caps lock and return beside the second, a shift at each end of the third with `!,` and `?.` keys, and a bottom
- * row of the maths key (where iPadOS has its emoji key) · .?123 · space · .?123 · hide keyboard. The modifier keys show
+ * row of the maths key (where iPadOS has its emoji key) · .?123 · pin · space · .?123 · hide keyboard. The modifier keys show
  * iPadOS's symbols (⇥ ⌫ ⇪ ↵ ⇧) in their outer bottom corner. Secondary characters
  * stand grey above their letters and are typed by holding the key (a flick would draw over the keys, N249); there is
  * no enlarged preview, as on iPadOS.
@@ -241,6 +241,9 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
   const chars = (list: string[]) => list.map(char => key(char, () => onInsert(char, true), {style: 'ch sym', printable: true}));
   const hideKey = (grow?: number) => onHide && key('Hide keyboard', onHide, {grow, style: 'fn ip-hide' + (grow === undefined ? ' phrase-page' : ' ip-r'),
     icon: <span className="ip-hide-icon" aria-hidden="true"><Keyboard/><ChevronDown/></span>});
+  const pinKey = (grow?: number) => key('Keep keyboard open', () => onPin?.(), {
+    grow, style: 'fn ' + (grow === undefined ? 'phrase-page' : 'ip-c') + (pinned ? ' lit' : ''), icon: <Pin/>, selected: pinned,
+  });
   /** N252 · iPadOS's rows. Each is 12.5 letter keys across, so the letters line up as they do on the iPad. */
   function iPadRows() {
     const tab = key('Tab', () => onTab ? onTab() : onInsert('\t', true), {grow: IPAD.tab, style: 'fn ip-l', icon: <ArrowRightToLine/>});
@@ -280,7 +283,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
     return <div className="row bottom">
       {key('Maths symbols', () => onView(lastMath), {grow: IPAD.maths, style: 'fn ip-sym ip-l', icon: lastMath === 'Phrases' ? 'Aa' : '∀∃'})}
       {key(mode, toggle, {id: 'mode-left', grow: IPAD.modeL, style: 'fn ip-txt ip-c'})}
-      {key('Keep keyboard open', () => onPin?.(), {grow: IPAD.pin, style: 'fn ip-c' + (pinned ? ' lit' : ''), icon: <Pin/>, selected: pinned})}
+      {pinKey(IPAD.pin)}
       {key('Space', () => onInsert(' ', true), {grow: IPAD.space, style: 'space', icon: <span aria-hidden="true"/>})}
       {key(mode, toggle, {id: 'mode-right', grow: IPAD.modeR, style: 'fn ip-txt ip-r'})}
       {hideKey(IPAD.hide)}
@@ -309,6 +312,7 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
           style: 'fn phrase-page', icon: phrasePage ? <ChevronLeft aria-hidden="true"/> : <ChevronRight aria-hidden="true"/>,
         })}
         {back}
+        {ipad && pinKey()}
         {ipad && hideKey()}
       </div>
     </> : ipad ? <>{iPadRows()}{iPadBottom()}</> : <>

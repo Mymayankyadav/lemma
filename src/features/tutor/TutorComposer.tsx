@@ -1541,7 +1541,8 @@ export function TutorComposer(props: Props) {
         /> : <div className="writing-editor-wrap">{(ghostSuffix || writingEdit) && <div className="writing-editor-mirror" aria-hidden="true">
           <span>{writingEdit ? <>{value.slice(0, writingEdit.start)}<span data-writing-aid-source="">{value.slice(writingEdit.start, writingEdit.end)}</span>{value.slice(writingEdit.end)}</> : value}</span>{ghostSuffix}
         </div>}<textarea ref={field} aria-label="Your answer" placeholder={followUp ? 'Add to your question…' : props.pending ? 'Draft your next answer…' : 'Write your answer…'}
-          inputMode={deviceKeyboard ? 'text' : 'none'} rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+          inputMode={deviceKeyboard ? 'text' : 'none'} rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off"
+          autoCorrect={deviceKeyboard ? undefined : 'off'} autoCapitalize={deviceKeyboard ? undefined : 'off'} spellCheck={deviceKeyboard ? undefined : false}
           value={compositionText ?? value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={focusAnswer}
           onPointerDown={() => {
             if (!shown && !readOnly && !deviceKeyboard) {

@@ -202,14 +202,14 @@ export function useWritingAid(request: WritingAidRequest, preload = !request.rea
   }, []);
   const neuralEpoch = [scopeKey, mountId, contextKey, profileScope, generation, mode, packVersion, fasterTyping].join('|');
   useEffect(() => {
-    if (!expanded || !usesNeural(arm) || !foreground || mode === 'off' || readOnly) return;
+    if (!expanded || !usesNeural(arm) || !workerEnabled || !foreground || readOnly) return;
     let closed = false;
     void createNeuralClient(typeaheadGraphTrial(), typeaheadStrictGraphTrial(), fasterTyping).then(client => {
       if (closed) client?.close();
       else neural.current = client;
     }).catch(() => undefined);
     return () => {closed = true; neural.current?.close(); neural.current = undefined;};
-  }, [expanded, foreground, fasterTyping, readOnly, mode, scopeKey, mountId, profileScope, generation, arm, packVersion]);
+  }, [expanded, workerEnabled, foreground, fasterTyping, readOnly, scopeKey, mountId, profileScope, generation, arm, packVersion]);
   useEffect(() => neural.current?.reset(), [neuralEpoch]);
 
   const impressionBatch = useRef<{scope: LearningScope; count: number; at: number; timer: number} | null>(null);

@@ -1,6 +1,6 @@
 ## Balanced subject palette and HTML token reference — review draft
 
-Owner request: apply the supplied warm-theme subject colors to chips, emblems, progress bars and related UI, provide UI token HTML, and do not mark the work Ready without permission. This extends `palette-2026-11-26.md`. No Ready comment, commit, PR, push or deployment was made in this session; approval is pending.
+The owner requested the warm-theme subject colors for chips, emblems, progress bars and related UI, plus a standalone HTML token reference. N254 includes this follow-up to `palette-2026-11-26.md` and awaits the owner's approval.
 
 `src/ui/v7/design-tokens.json` contains the exact supplied five-color palette, OKLCH formula metadata, reserved hue range, emblem dimensions and light/dark progress-track values. Existing role names remain stable. Analysis uses sky, Algebra ochre and Topology teal. The other families use the same five supplied colors: Number theory uses ochre; Logic and Combinatorics sage; Geometry and Probability lavender. Family glyphs and labels remain distinct even when a hue is shared. The palette generator checks these aliases against the named colors and generates CSS, Figma values and the HTML reference together.
 

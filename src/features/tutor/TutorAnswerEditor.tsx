@@ -267,7 +267,9 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
 
   return <div {...events} ref={editor} className="tutor-answer-editor" role="textbox" aria-label="Your answer"
     data-completion={ghost || undefined} aria-multiline="true" aria-readonly={readOnly} aria-placeholder={placeholder} data-placeholder={placeholder}
-    tabIndex={0} contentEditable={!readOnly} suppressContentEditableWarning inputMode={inputMode} autoCorrect="off" autoCapitalize="off" spellCheck={false}
+    tabIndex={0} contentEditable={!readOnly} suppressContentEditableWarning inputMode={inputMode}
+    autoCorrect={inputMode === 'none' ? 'off' : undefined} autoCapitalize={inputMode === 'none' ? 'off' : undefined}
+    spellCheck={inputMode === 'none' ? false : undefined}
     onPointerDown={event => {
       if (event.target instanceof Element && event.target.closest('[data-chip-action]')) event.preventDefault();
       else events.onPointerDown?.(event);

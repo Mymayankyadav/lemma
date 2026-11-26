@@ -13,8 +13,7 @@
 :root[data-v6] [data-v6-header] .lemma-header-cluster details>nav button{width:100%}
 :root[data-v6] [data-v6-header] .lemma-menu-add{display:flex;flex-direction:column}
 :root[data-v6] .lemma-header-cluster details>nav{z-index:90}
-/* Mockup v6 has no Demo chip or graph-paper ground; the workspace label lives in page footers. */
-:root[data-v6] .ground{background:var(--bg)!important;background-image:none!important}
+:root[data-v6]:is([data-contrast=high],[data-effects=reduced]) .ground{background:var(--bg)!important}
 /* Focus dock text keeps the dock compact on narrow phones. */
 :root[data-v6] #cr-mobile-dock .lemma-dock-context{background:transparent;border:0;color:var(--ink);cursor:pointer}
 :root[data-v6] #cr-mobile-dock .cr-label{font-weight:500}

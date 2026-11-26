@@ -13,9 +13,9 @@ for(const width of [360,390] as const){
    const s=getComputedStyle(el)
    return Object.fromEntries(['--accent','--late','--danger','--early','--link','--ink-2','--paper'].map(key=>[key,s.getPropertyValue(key).trim()]))
   })
-  expect(roles['--accent'].toUpperCase()).toBe(theme==='graph'?'#C8372D':'#FF7B6B')
-  expect(roles['--late'].toUpperCase()).toBe(theme==='graph'?'#9A6A00':'#F2B05E')
-  expect(roles['--danger'].toUpperCase()).toBe(theme==='graph'?'#8E1F6B':'#E35DB0')
+  expect(roles['--accent'].toUpperCase()).toBe(theme==='graph'?'#A8476D':'#D885A2')
+  expect(roles['--late'].toUpperCase()).toBe(theme==='graph'?'#946112':'#E0A84F')
+  expect(roles['--danger'].toUpperCase()).toBe(theme==='graph'?'#C4453D':'#E5675F')
   expect(new Set([roles['--accent'],roles['--late'],roles['--danger']]).size).toBe(3)
   await page.evaluate(()=>document.fonts.ready)
   await page.screenshot({path:`test-results/screens/look-0/${theme}-${profile}-${width}.png`,fullPage:true})
@@ -31,7 +31,7 @@ for(const width of [360,390] as const){
   await page.getByRole('button',{name:'Start review'}).click()
   await page.getByRole('button',{name:'Sure',exact:true}).click()
   const actual=await page.getByRole('region',{name:'Grade answer'}).evaluate(section=>{
-   const roles=['--danger','--late','--early','--link']
+   const roles=['--danger','--late','--early','--easy']
    const probe=document.createElement('span')
    probe.style.display='none'
    document.body.appendChild(probe)
