@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Closing the typing prediction gap · Lemma N253</title>
+<style>
+  :root { color-scheme:light; --ink:#182925; --muted:#4c605a; --paper:#fbfaf5; --line:#c8d3ca; --green:#115b4d; }
+  * { box-sizing:border-box; }
+  body { margin:0; color:var(--ink); background:var(--paper); font:16px/1.58 'Source Sans 3',system-ui,sans-serif; }
+  main { max-width:960px; margin:auto; padding:36px clamp(18px,5vw,60px) 64px; }
+  header { border-top:5px solid var(--green); padding-top:20px; }
+  h1,h2 { font-family:'STIX Two Text',Georgia,serif; font-weight:500; line-height:1.12; }
+  h1 { font-size:clamp(2.4rem,6vw,4.2rem); max-width:740px; margin:.17em 0 .26em; letter-spacing:-.03em; }
+  h2 { font-size:clamp(1.65rem,3vw,2.15rem); margin:1.55em 0 .45em; }
+  h3 { margin:1.1em 0 .2em; font-size:1.06rem; }
+  p { margin:.45em 0 .8em; }
+  .meta,.source,caption { color:var(--muted); font-size:.9rem; }
+  .lead { font-size:1.15rem; max-width:73ch; }
+  a { color:var(--green); text-underline-offset:.18em; }
+  nav { display:flex; flex-wrap:wrap; gap:.35em 1.1em; margin:1.2em 0 1.6em; }
+  .scroll { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums; font-size:.96rem; }
+  th,td { padding:.62em .68em; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  thead th { background:#eaf0e9; }
+  caption { text-align:left; padding-bottom:.5em; }
+  ul,ol { padding-left:1.35em; }
+  li { padding:.16em 0; }
+  .decision { border-left:4px solid var(--green); padding:.4em 1em; background:#edf3ec; }
+  code { font:.92em 'IBM Plex Mono',ui-monospace,monospace; overflow-wrap:anywhere; }
+  .eq { display:block; background:#edf1eb; padding:.65em .8em; margin:.5em 0; }
+  footer { margin-top:2em; padding-top:1em; border-top:1px solid var(--line); }
+  @media(max-width:580px) { main { padding-top:18px; } th,td { padding:.44em; } }
+  @media print { body { background:white; font-size:10.5pt; } main { max-width:none; padding:0; } nav { display:none; } tr,.decision { break-inside:avoid; } h2,h3 { break-after:avoid; } }
+</style>
+</head>
+<body><main>
+<header>
+<div class="meta">Lemma · N253 · 26 November 2026 · Draft PR #1884</div>
+<h1>Closing the typing prediction gap</h1>
+<p class="lead">The last challenger saved 13 actions across 100 answers. Reaching the neural target on that schedule would require saving 3,627 more actions than the shipping keyboard. The next experiment trains a compact predictor to supply missing words and to put useful edits into the three visible slots.</p>
+<nav aria-label="Plan sections"><a href="#evidence">Prior results</a><a href="#gates">Success criteria</a><a href="#gpu">GPU experiment</a><a href="#execution">Execution sequence</a><a href="#resume">Manual resume</a></nav>
+</header>
+<section id="evidence">
+<h2>What limited the last run</h2>
+<div class="scroll"><table>
+<caption>One fixed browser harness on 100 previously inspected public development answers. KSR means simulated keystroke savings.</caption>
+<thead><tr><th>Measure</th><th>Shipping opt-in</th><th>Fitted ranker M2</th><th>Paired difference</th></tr></thead>
+<tbody>
+<tr><th>KSR, 12,990 manual actions</th><td>32.08% · 8,823 assisted</td><td>32.18% · 8,810 assisted</td><td>+0.10 pp, 95% CI −0.16 to +0.35</td></tr>
+<tr><th>Exact boundary edits</th><td>402 / 1,884 · 21.34%</td><td>411 / 1,884 · 21.82%</td><td>+0.48 pp, 95% CI −0.17 to +1.13</td></tr>
+<tr><th>Started-word or symbol edits</th><td>518 / 1,060</td><td>524 / 1,060</td><td>Six more exact edits</td></tr>
+<tr><th>Boundary target present anywhere in the eligible pool</th><td>766 / 1,884 · 40.66%</td><td>788 / 1,884 · 41.83%</td><td>Both pools fall short of the 848 exact hits needed for 45%.</td></tr>
+</tbody></table></div>
+<p>The last row is an optimistic ceiling for reranking those recorded pools. Every correct visible edit was also in its eligible pool. Among M2's 2,944 observations, 524 targets were eligible but outside the three visible slots. In 855 cases the trace could not distinguish missing retrieval from a late response. In 287 more there was no current model result at observation. Another 197 had a trailing-space mismatch. Each failure needs a different test. <a href="https://github.com/Mymayankyadav/lemma/blob/5d6de07c1d1a3378c482904afeb476250be62f1e/docs/implementation/typeahead-evidence/n253-full-development.json">Paired replay</a> · <a href="https://github.com/Mymayankyadav/lemma/pull/1884/files">Eligible-pool audit and capture hashes</a></p>
+<p>A 33.87M-parameter, 512-context teacher reordered the same candidates on a separate 12-thread pilot. It increased exact boundary hits from 43 to 63 of 221 (+9.05 pp, grouped 95% CI +4.55 to +14.15). Across all 350 opportunities it gained 34 hits and displaced seven. The test excluded UI slot persistence. The earlier FP16 browser model supplied zero timely responses in 230 eligible opportunities. These findings justify testing a small, cached student and measuring its displayed edits. <a href="https://github.com/Mymayankyadav/lemma/blob/5d6de07c1d1a3378c482904afeb476250be62f1e/docs/current/N253.md">Teacher and browser results</a></p>
+<p>Adding topics and increasing count precision have already had direct tests. Topic co-occurrence gained four exact hits in 2,865 word opportunities. The 16-bit count pack improved perplexity from 166.70 to 156.45 while losing 36 eligible exact edits. Reply-only retrieval gained five net boundary hits over its matched general-data arm on 162 eligible cases, while shipping counts still led. These results favor a specific word-, context- and deadline-level experiment over another full-corpus count. <a href="https://github.com/Mymayankyadav/lemma/blob/5d6de07c1d1a3378c482904afeb476250be62f1e/docs/implementation/typeahead-evidence/topic-development.json">Topic receipt</a> · <a href="https://github.com/Mymayankyadav/lemma/blob/5d6de07c1d1a3378c482904afeb476250be62f1e/docs/current/N238.md">Pack precision</a> · <a href="https://github.com/Mymayankyadav/lemma/blob/5d6de07c1d1a3378c482904afeb476250be62f1e/scripts/typeahead/expanded/data-comparison.md">Matched data results</a></p>
+</section>
+<section id="gates">
+<h2>What counts as success</h2>
+<p>For each answer count manual actions <var>M</var> and assisted actions <var>A</var>. Calculate pooled KSR as <code>1 − ΣA / ΣM</code>. Calculate boundary coverage as visible top-three exact edits divided by all scheduled boundaries, including empty menus and late responses. Exactness covers the inserted text, UTF-16 replacement span, caret and resulting selection. Report started edits and symbols separately.</p>
+<div class="scroll"><table>
+<thead><tr><th>Decision</th><th>Prespecified requirement</th><th>Scale on the 100-answer schedule</th></tr></thead>
+<tbody>
+<tr><th>Continue a challenger into independent evaluation</th><td>At least +5.0 pp KSR <em>and</em> +5.0 pp exact boundary coverage over shipping in development. Both paired lower 95% limits above zero.</td><td>At least 650 fewer assisted actions and 95 more exact boundary hits.</td></tr>
+<tr><th>Qualify a count model</th><td>Original absolute goals of ≥55% KSR and ≥35% exact boundary coverage on frozen final replay.</td><td>At most 5,845 assisted actions and at least 660 hits. Gaps to shipping are 2,978 actions and 258 hits.</td></tr>
+<tr><th>Qualify a neural contribution</th><td>Original absolute goals of ≥60% KSR and ≥45% boundary coverage, plus ≥3 pp KSR over the selected count model. Also pass the substantial-gain, timing and interaction checks.</td><td>At most 5,196 assisted actions and at least 848 hits. Gaps to shipping are 3,627 actions and 446 hits.</td></tr>
+</tbody></table></div>
+<p>The numerical examples use the historical denominators. Apply the percentages to the new cohort's own denominators. The earlier +2 pp KSR and +1 pp boundary screen is superseded for this decision. A passing training loss, retrieval benchmark or development result authorizes only the next named evaluation. <a href="https://github.com/Mymayankyadav/lemma/blob/5d6de07c1d1a3378c482904afeb476250be62f1e/docs/implementation/typeahead-expansion.html">Original targets and timing budgets</a></p>
+</section>
+<section id="gpu">
+<h2>The first private GPU experiment</h2>
+<p>Run two students in a single versioned Kaggle T4 batch. Each student has 2,307,457 parameters and uses the frozen 16,384-piece tokenizer, a 128-dimensional tied embedding, a 192-unit GRU, a projection back into the embedding space, and a fit-only word vocabulary. Use identical initialization, row order, optimizer settings and exposure. Evaluate the fixed third epoch. The comparison measures what direct supervision and the teacher each contribute to shortlist ranking. Teacher performance on the earlier browser pilot provides a separate reference.</p>
+<p>The first batch contains 20,000 lowercase prose-word decisions from 5,000 public training groups. There are 2,500 explanation groups, 500 proof groups and 2,000 parsed question–reply groups. In each group two positions supply both a boundary and a one-to-three-letter prefix. The split by group yields 16,072 fit rows and 3,928 within-training calibration rows. The pinned corpus includes texts seen by the existing counts and teacher. This batch can test the training mechanism and compare the two students. Independent browser evaluation covers new answers, mixed case, symbols, LaTeX and exact edit application.</p>
+<ol>
+<li><strong>Teach the student the observed choice.</strong> Arm A learns from the actual next word or the outside option when the word is absent. Both arms also learn to retrieve the actual full word against sampled fit-vocabulary negatives, including training cases where the count shortlist missed it.</li>
+<li><strong>Measure the specific value of the teacher.</strong> Arm B adds a temperature-scaled distillation term for order within the same blind candidate list. Score the literal continuation under the frozen teacher, preserving the actual typed prefix. Fit the outside choice from observed outcomes. Draw no vocabulary, negatives or teacher targets from independent evaluation data.</li>
+<li><strong>Test new proposals directly.</strong> Enumerate the bounded fit vocabulary against each context, enforcing the literal prefix. Report each original list, a learned list, and their fixed-budget union. Compare recall at equal candidate budgets as well as exact word top-three, OOV rate, displaced hits, and rank conditional on presence. A list oracle answers whether a ranker could possibly recover the target.</li>
+</ol>
+<p class="eq"><code>student score(w, x) = projected GRU context(x) · mean of tied token embeddings(w)</code><br><code>Arm A = observed-choice loss + weighted full-word retrieval loss</code><br><code>Arm B = mixed observed-choice and teacher loss + the same retrieval term</code></p>
+<p>Use seed 253, three epochs, batches of 64, a 192-piece student context and 64 fit-frequency negatives per covered target. The retrieval loss weight is 0.20. With at least two eligible choices, the distilled arm uses 65% observed-choice cross-entropy and 35% temperature-scaled teacher divergence at temperature 2. Every observed fit-boundary word is eligible for the vocabulary, up to 8,192 words. Its 2,172 distinct entries cover 1,619 of 1,964 calibration boundary targets. Counts alone place 675 of those 1,964 targets in their top three and 992 in their top 16. Compare each source at 16 slots, then report the 32-slot expansion separately. The downloaded count model, tokenizer, teacher, generator and input files have pinned digests.</p>
+<h3>When to spend more GPU quota</h3>
+<p>If the compact model can recover extra words and rank them usefully on matched lists, repeat on 10× the distinct training groups, with disjoint fit-only calibration, matched direct and distilled arms, and the same source mixture and serving budget. Add a 50× exposure arm only if new groups improve the equal-budget boundary curve and the existing failure audit still finds vocabulary or context misses. Compare the 192-unit model with a wider student under the same input and phone deadlines. Train-only initialization from the teacher's subword embeddings is a separate ablation. Log compute, group counts, vocabulary coverage and saved actions at every scale.</p>
+<p>Before that scale-up, estimate the action ceiling on frozen development traces. At each represented editor state, give a one-action edge to typing the next character or to applying a genuinely available exact edit. Use the lowest-cost path to diagnose where more words, longer literal edits or earlier arrival could matter. A graph built from recorded states estimates headroom on that graph. Slot persistence, candidate availability after a prior acceptance and the cost of correcting errors still require live replay. If five more boundary points yield few saved actions, prioritize long, exact, learner-initiated completions before buying another training run.</p>
+<p>Words in this first packet are lowercase prose continuations followed by whitespace. Question text is available for genuine paired Q&amp;A and the draft always stops at the simulated caret. Report results by boundary versus prefix and by source register. These public within-training calibration figures are word-level proxies. The frozen teacher and count pack previously trained on the archive. Independent natural edits, LaTeX and learner behavior require the following stages.</p>
+</section>
+<section id="execution">
+<h2>Building and testing the complete predictor</h2>
+<ol>
+<li><strong>Improve data where deployment needs it.</strong> Extract actual question–reply pairs, preserve math and keep a source manifest. Group publisher threads and known duplicates before splitting. Record attained source mix, distinct groups, outside-vocabulary words and candidate ranks. Extend only from sources with auditable attribution and novel coverage. On expansion, isolate cross-source duplicate components and perform a sealed excerpt-overlap audit before admitting the added data.</li>
+<li><strong>Locate missing and late edits separately.</strong> For each edit revision record generation, policy, enqueue, worker return, slot selection and paint with monotonic timestamps. Anchor the context window at the caret. Replay long drafts, middle edits, rapid revisions, and cold installation with a deterministic fallback. Distinguish genuinely absent targets from responses arriving after the revision expires.</li>
+<li><strong>Raise eligible candidate recall.</strong> Combine frozen counts with the learned word list, question tokens, locally introduced symbols and learner-typed stems. Deduplicate by executable edit and reject disallowed proof steering before slot selection. In development aim for ≥60% timely exact boundary recall in the capped eligible pool. Track how much of that recall survives into the three slots. At 60% recall, ≥75% conversion is needed to reach 45% displayed coverage.</li>
+<li><strong>Train and calibrate action utility.</strong> Use the GPU student for proposals and scores. In a later fit-only browser pass learn residual weights for candidate source, length, slot stability and expected actions saved, with an explicit abstention option. Include all equivalent accepted edits in the loss. Compare counts, retrieval alone, fixed-list reranking alone, and both together at the same visible three slots and timeout.</li>
+<li><strong>Respect Tutor intent.</strong> Compare neutral, correctly scoped and reversed priorities on identical sessions. An explicitly emphasized admissible term can rise, and a deprioritized term can fall. Preserve independent learner choice. Keep priority weights neutral until independently labeled contrasts support them. Report results with and without real eligible Tutor evidence and their denominators.</li>
+<li><strong>Recover literal edit families.</strong> Exercise word-plus-space, punctuation, mixed case, Unicode and LaTeX with both sides of the caret. Model a suggestion followed by punctuation as two actions if replay actually performs both. Protect selection and undo, stale responses and every existing keyboard/drawing slot. Count semantic near-matches separately from exact edits.</li>
+<li><strong>Make the useful result arrive in time.</strong> Cache contexts and word vectors in a cancellable worker. Benchmark the actual trained package after quantization against floating-point results. On the physical Android WebView measure cold install, memory, offline reload, sustained typing, token p95 ≤15 ms, count-worker p95 ≤8 ms, and tap-to-paint p95 ≤32 ms empty / ≤50 ms with eight equations under the designated throttled test. Report arrivals and paint before deadlines. The previous desktop-only probe measured 1.4 ms compute and 7.1 ms round trip at p95 with synthetic weights.</li>
+<li><strong>Qualify grey text independently.</strong> Keep the phrase provider in shadow until the whole-thread 95% lower bound on literal precision is ≥70%, with ≥200 displayed offers in ≥50 threads, ≥5% timely coverage, positive incremental paired KSR and edit-to-paint p90 ≤60 ms. The previous lab produced one correct offer out of two across 840 eligible events. Test cancellation and accept exactly the previewed replacement range. <a href="https://arxiv.org/abs/1906.00080">Gmail Smart Compose</a> · <a href="https://code.visualstudio.com/api/references/vscode-api#InlineCompletionItem">VS Code inline edit contract</a></li>
+<li><strong>Freeze the winner before opening the reserve.</strong> Make one checkpoint, tokenizer, pool limit, worker, deadline and threshold manifest. Use an identical control and treatment driver. Select 200–800 independent reserve threads using a power calculation made from inspected development data before enrollment. Resample whole paired threads 10,000 times within site and length strata. Block by profile for personalization, report missed and stale events, show gains and regressions, and retain uncertainty for each endpoint. Freeze one independent evaluation and record its decision.</li>
+<li><strong>Measure the learner's outcome.</strong> With consent, counterbalance physical-phone conditions by participant and prompt. Measure time to a correct answer, corrected edits, retained acceptances and blinded mathematical quality. Provide transcription and free composition results separately. The offline replay models a greedy exact typist. Claims about faster human typing require the participant study. <a href="https://aclanthology.org/2024.emnlp-industry.93/">Gboard on-device study</a> · <a href="https://doi.org/10.1145/3749520">Physical-phone suggestion use</a></li>
+</ol>
+</section>
+<section id="resume">
+<h2>Manual resume after Kaggle finishes</h2>
+<p>Use a private, versioned batch with internet disabled for training and a two-hour wall limit. Kaggle offers a T4 pair. This first batch scores the teacher and trains both matched arms on the first T4. Kaggle can charge for both, up to four allocated GPU-hours. Record the actual devices and wall time in its outputs. All agent work pauses once the submission is acknowledged. The owner restarts this thread after Kaggle reaches a terminal state.</p>
+<ol>
+<li>Retrieve the version-specific logs, input hashes, completion receipt, arm checkpoints, retrieval vocabulary and grouped calibration metrics. Check that both arms completed the same exposure and that losses, labels, group boundaries and counts are valid. An interrupted arm requires a versioned recovery of the missing computation.</li>
+<li>Compare rank and recall against the count ordering on identical rows and caps. Inspect outside and OOV events, absolute gains, displaced hits and grouped intervals. If the proposals and ranking do not show plausible headroom for the substantial replay target, use the scored failure categories to choose a new method. Keep the final reserve sealed.</li>
+<li>If the diagnostics support it, integrate the chosen frozen checkpoint behind the existing faster-typing lab setting, exercise the device and run the full paired development replay. The original shipping control, keyboard geometry, gestures and proof-choice guardrails define the acceptance fixtures. Submit a product decision only after the corresponding gates pass.</li>
+</ol>
+<p class="decision"><strong>Decision now.</strong> PR #1884 stays in draft. The long GPU run is research. Approval for training advances that experiment while physical-phone qualification is pending.</p>
+<p class="source"><a href="https://github.com/Mymayankyadav/lemma/pull/1884">Draft PR</a> · <a href="https://www.kaggle.com/code/mayankyadav9432/lemma-n253-distill-paired-v1">Private Kaggle batch</a></p>
+</section>
+</main></body></html>

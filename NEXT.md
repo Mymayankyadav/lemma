@@ -23,7 +23,8 @@ Not: palette changes, Gboard geometry, server or migration changes, or new depen
 ## N253 Measure and improve the mathematical typing predictor and inline completions
 
 Owner task: "Ok, start working on it use two sol 6.2 agents and two 6.1 terra agents. Decide aptly which goes to whom, minimising token usage without compromising the quality of the output."
-Stage: Build · Status: done · Needs: N238, N250 · Assigned: chat-681#p7s4
+Stage: Build · Status: in progress · Needs: N238, N250 · Assigned: chat-681#p7s4
+Owner follow-up: Keep PR #1884 in draft. Test a learned source of missing candidates and a compact on-device ranker against the original typing targets. Pause agent work during private GPU training until the owner resumes.
 Done = Implement the opt-in word and phrase candidates, signed Tutor ranking, exact grey-text evaluation and paired browser replay. Audit and compare training data at matched exposure. Record measured results and a separate release decision for the strip, grey text and optional student. Qualify promoted features on the physical phone and against their specified outcomes.
 Tests: existing Tutor keyboard, equation, drawing, model and replay suites plus focused menu, phrase-provider, corpus and two-action punctuation regressions.
 Scope: src/features/tutor/**; src/flags.ts; vite.config.ts (optional phrase worker precache); scripts/typeahead/**; public/models/typeahead/**; tests/unit/tutor/**; tests/e2e/**typeahead*; docs/current/N253.md; docs/implementation/typeahead-evidence/**; NEXT.md.
