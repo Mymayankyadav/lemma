@@ -307,7 +307,7 @@ def resume_ready(out):
     return cache.is_file() or not (out / 'latest.pt').exists()
 
 
-def remote(settings, encoded_sources):
+def remote(settings, encoded_sources, *, prepare_packet=None, transport=None):
     start = time.monotonic()
     inputs, work = Path('/kaggle/input'), Path('/kaggle/working')
     if settings['enableInternet'] is not False:
@@ -319,8 +319,19 @@ def remote(settings, encoded_sources):
                'status': 'failed', 'sessionSecondsAllowed': settings['sessionSeconds'], 'train': settings['train'],
                'enableInternet': False, 'resumeReceiptSha256': settings['resumeReceiptSha256']}
     train_start = None
+    scratch = None
     try:
-        manifest = unique_match(inputs, PACKET_FILE, settings['packetSha256'])
+        if prepare_packet is None:
+            manifest = unique_match(inputs, PACKET_FILE, settings['packetSha256'])
+        else:
+            receipt['transport'] = transport
+            temp = Path('/kaggle/temp')
+            temp.mkdir(parents=True, exist_ok=True)
+            scratch = tempfile.TemporaryDirectory(prefix='lemma-input-', dir=temp)
+            staged = Path(scratch.name)
+            prepare_packet(inputs, staged)
+            manifest = staged / PACKET_FILE
+            receipt['transportStagingSeconds'] = time.monotonic() - start
         packet = verify_packet(manifest.parent, settings['packetSha256'])
         receipt.update(data=packet['data'], files=packet['files'], sourceCommit=packet['sourceCommit'],
                        sourceArchiveSha256=packet['sourceArchiveSha256'], accelerator=gpu_info())
@@ -350,6 +361,8 @@ def remote(settings, encoded_sources):
                 raise RuntimeError(f'Trainer exited {code} with timedOut={timed_out} before publishing required artifacts')
             receipt['offlinePythonSocketGuardVerified'] = True
     finally:
+        if scratch is not None:
+            scratch.cleanup()
         for path in out.glob('teacher-scores.building.sqlite3*'):
             path.unlink(missing_ok=True)
         outputs = {p.name: describe_file(p) for p in sorted(out.iterdir()) if p.is_file() and not p.name.endswith('.tmp')}
