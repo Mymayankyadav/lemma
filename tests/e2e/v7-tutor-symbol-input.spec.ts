@@ -34,7 +34,7 @@ for(const [query,name,glyph] of [['infinty','Infinity','∞'],['upside-down A','
  });
 }
 
-test('closing Keys pauses a live symbol stroke when the picture scratchpad is disabled',async({page})=>{
+test('switching to the device keyboard releases a live symbol stroke when the picture scratchpad is disabled',async({page})=>{
   const customOnly='/lemma/?demo=1&flags=v7Shell,v6Shell,-tutorScratch#';
   await page.addInitScript(()=>Object.defineProperty(window,'Worker',{value:undefined,configurable:true}));
   await page.goto(customOnly+'/settings?section=tutor');
@@ -49,10 +49,11 @@ test('closing Keys pauses a live symbol stroke when the picture scratchpad is di
   await page.mouse.move(box!.x+box!.width*.6,box!.y+box!.height*.25);
   await page.mouse.down();
   await page.mouse.move(box!.x+box!.width*.4,box!.y+box!.height*.5);
-  await page.getByRole('button',{name:'Keys',exact:true}).evaluate((button:HTMLButtonElement)=>button.click());
+  await page.getByRole('button',{name:'Use device keyboard',exact:true}).evaluate((button:HTMLButtonElement)=>button.click());
   await page.mouse.up();
   await expect(pad).toHaveCount(0);
-  await page.getByRole('button',{name:'Keys',exact:true}).click();
+  await expect(answer).toHaveAttribute('inputmode','text');
+  await page.getByRole('button',{name:'Use Lemma keyboard',exact:true}).click();
   await expect(page.getByRole('button',{name:'q',exact:true})).toBeVisible();
   await expect(pad).toHaveCount(0);
   await page.getByRole('button',{name:'Draw symbol',exact:true}).click();
