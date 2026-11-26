@@ -1,0 +1,271 @@
+{
+  "allocationSha256": "8f93a1c646a90be08c9e912ee37c092191557ea14f28208f3e1726a69b448c8f",
+  "arms": {
+    "m2": {
+      "assisted": 8810,
+      "boundaryHits": 411,
+      "boundaryOpportunities": 1884,
+      "captureInvocation": {
+        "arm": "default",
+        "config": "59c155f503a2fd753075274fbc014e44e610e9b866c4df8d9a11124cf559e327",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": "m2",
+        "phase": "capture",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "cea3e2b59f38a4395e6f5ba6f62c9457d832004a806d81ae4ca7285e68848857",
+          "contexts.jsonl": "03cc45ca75eea81889ba86e2e645345b6fbf871c1a92147b9fbb3858ccaa8a10",
+          "events.jsonl": "2c103255055b47a0430362cbaedf6a79ebebc691ac3f3d6c03dd017cc104a725",
+          "gold.jsonl": "3af4d03282d3e854b087f413ab332c7e3716dfbf67c70e99cea4a8217c2c3de9"
+        },
+        "static": "aba2f87f822215cba02845e9152794aad1528b4b155a29706aa35a62996ac94f"
+      },
+      "costDefinition": [
+        "full-answer-v1"
+      ],
+      "costInvocation": {
+        "arm": "default",
+        "config": "59c155f503a2fd753075274fbc014e44e610e9b866c4df8d9a11124cf559e327",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": "m2",
+        "phase": "cost",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "cea3e2b59f38a4395e6f5ba6f62c9457d832004a806d81ae4ca7285e68848857",
+          "contexts.jsonl": "03cc45ca75eea81889ba86e2e645345b6fbf871c1a92147b9fbb3858ccaa8a10",
+          "events.jsonl": "2c103255055b47a0430362cbaedf6a79ebebc691ac3f3d6c03dd017cc104a725",
+          "gold.jsonl": "3af4d03282d3e854b087f413ab332c7e3716dfbf67c70e99cea4a8217c2c3de9"
+        },
+        "static": "aba2f87f822215cba02845e9152794aad1528b4b155a29706aa35a62996ac94f"
+      },
+      "impressionsSha256": "937d7c57b1c826637bb9d38b0318c212dcdce7feca435796b791d7fdd6f23e84",
+      "keysSha256": "7b4286897cb3b29f745db87e9e3bacbb1db25db9a03bc9e4ea6cced3b30d79d7",
+      "manual": 12990,
+      "prefixHits": 524,
+      "prefixOpportunities": 1060
+    },
+    "shipping": {
+      "assisted": 8823,
+      "boundaryHits": 402,
+      "boundaryOpportunities": 1884,
+      "captureInvocation": {
+        "arm": "default",
+        "config": "46b018a482c6ff7377547dbc85d13fe456c3edf5e5017f0dc24224e3d7f9ad58",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": null,
+        "phase": "capture",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "cea3e2b59f38a4395e6f5ba6f62c9457d832004a806d81ae4ca7285e68848857",
+          "contexts.jsonl": "03cc45ca75eea81889ba86e2e645345b6fbf871c1a92147b9fbb3858ccaa8a10",
+          "events.jsonl": "2c103255055b47a0430362cbaedf6a79ebebc691ac3f3d6c03dd017cc104a725",
+          "gold.jsonl": "3af4d03282d3e854b087f413ab332c7e3716dfbf67c70e99cea4a8217c2c3de9"
+        },
+        "static": "87a282f5f222bb6365ab1ed767e582e7365e82f119efe0854e7ad3f6929b01f3"
+      },
+      "costDefinition": [
+        "full-answer-v1"
+      ],
+      "costInvocation": {
+        "arm": "default",
+        "config": "46b018a482c6ff7377547dbc85d13fe456c3edf5e5017f0dc24224e3d7f9ad58",
+        "fasterTyping": true,
+        "fixture": "4a6c3ac9e44ca4514d00554e87b3ca1a0bf2abba6f5a64b45cc583367baf2d4f",
+        "flags": "-typeaheadV2,-tutorAnswerAids,-proofAssistGhost",
+        "harness": "89d736da6eb17d7a8290faee6ac6971d5eba18a3fd4e9f7c1333ec8b601d52e9",
+        "menuTrial": null,
+        "phase": "cost",
+        "phraseGhost": null,
+        "punctuationPairs": false,
+        "sha": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+        "split": {
+          "answers.jsonl": "cea3e2b59f38a4395e6f5ba6f62c9457d832004a806d81ae4ca7285e68848857",
+          "contexts.jsonl": "03cc45ca75eea81889ba86e2e645345b6fbf871c1a92147b9fbb3858ccaa8a10",
+          "events.jsonl": "2c103255055b47a0430362cbaedf6a79ebebc691ac3f3d6c03dd017cc104a725",
+          "gold.jsonl": "3af4d03282d3e854b087f413ab332c7e3716dfbf67c70e99cea4a8217c2c3de9"
+        },
+        "static": "87a282f5f222bb6365ab1ed767e582e7365e82f119efe0854e7ad3f6929b01f3"
+      },
+      "impressionsSha256": "90f953990725c37b42fd0929e01312fdd96f23e8c21cb7c938d8ed1470124994",
+      "keysSha256": "5e58da3164cd263982969a352b549531adecad269575da2c07cdf704667111bd",
+      "manual": 12990,
+      "prefixHits": 518,
+      "prefixOpportunities": 1060
+    }
+  },
+  "chromium": "156.0.8078.79",
+  "decision": "hold: the observed KSR lift is below the proposed +2.0 percentage point gate",
+  "firstLoss": {
+    "eligible-pool-limit": {
+      "m2": 18,
+      "shipping": 62
+    },
+    "outside-visible-three": {
+      "m2": 524,
+      "shipping": 515
+    },
+    "policy": {
+      "m2": 128,
+      "shipping": 138
+    },
+    "unobserved-or-unproposed": {
+      "m2": 1339,
+      "shipping": 1309
+    },
+    "visible": {
+      "m2": 935,
+      "shipping": 920
+    }
+  },
+  "firstLossDetailed": {
+    "eligible-pool-limit": {
+      "m2": 18,
+      "shipping": 62
+    },
+    "literal-unobserved-retrieval-or-late": {
+      "m2": 855,
+      "shipping": 784
+    },
+    "no-current-model-at-observation": {
+      "m2": 287,
+      "shipping": 323
+    },
+    "outside-visible-three": {
+      "m2": 524,
+      "shipping": 515
+    },
+    "policy": {
+      "m2": 128,
+      "shipping": 138
+    },
+    "trailing-space-mismatch": {
+      "m2": 197,
+      "shipping": 202
+    },
+    "visible": {
+      "m2": 935,
+      "shipping": 920
+    }
+  },
+  "fixedOpportunities": 2944,
+  "limitations": [
+    "Development set only; no promotion or final enrollment.",
+    "Full-answer greedy cost and fixed observations are separate browser passes.",
+    "The literal-unobserved category cannot distinguish retrieval failure from a late response.",
+    "Concurrent workloads mean these results do not qualify latency or phone behavior."
+  ],
+  "pairedBootstrap": {
+    "blocks": 100,
+    "gain": [
+      0.0010007698229407237,
+      0.004777070063694267
+    ],
+    "inputSha256": {
+      "allocation": "8f93a1c646a90be08c9e912ee37c092191557ea14f28208f3e1726a69b448c8f",
+      "candidate": "937d7c57b1c826637bb9d38b0318c212dcdce7feca435796b791d7fdd6f23e84",
+      "candidate_keys": "7b4286897cb3b29f745db87e9e3bacbb1db25db9a03bc9e4ea6cced3b30d79d7",
+      "control": "90f953990725c37b42fd0929e01312fdd96f23e8c21cb7c938d8ed1470124994",
+      "control_keys": "5e58da3164cd263982969a352b549531adecad269575da2c07cdf704667111bd",
+      "gold": "3af4d03282d3e854b087f413ab332c7e3716dfbf67c70e99cea4a8217c2c3de9"
+    },
+    "pairedBootstrap95": [
+      [
+        -0.0015790523040529394,
+        0.0035248783121620063
+      ],
+      [
+        -0.0016933879070532758,
+        0.011311296502885964
+      ]
+    ],
+    "planning": {
+      "alternative": [
+        0.03,
+        0.015
+      ],
+      "designEffects": [
+        0.02,
+        0.01
+      ],
+      "influenceSd": [
+        0.013188393819777707,
+        0.0338527017647754
+      ],
+      "jointPower": 0.9839,
+      "jointPowerMethod": "paired influence bootstrap; normal lower bound and promotion cutoffs",
+      "requiredThreads": [
+        200,
+        200
+      ],
+      "reserveExceeded": false,
+      "selectedThreads": 200
+    },
+    "resamples": 10000,
+    "seed": 253,
+    "stratumBlocks": {
+      "math.stackexchange.com/long": 26,
+      "math.stackexchange.com/short": 26,
+      "mathoverflow.net/long": 24,
+      "mathoverflow.net/short": 24
+    },
+    "threads": 100,
+    "totals": [
+      13.0,
+      12990.0,
+      9.0,
+      1884.0
+    ],
+    "validResamples": 10000
+  },
+  "pairedVisibleHits": {
+    "boundary": {
+      "delta": 0.004777070063694267,
+      "gained": 28,
+      "lost": 19,
+      "opportunities": 1884
+    },
+    "prefix": {
+      "delta": 0.005660377358490566,
+      "gained": 14,
+      "lost": 8,
+      "opportunities": 1060
+    },
+    "symbol": {
+      "delta": 0.0,
+      "gained": 0,
+      "lost": 0,
+      "opportunities": 79
+    },
+    "word": {
+      "delta": 0.005235602094240838,
+      "gained": 42,
+      "lost": 27,
+      "opportunities": 2865
+    }
+  },
+  "sourceCommit": "421967853f6e070bced42751d9073a27dc3fd1cf",
+  "status": "development-only",
+  "strata": {
+    "math.stackexchange.com/long": 26,
+    "math.stackexchange.com/short": 26,
+    "mathoverflow.net/long": 24,
+    "mathoverflow.net/short": 24
+  },
+  "threads": 100,
+  "version": 1
+}

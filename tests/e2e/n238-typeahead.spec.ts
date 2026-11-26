@@ -551,6 +551,8 @@ test('opts into the expanded predictor from Tutor settings and returns to the us
 
 test('reports tap-to-paint for empty, eight-equation, boundary and interior edits at 4× CPU', async ({page}, info) => {
   const extended = process.env.LEMMA_TYPEAHEAD_PERF_EXTENDED === '1';
+  const samplesPerScenario = Number(process.env.LEMMA_TYPEAHEAD_PERF_SAMPLES ?? (extended ? '101' : '10'));
+  if (!Number.isInteger(samplesPerScenario) || samplesPerScenario < 2 || samplesPerScenario > 101) throw new Error('Invalid performance sample count');
   const expectedAsset = process.env.LEMMA_TYPEAHEAD_EXPECTED_ASSET;
   if (process.env.LEMMA_TYPEAHEAD_PERF_FASTER_TYPING === '1') {
     await page.addInitScript(() => localStorage.setItem('lemma.demo-tutor.writing-aid.v1:default', 'balanced:15:experiment'));
@@ -630,7 +632,7 @@ test('reports tap-to-paint for empty, eight-equation, boundary and interior edit
   for (const scenario of scenarios) {
     const samples: Sample[] = [];
     const key = keyboard.getByRole('button', {name:scenario.key, exact:true});
-    for (let sample = 0; sample < (extended ? 101 : 10); sample++) {
+    for (let sample = 0; sample < samplesPerScenario; sample++) {
       await answer.fill(scenario.draft);
       await answer.press('End');
       for (let i=0; i<scenario.suffix; i++) await answer.press('ArrowLeft');

@@ -1,0 +1,228 @@
+{
+  "arms": {
+    "control": [
+      {
+        "logSha256": "349eff7e3163d98a2983aa816fadcc4367bd4ce027bb87103c2f39429912f942",
+        "samplesSha256": "b1c50712939ad58fe5b79b6585021068c6f9ba743646cb34dd321d38d72e2b3e",
+        "scenarios": {
+          "control": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 16.40000000037253,
+            "warmSamples": 11,
+            "workerComputeP95Ms": null,
+            "workerReplies": 0
+          },
+          "deletePrefix": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 34.5,
+            "warmSamples": 11,
+            "workerComputeP95Ms": null,
+            "workerReplies": 0
+          },
+          "eightEquations": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 31.90000000037253,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.20000000018626451,
+            "workerReplies": 11
+          },
+          "empty": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 49.40000000037253,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 16.200000000186265,
+            "workerReplies": 10
+          },
+          "interiorPrefix": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 52.700000000186265,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.20000000018626451,
+            "workerReplies": 11
+          },
+          "sentenceBoundary": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 27.299999999813735,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.10000000055879354,
+            "workerReplies": 11
+          }
+        }
+      },
+      {
+        "logSha256": "1fc5b364eb10e30fc9ba2a118fc71420bfa7a8d84edb878e0237ebdf5ce034c3",
+        "samplesSha256": "d79f83278c84a385583f7ca8cc972c3e2630268c4d1f6aada8f11aee0b2226e0",
+        "scenarios": {
+          "control": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 18.200000000186265,
+            "warmSamples": 11,
+            "workerComputeP95Ms": null,
+            "workerReplies": 0
+          },
+          "deletePrefix": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 38.799999999813735,
+            "warmSamples": 11,
+            "workerComputeP95Ms": null,
+            "workerReplies": 0
+          },
+          "eightEquations": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 31.90000000037253,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.20000000018626451,
+            "workerReplies": 11
+          },
+          "empty": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 43.700000000186265,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 11.399999999441206,
+            "workerReplies": 11
+          },
+          "interiorPrefix": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 50.40000000037253,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.19999999925494194,
+            "workerReplies": 11
+          },
+          "sentenceBoundary": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 34.700000000186265,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.10000000055879354,
+            "workerReplies": 11
+          }
+        }
+      }
+    ],
+    "m2": [
+      {
+        "logSha256": "2ddad8e0aa5b48c936bb3f1d3a08ebe6e2a8da52088473cb2cfece4818a793dc",
+        "samplesSha256": "aa25846182894ab295e42e4d23b97f864e7cf39bd666b1cada8b9f90ea6b00f6",
+        "scenarios": {
+          "control": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 15.899999999441206,
+            "warmSamples": 11,
+            "workerComputeP95Ms": null,
+            "workerReplies": 0
+          },
+          "deletePrefix": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 34.799999999813735,
+            "warmSamples": 11,
+            "workerComputeP95Ms": null,
+            "workerReplies": 0
+          },
+          "eightEquations": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 41.200000000186265,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.20000000018626451,
+            "workerReplies": 11
+          },
+          "empty": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 47.299999999813735,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 11.599999999627471,
+            "workerReplies": 11
+          },
+          "interiorPrefix": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 34.700000000186265,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.2999999998137355,
+            "workerReplies": 11
+          },
+          "sentenceBoundary": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 28.700000000186265,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.10000000055879354,
+            "workerReplies": 11
+          }
+        }
+      },
+      {
+        "logSha256": "0321389e617c9d04e602c181d456c61ff584aa843e7a2bc27aae9b104bcae708",
+        "samplesSha256": "c135fd842f25c72f5ad7ac2269cf0d19e4ef5cfe3b595f256f8179d7bd515dfa",
+        "scenarios": {
+          "control": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 18.09999999962747,
+            "warmSamples": 11,
+            "workerComputeP95Ms": null,
+            "workerReplies": 0
+          },
+          "deletePrefix": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 35,
+            "warmSamples": 11,
+            "workerComputeP95Ms": null,
+            "workerReplies": 0
+          },
+          "eightEquations": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 39.69999999925494,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.39999999944120646,
+            "workerReplies": 11
+          },
+          "empty": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 44.700000000186265,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 10,
+            "workerReplies": 11
+          },
+          "interiorPrefix": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 36.799999999813735,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.20000000018626451,
+            "workerReplies": 11
+          },
+          "sentenceBoundary": {
+            "presentationSamples": 0,
+            "tapFrameP95Ms": 26.5,
+            "warmSamples": 11,
+            "workerComputeP95Ms": 0.10000000055879354,
+            "workerReplies": 11
+          }
+        }
+      }
+    ]
+  },
+  "browser": "Chromium 156.0.8078.79",
+  "cpuThrottle": 4,
+  "fasterTypingOptIn": true,
+  "flags": [
+    "-typeaheadV2",
+    "-tutorAnswerAids",
+    "-proofAssistGhost"
+  ],
+  "kind": "isolated desktop frame proxy",
+  "limitations": [
+    "Eleven warm samples per scenario make p95 a coarse maximum-order statistic.",
+    "The requestAnimationFrame proxy is not target-phone presentation latency.",
+    "No physical Android device was connected."
+  ],
+  "ngramSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+  "proposedGatesMs": {
+    "countWorkerP95": 8,
+    "eightEquationsTapP95": 50,
+    "emptyTapP95": 32
+  },
+  "sequentialRuns": true,
+  "traceCapture": false,
+  "version": 1,
+  "viewport": [
+    393,
+    873
+  ],
+  "warmSamplesPerScenario": 11
+}
