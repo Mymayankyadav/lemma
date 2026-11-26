@@ -51,10 +51,10 @@ for (const [name, size] of [['portrait', {width: 820, height: 1110}], ['landscap
     await expect(keyboard.getByRole('button', {name: 'New line', exact: true})).toHaveCount(0);
     await expect(keyboard.getByRole('button', {name: '?123', exact: true})).toHaveCount(0);
     const g = await geometry(page);
-    // A starts under the gap after Q's first half, Z a key in: iPadOS's 1.3 · 1.75 · 2.3 key-wide left modifiers.
-    expect((g.a.x - g.q.x) / g.q.cell).toBeCloseTo(.45, 1);
-    expect((g.z.x - g.q.x) / g.q.cell).toBeCloseTo(1, 1);
-    expect(g.tab.cell / g.q.cell).toBeCloseTo(1.3, 1);
+    // iPadOS's stagger: tab 1.25 keys, caps lock 1.55 and shift 2 (A 0.3 and Z 0.75 of a key past Q).
+    expect((g.a.x - g.q.x) / g.q.cell).toBeCloseTo(.3, 1);
+    expect((g.z.x - g.q.x) / g.q.cell).toBeCloseTo(.75, 1);
+    expect(g.tab.cell / g.q.cell).toBeCloseTo(1.25, 1);
     for (const width of g.rows) expect(width).toBeCloseTo(g.rows[0]!, 0);
     // Near-square caps, larger than Gboard's phone caps.
     expect(g.q.height).toBeGreaterThan(40);

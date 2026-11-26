@@ -1,6 +1,7 @@
 import {useEffect,useId,useRef,useSyncExternalStore,useState} from 'react';
 import {Sheet} from '../../ui/v7/components';
 import {ChevronDown,Eraser,Pencil} from 'lucide-react';
+import {isIPadBrowser} from '../../platform/ipad';
 
 const PENCIL_KEY='lemma.tutor.pencil-only';
 const ERASER_KEY='lemma.tutor.eraser-kind';
@@ -22,9 +23,7 @@ function write(key:string,value:string) {
   for (const listener of listeners) listener();
 }
 
-export function isIPadBrowser(device:Pick<Navigator,'platform'|'userAgent'|'maxTouchPoints'>) {
-  return /\biPad\b/.test(device.userAgent) || (/^Mac/.test(device.platform) && device.maxTouchPoints>1);
-}
+export {isIPadBrowser};
 
 export function usePaperInput() {
   const isIPad=typeof navigator!=='undefined' && isIPadBrowser(navigator);

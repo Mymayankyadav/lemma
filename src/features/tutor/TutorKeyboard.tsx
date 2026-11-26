@@ -1,5 +1,5 @@
 import {memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type HTMLAttributes, type PointerEvent, type ReactNode, type RefObject} from 'react';
-import {ArrowBigUp, ArrowBigUpDash, ChevronDown, ChevronLeft, ChevronRight, CornerDownLeft, Delete, Keyboard, Search} from 'lucide-react';
+import {ArrowBigUp, ArrowBigUpDash, ArrowRightToLine, ChevronDown, ChevronLeft, ChevronRight, CornerDownLeft, Delete, Keyboard, Search} from 'lucide-react';
 import {haptic} from '../../ui/v7/haptics';
 import {notation} from './notation';
 import {correctTap, needsTapCorrection, prepareTapCorrection, type KeyBox} from './tapCorrection';
@@ -30,8 +30,10 @@ const GBOARD_ROW_START = [0, .5, 1.5];
 const IPAD_ALTS: Readonly<Record<string, string>> = {
   a: '@', s: '#', d: '$', f: '&', g: '*', h: '(', j: ')', k: "'", l: '"', z: '%', x: '-', c: '+', v: '=', b: '/', n: ';', m: ':',
 };
-/** iPad key widths in letter keys, each row 12.6 keys across, as iPadOS's full-size keyboard. */
-const IPAD = {tab: 1.3, back: 1.3, caps: 1.75, enter: 1.85, wideEnter: 2.6, shiftL: 2.3, shiftR: 1.3, maths: 1.3, mode: 1.6, space: 6.8, hide: 1.3};
+/** iPad key widths in letter keys, each row 12.5 keys across, measured on the Owner's screenshot of iPadOS's keyboard.
+ *  iPadOS's dictation key has no counterpart here, so the space bar takes its room. */
+const IPAD = {tab: 1.25, back: 1.25, caps: 1.55, enter: 1.95, wideEnter: 2.5, shiftL: 2, shiftR: 1.5, maths: 1.05, modeL: 1.05, space: 7.4,
+  modeR: 1.5, hide: 1.5};
 
 interface KeyHold {
   key: string;
@@ -44,7 +46,8 @@ interface KeyHold {
 /**
  * N252: on an iPad (layout `ipad`) the keys follow iPadOS's own full-size keyboard instead: tab and delete beside the top
  * row, caps lock and return beside the second, a shift at each end of the third with `!,` and `?.` keys, and a bottom
- * row of the maths key (where iPadOS has its emoji key) · .?123 · space · .?123 · hide keyboard. Secondary characters
+ * row of the maths key (where iPadOS has its emoji key) · .?123 · space · .?123 · hide keyboard. The modifier keys show
+ * iPadOS's symbols (⇥ ⌫ ⇪ ↵ ⇧) in their outer bottom corner. Secondary characters
  * stand grey above their letters and are typed by holding the key (a flick would draw over the keys, N249); there is
  * no enlarged preview, as on iPadOS.
  *
@@ -235,23 +238,24 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
   };
   const back = key('Delete', onDelete, {style: 'fn w15 bk', icon: <Delete/>});
   const chars = (list: string[]) => list.map(char => key(char, () => onInsert(char, true), {style: 'ch sym', printable: true}));
-  const hideKey = (grow?: number) => onHide && key('Hide keyboard', onHide, {grow, style: 'fn ip-hide' + (grow === undefined ? ' phrase-page' : ''),
+  const hideKey = (grow?: number) => onHide && key('Hide keyboard', onHide, {grow, style: 'fn ip-hide' + (grow === undefined ? ' phrase-page' : ' ip-r'),
     icon: <span className="ip-hide-icon" aria-hidden="true"><Keyboard/><ChevronDown/></span>});
-  /** N252 · iPadOS's rows. Each is 12.6 letter keys across, so the letters line up as they do on the iPad. */
+  /** N252 · iPadOS's rows. Each is 12.5 letter keys across, so the letters line up as they do on the iPad. */
   function iPadRows() {
-    const tab = key('Tab', () => onTab ? onTab() : onInsert('\t', true), {grow: IPAD.tab, style: 'fn ip-txt ip-l', icon: 'tab'});
-    const del = key('Delete', onDelete, {grow: IPAD.back, style: 'fn ip-txt ip-r', icon: 'delete'});
-    const enter = (grow: number) => key('Return', () => onInsert('\n', true), {grow, style: 'fn ip-txt ip-r', icon: 'return'});
+    const tab = key('Tab', () => onTab ? onTab() : onInsert('\t', true), {grow: IPAD.tab, style: 'fn ip-l', icon: <ArrowRightToLine/>});
+    const del = key('Delete', onDelete, {grow: IPAD.back, style: 'fn ip-r', icon: <Delete/>});
+    const enter = (grow: number) => key('Return', () => onInsert('\n', true), {grow, style: 'fn ip-r', icon: <CornerDownLeft/>});
     const shiftKey = (id: string, grow: number, side: string) => key('Shift', toggleShift, {
-      id, grow, style: 'fn ip-txt ip-' + side + (shift === 'off' ? '' : ' lit'), icon: 'shift'});
+      id, grow, style: 'fn ip-' + side + (shift === 'off' ? '' : ' lit'),
+      icon: shift === 'locked' ? <ArrowBigUpDash fill="currentColor"/> : <ArrowBigUp fill={shift === 'once' ? 'currentColor' : 'none'}/>});
     const page = (label: string, next: string, id: string, grow: number, side: string) =>
       key(label, () => onView(next), {id, grow, style: 'fn ip-txt ip-' + side});
     const punctuation = (char: string, alt: string) => key(char, () => onInsert(char, true), {style: 'ch dual', printable: true, alt});
     if (view === 'abc') return <>
       <div className="row">{tab}{letters('qwertyuiop')}{del}</div>
       <div className="row">{key('Caps lock', () => setShift(shift === 'locked' ? 'off' : 'locked'), {
-        grow: IPAD.caps, style: 'fn ip-txt ip-l' + (shift === 'locked' ? ' lit' : ''),
-        icon: <><span className="ip-led" aria-hidden="true"/>caps lock</>,
+        grow: IPAD.caps, style: 'fn ip-l' + (shift === 'locked' ? ' lit' : ''),
+        icon: <ArrowBigUpDash fill={shift === 'locked' ? 'currentColor' : 'none'}/>,
       })}{letters('asdfghjkl')}{enter(IPAD.enter)}</div>
       <div className="row">{shiftKey('shift-left', IPAD.shiftL, 'l')}{letters('zxcvbnm')}{punctuation(',', '!')}{punctuation('.', '?')}
         {shiftKey('shift-right', IPAD.shiftR, 'r')}</div>
@@ -273,10 +277,10 @@ export const TutorKeyboard = memo(function TutorKeyboard({view, lastMath, onView
     const mode = view === 'abc' ? '.?123' : 'ABC';
     const toggle = () => onView(view === 'abc' ? 'num' : 'abc');
     return <div className="row bottom">
-      {key('Maths symbols', () => onView(lastMath), {grow: IPAD.maths, style: 'fn ip-sym', icon: lastMath === 'Phrases' ? 'Aa' : '∀∃'})}
-      {key(mode, toggle, {id: 'mode-left', grow: IPAD.mode, style: 'fn ip-txt'})}
+      {key('Maths symbols', () => onView(lastMath), {grow: IPAD.maths, style: 'fn ip-sym ip-l', icon: lastMath === 'Phrases' ? 'Aa' : '∀∃'})}
+      {key(mode, toggle, {id: 'mode-left', grow: IPAD.modeL, style: 'fn ip-txt ip-c'})}
       {key('Space', () => onInsert(' ', true), {grow: IPAD.space, style: 'space', icon: <span aria-hidden="true"/>})}
-      {key(mode, toggle, {id: 'mode-right', grow: IPAD.mode, style: 'fn ip-txt'})}
+      {key(mode, toggle, {id: 'mode-right', grow: IPAD.modeR, style: 'fn ip-txt ip-r'})}
       {hideKey(IPAD.hide)}
     </div>;
   }

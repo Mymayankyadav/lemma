@@ -271,3 +271,16 @@
 @layer v7-components {
  :where(html[data-v7]) .v7-learn-title {margin:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;overflow-wrap:anywhere;}
 }
+/* N252 (Owner, with screenshots of Today and of the Claude app on an iPad: "for iPad you might have to add proper
+   padding in the header"): an iPad shows the page under its status bar, and iPadOS apps put their navigation bar right
+   beneath it with room before the content. Today's header row sat 8 px down in a 56 px row, 14 pt under the status
+   bar, with the day's title 8 px below it. On an iPad every hub's header row is now 48 px tall, 4 px from the top of
+   the page (or the safe area), the rail's + is centred on it, and Today's title has 24 px of room above it. */
+@layer v7-components {
+ :where(html[data-v7][data-ipad]) .v7-hub-header {padding-top:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-1));}
+ :where(html[data-v7][data-ipad]) .v7-hub-header > .v7-hub-row {min-height:48px;}
+ :where(html[data-v7][data-ipad]) .v7-hub-header > .v7-hub-title {margin-top:var(--v7-space-4);}
+ @media (min-width:700px) {
+  :where(html[data-v7][data-ipad]) .v7-shell:not([data-immersive="true"]) .v7-dock-row > .v7-capture {margin-top:calc(var(--v7-safe-top,env(safe-area-inset-top)) + 2px);}
+ }
+}

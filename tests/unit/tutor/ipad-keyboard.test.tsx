@@ -69,15 +69,17 @@ test('the iPad rows follow iPadOS: tab and delete, caps lock and return, two shi
     ['Shift', ...'zxcvbnm', ',', '.', 'Shift'],
     ['Maths symbols', '.?123', 'Space', '.?123', 'Hide keyboard'],
   ]);
-  // Each row is 12.6 letter keys across, so the letters line up as on the iPad.
+  // Each row is 12.5 letter keys across, so the letters line up as on the iPad.
   const width = (button: HTMLButtonElement) => Number(button.style.flexGrow || 1);
   for (const row of host.querySelectorAll('.rows > .row')) {
-    expect([...row.querySelectorAll('button')].reduce((sum, button) => sum + width(button), 0)).toBeCloseTo(12.6, 5);
+    expect([...row.querySelectorAll('button')].reduce((sum, button) => sum + width(button), 0)).toBeCloseTo(12.5, 5);
   }
-  // Modifier names are shown as iPadOS writes them; the secondary characters stand above their letters.
-  expect(key('Tab').textContent).toBe('tab');
-  expect(key('Caps lock').textContent).toBe('caps lock');
-  expect(key('Return').textContent).toBe('return');
+  // Modifier keys carry iPadOS's symbols, not words; the secondary characters stand above their letters.
+  for (const label of ['Tab', 'Delete', 'Caps lock', 'Return', 'Shift', 'Hide keyboard']) {
+    expect(key(label).querySelector('svg')).not.toBeNull();
+    expect(key(label).textContent).toBe('');
+  }
+  expect(keys('.?123').map(button => button.textContent)).toEqual(['.?123', '.?123']);
   expect(key('q').querySelector('sup')!.textContent).toBe('1');
   expect(key('a').querySelector('sup')!.textContent).toBe('@');
   expect(key('m').querySelector('sup')!.textContent).toBe(':');
@@ -146,8 +148,8 @@ test('the iPad number pages keep the maths symbols in the same frame and switch 
 
 test('an iPad tap reaches the decoder in Gboard\'s frame, so its key centres hold on the iPad\'s stagger', async () => {
   const calls = await mount();
-  // iPad geometry: 50 px keys, Q 1.3 keys in, A 1.75 and Z 2.3 (Gboard puts A half a key and Z a key and a half past Q).
-  const start: Record<string, number> = {q: 1.3, a: 1.75, z: 2.3};
+  // iPad geometry: 50 px keys, Q 1.25 keys in, A 1.55 and Z 2 (Gboard puts A half a key and Z a key and a half past Q).
+  const start: Record<string, number> = {q: 1.25, a: 1.55, z: 2};
   const rowOf = (letter: string) => ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'].findIndex(row => row.includes(letter));
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
     const letter = this.dataset.letter;
@@ -185,4 +187,13 @@ test('Gboard\'s layout is unchanged when the layout is not the iPad\'s', async (
   ]);
   expect(key('a').querySelector('sup')).toBeNull();
   expect(key('Hide keyboard')).toBeUndefined();
+});
+
+test('the document is marked as an iPad before the first paint, and only on an iPad', async () => {
+  const {markIPad} = await import('../../../src/platform/ipad');
+  for (const [device, expected] of [[iPad, true], [desktopIPad, true], [android, false], [iPhone, false], [mac, false]] as const) {
+    const root = document.createElement('html');
+    expect(markIPad(root, device)).toBe(expected);
+    expect(root.hasAttribute('data-ipad')).toBe(expected);
+  }
 });

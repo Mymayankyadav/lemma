@@ -6,6 +6,7 @@ import {setShellRoot} from './app/shellRoot'
 import {isV7Route} from './app/v7Kit'
 import {loadShellFonts} from './app/shellFonts'
 import {markNativeApp} from './platform/native'
+import {markIPad} from './platform/ipad'
 import {bootReduceEffects} from './ui/v7/effects'
 import {installSheetDrag} from './ui/v7/sheetDrag'
 if(isV7Route())setShellRoot('v7')
@@ -13,6 +14,8 @@ bootReduceEffects()
 // V20: every v7 bottom sheet can be dragged down to dismiss (one delegated listener).
 installSheetDrag()
 const nativeApp=markNativeApp()
+// N252: the iPad's header spacing applies before the first paint.
+if(!nativeApp)markIPad()
 loadShellFonts(isV7Route())
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)
 // N123: the Android app's system surfaces load only inside the app, after the first render.

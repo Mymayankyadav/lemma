@@ -1,6 +1,6 @@
 import {useSyncExternalStore} from 'react';
 import {isNative} from '../../platform/native';
-import {isIPadBrowser} from './PaperInputTools';
+import {isIPadBrowser} from '../../platform/ipad';
 
 /**
  * N252 (Owner: "keyboard layout should depend on the device. Keep the current layout for android devices") · which
