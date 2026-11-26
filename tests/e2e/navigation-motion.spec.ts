@@ -210,6 +210,68 @@ test('the shared shell can open Today after its module exhausted its retries',as
  await expect(page.locator('html')).toHaveAttribute('data-shell-recovery','original');
 });
 
+for(const {moduleName,path,title} of [
+ {moduleName:'ProgressV7',path:'/insights?from=review#progress',title:'Progress'},
+ {moduleName:'V7Shell',path:'/projects?from=today#paths',title:'Paths'},
+])test('Reload app opens the current release after a deleted '+moduleName+' file',async({page})=>{
+ const retiredChunk=moduleName+'-obsolete-release.js';
+ const missing:URL[]=[];
+ let documents=0,currentEntry='';
+ await page.route(url=>url.pathname.endsWith('/assets/'+retiredChunk),async route=>{
+  missing.push(new URL(route.request().url()));
+  await route.fulfill({status:404});
+ });
+ // Serve the outdated entry only to the first document. The old chunk stays missing after reload.
+ await page.route(chunk('index'),async route=>{
+  if(documents!==1||route.request().url()!==currentEntry){await route.continue();return;}
+  const response=await route.fetch();
+  const source=await response.text();
+  const currentChunk=source.match(new RegExp(moduleName+'-[\\w-]+\\.js'))?.[0];
+  if(!currentChunk)throw new Error('Current build is missing '+moduleName);
+  await route.fulfill({response,body:source.replaceAll(currentChunk,retiredChunk)});
+ });
+ await page.route(url=>url.pathname==='/lemma/',async route=>{
+  if(!route.request().isNavigationRequest()||++documents>1){await route.continue();return;}
+  const response=await route.fetch();
+  const html=await response.text();
+  const entry=html.match(/src="([^"]*\/assets\/index-[\w-]+\.js)"/)?.[1];
+  if(!entry)throw new Error('Current build is missing its entry script');
+  currentEntry=new URL(entry,route.request().url()).href;
+  await route.fulfill({response});
+ });
+
+ await page.goto(at(path));
+ const originalUrl=page.url();
+ const root=page.locator('html');
+ await root.evaluate(html=>{html.dataset.recoveryDocument='original';});
+ const retry=page.getByRole('button',{name:'Retry',exact:true});
+ const reload=page.getByRole('button',{name:'Reload app',exact:true});
+ await expect(retry).toBeEnabled({timeout:10000});
+ const firstAttempts=missing.length;
+ expect(firstAttempts).toBeGreaterThan(0);
+ await retry.click();
+ await expect.poll(()=>missing.length).toBeGreaterThan(firstAttempts);
+ expect(missing.some(url=>url.searchParams.has('lemma-retry'))).toBe(true);
+ await expect(reload).toBeEnabled({timeout:10000});
+ await expect(root).toHaveAttribute('data-recovery-document','original');
+ expect(documents).toBe(1);
+ await Promise.all([page.waitForEvent('dialog').then(async dialog=>{
+  const type=dialog.type(),message=dialog.message();
+  await dialog.dismiss();
+  expect(type).toBe('confirm');
+  expect(message).toContain('Unsaved changes');
+ }),reload.click()]);
+ await expect(root).toHaveAttribute('data-recovery-document','original');
+ await expect(page).toHaveURL(originalUrl);
+ expect(documents).toBe(1);
+
+ await Promise.all([page.waitForEvent('dialog').then(dialog=>dialog.accept()),reload.click()]);
+ await expect(page.getByRole('heading',{name:title,exact:true,level:1})).toBeVisible();
+ await expect(root).not.toHaveAttribute('data-recovery-document','original');
+ await expect(page).toHaveURL(originalUrl);
+ expect(documents).toBe(2);
+});
+
 test('a persistent overlay failure leaves a dirty Capture in the same document',async({page})=>{
  await enableSurfaceBeta(page);
  await page.route(chunk('SearchSheet'),route=>route.abort());

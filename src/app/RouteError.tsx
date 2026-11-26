@@ -14,14 +14,19 @@ export default function RouteError(){
  return <RouteErrorScreen onRetry={()=>{void navigate(location.pathname+location.search+location.hash,{replace:true,state:location.state});}}/>;
 }
 
+function reloadApp(){
+ if(window.confirm('Reload Lemma? Unsaved changes may be lost.'))window.location.reload();
+}
+
 export function RouteErrorScreen({onRetry,busy=false}:{onRetry:()=>void;busy?:boolean}){
  const v7=isFlagOn('v7Shell');
  return <main id="main-content" className={v7?'v7-page lemma-route-error':'lemma-route-error'} role="alert">
   <BootReady/>
   <h1>Couldn’t open this screen</h1>
-  <p>Try opening this screen again.</p>
+  <p>Try opening this screen again. If it still won’t open, reload the app.</p>
   <div>
    <button type="button" className={v7?'v7-button v7-primary':'lit min-h-11 px-4'} disabled={busy} aria-busy={busy} onClick={onRetry}><span>Retry</span></button>
+   <button type="button" className={v7?'v7-button':'ghost min-h-11 rounded-ctl px-4'} disabled={busy} onClick={reloadApp}><span>Reload app</span></button>
    <Link to="/">Back to Today</Link>
   </div>
  </main>;
