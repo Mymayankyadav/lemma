@@ -95,7 +95,9 @@ function Capture(){
   <button type="button" className="v7-capture" aria-label="Capture" title="Capture" aria-haspopup="dialog"
    onPointerDown={down} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}
    onClick={()=>{if(long.current){long.current=false;return;}if(onCards){window.dispatchEvent(new Event('v7:new-card'));return;}setMode('sheet');}}
-   onKeyDown={event=>{if(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();setMode('picker');}}}><Plus aria-hidden="true"/></button>
+   onKeyDown={event=>{if(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();setMode('picker');}}}><Plus aria-hidden="true"/>
+   {/* N252: shown only as the iPad's wide rail row (ipad.css). */}
+   <span className="v7-capture-label" aria-hidden="true">Capture</span></button>
   <Suspense fallback={null}>{mode!=='closed'&&<CaptureSheet key={mode} open onClose={()=>setMode('closed')} picker={mode==='picker'} initialKind={onCalendar&&mode==='sheet'?'block':null}/>}</Suspense>
  </>;
 }

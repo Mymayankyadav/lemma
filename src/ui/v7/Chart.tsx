@@ -40,20 +40,20 @@ export function visibleTicks(labels: string[], group: number, preferred: boolean
   return out;
 }
 /**
- * N157 · V08 (v7 UX audit r3): the plot is drawn in as many units as it has CSS pixels (between 280 and 640), so its
- * text stays at the chart's 12 px caption size and its lines at their weight at every width; before, a 360-unit
- * drawing was stretched (axis text 19 px on a 460 px chart, 38 px on a 936 px one). 360 until measured (tests, SSR).
+ * N157 · V08: one drawing unit per CSS pixel keeps captions and strokes at their intended sizes.
+ * Available space defaults to the standard 640 px cap. A measured plot already includes its CSS width limit.
  */
 export const PLOT_MIN = 280, PLOT_MAX = 640;
-export const plotWidth = (measured: number) => measured > 0 ? Math.round(Math.min(PLOT_MAX, Math.max(PLOT_MIN, measured))) : 360;
-function usePlotMetrics() {
-  const ref = useRef<HTMLElement>(null), caption = useRef<HTMLSpanElement>(null);
+export const plotWidth = (measured: number, maximum = PLOT_MAX) =>
+  measured > 0 ? Math.round(Math.max(PLOT_MIN, Math.min(maximum, measured))) : 360;
+function usePlotMetrics(hasData: boolean) {
+  const ref = useRef<HTMLDivElement>(null), caption = useRef<HTMLSpanElement>(null);
   const [metrics, setMetrics] = useState({width: 360, captionSize: 12});
   useLayoutEffect(() => {
     const node = ref.current, sample = caption.current;
     if (!node || !sample) return;
     const measure = () => {
-      const width = plotWidth(node.getBoundingClientRect().width);
+      const width = plotWidth(node.getBoundingClientRect().width, Infinity);
       const captionSize = parseFloat(getComputedStyle(sample).fontSize) || 12;
       setMetrics(previous => previous.width === width && previous.captionSize === captionSize ? previous : {width, captionSize});
     };
@@ -63,13 +63,13 @@ function usePlotMetrics() {
     observer.observe(node);
     observer.observe(sample);
     return () => observer.disconnect();
-  }, []);
+  }, [hasData]);
   return {ref, caption, ...metrics};
 }
 export function Chart({ title, data, series, kind = "bars", area = false, target, format = String, summary: suppliedSummary, compact = false, totalFormat = format }: ChartProps) {
  const studyRepair=useStudyUi();
   const [selected, setSelected] = useState<number | null>(null), id = useId();
-  const {ref: measureRef, caption, width, captionSize} = usePlotMetrics();
+  const {ref: measureRef, caption, width, captionSize} = usePlotMetrics(data.length > 0);
   const textWidth = (text: string) => labelWidth(text) * captionSize / 12;
   const percentage = /%/.test(format(100));
   const observed = Math.max(1, target ?? 0, ...(kind === "stacked" ? data.map(row => sum(row.values)) : data.flatMap(row => row.values).map(finite)));
@@ -121,7 +121,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     labels[labels.length-1].labelY=bottom-8;
     for(let i=labels.length-2;i>=0;i--)labels[i].labelY=Math.min(labels[i].labelY,labels[i+1].labelY-24);
   }
-  return <section ref={measureRef} className="v7-chart" data-chart="plot" data-study-ui={studyRepair?'':undefined} aria-labelledby={id} aria-describedby={`${id}-summary`}>
+  return <section className="v7-chart" data-chart="plot" data-study-ui={studyRepair?'':undefined} aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <span ref={caption} className="v7-chart-caption-probe" aria-hidden="true" />
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3></div>
     <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{summary}</p>
@@ -132,7 +132,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     {/* N220 (Owner report): no Table switch. Tapping a bar shows its values in a tip above that bar (pinned above the plot,
         F04/F46, so it never lands under a bar); the same data is a table for screen readers. */}
     <div className="v7-sr-only"><table><caption>{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div>
-    {data.length ? <div className="v7-chart-plot">
+    {data.length ? <div ref={measureRef} className="v7-chart-plot">
       {selectedRow && selected !== null && <p className="v7-chart-tooltip" role="status" data-floating=""
         style={(share => ({left: share + '%', transform: `translateX(-${share}%)`}))(Math.round(Math.max(0, Math.min(1, point(selected) / Math.max(1, width))) * 100))}>
         {/* The readout keeps its words in the order it always had ("2 h Analysis · 3 h Algebra · Mon"); subject series
