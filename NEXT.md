@@ -6,6 +6,14 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N258 Reduce dictionary cold start for tutor typing
+
+Stage: Harden · Status: in progress · Needs: — · Assigned: chat-473926#m4vq
+Done = Validate the model without allocating a fresh buffer view for each history or rescanning every edge across several independent passes. Retain strict structural and probability validation, exact ranking and model identity; measure the first usable count reply through the tutor.
+Tests: tests/unit/tutor/ngram-load-validation.test.ts, existing expansion, spatial and exhaustive ordering tests, and the ABBA cold-editor probe.
+Scope: src/features/tutor/writingAid/decoder/kn.ts, scripts/typeahead/measure-cold-keyboard.mjs, the regression test, docs/current/N258.md, its diagnostic receipt and this item.
+Not: Changing weights, model selection, thresholds, ranking, predictions, persistent data or the N253 right-context logic. No physical-device speed claim.
+
 ## N254 Warm Lemma palette, tutor keyboard, motion and surface ownership
 
 Stage: Harden · Status: in progress · Needs: N252 · Assigned: chat-568402#d4nw
