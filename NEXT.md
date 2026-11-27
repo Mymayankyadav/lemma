@@ -14,6 +14,14 @@ Tests: Real-model equation-mode inputs, worker dispatch counts over 13 strokes a
 Scope: TutorComposer readSymbol, tutor input ink session and assist, TutorEquationPanel and equation recognizer cache probes, associated tests and docs/current/N257.md.
 Not: Model, ranking, thresholds, palm or Pencil policy, production telemetry, deployment headers, thread counts, typing or theme settings.
 
+## N256 Skip expired neural typing requests
+
+Stage: Harden · Status: in progress · Needs: — · Assigned: chat-473926#m4vq
+Done = A count result reaching the neural client late does not dispatch the draft; a queued edit expiring before its graph starts does not consume a new prefill. A live edit still scores and existing cached-prefix/epoch rules and expiry accounting hold.
+Tests: tests/unit/tutor/neural-worker-cache.test.ts and existing tutor writing-assistance entry-point regressions.
+Scope: src/features/tutor/writingAid/decoder/{neuralClient,neural.worker}.ts, tests/unit/tutor/neural-worker-cache.test.ts, docs/current/N256.md and this item.
+Not: Changing model choice or consent, inference deadline, ranking thresholds, training, N253, formula recognition, or qualifying hardware latency.
+
 ## N254 Warm Lemma palette, tutor keyboard, motion and surface ownership
 
 Stage: Harden · Status: in progress · Needs: N252 · Assigned: chat-568402#d4nw
