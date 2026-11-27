@@ -100,11 +100,11 @@ function load(mode: LoadMode): Promise<Sessions> {
     const cache = await openCache();
     // First verify the cached runtime. Don't hydrate 118 MB of cached weights when
     // speculation cannot build a session. A user-triggered read preserves the parallel asset load.
-    const cachedWasm = mode === 'prepare' ? await loadTutorModelWasm(true) : undefined;
+    const cachedWasm = mode === 'prepare' ? await loadTutorModelWasm('equation-prewarm') : undefined;
     const allowDownload = mode === 'approved';
     const files = [fetchFile(EQUATION_MODEL.files.tokenizer, cache, allowDownload), fetchFile(EQUATION_MODEL.files.encoder, cache, allowDownload),
       fetchFile(EQUATION_MODEL.files.decoder, cache, allowDownload)] as const;
-    const [wasm, tokenizer, encoderBytes, decoderBytes] = await Promise.all([cachedWasm ?? loadTutorModelWasm(), ...files]);
+    const [wasm, tokenizer, encoderBytes, decoderBytes] = await Promise.all([cachedWasm ?? loadTutorModelWasm('equation-read'), ...files]);
     const vocabulary = vocabularyFrom(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(tokenizer)));
     if (env.versions.web !== TUTOR_RUNTIME.version) throw new Error('Mismatched recognition runtime');
     // N223: every core when the page is cross-origin isolated (WASM threads need SharedArrayBuffer); otherwise one.

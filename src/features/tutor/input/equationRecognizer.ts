@@ -50,7 +50,9 @@ function equationWorker() {
 /** N223: start loading the model if it is already on this device, so the first Read is not a cold start. */
 export async function prepareEquationModel(): Promise<boolean> {
   const cached = await equationModelCached().catch(() => false);
-  if (cached) equationWorker().postMessage({type: 'prepare'} satisfies EquationWorkerRequest);
+  // An isolated reader may start nested pthread modules, whose presence cannot be proven from the model cache.
+  // Don't import them on open. The explicit Read still uses the normal parallel path.
+  if (cached && !window.crossOriginIsolated) equationWorker().postMessage({type: 'prepare'} satisfies EquationWorkerRequest);
   return cached;
 }
 
