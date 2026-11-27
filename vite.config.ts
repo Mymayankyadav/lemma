@@ -129,7 +129,7 @@ export default defineConfig(({mode})=>{const android=mode==='android';return {
    },
    workbox:{
     ...(pushEnabled ? {importScripts:['/lemma/lemma-push-worker.js']} : {}),
-    globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
+    globPatterns:['**/*.{js,css,html,png,svg,woff2}', 'assets/ort-wasm-simd-threaded-*.mjs'],
     // Store-listing screenshots are published for Play/PWA installability,
     // not app runtime. Keep them out of first-install Workbox downloads.
     // Model bytes are verified and cached lazily after Draw opens. The worker entry is part of the app shell.

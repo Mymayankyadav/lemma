@@ -3,6 +3,7 @@
  * then cached), runs the encoder on the drawing and decodes LaTeX greedily with the decoder. See equationModel.ts.
  */
 import {env, InferenceSession, Tensor} from 'onnxruntime-web/wasm';
+import threadModuleUrl from 'onnxruntime-web/ort-wasm-simd-threaded.mjs?url';
 import {EQUATION_MODEL, EQUATION_MODEL_BYTES, EQUATION_MODEL_CACHE, equationModelUrl, type EquationModelFile} from './equationModel';
 import {cleanLatex, decodeTokens, greedyDecode, vocabularyFrom} from './equationRecognition';
 import {loadTutorModelWasm, MODEL_MANIFEST} from './modelAssets';
@@ -89,6 +90,9 @@ function load() {
     if (env.versions.web !== TUTOR_RUNTIME.version) throw new Error('Mismatched recognition runtime');
     // N223: every core when the page is cross-origin isolated (WASM threads need SharedArrayBuffer); otherwise one.
     env.wasm.numThreads = self.crossOriginIsolated ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1)) : TUTOR_RUNTIME.threads;
+    // The worker entry is bundled with the application. Its URL is NOT the Emscripten pthread entry:
+    // spawning that file again leaves session creation waiting forever. Give ORT its own packaged module.
+    if (env.wasm.numThreads > 1) env.wasm.wasmPaths = {mjs: new URL(threadModuleUrl, self.location.href).href};
     env.wasm.proxy = false;
     env.wasm.wasmBinary = wasm;
     try {

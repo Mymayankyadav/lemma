@@ -37,6 +37,14 @@ Tests: tests/unit/tutor/ngram-load-validation.test.ts, existing expansion, spati
 Scope: src/features/tutor/writingAid/decoder/kn.ts, scripts/typeahead/measure-cold-keyboard.mjs, the regression test, docs/current/N258.md, its diagnostic receipt and this item.
 Not: Changing weights, model selection, thresholds, ranking, predictions, persistent data or the N253 right-context logic. No physical-device speed claim.
 
+## N259 Package the same-origin pthread entry for isolated equation readers
+
+Stage: Harden · Status: done · Needs: — · Assigned: chat-816327#gm8s
+Done = When the existing equation reader selects more than one WASM thread, it can initialize its nested runtime workers from the matching packaged module instead of hanging. The offline shell includes that helper.
+Tests: Actual packaged runtime on an isolated loopback origin under same-origin worker CSP; real production-built equation reads, including an offline page reload with installed weights.
+Scope: Full-equation recognizer worker, a targeted PWA precache glob, scoped E2E regression and docs/current/N259.md.
+Not: Changing deployment isolation/CSP headers or thread counts, model weights, download consent, screen layout, digit shapes or recognition ranking.
+
 ## N254 Warm Lemma palette, tutor keyboard, motion and surface ownership
 
 Stage: Harden · Status: in progress · Needs: N252 · Assigned: chat-568402#d4nw
