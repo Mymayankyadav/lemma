@@ -124,8 +124,10 @@ scope.onmessage = event => {
   if (request.type === 'status') {
     void openCache().then(async cache => {
       const files = Object.values(EQUATION_MODEL.files);
-      const hits = await Promise.all(files.map(file => cache?.match(equationModelUrl(file)).catch(() => undefined)));
-      scope.postMessage({type: 'status', cached: hits.every(Boolean)});
+      // A status probe needs only the keys. Don't open three unused response bodies (~118 MB).
+      const keys = await cache?.keys().catch(() => []);
+      const urls = new Set(keys?.map(request => request.url));
+      scope.postMessage({type: 'status', cached: files.every(file => urls.has(equationModelUrl(file)))});
     });
   } else if (request.type === 'prepare') {
     void load().catch(() => undefined);

@@ -86,9 +86,8 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
 
   useEffect(() => {
     let live = true;
-    void equationModelCached().then(cached => {if (live) ready.current = cached;}, () => {if (live) ready.current = false;});
-    // A cold start (reading 118 MB from the cache, checking it and building two sessions) happens now, not on Read.
-    void prepareEquationModel();
+    // One cache probe both establishes consent-free readiness and warms previously installed weights.
+    void prepareEquationModel().then(cached => {if (live) ready.current = cached;}, () => {if (live) ready.current = false;});
     return () => {live = false; run.current++;};
   }, []);
 

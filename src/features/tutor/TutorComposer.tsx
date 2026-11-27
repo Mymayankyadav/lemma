@@ -55,6 +55,7 @@ import {EquationLatexField} from './input/EquationLatexField';
 import {TutorEquationPanel} from './input/TutorEquationPanel';
 import {INK_VIEWPORT} from './input/TutorInkPad';
 import {resampleInkPath} from './input/inkGeometry';
+import {INK_LIMITS} from './input/inkSession';
 import {PAD_PAPER, type PadStrokes} from '../../ui/v7/ink/ink';
 import {clearKeyTouches, decoderSymbols, recordKeyTouch, type KeyTouch} from './writingAid/decoder/ngramSpatial';
 import './keyboard.css';
@@ -1049,12 +1050,12 @@ export function TutorComposer(props: Props) {
    */
   function readSymbol(strokes: PadStrokes, size: {width: number; height: number}) {
     if (!equationMode || !inputPrefs.recognition) return;
-    replayInk(strokes, size);
-    assist.lockAutomatic();
-  }
-  function replayInk(strokes: PadStrokes, size: {width: number; height: number}) {
-    assist.onClear();
-    if (!strokes.length) return;
+    // This is one committed paper revision, not a stream of fresh live pen events. Never
+    // run the symbol model on prefixes replayed from the last revision, or on full equations.
+    if (!strokes.length || strokes.length > INK_LIMITS.strokes) {
+      assist.replacePaperInk(strokes.length ? null : []);
+      return;
+    }
     const points = strokes.map(stroke => stroke.map(point => ({x: point.x / PAD_PAPER.width * size.width, y: point.y / PAD_PAPER.height * size.height})));
     const all = points.flat();
     const left = Math.min(...all.map(point => point.x)), top = Math.min(...all.map(point => point.y));
@@ -1062,16 +1063,13 @@ export function TutorComposer(props: Props) {
     const scale = Math.min((INK_VIEWPORT.width - 24) / Math.max(width, 1), (INK_VIEWPORT.height - 24) / Math.max(height, 1));
     const offsetX = (INK_VIEWPORT.width - width * scale) / 2, offsetY = (INK_VIEWPORT.height - height * scale) / 2;
     let t = performance.now() - strokes.length * 400;
-    points.forEach((stroke, index) => {
+    assist.replacePaperInk(points.map(stroke => {
       const path = resampleInkPath(stroke.map(point => ({x: offsetX + (point.x - left) * scale, y: offsetY + (point.y - top) * scale, t: 0})),
         Math.min(64, Math.max(2, stroke.length)));
       const timed = path.map(point => ({...point, t: t += 8}));
-      const id = 9000 + index;
-      assist.onBegin(id, 'pen', timed[0]);
-      for (const point of timed.slice(1, -1)) assist.onMove(id, point);
-      assist.onEnd(id, timed.at(-1)!);
       t += 120;
-    });
+      return timed;
+    }));
   }
   function keyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.target !== event.currentTarget || composition.current || event.nativeEvent.isComposing || event.keyCode === 229) return;

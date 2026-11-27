@@ -207,6 +207,14 @@ export function useTutorInputAssist(options:Options) {
     paint(true);
     if(change==='undo')schedule(true);
   }
+  function replacePaperInk(paths:readonly (readonly InkPoint[])[]|null) {
+    const active=session.current, opts=config.current;
+    if(!active||!drawingNow.current||!opts.enabled||opts.readOnly||opts.composing||pickerTarget.current)return;
+    clearWork();
+    active.replacePaperInk(paths);
+    paint(true);
+    if(paths?.length)schedule(true);
+  }
   function onBegin(id:number,type:InkStroke['pointerType'],point:InkPoint) {
     if(config.current.readOnly||config.current.composing||pickerTarget.current)return;
     const active=session.current;
@@ -266,7 +274,7 @@ export function useTutorInputAssist(options:Options) {
   return {drawing,picker,keepDrawing,snapshot,actionable,readiness,error,recent,openDraw,openPicker,closePicker,pause,stop,
     recognized:result?.recognized.map(value=>value.symbolId)??[],
     completions:result?.possibleCompletions.map(value=>value.symbolId)??[],
-    onBegin,onMove,onEnd,onInterrupt,
+    onBegin,onMove,onEnd,onInterrupt,replacePaperInk,
     onKeepDrawing:()=>{keepDrawingNow.current=!keepDrawingNow.current;setKeepDrawing(keepDrawingNow.current);},
     onUndo:()=>discardInk('undo'),onClear:()=>discardInk('clear'),
     lockAutomatic:()=>{session.current?.lockChoice();},
