@@ -35,6 +35,12 @@ export async function createNeuralClient(trial = false, strictTrial = false, fas
     pending = undefined;
     resolve(reply);
   }
+  function coverage(detail: Record<string, unknown>) {
+    performance.mark('lemma.typeahead.neural.coverage', {detail});
+    if (performance.getEntriesByName('lemma.typeahead.neural.coverage').length > 256) {
+      performance.clearMarks('lemma.typeahead.neural.coverage');
+    }
+  }
   const lab = (event: Event) => {
     if (trial && strictTrial) worker.postMessage((event as CustomEvent<LabCase>).detail);
   };
@@ -48,12 +54,8 @@ export async function createNeuralClient(trial = false, strictTrial = false, fas
     const pendingReply = pending?.id === reply.id ? pending : undefined;
     const arrivedBeforeDeadline = Boolean(pendingReply && Date.now() <= pendingReply.deadline);
     if (reply.timing) {
-      performance.mark('lemma.typeahead.neural.coverage', {detail: {...reply.timing, assetSha256: reply.assetSha256,
-        modelFingerprint: reply.modelFingerprint, matchedPending: Boolean(pendingReply), arrivedBeforeDeadline,
-        hasContinuation: Boolean(reply.continuation)}});
-      if (performance.getEntriesByName('lemma.typeahead.neural.coverage').length > 256) {
-        performance.clearMarks('lemma.typeahead.neural.coverage');
-      }
+      coverage({...reply.timing, assetSha256: reply.assetSha256, modelFingerprint: reply.modelFingerprint,
+        matchedPending: Boolean(pendingReply), arrivedBeforeDeadline, hasContinuation: Boolean(reply.continuation)});
     }
     if (pendingReply) finish(arrivedBeforeDeadline ? reply : undefined);
   };
@@ -62,6 +64,12 @@ export async function createNeuralClient(trial = false, strictTrial = false, fas
   return {
     predict(request) {
       finish();
+      if (Date.now() > request.deadline) {
+        // Keep missed opportunities in the replay/device denominator without copying their drafts to the worker.
+        coverage({expiredBeforeDispatch: true, strictTrial, late: true, attempted: 0, scored: 0,
+          matchedPending: false, arrivedBeforeDeadline: false, hasContinuation: false});
+        return Promise.resolve(undefined);
+      }
       const next = ++id;
       return new Promise(resolve => {
         pending = {id: next, started: performance.now(), deadline: request.deadline, finish: resolve,

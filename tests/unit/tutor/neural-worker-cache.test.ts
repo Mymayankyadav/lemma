@@ -2,11 +2,12 @@ import {afterEach, expect, test, vi} from 'vitest';
 import type {NeuralReply, NeuralRequest} from '../../../src/features/tutor/writingAid/decoder/neural.worker';
 import {createNeuralClient} from '../../../src/features/tutor/writingAid/decoder/neuralClient';
 
-const ort = vi.hoisted(() => ({prefill: vi.fn(), incremental: vi.fn()}));
+const ort = vi.hoisted(() => ({prefill: vi.fn(), incremental: vi.fn(), feed: vi.fn()}));
 const modelFiles = vi.hoisted(() => ({sharedGraphs: false, fetched: vi.fn()}));
 vi.mock('onnxruntime-web/wasm', () => ({
   env: {versions: {web: '1.27.0'}, wasm: {}},
   Tensor: class Tensor {
+    constructor() {ort.feed();}
     dispose() {}
   },
   InferenceSession: {create: async (graph: Uint8Array) => ({run: graph[0] === 1 ? ort.prefill : ort.incremental})},
@@ -44,6 +45,7 @@ async function worker(sharedGraphs = false) {
   vi.resetModules();
   modelFiles.sharedGraphs = sharedGraphs;
   modelFiles.fetched.mockClear();
+  ort.feed.mockReset();
   ort.prefill.mockReset().mockImplementation(async () => tensors());
   ort.incremental.mockReset().mockImplementation(async () => tensors());
   const replies: NeuralReply[] = [];
@@ -199,4 +201,71 @@ test('distinguishes stale and late arrivals from a delivered neural score', asyn
     matchedPending: true, arrivedBeforeDeadline: true,
   })});
   client.close();
+});
+
+test('does not start a graph on an expired edit queued while another prefill was running', async () => {
+  const decoder = await worker(), pending = delayedPrefill();
+  let now = 100;
+  vi.spyOn(Date, 'now').mockImplementation(() => now);
+  decoder.suggest(1, 'Use ', 'turn', 160);
+  await vi.waitFor(() => expect(ort.prefill).toHaveBeenCalledTimes(1));
+  decoder.suggest(2, 'Edited ', 'turn', 170);
+  now = 180;
+  pending.finish();
+  expect((await decoder.reply(2)).timing?.late).toBe(true);
+  expect(ort.prefill).toHaveBeenCalledTimes(1);
+  decoder.suggest(3, 'New ', 'turn', 240);
+  expect((await decoder.reply(3)).timing?.late).toBe(false);
+  expect(ort.prefill).toHaveBeenCalledTimes(2);
+  decoder.reset();
+});
+
+test('does not send draft text to the graph worker after the edit budget expired', async () => {
+  const sent = vi.fn();
+  vi.stubGlobal('Worker', class {postMessage = sent; terminate() {}});
+  const client = (await createNeuralClient(true, true))!;
+  sent.mockClear(); // Ignore model preparation, which has no draft.
+  const mark = vi.spyOn(performance, 'mark');
+  const now = Date.now();
+  expect(await client.predict({epoch: 'turn', prefix: 'def', words: ['definition'], startedAt: now - 100,
+    deadline: now - 40, ghost: false, prompt: {question: '', aids: '', draft: 'State the def'}})).toBeUndefined();
+  expect(sent).not.toHaveBeenCalled();
+  expect(mark).toHaveBeenCalledWith('lemma.typeahead.neural.coverage', {detail: {expiredBeforeDispatch: true, strictTrial: true,
+    late: true, attempted: 0, scored: 0, matchedPending: false, arrivedBeforeDeadline: false, hasContinuation: false}});
+  client.close();
+});
+
+test('expiry during tokenization skips a new prefill without evicting the previous usable prefix', async () => {
+  const decoder = await worker();
+  let now = 100;
+  vi.spyOn(Date, 'now').mockImplementation(() => now);
+  decoder.suggest(1, 'Use ', 'turn', 160);
+  await decoder.reply(1);
+  const encode = TextEncoder.prototype.encode;
+  vi.spyOn(TextEncoder.prototype, 'encode').mockImplementation(function (this: TextEncoder, text?: string) {
+    if (text === 'Rewritten') now = 161;
+    return encode.call(this, text);
+  });
+  decoder.suggest(2, 'Rewritten ', 'turn', 160);
+  expect((await decoder.reply(2)).timing?.late).toBe(true);
+  expect(ort.prefill).toHaveBeenCalledTimes(1);
+  decoder.suggest(3, 'Use ', 'turn', 221);
+  expect((await decoder.reply(3)).timing?.reusedPrefix).toBe(true);
+  expect(ort.prefill).toHaveBeenCalledTimes(1);
+  decoder.reset();
+});
+
+test.each([1, 2, 3])('checks expiry immediately before ordinary, ghost and incremental graph starts (feed %i)', async stop => {
+  const decoder = await worker();
+  let now = 100, feeds = 0;
+  vi.spyOn(Date, 'now').mockImplementation(() => now);
+  ort.feed.mockImplementation(() => {if (++feeds === stop) now = 161;});
+  ort.prefill.mockResolvedValueOnce(tensors()).mockResolvedValueOnce(tensors('t'.charCodeAt(0) + 6));
+  decoder.suggest(1, 'Use ', 'turn', 160, {ghost: true, probeGhost: true});
+  const late = await decoder.reply(1);
+  expect(late.timing?.late).toBe(true);
+  expect(late.scores).toBeUndefined();
+  expect(ort.prefill).toHaveBeenCalledTimes(stop - 1);
+  expect(ort.incremental).not.toHaveBeenCalled();
+  decoder.reset();
 });

@@ -41,6 +41,24 @@ function inference(snapshot:InkSnapshot,scores:[number,number,number]=[.98,.015,
 }
 
 describe('bounded single-symbol ink session',()=>{
+  it('imports one completed paper revision with unchanged symbol geometry and invalidates old reads',()=>{
+    const active=session();
+    const prior=trace(active,up);
+    let time=1;
+    const paths=[left,bar].map(path=>path.map(xy=>pt(...xy,time++)));
+    active.replacePaperInk(paths);
+    const imported=active.snapshot(100),live=trace(session(),left,bar);
+    expect(imported.strokes).toEqual(live.strokes);
+    expect(matchPartialSymbols(imported)).toEqual(matchPartialSymbols(live));
+    expect(imported.completedRevision).toBe(imported.inkRevision);
+    expect(active.explicitChoiceLocked).toBe(true);
+    expect(classifyInkResult(imported,prior,{nowMs:100,activePointer:null})).toBe('stale');
+    active.replacePaperInk(null);
+    expect(active.snapshot(101)).toMatchObject({strokes:[],overBudget:true,completedRevision:null});
+    active.replacePaperInk(paths);
+    expect(active.snapshot(102)).toMatchObject({strokes:live.strokes,overBudget:false});
+  });
+
   it('retains chronological geometry, ownership, pressure and the exact pointer-up endpoint',()=>{
     const active=session();
     expect(active.begin(7,'touch',pt(10,12,10,1.5))).toBe(true);
