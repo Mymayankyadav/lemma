@@ -54,13 +54,16 @@ async function readVerifiedAsset(response: Response, file: AssetFile) {
   return bytes;
 }
 
-export async function loadVerifiedModelAsset(url: string, file: AssetFile, cache?: Cache, offlineInstall?: AbortSignal) {
+type AssetLoadOptions = {offlineInstall?: AbortSignal; preserveInvalidCache?: boolean};
+
+export async function loadVerifiedModelAsset(url: string, file: AssetFile, cache?: Cache,
+  {offlineInstall, preserveInvalidCache}: AssetLoadOptions = {}) {
   const cached = await cache?.match(url).catch(() => undefined);
   if (cached) {
     try {
       return await readVerifiedAsset(cached, file);
     } catch {
-      await cache?.delete(url).catch(() => undefined);
+      if (!preserveInvalidCache) await cache?.delete(url).catch(() => undefined);
     }
   }
 
@@ -115,13 +118,22 @@ function loadWasm(cache?: Cache) {
 }
 
 /** Equation Assist uses the same verified WASM binary as Draw symbol. */
-export async function loadTutorModelWasm() {
-  return loadWasm(await openAssetCache());
+export async function loadTutorModelWasm(mode?: "equation-prewarm" | "equation-read") {
+  const cache = await openAssetCache();
+  if (mode === "equation-read") {
+    // Keep the previous entry if verification of its replacement fails or the device is offline.
+    return loadVerifiedModelAsset(assetUrl(manifest.files.wasm).href, manifest.files.wasm, cache, {preserveInvalidCache: true});
+  }
+  if (mode !== "equation-prewarm") return loadWasm(cache);
+  // Speculation must not fetch even the packaged runtime. Explicit Read can still use the APK or network.
+  const file = manifest.files.wasm, hit = await cache?.match(assetUrl(file)).catch(() => undefined);
+  if (!hit) throw new Error("No cached equation runtime");
+  return readVerifiedAsset(hit, file);
 }
 
 /** The web installer must persist the verified runtime before marking the model available offline. */
 export async function saveTutorModelWasmForOffline(signal: AbortSignal): Promise<void> {
   const cache = await openAssetCache();
   if (!cache) throw new Error("Could not open offline model storage");
-  await loadVerifiedModelAsset(assetUrl(manifest.files.wasm).href, manifest.files.wasm, cache, signal);
+  await loadVerifiedModelAsset(assetUrl(manifest.files.wasm).href, manifest.files.wasm, cache, {offlineInstall: signal});
 }

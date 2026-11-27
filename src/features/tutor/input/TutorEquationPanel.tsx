@@ -5,7 +5,7 @@ import {InkCanvas,type InkCanvasHandle} from '../../../ui/v7/ink/InkCanvas';
 import {clearPadInk, initializePadInk, PAD_PAPER, undoPadInk, type PadInkHistory, type PadStrokes} from '../../../ui/v7/ink/ink';
 import {haptic} from '../../../ui/v7/haptics';
 import {EQUATION_MODEL_BYTES} from './equationModel';
-import {equationModelCached, prepareEquationModel, recognizeEquation} from './equationRecognizer';
+import {EquationDownloadRequired, equationModelCached, prepareEquationModel, recognizeEquation} from './equationRecognizer';
 import {symbolById} from './symbolCatalog';
 import {PaperEraserControl,PencilOnlyControl,usePaperInput} from '../PaperInputTools';
 import {FullscreenPaper} from '../FullscreenPaper';
@@ -106,11 +106,14 @@ export function TutorEquationPanel({disabled, replacing, leading, trailing, symb
     try {
       const latex = await recognizeEquation(asWritten(strokes), 3, loaded => {
         if (current === run.current) setReading(state => state.phase === 'download' ? {phase: 'download', loaded} : state);
-      });
+      }, consented.current);
       ready.current = true;
       if (current === run.current) setReading(latex.trim() ? {phase: 'result', latex} : {phase: 'error', message: 'Nothing to read yet.'});
     } catch (error) {
-      if (current === run.current) setReading({phase: 'error', message: error instanceof Error ? error.message : 'Could not read it.'});
+      if (error instanceof EquationDownloadRequired) {
+        ready.current = false;
+        if (current === run.current) setReading({phase: 'ask'});
+      } else if (current === run.current) setReading({phase: 'error', message: error instanceof Error ? error.message : 'Could not read it.'});
     }
   }
   function change(next: PadInkHistory) {

@@ -12,7 +12,7 @@ import {assertTutorInkScope,editInkDraft,emptyInk,finishStagedDrawing,keepDraftI
   type InkDraft,type InkRecovery,type TutorInkScope} from '../../data/tutor/ink-storage';
 import {MathText} from '../../ui/MathText';
 import {EQUATION_MODEL,EQUATION_MODEL_BYTES} from './input/equationModel';
-import {equationModelCached,recognizeEquation} from './input/equationRecognizer';
+import {EquationDownloadRequired,equationModelCached,recognizeEquation} from './input/equationRecognizer';
 import './scratchpad.css';
 
 const openingInk:InkRecovery={draft:emptyInk,status:'loading'};
@@ -124,22 +124,25 @@ export const TutorInkTray=memo(function TutorInkTray({ink,shown,photoActions,pho
   type Reading={phase:'ask'|'download'|'reading'|'result'|'error';loaded?:number;latex?:string;message?:string};
   const [reading,setReading]=useState<Reading|null>(null);
   const readingRun=useRef(0);
-  async function readEquation(){
+  const downloadApproved=useRef(false);
+  async function readEquation(approve=false){
+    if(approve)downloadApproved.current=true;
     const source=flushDot().strokes;
     const run=++readingRun.current;
     const cached=await equationModelCached().catch(()=>false);
     if(run!==readingRun.current)return;
-    setReading({phase:cached?'reading':'download',loaded:0});
+    setReading({phase:cached&&!approve?'reading':'download',loaded:0});
     try{
       const latex=await recognizeEquation(source,working.width,loaded=>{
         if(run===readingRun.current)setReading(current=>current&&current.phase==='download'?{...current,loaded}:current);
-      });
+      },downloadApproved.current);
       if(run===readingRun.current)setReading({phase:'result',latex});
     }catch(error){
-      if(run===readingRun.current)setReading({phase:'error',message:error instanceof Error?error.message:'Recognition failed.'});
+      if(run===readingRun.current)setReading(error instanceof EquationDownloadRequired?{phase:'ask'}:{phase:'error',message:error instanceof Error?error.message:'Recognition failed.'});
     }
   }
   async function openReading(){
+    downloadApproved.current=false;
     flushDot();
     const run=++readingRun.current;
     setReading({phase:'reading'});
@@ -395,7 +398,7 @@ export const TutorInkTray=memo(function TutorInkTray({ink,shown,photoActions,pho
           <p>Lemma reads your handwriting on this device with {EQUATION_MODEL.name} ({EQUATION_MODEL.license} licence). It downloads
             the model once, about {megabytes} MB, and works offline after that.</p>
           <div className="tutor-session-actions">
-            <Button variant="primary" onClick={()=>{void readEquation();}}>Download and recognize</Button>
+            <Button variant="primary" onClick={()=>{void readEquation(true);}}>Download and recognize</Button>
             <Button onClick={closeReading}>Not now</Button>
           </div>
         </>}
