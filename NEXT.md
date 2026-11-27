@@ -6,6 +6,17 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N261 Dark-mode UI audit across mobile-up devices: tooling, report and image archive
+
+Owner task: "You're ui design expert. Conduct extension ui audit capture keyframes and other stats for motion. See how interactions and hover states look and other things. For example I see this pink boundary everywhere. Mismatching rails, etc. many ui defects and also I feel that dark mode could profit from more contract, it seems white washed. Capture every single screen path ( like adding task drawers and other paths, span all the routes and every component explored), do this for just dark mode for mobile devices and ipad in both orientation. Don't miss to capture any of the important."
+Owner follow-up: "Upload the scripts and zip file of images to the new pr."
+Owner follow-up: "Make sure the uploaded script traverses every single path, every single screen should be able no matter how small, make sure I script contains like keyboard and it's states, make sure that screens coverage is a mobile up. Don't mark ready"
+Stage: Harden · Status: in progress · Needs: — · Assigned: chat-272044#air3
+Done = `scripts/ui-audit-2026-11-27/` reproduces the audit: a static gate that fails when a route or mode has no scene, a catalogue of every screen, drawer, picker, menu, empty and error state, a control sweep and route crawl that find screens nobody listed, keyboard states (tutor, Pad, hardware) and a 15-size mobile-up device matrix. `docs/v7/ui-audit-2026-11-27.md` reports the defects with measurements, and the image archive sits beside it. Fixing the defects is separate work. The PR is not marked Ready until the Owner says so.
+Tests: `node scripts/ui-audit-2026-11-27/coverage.mjs` passes (172 scenes, 29 routes); the capture, keyboard, sweep, motion and state scripts ran against a production build (the report says exactly which device and scene sets).
+Scope: scripts/ui-audit-2026-11-27/, docs/v7/ui-audit-2026-11-27.md and its folder, docs/current/N261.md and this item.
+Not: Any change to src/, tests, flags, tokens, data or dependencies; light mode; filing the defects as issues; the fixes.
+
 ## N257 Stop replaying stale symbol reads from the equation paper
 
 Stage: Harden · Status: done · Needs: — · Assigned: chat-816327#gm8s
