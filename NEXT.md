@@ -6,6 +6,14 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N259 Package the same-origin pthread entry for isolated equation readers
+
+Stage: Harden · Status: done · Needs: — · Assigned: chat-816327#gm8s
+Done = When the existing equation reader selects more than one WASM thread, it can initialize its nested runtime workers from the matching packaged module instead of hanging. The offline shell includes that helper.
+Tests: Actual packaged runtime on an isolated loopback origin under same-origin worker CSP; real production-built equation reads, including an offline page reload with installed weights.
+Scope: Full-equation recognizer worker, a targeted PWA precache glob, scoped E2E regression and docs/current/N259.md.
+Not: Changing deployment isolation/CSP headers or thread counts, model weights, download consent, screen layout, digit shapes or recognition ranking.
+
 ## N254 Warm Lemma palette, tutor keyboard, motion and surface ownership
 
 Stage: Harden · Status: in progress · Needs: N252 · Assigned: chat-568402#d4nw
