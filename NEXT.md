@@ -6,6 +6,13 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N255 Make Appearance paper and sky choices control the screen background
+
+Stage: Harden · Status: in progress · Needs: — · Assigned: chat-780461#y85j
+Done = Settings > Appearance visibly changes the background for the active theme. Plain paper and clear sky have no pattern; the chosen textures persist across reloads and theme switches. Accessibility overrides still hide decoration.
+Scope: v7 background styles, Appearance regression tests and docs/current/N255.md.
+Not: Changes to tutor input, Atlas graph data, drawing canvases or the palette.
+
 ## N254 Warm Lemma palette, tutor keyboard, motion and surface ownership
 
 Stage: Harden · Status: in progress · Needs: N252 · Assigned: chat-568402#d4nw
