@@ -122,6 +122,19 @@ export class InkSession {
     this.mutate(true);
     this.phase='idle';
   }
+  /** Import the completed, scaled equation paper atomically. Null denotes more than one symbol's budget. */
+  replacePaperInk(paths:readonly (readonly InkPoint[])[]|null) {
+    this.clear();
+    if (!paths || paths.length>INK_LIMITS.strokes) this.overBudget=true;
+    else for (const [id,path] of paths.entries()) {
+      if (!path.length) continue;
+      this.begin(id,'pen',path[0]);
+      for (let i=1;i<path.length-1;i++) this.move(id,path[i]);
+      this.end(id,path[path.length-1]);
+    }
+    // Paper suggestions are manual, even when live single-symbol auto-insert is enabled.
+    this.lockChoice();
+  }
   cancel() {
     this.clear();
     this.phase='paused';
