@@ -68,9 +68,11 @@ export function equationModelCached(): Promise<boolean> {
   });
 }
 
+export class EquationDownloadRequired extends Error {}
+
 /** Recognise the drawing as LaTeX, downloading the model first if needed (`onProgress` reports bytes). */
 export function recognizeEquation(strokes: PadStrokes, width: number,
-  onProgress: (loaded: number, total: number) => void): Promise<string> {
+  onProgress: (loaded: number, total: number) => void, allowDownload: boolean): Promise<string> {
   const pixels = strokesToTensor(strokes, width);
   const current = equationWorker(), id = nextId++;
   return new Promise((resolve, reject) => {
@@ -80,10 +82,10 @@ export function recognizeEquation(strokes: PadStrokes, width: number,
       else if ((message.type === 'result' || message.type === 'error') && message.id === id) {
         current.removeEventListener('message', listen);
         if (message.type === 'result') resolve(message.latex);
-        else reject(new Error(message.message));
+        else reject(message.downloadRequired ? new EquationDownloadRequired(message.message) : new Error(message.message));
       }
     };
     current.addEventListener('message', listen);
-    current.postMessage({type: 'recognize', id, pixels} satisfies EquationWorkerRequest, [pixels.buffer]);
+    current.postMessage({type: 'recognize', id, pixels, allowDownload} satisfies EquationWorkerRequest, [pixels.buffer]);
   });
 }

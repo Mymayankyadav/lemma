@@ -11,22 +11,27 @@ import {loadTutorModelWasm, MODEL_MANIFEST} from './modelAssets';
 // The same verified onnxruntime-web WASM as Draw symbol and Equation Assist.
 const TUTOR_RUNTIME = MODEL_MANIFEST.runtime;
 
+class DownloadRequired extends Error {}
+type LoadMode = 'prepare' | 'installed' | 'approved';
+const permission = {prepare: 0, installed: 1, approved: 2};
+
 export type EquationWorkerRequest =
   | {type: 'status'}
   /** N223: load the cached model now, so the first Read does not wait for it. */
   | {type: 'prepare'}
-  | {type: 'recognize'; id: number; pixels: Float32Array};
+  | {type: 'recognize'; id: number; pixels: Float32Array; allowDownload: boolean};
 export type EquationWorkerResponse =
   | {type: 'status'; cached: boolean}
   | {type: 'progress'; loaded: number; total: number}
   | {type: 'result'; id: number; latex: string}
-  | {type: 'error'; id?: number; message: string};
+  | {type: 'error'; id?: number; message: string; downloadRequired?: boolean};
 
 const scope = self as unknown as {
   onmessage: ((event: MessageEvent<EquationWorkerRequest>) => void) | null;
   postMessage: (message: EquationWorkerResponse) => void;
 };
-let model: Promise<{encoder: InferenceSession; decoder: InferenceSession; vocabulary: string[]}> | undefined;
+let model: Promise<Sessions> | undefined;
+let modelMode: LoadMode = 'prepare';
 let loaded = 0;
 /** N223: only the newest read runs to the end; an older one stops at its next decoding step. */
 let latest = 0;
@@ -57,12 +62,13 @@ async function readVerified(response: Response, file: EquationModelFile, report:
     bytes.set(data);
     offset = data.byteLength;
   }
+  if (offset !== file.bytes) throw new Error('The recognition model did not match its checksum.');
   const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), byte => byte.toString(16).padStart(2, '0')).join('');
-  if (offset !== file.bytes || digest !== file.sha256) throw new Error('The recognition model did not match its checksum.');
+  if (digest !== file.sha256) throw new Error('The recognition model did not match its checksum.');
   return bytes;
 }
 
-async function fetchFile(file: EquationModelFile, cache: Cache | undefined): Promise<Uint8Array> {
+async function fetchFile(file: EquationModelFile, cache: Cache | undefined, allowDownload: boolean): Promise<Uint8Array> {
   const url = equationModelUrl(file);
   const cached = await cache?.match(url).catch(() => undefined);
   if (cached) {
@@ -71,21 +77,34 @@ async function fetchFile(file: EquationModelFile, cache: Cache | undefined): Pro
       loaded += file.bytes;
       scope.postMessage({type: 'progress', loaded, total: EQUATION_MODEL_BYTES});
       return bytes;
-    } catch {await cache?.delete(url).catch(() => undefined);}
+    } catch { /* Never evict a user's cached file speculatively. Only verified replacement bytes are written. */ }
   }
+  if (!allowDownload) throw new DownloadRequired('A verified copy of the equation reader needs to be downloaded.');
   const response = await fetch(url, {mode: 'cors', credentials: 'omit', redirect: 'follow'});
   const bytes = await readVerified(response, file, true);
   await cache?.put(url, new Response(bytes.slice().buffer)).catch(() => undefined);
   return bytes;
 }
 
-function load() {
-  return model ??= (async () => {
+type Sessions = {encoder: InferenceSession; decoder: InferenceSession; vocabulary: string[]};
+
+function load(mode: LoadMode): Promise<Sessions> {
+  if (model) {
+    // An explicit Read may arrive during speculative verification. Share the successful result, or retry
+    // interactively once if that cache-only attempt failed; never start a second pair of sessions in parallel.
+    return permission[mode] > permission[modelMode] ? model.catch(() => load(mode)) : model;
+  }
+  modelMode = mode;
+  return model = (async () => {
     loaded = 0;
     const cache = await openCache();
-    const [wasm, tokenizer, encoderBytes, decoderBytes] = await Promise.all([loadTutorModelWasm(),
-      fetchFile(EQUATION_MODEL.files.tokenizer, cache), fetchFile(EQUATION_MODEL.files.encoder, cache),
-      fetchFile(EQUATION_MODEL.files.decoder, cache)]);
+    // First verify the cached runtime. Don't hydrate 118 MB of cached weights when
+    // speculation cannot build a session. A user-triggered read preserves the parallel asset load.
+    const cachedWasm = mode === 'prepare' ? await loadTutorModelWasm(true) : undefined;
+    const allowDownload = mode === 'approved';
+    const files = [fetchFile(EQUATION_MODEL.files.tokenizer, cache, allowDownload), fetchFile(EQUATION_MODEL.files.encoder, cache, allowDownload),
+      fetchFile(EQUATION_MODEL.files.decoder, cache, allowDownload)] as const;
+    const [wasm, tokenizer, encoderBytes, decoderBytes] = await Promise.all([cachedWasm ?? loadTutorModelWasm(), ...files]);
     const vocabulary = vocabularyFrom(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(tokenizer)));
     if (env.versions.web !== TUTOR_RUNTIME.version) throw new Error('Mismatched recognition runtime');
     // N223: every core when the page is cross-origin isolated (WASM threads need SharedArrayBuffer); otherwise one.
@@ -108,8 +127,8 @@ function load() {
   })().catch(error => {model = undefined; throw error;});
 }
 
-async function recognize(id: number, pixels: Float32Array): Promise<string> {
-  const {encoder, decoder, vocabulary} = await load();
+async function recognize(id: number, pixels: Float32Array, allowDownload: boolean): Promise<string> {
+  const {encoder, decoder, vocabulary} = await load(allowDownload ? 'approved' : 'installed');
   if (id !== latest) throw new Error(CANCELLED);
   const size = EQUATION_MODEL.inputSize;
   const {[EQUATION_MODEL.encoder.output]: hidden} = await encoder.run({[EQUATION_MODEL.encoder.input]: new Tensor('float32', pixels, [1, 3, size, size])});
@@ -134,11 +153,11 @@ scope.onmessage = event => {
       scope.postMessage({type: 'status', cached: files.every(file => urls.has(equationModelUrl(file)))});
     });
   } else if (request.type === 'prepare') {
-    void load().catch(() => undefined);
+    void load('prepare').catch(() => undefined);
   } else if (request.type === 'recognize') {
     latest = request.id;
-    recognize(request.id, request.pixels).then(latex => scope.postMessage({type: 'result', id: request.id, latex}),
+    recognize(request.id, request.pixels, request.allowDownload).then(latex => scope.postMessage({type: 'result', id: request.id, latex}),
       (error: unknown) => scope.postMessage({type: 'error', id: request.id,
-        message: error instanceof Error ? error.message : 'Recognition failed.'}));
+        message: error instanceof Error ? error.message : 'Recognition failed.', downloadRequired: error instanceof DownloadRequired}));
   }
 };

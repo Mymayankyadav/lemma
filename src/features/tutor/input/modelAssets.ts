@@ -115,8 +115,13 @@ function loadWasm(cache?: Cache) {
 }
 
 /** Equation Assist uses the same verified WASM binary as Draw symbol. */
-export async function loadTutorModelWasm() {
-  return loadWasm(await openAssetCache());
+export async function loadTutorModelWasm(cacheOnly = false) {
+  const cache = await openAssetCache();
+  if (!cacheOnly) return loadWasm(cache);
+  // Speculation must not fetch even the packaged runtime. Explicit Read can still use the APK or network.
+  const file = manifest.files.wasm, hit = await cache?.match(assetUrl(file)).catch(() => undefined);
+  if (!hit) throw new Error("No cached equation runtime");
+  return readVerifiedAsset(hit, file);
 }
 
 /** The web installer must persist the verified runtime before marking the model available offline. */

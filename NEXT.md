@@ -37,6 +37,14 @@ Tests: tests/unit/tutor/ngram-load-validation.test.ts, existing expansion, spati
 Scope: src/features/tutor/writingAid/decoder/kn.ts, scripts/typeahead/measure-cold-keyboard.mjs, the regression test, docs/current/N258.md, its diagnostic receipt and this item.
 Not: Changing weights, model selection, thresholds, ranking, predictions, persistent data or the N253 right-context logic. No physical-device speed claim.
 
+## N260 Keep equation prewarm cache-only and confirm model repair
+
+Stage: Harden · Status: done · Needs: — · Assigned: chat-816327#gm8s
+Done = Opening Equation mode only warms verified local assets. A missing or corrupt equation model does not start a remote transfer until the learner confirms that download after Read. A failed repair keeps the drawing and cached bytes.
+Tests: Corrupt-cache browser cases with and without the runtime already cached, one-time download, checksum validation, edits during an approved download, and isolated worker compatibility.
+Scope: Tutor scratch and equation Read flow; Pix2Text worker and runtime asset lookup; associated browser tests and docs/current/N260.md.
+Not: New prewarm triggers, deployment headers, thread policy, rankings, ink/input behavior, dependencies, telemetry or threshold changes.
+
 ## N259 Package the same-origin pthread entry for isolated equation readers
 
 Stage: Harden · Status: done · Needs: — · Assigned: chat-816327#gm8s
