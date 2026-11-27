@@ -331,3 +331,42 @@ test('the keys follow the answer: a touch on the chat closes them, unless the ke
   await chat.click({position: {x: 12, y: 12}});
   await expect(keyboard).toHaveCount(0);
 });
+
+test('equation paper submits only the complete symbol once per lift and skips over-budget paper', async ({page}) => {
+  test.setTimeout(60000);
+  // Observe only protocol counts, never the drawing, scores or answer. Real model and real user input.
+  await page.addInitScript(() => {
+    const counts={ready:false,submitted:0,completed:0};
+    Object.assign(window,{equationPaperProbe:counts});
+    const Original=window.Worker;
+    window.Worker=class extends Original {
+      constructor(url:string|URL, options?:WorkerOptions) {
+        super(url,options);
+        this.addEventListener('message', event=>{
+          if(event.data?.type==='ready'&&Array.isArray(event.data.classes))counts.ready=true;
+          if(event.data?.type==='result'&&'scores' in event.data)counts.completed++;
+        });
+      }
+      override postMessage(...args:Parameters<Worker['postMessage']>) {
+        if(args[0]?.type==='infer')counts.submitted++;
+        super.postMessage(...args);
+      }
+    };
+  });
+  const probe=()=>page.evaluate(()=>(window as Window&{equationPaperProbe:{ready:boolean;submitted:number;completed:number}}).equationPaperProbe);
+  await page.goto('/lemma/?demo=1&flags=v7Shell,tutorScratch#/settings?section=tutor');
+  await page.getByRole('switch',{name:'Draw single symbols',exact:true}).click();
+  const {keyboard}=await openAnswer(page);
+  await keyboard.getByRole('button',{name:'Equation mode',exact:true}).click();
+  await expect.poll(async()=>(await probe()).ready).toBe(true);
+  for(let i=0;i<13;i++){
+    await writeOnPaper(page,[[[15+i*3,20],[30+i*3,80]]]);
+    if(i<12)await expect.poll(async()=>(await probe()).completed).toBe(i+1);
+    expect((await probe()).submitted).toBe(Math.min(i+1,12));
+  }
+  const panel=page.getByRole('region',{name:'Equation mode',exact:true});
+  await expect(panel.getByRole('button',{name:/Insert symbol/})).toHaveCount(0);
+  await expect(panel.getByRole('button',{name:'Read equation',exact:true})).toBeEnabled();
+  await panel.getByRole('button',{name:'Undo stroke',exact:true}).click();
+  await expect.poll(async()=>(await probe()).completed).toBe(13);
+});
