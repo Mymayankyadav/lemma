@@ -7,7 +7,7 @@ import {Diagnostics} from '../../adaptive/panels/Diagnostics';
 import {Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {setHapticsEnabled} from '../../../ui/v7/haptics';
-import {applyReduceEffects} from '../../../ui/v7/effects';
+import {applyReduceEffects,REDUCE_EFFECTS_ATTR} from '../../../ui/v7/effects';
 import {Link,useLocation,useNavigate,useNavigationType,useSearchParams} from 'react-router';
 import {Bell,CalendarClock,ChevronRight,Copy,Database,Eye,EyeOff,LogOut,MessageCircle,Palette,RefreshCw,Shapes} from 'lucide-react';
 import {useRotateConnectorSecret,useSettings,useSignOut,useSubjects,useUpdateSettings,useUpdateSubject} from '../../../data/hooks';
@@ -76,11 +76,11 @@ function PaperChoice(){
  const [paper,setPaper]=useState<Paper>(readPaper),[sky,setSky]=useState<Sky>(readSky);
  const word=(value:string)=>value[0].toUpperCase()+value.slice(1);
  return <div className="v7-settings-card">
-  <p className="v7-set-label">Paper</p>
+  <p className="v7-set-label">Paper by day</p>
   <div className="v7-tk-picker" role="radiogroup" aria-label="Paper by day">{PAPERS.map(item=><button key={item} type="button" role="radio" aria-checked={paper===item} className="v7-filter-chip" onClick={()=>{setPaper(item);choosePaper(item);}}>{word(item)}</button>)}</div>
-  <p className="v7-set-label">Sky</p>
+  <p className="v7-set-label">Sky by night</p>
   <div className="v7-tk-picker" role="radiogroup" aria-label="Sky by night">{SKIES.map(item=><button key={item} type="button" role="radio" aria-checked={sky===item} className="v7-filter-chip" onClick={()=>{setSky(item);chooseSky(item);}}>{word(item)}</button>)}</div>
-  <p className="v7-meta">Drawn at 7% ink, under your text. Off when Reduce effects is on.</p>
+  <p className="v7-meta">Each theme keeps its own background. Reduce effects hides the pattern.</p>
  </div>;
 }
 function Appearance({settings}:{settings:Settings}){
@@ -96,7 +96,7 @@ function Appearance({settings}:{settings:Settings}){
   if(!await save({mode:next})){setMode(previous);applyAppearance({mode:previous});}
  }
  const initial=(key:string,fallback:boolean)=>typeof ui[key]==='boolean'?ui[key] as boolean:fallback;
- const [flags,setFlags]=useState(()=>({reduceEffects:initial('reduceEffects',false),haptics:initial('haptics',true),chime:initial('chime',false),sounds:initial('sounds',false)}));
+ const [flags,setFlags]=useState(()=>({reduceEffects:initial('reduceEffects',document.documentElement.hasAttribute(REDUCE_EFFECTS_ATTR)),haptics:initial('haptics',true),chime:initial('chime',false),sounds:initial('sounds',false)}));
  const flag=(key:keyof typeof flags)=>flags[key];
  async function toggle(key:keyof typeof flags,value:boolean){
   setFlags(old=>({...old,[key]:value}));

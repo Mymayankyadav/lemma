@@ -8,7 +8,7 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 ## N255 Make Appearance paper and sky choices control the screen background
 
-Stage: Harden · Status: in progress · Needs: — · Assigned: chat-780461#y85j
+Stage: Harden · Status: done · Needs: — · Assigned: chat-780461#y85j
 Done = Settings > Appearance visibly changes the background for the active theme. Plain paper and clear sky have no pattern; the chosen textures persist across reloads and theme switches. Accessibility overrides still hide decoration.
 Scope: v7 background styles, Appearance regression tests and docs/current/N255.md.
 Not: Changes to tutor input, Atlas graph data, drawing canvases or the palette.

@@ -42,9 +42,9 @@ describe('S2–S4 · S6 · S14 · S16 · S15', () => {
     expect(round).toContain("{isFlagOn('v7Scratch')&&<ScratchPad cardKey={item.id}/>}");
     expect(pad).not.toMatch(/localStorage|fetch\(|getApi/);
   });
-  it('paper and sky: four papers, two skies, at 7% ink, off under Reduce effects', () => {
+  it('paper and sky: four papers, three skies, at 7% ink, off under Reduce effects', () => {
     expect(PAPERS).toEqual(['plain', 'graph', 'dot', 'ruled']);
-    expect(SKIES).toEqual(['clear', 'stars']);
+    expect(SKIES).toEqual(['clear', 'graph', 'stars']);
     const css = readFileSync('src/ui/v7/paper.css', 'utf8');
     expect(css).toContain('stroke-opacity=".07"');
     expect(css.match(/:not\(\[data-v7-reduce-effects\]\)/g)).toHaveLength(4);
