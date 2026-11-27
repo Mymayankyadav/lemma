@@ -21,21 +21,37 @@ export interface WritingAidBarProps {
   onRefresh: (surface: 'edit' | 'ghost', displayed: readonly WritingAidProposal[]) => void;
 }
 
-export function WritingAidWords({words, disabled, onAccept, hidden}: Pick<WritingAidBarProps, 'words' | 'disabled' | 'onAccept'> & {hidden?: boolean}) {
+export function WordLabel({word}: {word: string}) {
+  const tail = word.length > 6 ? word.match(/(?:\P{M}\p{M}*){4}$/u)?.[0] ?? '' : '';
+  return <span className="writing-aid-word-label" data-length={word.length < 10 ? undefined : word.length < 12 ? 'mid' : word.length < 14 ? 'long' : 'xlong'}>
+    <span>{word.slice(0, word.length - tail.length)}</span>{tail && <span>{tail}</span>}
+  </span>;
+}
+
+export function TypedWordKey({word, epoch, disabled, onKeep}: {word: string; epoch: string; disabled: boolean; onKeep: () => void}) {
+  const pressed = useRef<string | null>(null);
+  return <button type="button" data-typed-word="" disabled={disabled} aria-label={'Keep ' + word} title={word}
+    onPointerDown={event => {holdCaret(event); pressed.current = epoch;}} onPointerCancel={() => {pressed.current = null;}}
+    onClick={event => {const valid = !event.detail || pressed.current === epoch; pressed.current = null; if (valid) onKeep();}}>
+    <WordLabel word={word}/>
+  </button>;
+}
+
+export function WritingAidWords({slots, typedKey, disabled, onAccept, hidden}: Pick<WritingAidBarProps, 'disabled' | 'onAccept'> & {
+  slots: readonly (WritingAidProposal | undefined)[]; typedKey?: React.ReactElement; hidden?: boolean;
+}) {
   const pressed = useRef<WritingAidProposal | null>(null);
-  const slots = [words[1], words[0], words[2]];
   // N223: when another kind of suggestion has the slots, the words are not there at all (nor counted as shown).
   if (hidden) return null;
   return <div className="sugg writing-aid-words" role="group" aria-label="Word suggestions">
-    {slots.map((proposal, index) => <button type="button" key={index} data-writing-aid-word={index}
+    {slots.map((proposal, index) => index === 0 && typedKey ? typedKey : <button type="button" key={index} data-writing-aid-word={index}
       disabled={disabled || !proposal} data-typeahead-insert={proposal?.insert}
       data-typeahead-kind={proposal ? 'word' : undefined} data-typeahead-start={proposal?.start} data-typeahead-end={proposal?.end} aria-label={proposal ? 'Insert ' + proposal.label : 'No suggestion'}
       onPointerDown={event => {holdCaret(event); pressed.current = proposal ?? null;}}
       onPointerCancel={() => {pressed.current = null;}}
       onClick={event => {const chosen = event.detail ? pressed.current : proposal; pressed.current = null; if (chosen) onAccept(chosen);}}
-      title={proposal?.label} className={index === 1 && proposal ? 'preferred' : ''}
-      data-length={!proposal || proposal.label.length < 10 ? undefined : proposal.label.length < 12 ? 'mid' : proposal.label.length < 14 ? 'long' : 'xlong'}>
-      {proposal ? <span className="writing-aid-word-label">{proposal.label}</span> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
+      title={proposal?.label} className={index === 1 && proposal ? 'preferred' : ''}>
+      {proposal ? <WordLabel word={proposal.label}/> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
     </button>)}
   </div>;
 }

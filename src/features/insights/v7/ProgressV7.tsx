@@ -5,16 +5,19 @@ import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {GRADES,GRADE_KEYS} from '../../../ui/v7/grades';
 import {Illustration} from '../../../ui/v7/Illustration';
-import {useEffect,useMemo,useState} from 'react';
+import {useMemo,useState} from 'react';
+import {queryOptions,useQuery,type QueryClient} from '@tanstack/react-query';
+import {useCalendarIdentity} from '../../../data/study/calendarRange';
+import {authSignedOut} from '../../../data/authBoundary';
 import {Link,useSearchParams} from 'react-router';
 import {getStudyApi} from '../../../data/study';
 import {getGoalApi} from '../../../data/study-goals';
 import type {GoalRecord} from '../../../data/study-goals/contract';
-import type {StudyEntryRecord} from '../../../data/study/contract';
-import {useInsightData,useSettings,useSubjects} from '../../../data/hooks';
+import type {StudyEntryRecord,StudyRange} from '../../../data/study/contract';
+import {insightQuery,useInsightData,useSettings,useSubjects} from '../../../data/hooks';
 import {buildInsights} from '../../../lib/insights';
 import {formatDuration,formatShortDate,ownerZone} from '../../../lib/format';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
 import {Button,Meter,Segmented,Sheet,Skeleton,StatTile,Stepper} from '../../../ui/v7/components';
 import {Chart,Heatmap,HorizontalBars} from '../../../ui/v7/Chart';
 import {StatusBadge} from '../../../ui/v7/Status';
@@ -55,6 +58,33 @@ function GoalCard({goal,entries,scope,onEdit}:{goal:GoalRecord;entries:StudyEntr
   <p className="v7-meta">{view.rest}</p>
  </li>;
 }
+function progressPeriods(range:ProgressRange,now:Date,zone:string){
+ const period=currentPeriod(range,now,zone),previous=previousPeriod(period,zone),almanac=almanacPeriod(now,zone);
+ return {period,previous,almanac,span:coveringSpan(period,previous,almanac)};
+}
+function progressStudyQuery(identity:string,span:StudyRange){
+ return queryOptions({
+  queryKey:['progress-study',identity,span.start,span.end],
+  staleTime:30_000,refetchOnMount:'always',enabled:()=>!authSignedOut(),retry:false,
+  queryFn:async()=>{
+   const [entries,page]=await Promise.all([
+    getStudyApi().listStudyEntries(span),getGoalApi().listGoals({limit:10}).catch(()=>({items:[] as GoalRecord[]})),
+   ]);
+   return {entries,goals:page.items};
+  },
+ });
+}
+export function warmProgress(cache:QueryClient,identity:string,search:string|undefined,zone:string){
+ const range=asRange(new URLSearchParams(search).get('range'));
+ const {span}=progressPeriods(range,new Date(),zone);
+ return Promise.all([
+  cache.prefetchQuery(progressStudyQuery(identity,span)),
+  cache.prefetchQuery(insightQuery(insightDays(range))),
+ ]);
+}
+const noEntries:StudyEntryRecord[]=[];
+const noGoals:GoalRecord[]=[];
+
 /** One range control for the figures and charts on Overview and Learning. */
 export default function ProgressV7(){
  const studyRepair=useStudyUi();
@@ -62,21 +92,13 @@ export default function ProgressV7(){
  const tab:Tab=params.get('tab')==='learning'?'learning':'overview';
  const range:ProgressRange=asRange(params.get('range'));
  const zone=ownerZone(settings.data),now=useMemo(()=>new Date(),[]);
- const period=useMemo(()=>currentPeriod(range,now,zone),[range,now,zone]);
- const previous=useMemo(()=>previousPeriod(period,zone),[period,zone]);
- const almanac=useMemo(()=>almanacPeriod(now,zone),[now,zone]);
- const [entries,setEntries]=useState<StudyEntryRecord[]>([]),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[reload,setReload]=useState(0);
- const [goals,setGoals]=useState<GoalRecord[]>([]),[editing,setEditing]=useState<GoalRecord|null|undefined>(undefined);
- const [details,setDetails]=useState(false);
+ const {period,previous,almanac,span}=useMemo(()=>progressPeriods(range,now,zone),[range,now,zone]);
+ const identity=useCalendarIdentity();
+ const study=useQuery(progressStudyQuery(identity,span));
+ const status=study.data?'ready':study.isError?'error':'loading';
+ const entries=study.data?.entries??noEntries,goals=study.data?.goals??noGoals;
+ const [editing,setEditing]=useState<GoalRecord|null|undefined>(undefined),[details,setDetails]=useState(false);
  const insight=useInsightData(insightDays(range));
- useEffect(()=>{
-  let alive=true;setStatus('loading');
-  void (async()=>{
-   const [rows,page]=await Promise.all([getStudyApi().listStudyEntries(coveringSpan(period,previous,almanac)),getGoalApi().listGoals({limit:10}).catch(()=>({items:[] as GoalRecord[]}))]);
-   if(alive){setEntries(rows);setGoals(page.items);setStatus('ready');}
-  })().catch(()=>{if(alive)setStatus('error');});
-  return()=>{alive=false;};
- },[period,previous,almanac,reload]);
  const stamp=now.toISOString();
  const summary=useMemo(()=>status==='ready'?effortSummary(entries,period,zone,stamp):null,[status,entries,period,zone,stamp]);
  const before=useMemo(()=>status==='ready'?effortSummary(entries,previous,zone,stamp):null,[status,entries,previous,zone,stamp]);
@@ -135,7 +157,7 @@ export default function ProgressV7(){
   ]}/>}><ProgressTabs current={tab}/></HubHeader>
   {<Segmented label="Range" options={ranges.map(item=>item.label)} value={ranges.find(item=>item.value===range)!.label} onChange={label=>set('range',ranges.find(item=>item.label===label)!.value)}/>}
   {status==='loading'&&<Skeleton/>}
-  {status==='error'&&<div role="alert" className="v7-progress-error"><p>Erratum: your saved study time didn’t load. Try again.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
+  {study.isError&&<div role="alert" className="v7-progress-error"><p>{study.data?'Couldn’t refresh your saved study time. Showing the last update.':'Erratum: your saved study time didn’t load. Try again.'}</p><Button onClick={()=>{void study.refetch();}}>Retry</Button></div>}
   {status==='ready'&&summary&&tab==='overview'&&total<=0&&nothing}
   {status==='ready'&&summary&&tab==='overview'&&total>0&&<>
    {hero}
@@ -186,6 +208,6 @@ export default function ProgressV7(){
    {learn?.calibrationMessage&&<Disclosure label="Confidence details"><p>{learn.calibrationMessage}</p></Disclosure>}
    </>}
   </Sheet>
-  {editing!==undefined&&<GoalEditor goal={editing} onClose={()=>setEditing(undefined)} onSaved={()=>setReload(value=>value+1)}/>}
+  {editing!==undefined&&<GoalEditor goal={editing} onClose={()=>setEditing(undefined)} onSaved={()=>{void study.refetch();}}/>}
  </main>;
 }

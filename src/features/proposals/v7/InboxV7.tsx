@@ -13,7 +13,7 @@ import {Link,useSearchParams} from 'react-router';
 import {Check,GalleryVerticalEnd,LayoutList,Link as LinkIcon,Unlink,Minus,MoveRight,Pencil,Plus,X} from 'lucide-react';
 import {useProject,useProjects,useProposals,useSettings} from '../../../data/hooks';
 import type {Proposal,ProjectSummary} from '../../../data/types';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {Button,Checkbox,IconButton,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
 import {Tag} from '../../../ui/v7/KitPrimitives';
 import {Emblem} from '../../../ui/v7/Emblem';

@@ -1,7 +1,7 @@
 import './review.css';
 import {isFlagOn} from '../../flags';
 import ReviewRunV6 from './v6/ReviewRunV6';
-import {lazy,Suspense,useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {v7Screen} from '../../app/v7Kit';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
@@ -22,10 +22,10 @@ import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
 import {useCalm} from '../../ui/useCalm';
 
-const ReviewRoundV7=lazy(()=>import('./v7/ReviewRoundV7'));
+import {ReviewRoundScreen} from '../../app/v7/routeScreens';
 const fallback:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const gradeNames=['Again','Hard','Good','Easy'] as const;
-const gradeColors=['var(--danger)','var(--late)','var(--early)','var(--link)'] as const;
+const gradeColors=['var(--danger)','var(--late)','var(--early)','var(--easy)'] as const;
 const confidenceOptions=[
  {value:'sure' as const,label:'Sure',icon:CircleCheck},
  {value:'unsure' as const,label:'Unsure',icon:CircleDashed},
@@ -304,6 +304,6 @@ export default function Page(){
  // there is no explicit N62 run ID. A new v6 route without either resumes
  // the persisted run, and one with run= always uses the durable renderer.
  const legacy=!search.has('run')&&!!useReviewSession.getState().queue;
- if(v7Screen()==='review-run'&&!legacy)return <Suspense fallback={<div role="status" aria-label="Review loading" className="min-h-dvh"/>}><ReviewRoundV7/></Suspense>;
+ if(v7Screen()==='review-run'&&!legacy)return <ReviewRoundScreen/>;
  return isFlagOn('v6Shell')&&!legacy?<ReviewRunV6/>:<LegacyReviewRunPage/>;
 }

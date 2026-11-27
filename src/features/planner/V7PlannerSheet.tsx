@@ -1,10 +1,12 @@
 import {useStudyUi} from '../../data/StudyUiRelease';
-import {useState,type ReactNode} from 'react';
+import {useLayoutEffect,useRef,useState,type ReactNode} from 'react';
 import {Link} from 'react-router';
 import type {TaskRecord} from '../../data/tasks';
 import {Button,Checkbox,DatePicker,Picker,Sheet} from '../../ui/v7/components';
+import {ExpandPanel} from '../../ui/v7/Disclosure';
 import {TimeRange} from '../../ui/v7/KitPrimitives';
 import {formatClock,formatDuration,formatShortDate,formatTimeLeft} from '../../lib/format';
+import {restoreLayerFocus} from '../../ui/v7/layers';
 import {localWallParts} from '../time-log/local-time';
 import type {PlannerResult} from './model';
 type PlannerUnplaced={taskId:string;reason:string;estimateMinutes?:number|null};
@@ -39,6 +41,16 @@ export default function V7PlannerSheet({anchor,zone,busy,loading,error,selection
 }){
  const repair=useStudyUi();
  const [editing,setEditing]=useState<string|null>(null);
+ const focusRow=useRef<HTMLDivElement|null>(null);
+ const returnToTrigger=useRef(false);
+ useLayoutEffect(()=>{
+  const row=focusRow.current;
+  if(editing)restoreLayerFocus(row?.querySelector<HTMLInputElement>('.v7-time-pair input')??null);
+  else if(returnToTrigger.current){
+   returnToTrigger.current=false;
+   restoreLayerFocus(row?.querySelector<HTMLButtonElement>('[data-planner-change-time]')??null);
+  }
+ },[editing]);
  return <Sheet open onClose={onClose} title="Plan study tasks" eyebrow={'Plan · '+formatShortDate(anchor,{zone})}
   footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button>
    {(!repair||count>0)&&<Button variant="primary" disabled={busy||loading||!!selectionError||!count} onClick={onCommit}>{busy?'Saving…':count===1?'Add 1 block':'Add '+count+' blocks'}</Button>}</>}>
@@ -54,20 +66,28 @@ export default function V7PlannerSheet({anchor,zone,busy,loading,error,selection
     {preview.placements.length===0&&(!repair||unplaced.some(item=>item.reason==='no_capacity'))&&<p className="v7-meta">No free slots left in these days. Try more days, or free up time in Calendar.</p>}
     {preview.placements.map(place=>{
      const key=place.taskId+':'+place.part,chosen=selected.has(key),moved=overrides.get(key)??place;
+     const moving=editing===key;
      const title=tasks.find(task=>task.id===place.taskId)?.title??'Study task';
      const startWall=moved.start?localWallParts(moved.start,zone):{day:moved.date,clock:''};
      const endWall=moved.end?localWallParts(moved.end,zone):{day:moved.date,clock:''};
      return <div key={key} className="v7-plan-row">
       <Checkbox label={title} checked={chosen} disabled={busy} onChange={on=>onToggle(key,on)}/>
       <p className="v7-meta">{formatShortDate(moved.date,{zone})} · {moved.start&&moved.end?formatClock(moved.start,{zone})+'–'+formatClock(moved.end,{zone}):'choose valid times'} · {formatDuration(place.minutes)}</p>
-      {chosen&&(editing===key?<div className="v7-plan-move">
+      {chosen&&<>
+       <Button variant="ghost" small data-planner-change-time aria-expanded={moving} onClick={event=>{
+        focusRow.current=event.currentTarget.closest('.v7-plan-row');
+        returnToTrigger.current=moving;
+        setEditing(moving?null:key);
+       }}>Change time</Button>
+       <ExpandPanel open={moving} mountWhenOpen><div className="v7-plan-move">
        <DatePicker label={'Date for '+title} value={startWall.day} onChange={value=>onMove(key,'date',value,place)}/>
        <TimeRange legend={'Time for '+title} start={startWall.clock||'09:00'} end={endWall.clock||'10:00'} onChange={(start,end)=>{
         if(start!==startWall.clock)onMove(key,'start',start,place);
         else if(end!==endWall.clock)onMove(key,'end',end,place);
        }}/>
-       <Button variant="ghost" small onClick={()=>setEditing(null)}>Done</Button>
-      </div>:<Button variant="ghost" small onClick={()=>setEditing(key)}>Change time</Button>)}
+       <Button variant="ghost" small onClick={()=>{returnToTrigger.current=true;setEditing(null);}}>Done</Button>
+       </div></ExpandPanel>
+      </>}
      </div>;
     })}
     {unplaced.length>0&&<section aria-label="Not placed" className="v7-plan-unplaced">

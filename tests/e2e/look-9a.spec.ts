@@ -43,6 +43,6 @@ test('LOOK-9a installed PWA uses Graph-night rather than legacy Obsidian colours
   if(!response.ok)throw new Error('PWA manifest unavailable: '+response.status);
   return response.json() as Promise<{theme_color:string;background_color:string}>;
  });
- expect(manifest.theme_color).toBe('#13171D');
- expect(manifest.background_color).toBe('#13171D');
+ expect(manifest.theme_color).toBe('#262624');
+ expect(manifest.background_color).toBe('#262624');
 });

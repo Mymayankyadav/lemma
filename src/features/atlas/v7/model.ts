@@ -36,7 +36,7 @@ export function setChosenSubjects(next:ReadonlyMap<string,Subject>){
 }
 export const subscribeChosenSubjects=(listener:()=>void)=>{chosenListeners.add(listener);return()=>{chosenListeners.delete(listener);};};
 export const chosenSubjectsVersion=()=>chosenVersion;
-/** Subject names map onto the kit's eight hues; "Linear algebra" is "Algebra" (one name per subject), unless the owner chose. */
+/** Subject names map onto the kit's eight subject families; "Linear algebra" is "Algebra" (one name per subject), unless the owner chose. */
 export function kitSubject(name:string):Subject{
  const lower=name.trim().toLowerCase();
  const picked=chosen.get(lower);

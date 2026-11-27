@@ -24,7 +24,7 @@
   html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber .v7-ruler-input-track input::-webkit-slider-thumb {height:22px;margin-top:-10px;}
   html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber .v7-ruler-input-track input::-moz-range-thumb {height:18px;}
   html[data-v7] .v7-shell:not([data-immersive="true"]):has(.v7-cal-scrubber) > .v7-dock {border-top-left-radius:0;border-top-right-radius:0;}
-  html[data-v7]:has(dialog.v7-sheet[open]) .v7-cal-scrubber {visibility:hidden;}
+  html[data-v7] body[data-v7-modal] .v7-cal-scrubber {visibility:hidden;}
  }
  :where(html[data-v7]) .v7-ruler-control {display:grid;gap:4px;min-width:0;}
  :where(html[data-v7]) .v7-ruler-control > label {display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font:600 var(--v7-type-supporting)/1.4 var(--v7-sans);}

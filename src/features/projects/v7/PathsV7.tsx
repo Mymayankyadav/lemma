@@ -1,12 +1,14 @@
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {reviewHref} from '../../../data/review-target';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
-import {lazy,Suspense,useMemo,useState} from 'react';
+import {useMemo,useState} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {Archive,Pause,Pin,PinOff,Play,Plus,RotateCcw,CircleCheck} from 'lucide-react';
 import {useDeckTree,useProjects,useUpdateProject} from '../../../data/hooks';
 import type {ProjectStatus,ProjectSummary} from '../../../data/types';
-import {HubHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/PageHeaders';
+import {createLazyModule} from '../../../app/lazyModule';
+import LazyOverlay from '../../../app/v7/LazyOverlay';
 import {Button,Skeleton} from '../../../ui/v7/components';
 import {useOnline} from '../../../ui/v7/savedCopy';
 import {RowMenu} from '../../../ui/v7/RowMenu';
@@ -18,7 +20,7 @@ import {kitSubject} from '../../atlas/v7/model';
 import {countByFilter,dueBySlug,filterWord,groupBySubject,matchesFilter,matchesSearch,nowLine,orderPaths,ownPaths,pathFilters,scheduleTone,type PathFilter} from './pathsModel';
 import './paths.css';
 
-const NewPathSheet=lazy(()=>import('./NewPathSheet'));
+const newPathModule=createLazyModule(()=>import('./NewPathSheet'));
 const PAGE=20;
 
 /** The Paths · Cards · Atlas hub tabs (OD4): the library and the Atlas are one tap from Paths. */
@@ -52,7 +54,7 @@ function PathCard({project,due,pinnedCount,selected}:{project:ProjectSummary;due
    {label:'Archive',icon:<Archive aria-hidden="true"/>,onClick:()=>{void change({status:'archived'},'Path archived',{status:project.status});}},
   ];
  return <li className={'v7-paths-card '+klass} data-path={project.slug}>
-  <Link className="v7-paths-cover" to={href} tabIndex={-1} aria-hidden="true"><Emblem subject={subject} seed={project.id} size={96} animate={false}/></Link>
+  <Link className="v7-paths-cover" to={href} tabIndex={-1} aria-hidden="true"><Emblem subject={subject} seed={project.id} size={72} animate={false}/></Link>
   <div className="v7-paths-body">
    <div className="v7-paths-title-row">
     <Link className="v7-paths-title" to={href} aria-current={selected===project.slug?'page':undefined}>{project.title}</Link>
@@ -111,6 +113,6 @@ export default function PathsV7({embedded=false,selected}:{embedded?:boolean;sel
    {shown.length<visible.length&&<Button className="v7-paths-moreButton" onClick={()=>setLimit(value=>value+PAGE)}>Show {Math.min(PAGE,visible.length-shown.length)} more</Button>}
   </>}
   {filter==='active'&&all.length>0&&<Link className="v7-paths-new" to="/projects/new"><Plus aria-hidden="true"/><span>Start a new path</span></Link>}
-  {creating&&<Suspense fallback={null}><NewPathSheet onClose={()=>navigate('/projects')}/></Suspense>}
+  {creating&&<LazyOverlay title="New path" onClose={()=>navigate('/projects')} source={newPathModule} bodyProps={{}}/>}
  </Tag>;
 }

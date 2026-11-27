@@ -1,3 +1,4 @@
+import {Button} from '../../ui/v7/components';
 import {useState} from 'react';
 import {isNative} from '../../platform/native';
 import {LocalPadEditor} from './LocalPadEditor';
@@ -44,8 +45,8 @@ export function LocalPadWorkspace({value, onEdit, ink, onInk, onSendSelection, c
     <LocalPadEditor value={value} onEdit={onEdit} onSendSelection={onSendSelection} keyboardPreferenceKey={keyboardPreferenceKey}/>
     <LocalPadInk history={ink} onInk={onInk}/>
     <div className="local-pad-controls" role="group" aria-label="Pad export">
-      <button type="button" disabled={exporting} onClick={() => void exportFile('readable')}>Export readable Pad</button>
-      <button type="button" disabled={exporting} onClick={() => void exportFile('backup')}>Export Pad backup</button>
+      <Button disabled={exporting} onClick={() => void exportFile('readable')}>Export readable Pad</Button>
+      <Button disabled={exporting} onClick={() => void exportFile('backup')}>Export Pad backup</Button>
     </div>
     <p role="status">{result}</p>
   </section>;

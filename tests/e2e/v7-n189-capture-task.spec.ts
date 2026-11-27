@@ -12,7 +12,7 @@ for(const expanded of [false,true]){
   await field.fill('Review lemma tomorrow 4:17pm 45m #real');
   await page.getByRole('radio',{name:'Task',exact:true}).click();
   if(expanded){
-   await page.getByRole('button',{name:'More options'}).click();
+   await page.getByRole('button',{name:'Add details'}).click();
    const dialog=page.getByRole('dialog',{name:'New task'});
    await expect(dialog.getByLabel('Title',{exact:true})).toHaveValue('Review lemma');
    await expect(dialog.getByLabel(/Estimate/)).toHaveValue('45');

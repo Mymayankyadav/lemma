@@ -1,0 +1,39 @@
+/* Shared settings controls resolve the kit roles on v7 and the public palette in the older shell. */
+.settings-section-card {
+  border-color:var(--v7-role-border-subtle,var(--border));
+  background:var(--v7-role-surface-raised,var(--bg-card));
+}
+.settings-section-field {
+  border-color:var(--v7-role-border-default,var(--text-muted));
+  background:var(--v7-role-surface-sunken,var(--bg-sidebar));
+  color:var(--v7-role-text-primary,var(--text-primary));
+}
+.settings-section-button:not(.v7-button) {
+  border-color:var(--v7-role-border-default,var(--text-muted));
+  background:var(--v7-role-surface-raised,var(--bg-card));
+  color:var(--v7-role-text-primary,var(--text-primary));
+}
+.settings-section-button:not(.v7-button):hover {
+  background:var(--v7-role-state-hover,var(--bg-hover));
+}
+.settings-section-text {color:var(--v7-role-text-primary,var(--text-primary));}
+.settings-section-meta {color:var(--v7-role-text-secondary,var(--text-secondary));}
+.settings-section-error {color:var(--v7-role-status-danger,var(--error));}
+.settings-section-accent {accent-color:var(--v7-role-action-bg,var(--accent));}
+.settings-section-radio:hover {background:var(--v7-role-state-hover,var(--bg-hover));}
+.settings-section-radio:focus-visible {outline-color:var(--v7-role-focus-ring,var(--accent));}
+:where(html[data-v7]) .settings-section-radio[aria-checked="true"] {
+  background:var(--v7-role-selection-subtle);
+  color:var(--v7-role-selection-fg);
+}
+.settings-section-radio-mark {border-color:var(--v7-role-border-default,var(--text-muted));}
+.settings-section-radio[aria-checked="true"] .settings-section-radio-mark {
+  border-color:var(--v7-role-action-bg,var(--accent));
+}
+.settings-section-radio[aria-checked="true"] .settings-section-radio-mark::after {
+  content:"";
+  width:.625rem;
+  height:.625rem;
+  border-radius:50%;
+  background:var(--v7-role-action-bg,var(--accent));
+}

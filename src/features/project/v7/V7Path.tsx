@@ -1,3 +1,5 @@
+import LazyOverlay from '../../../app/v7/LazyOverlay';
+import {createLazyModule} from '../../../app/lazyModule';
 import {useReadingIntent} from '../../../app/v7/readingIntent';
 import {CourseContinuation,coursePastDeadline} from '../../exam/CourseContinuation';
 import {useExamIdeas} from '../../../data/exam/queries';
@@ -14,7 +16,7 @@ import {LemmaError} from '../../../data/api';
 import {ProjectScheduler,PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../../adaptive/Views';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {ProofEnd} from '../../../ui/v7/ProofEnd';
-import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
+import {lazy,Suspense,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
@@ -22,8 +24,8 @@ import {Archive,ChevronDown,ChevronRight,Clock3,Copy,Pause,Play,Share2} from 'lu
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useCheckpoint,useHome,useProject,useSearchCards,useSettings} from '../../../data/hooks';
 import {MathText} from '../../../ui/MathText';
-import type {CheckpointView,SessionSummary} from '../../../data/types';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import type {CheckpointView,SessionSummary,Settings} from '../../../data/types';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {Margin} from '../../../app/v7/Margin';
 import {Button,Chip,Segmented,Skeleton} from '../../../ui/v7/components';
 import {useOnline} from '../../../ui/v7/savedCopy';
@@ -34,7 +36,7 @@ import {subjectClass} from '../../../ui/v7/Subject';
 import {planPrompt} from '../../../lib/chat';
 import {tutorHref} from '../../tutor/tutorHref';
 import {formatMinutes} from '../../../lib/text';
-import {groupCheckpointStages} from '../../../ui/timeline/progress';
+import {groupCheckpointStages,type ProgressStage} from '../../../ui/timeline/progress';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import {currentStudyStep,dueTotal,isDemonstrated,lineEnd,nodeSize,nodeText,shortDate,stageLabel,type NodeState} from './pathModel';
@@ -51,8 +53,10 @@ import {actionTitle} from '../../exam/NextCard';
 import {examTutorHref} from '../../exam/model';
 import '../../exam/exam.css';
 
-const SourcesPanel=lazy(()=>import('./SourcesV7'));
-const ProjectSwitcher=lazy(()=>import('../ProjectSwitcher').then(module=>({default:module.ProjectSwitcher})));
+const sourcesModule=createLazyModule(()=>import('./SourcesV7'));
+const SourcesPanel=lazy(sourcesModule.read);
+export const warmSources=sourcesModule.warm;
+const switchPath=createLazyModule(()=>import('../ProjectSwitcher'));
 const tabs=['Plan','Sessions','Sources','Cards','Exam'] as const;
 type Tab=typeof tabs[number];
 const star='M10 2.2l2.2 5 5.4.5-4.1 3.6 1.2 5.3L10 13.9l-4.7 2.7 1.2-5.3-4.1-3.6 5.4-.5z';
@@ -68,19 +72,28 @@ function NodeMark({state}:{state:NodeState}){
   {state==='locked'&&<circle cx="10" cy="10" r="4" className="v7-path-dim"/>}
  </svg>;
 }
-function Row({slug,cps,index,step,reached}:{slug:string;cps:CheckpointView[];index:number;step:string|null;reached:boolean}){
- const settings=useSettings(),readingIntent=useReadingIntent();
- const cp=cps[index],text=nodeText(cps,index,step),current=text.state==='current'&&!inactiveCheckpoint(cp,settings.data?.flags);
- return <li className="v7-path-row" data-adaptive-state={inactiveCheckpoint(cp,settings.data?.flags)?cp.planState:undefined} data-checkpoint-code={cp.code} data-state={text.state} data-reached={reached?'true':'false'}>
-  <NodeMark state={text.state}/>
-  <Link className="v7-path-body" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)} {...readingIntent(slug,cp.code)}>
-   <strong>{cp.title}</strong>
-   {text.state!=='up_next'&&text.state!=='proposed'&&<small>{checkpointLabel(cp,settings.data?.flags,text.detail.replace(/^Step (\d+) of (\d+):/,'$1/$2 ·'))}</small>}<PlanDisposition view={cp}/>
-  </Link>
-  {text.state==='proposed'&&<StatusBadge tone="info" to="/proposals?tab=plan">Review</StatusBadge>}
-  {current&&cp.dueCards>0&&<span className="v7-meta-chip">{cp.dueCards} due</span>}
-  <span className="v7-sr-only">{checkpointLabel(cp,settings.data?.flags,text.label)}</span>
- </li>;
+/** A folded stage does not build its checkpoint rows until the learner opens it. */
+function StageRows({slug,cps,stage,currentIndex,step,end,flags,readingIntent}:{
+ slug:string;cps:CheckpointView[];stage:ProgressStage;currentIndex:number;step:string|null;end:number;
+ flags:Settings['flags'];readingIntent:ReturnType<typeof useReadingIntent>;
+}){
+ return <ol>{stage.checkpoints.map((cp,offset)=>{
+  const index=stage.start+offset,text=nodeText(cps,index,index===currentIndex?step:null);
+  const inactive=inactiveCheckpoint(cp,flags),current=text.state==='current'&&!inactive;
+  const href='/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code);
+  return <li key={cp.id} className="v7-path-row" data-adaptive-state={inactive?cp.planState:undefined}
+   data-checkpoint-code={cp.code} data-state={text.state} data-reached={index<=end?'true':'false'}>
+   <NodeMark state={text.state}/>
+   <Link className="v7-path-body" to={href} {...readingIntent(slug,cp.code)}>
+    <strong>{cp.title}</strong>
+    {text.state!=='up_next'&&text.state!=='proposed'&&<small>{checkpointLabel(cp,flags,text.detail.replace(/^Step (\d+) of (\d+):/,'$1/$2 ·'))}</small>}
+    {flags?.scheduler_v2&&<PlanDisposition view={cp}/>}
+   </Link>
+   {text.state==='proposed'&&<StatusBadge tone="info" to="/proposals?tab=plan">Review</StatusBadge>}
+   {current&&cp.dueCards>0&&<span className="v7-meta-chip">{cp.dueCards} due</span>}
+   <span className="v7-sr-only">{checkpointLabel(cp,flags,text.label)}</span>
+  </li>;
+ })}</ol>;
 }
 function SessionRows({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
  if(!sessions.length)return <EmptyMoment title="No sessions yet">Continue with your tutor to start an evidence trail.</EmptyMoment>;
@@ -128,6 +141,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const room=isFlagOn('v7Room');
  const {slug:raw}=useParams(),slug=selectedSlug??raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
+ const pathRoot=useRef<HTMLElement>(null);
  const [switcher,setSwitcher]=useState(false),[setup,setSetup]=useState(false),[modeBusy,setModeBusy]=useState(false);
  const examEnabled=isFlagOn('examMode'),exam=usePathExam(query.data?.project.id??'',slug,params.get('examSitting'),examEnabled);
  const sitting=exam.sitting,hasExam=examEnabled&&!!sitting;
@@ -138,8 +152,9 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const inIdeas=showIdeas&&params.get('cards')==='ideas';
  const requested=params.get('tab');
  const tab:Tab=tabs.find(item=>item.toLowerCase()===requested&&(item!=='Exam'||examEnabled&&(hasExam||exam.loading||!!exam.loadError)))??'Plan';
+ useEffect(()=>{if(tab==='Sources')sourcesModule.warm();},[tab]);
  const online=useOnline(),data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
- const estimates=usePathEstimates(cps);
+ const estimates=usePathEstimates(cps),stages=useMemo(()=>groupCheckpointStages(cps),[cps]);
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;
  const needsDetail=!!current&&(hasExam||current.currentStepText===undefined);
  const detail=useCheckpoint(slug,needsDetail?current.code:'');
@@ -154,13 +169,13 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   return()=>cancelAnimationFrame(frame);
  },[room,!!data,slug,tab,current?.id]);
  const unavailable=query.error instanceof LemmaError&&['not_found','auth'].includes(query.error.code);
- if(!data||unavailable)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/>
+ if(!data||unavailable)return <main id="main-content" ref={pathRoot} className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/>
   {!online?<EmptyMoment title="Connect to open this path." action={{label:'Back to Paths',to:'/projects'}}/>
    :query.isPending?<><Skeleton/><Skeleton/></>
    :query.error instanceof LemmaError&&query.error.code==='not_found'?<EmptyMoment title="This path doesn't exist." action={{label:'Back to Paths',to:'/projects'}}/>
    :<div role="alert" className="v7-path-empty"><p>Could not open this path.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}</main>;
  const project=data.project,subject=kitSubject(data.subject.name),klass=subjectClass(subject);
- const stages=groupCheckpointStages(cps),end=lineEnd(cps);
+ const end=lineEnd(cps),flags=settings.data?.flags;
  const due=dueTotal(cps),cards=home.data?.projects.find(item=>item.id===project.id)?.cardsCount??0;
  const targetDate=(examEnabled?project.deadlineAt:null)??project.targetDate;
  const target=targetDate?shortDate(targetDate):'';
@@ -213,7 +228,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   if(value.startsWith('Ideas'))next.set('cards','ideas');else {next.delete('cards');next.delete('idea');}
   setParams(next);
  }
- return <main id="main-content" className={'v7-page v7-path '+klass} aria-label="Path">
+ return <main id="main-content" ref={pathRoot} className={'v7-page v7-path '+klass} aria-label="Path">
   <DetailHeader title={project.title} back="/projects" compact={<><Emblem subject={subject} seed={project.id} size={24} tier="glyph" animate={false}/><ProgressRing done={data.done} total={data.total}/></>}
    extraAction={<MoreActions label="More path actions" title={project.title} items={[
    {label:'Switch path',hint:'Open another path in the same place',icon:<MEANING_ICON.switchPath aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
@@ -226,11 +241,11 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
    {label:'Archive path',hint:'You can restore it from Paths',destructive:true,icon:<Archive aria-hidden="true"/>,onClick:()=>{void setStatus('archived','Path archived');}},
   ]}/>}/>
   {/* N157 · U1 S11 (flag v7Margin): the path's sources and its last sessions, beside the page. */}
-  <Margin notes={[
+  {isFlagOn('v7Margin')&&<Margin notes={[
    ...(data.sources.length?[{title:'Sources',body:<ul>{data.sources.slice(0,6).map(source=><li key={source.id}>{source.short||source.title}{source.pageCount?' · '+source.pageCount+' pages':''}</li>)}</ul>}]:[]),
    ...(data.sessions.length?[{title:'Last sessions',body:<ul>{[...data.sessions].sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)).slice(0,3).map(session=>
     <li key={session.id}><Link to={'/s/'+encodeURIComponent(slug)+'/'+session.number}>{'Session '+session.number}</Link> · {shortDate(session.startedAt)}</li>)}</ul>}]:[]),
-  ]}/>
+  ]}/>}
   <header className="v7-path-head">
    <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={40} tier="tile" animate={false}/></span>
    <h1 className="v7-hub-title">{project.title}</h1>
@@ -283,10 +298,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
     {stages.map(stage=>{
      const active=stage.checkpoints.some(cp=>cp.id===current?.id),minutes=estimates.minutes(stage.checkpoints);
      const title=stageLabel(stage.name,stage.checkpoints).replace(/(\d+) of (\d+)$/,'$1/$2')+(minutes>0?' · ~'+hoursEstimate(minutes).replace(' ',''):'');
-     const rows=<ol>{stage.checkpoints.map((cp,offset)=>{
-      const index=stage.start+offset;
-      return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end}/>;
-     })}</ol>;
+     const rows=<StageRows slug={slug} cps={cps} stage={stage} currentIndex={currentIndex} step={step} end={end} flags={flags} readingIntent={readingIntent}/>;
      const outlineKey=['path-stage-open',project.id,stage.key];
      return <li key={project.id+':'+stage.key} className="v7-path-stage">
       {active?<><h2 className="v7-eyebrow">{title}</h2>{rows}</>:<Disclosure label={title} mountWhenOpen
@@ -294,8 +306,8 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
      </li>;
     })}
    </ol>:<EmptyMoment title="No plan yet." action={{label:'Plan with your tutor',to:tutorHref(slug)}}/>)}
-   {tab==='Plan'&&<PathEstimateDetails projectId={project.id}/>}
-   {tab==='Plan'&&(settings.data?.flags?.recheck_v2||settings.data?.flags?.time_block)&&<Disclosure label={settings.data?.flags?.recheck_v2?'Rechecks':'Study schedule'}><ProjectScheduler projectId={project.id}/></Disclosure>}
+   {tab==='Plan'&&<PathEstimateDetails projectId={project.id} data={estimates.model}/>}
+   {tab==='Plan'&&(flags?.recheck_v2||flags?.time_block)&&<Disclosure label={flags?.recheck_v2?'Rechecks':'Study schedule'} mountWhenOpen><ProjectScheduler projectId={project.id}/></Disclosure>}
    {tab==='Sessions'&&<SessionRows slug={slug} sessions={data.sessions}/>}
    {tab==='Sources'&&<Suspense fallback={<Skeleton/>}><SourcesPanel sources={data.sources} projectId={project.id} focusSourceId={studyRepair?params.get('source'):null}/></Suspense>}
    {tab==='Cards'&&showIdeas&&<Segmented label="Card sections" options={['Cards','Ideas ('+visibleIdeas.length+')']}
@@ -327,6 +339,8 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
    </Button>
    {due>0&&<Link className="v7-button v7-secondary" to={studyRepair?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(slug)}>Review {due}</Link>}
   </Dock>}
-  {switcher&&<Suspense fallback={null}><ProjectSwitcher open onClose={()=>setSwitcher(false)} current={slug}/></Suspense>}
+  {switcher&&<LazyOverlay title="Switch path" source={switchPath} onClose={()=>setSwitcher(false)}
+   returnTarget={()=>pathRoot.current?.querySelector<HTMLElement>('[aria-label="More path actions"]')??null}
+   bodyProps={{onClose:()=>setSwitcher(false),current:slug}}/>}
  </main>;
 }

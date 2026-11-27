@@ -1,3 +1,4 @@
+import {Button} from '../../ui/v7/components';
 import {useEffect, useId, useRef, useState, type ChangeEvent} from 'react';
 import {LocalPadWorkspace} from './LocalPadWorkspace';
 import {PadNavigationGuard} from './PadNavigationGuard';
@@ -79,15 +80,15 @@ export function LocalPadDraftPanel({session, onSendSelection, keyboardPreference
       onEdit={edit => {session.edit({...session.snapshot().draft, edit}); refresh();}}
       onInk={next => {session.edit({...session.snapshot().draft, strokes: next.strokes}); setInk(next); refresh();}}/>
     <div className="local-pad-controls" role="group" aria-label="Pad draft actions">
-      <button type="button" disabled={!canSave} onClick={() => {
+      <Button disabled={!canSave} onClick={() => {
         const saving = session.save(); refresh(); void saving.then(refresh);
-      }}>Save draft</button>
-      {state.hasPrevious && <button type="button" disabled={state.status === 'saving'} onClick={() => {
+      }}>Save draft</Button>
+      {state.hasPrevious && <Button disabled={state.status === 'saving'} onClick={() => {
         const draft = session.previousDraft();
         version.current++;
         setCandidate(draft ? {source: 'previous', draft} : null);
         setFileStatus('');
-      }}>Review previous draft</button>}
+      }}>Review previous draft</Button>}
     </div>
     <label htmlFor={inputId}>Import a Pad JSON backup</label>
     <input id={inputId} type="file" accept="application/json,.json" onChange={event => {void chooseFile(event);}}/>
@@ -104,8 +105,8 @@ export function LocalPadDraftPanel({session, onSendSelection, keyboardPreference
         </g>
       </svg>}
       <div className="local-pad-controls">
-        <button type="button" disabled={state.status === 'saving'} onClick={replace}>Replace working Pad</button>
-        <button type="button" onClick={() => {version.current++; setCandidate(null); setFileStatus('');}}>Keep current work</button>
+        <Button disabled={state.status === 'saving'} onClick={replace}>Replace working Pad</Button>
+        <Button onClick={() => {version.current++; setCandidate(null); setFileStatus('');}}>Keep current work</Button>
       </div>
     </section>}
   </div>;

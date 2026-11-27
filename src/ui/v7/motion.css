@@ -1,76 +1,141 @@
-/*
- * A1 · Motion v1, "drawn with a compass" (release and assets plan, 03_LATER_ASSETS_SPEC.md): lines stroke in, surfaces
- * fade and rise a few points, nothing bounces, one thing moves at a time. No library: CSS plus the existing `motion`.
- *
- * Every animation here runs only when the system allows motion AND Settings › Appearance › Reduce effects is off
- * (`html[data-v7-reduce-effects]`, src/ui/v7/effects.ts). Under either, layout is identical and nothing moves.
- * Values mirror `motionV1` in motion.ts (tests/unit/v7/motion-v1.test.ts keeps them in step).
- */
+/* Motion roles share this timing ladder. Old names remain aliases while existing callers migrate. */
+:root {
+  --motion-none: 0ms;
+  --motion-instant: 90ms;
+  --motion-quick: 160ms;
+  --motion-quick-exit: 120ms;
+  --motion-base: 240ms;
+  --motion-base-exit: 160ms;
+  --motion-layout: 200ms;
+  --motion-slow: 320ms;
+  --motion-sheet: 350ms;
+  --motion-draw: 700ms;
+  --motion-scenic: 900ms;
+  --motion-camera-min: 240ms;
+  --motion-camera-max: 600ms;
+  --motion-stagger: 30ms;
+  --motion-skeleton-delay: 300ms;
+  --motion-reduced: 120ms;
+  --motion-progress-delay: 120ms;
+  --motion-dismiss-max: 220ms;
+  --motion-ambient: 2s;
+  --motion-focus-orbit-tick: 1s;
+  --motion-focus-breathe: 10s;
+  --motion-focus-turn: 240s;
+  --ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0, 1);
+  --ease-exit: cubic-bezier(.3, 0, 1, 1);
+  --ease-draw: cubic-bezier(.65, 0, .35, 1);
+  /* springEasing(380, 36), sampled at 24 intervals. */
+  --spring-sheet: linear(0, 0.034, 0.114, 0.217, 0.327, 0.434, 0.533, 0.62, 0.696, 0.759, 0.812, 0.855, 0.889, 0.917, 0.938, 0.954, 0.967, 0.977, 0.984, 0.989, 0.993, 0.995, 0.997, 0.999, 1);
+  --rise: 12px;
+  --rise-small: 6px;
+  --nudge: 4px;
+  --swap-shift: 16px;
+
+  --ease-out: var(--ease-enter);
+  --ease-in: var(--ease-exit);
+  --ease-in-out: var(--ease-draw);
+  --duration-fast: var(--motion-quick);
+  --duration-base: var(--motion-base);
+  --duration-slow: var(--motion-slow);
+  --duration-enter: var(--motion-camera-max);
+  --duration-reveal: var(--motion-quick);
+  --duration-deal: var(--motion-sheet);
+  --duration-grade: var(--motion-base-exit);
+}
+
 :where(html[data-v7]) {
-  --v7-m-instant: 90ms;
-  --v7-m-quick: 160ms;
-  --v7-m-base: 240ms;
-  --v7-m-draw: 700ms;
-  --v7-ease-draw: cubic-bezier(.65, 0, .35, 1);
-  /* springEasing(380, 36): a sheet settles in 350 ms without overshoot. */
-  --v7-spring-sheet: linear(0, 0.034, 0.114, 0.217, 0.327, 0.434, 0.533, 0.62, 0.696, 0.759, 0.812, 0.855, 0.889, 0.917, 0.938, 0.954, 0.967, 0.977, 0.984, 0.989, 0.993, 0.995, 0.997, 0.999, 1);
-  --v7-spring-sheet-time: 350ms;
-  --v7-stagger: 30ms;
-  --v7-rise: 12px;
-  --v7-rise-small: 6px;
+  --v7-m-instant: var(--motion-instant);
+  --v7-instant: var(--motion-instant);
+  --v7-m-quick: var(--motion-quick);
+  --v7-fast: var(--motion-quick-exit);
+  --v7-m-base: var(--motion-base);
+  --v7-base: var(--motion-base);
+  --v7-slow: var(--motion-slow);
+  --v7-m-draw: var(--motion-draw);
+  --v7-scenic: var(--motion-scenic);
+  --v7-long: var(--motion-camera-max);
+  --v7-completion: var(--motion-skeleton-delay);
+  --v7-pulse: var(--motion-ambient);
+  --v7-ease-standard: var(--ease-standard);
+  --v7-ease-out: var(--ease-enter);
+  --v7-ease-in: var(--ease-exit);
+  --v7-ease-draw: var(--ease-draw);
+  --v7-spring-sheet: var(--spring-sheet);
+  --v7-spring-sheet-time: var(--motion-sheet);
+  --v7-stagger: var(--motion-stagger);
+  --v7-skeleton: var(--motion-ambient);
+  --v7-skeleton-delay: var(--motion-skeleton-delay);
+  --v7-rise: var(--rise);
+  --v7-rise-small: var(--rise-small);
 }
 
-/* Reduce effects: the same as the system's reduced motion, plus no blur and no glow. */
-:where(html[data-v7][data-v7-reduce-effects]) *,
-:where(html[data-v7][data-v7-reduce-effects]) *::before,
-:where(html[data-v7][data-v7-reduce-effects]) *::after {animation: none !important; transition: opacity var(--v7-fast) !important; backdrop-filter: none !important;}
-:where(html[data-v7][data-v7-reduce-effects]) body {background-image: none;}
-:where(html[data-v7][data-v7-reduce-effects]) .v7-emblem path {stroke-dasharray: none;}
+/* A skeleton's delayed visibility is status feedback. Only declared opacity roles may still move. */
+:where(html[data-v7][data-motion="reduced"]) :where(*:not(.v7-skeleton,[data-motion-opacity])),
+:where(html[data-v7][data-motion="reduced"]) *::before,
+:where(html[data-v7][data-motion="reduced"]) *::after {
+  animation-name: none !important;
+  transition-duration: var(--motion-none) !important;
+  scroll-behavior: auto !important;
+}
+:where(html[data-v7][data-motion="reduced"]) [data-motion-opacity] {
+  transition-property: opacity !important;
+  transition-duration: var(--motion-reduced) !important;
+}
+:where(html[data-v7][data-motion="reduced"]) *,
+:where(html[data-v7][data-motion="reduced"]) *::before,
+:where(html[data-v7][data-motion="reduced"]) *::after {backdrop-filter: none !important;}
+:where(html[data-v7][data-motion="reduced"]) .v7-emblem path {stroke-dasharray: none;}
 
-@media (prefers-reduced-motion: no-preference) {
-  /* Sheets and dialogs rise and fade in on the sheet spring; the backdrop fades. (Closing stays instant.) */
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open] {
-    transition: opacity var(--v7-m-quick) var(--v7-ease-standard), translate var(--v7-spring-sheet-time) var(--v7-spring-sheet), scale var(--v7-spring-sheet-time) var(--v7-spring-sheet);
-  }
-  @starting-style {
-    :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open] {opacity: 0; translate: 0 var(--v7-rise);}
-  }
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open]::backdrop {transition: opacity var(--v7-m-base) linear;}
-  @starting-style {
-    :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open]::backdrop {opacity: 0;}
-  }
-  @media (min-width: 700px) {
-    @starting-style {
-      :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open] {translate: 0 0; scale: .98;}
-    }
-  }
-
-  /* List insert: an item added after the list loaded (useEnterMarks) rises in, 30 ms apart, at most six steps. */
-  :where(html[data-v7]:not([data-v7-reduce-effects])) [data-v7-enter] {animation: v7-m-rise var(--v7-m-base) var(--v7-ease-standard) both;}
-
-  /* Check-draw: a task completed here draws its tick (lucide Check, path length ~23). */
-  :where(html[data-v7]:not([data-v7-reduce-effects])) [data-v7-draw] svg path {stroke-dasharray: 24; animation: v7-m-check var(--v7-m-base) var(--v7-ease-draw) both;}
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-tk-check[aria-checked="true"] > span {transition: background-color var(--v7-m-quick) var(--v7-ease-standard), border-color var(--v7-m-quick) var(--v7-ease-standard);}
-
-  /* Review: the answer and the grade buttons rise into place when the card is revealed. */
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-review-back {animation: v7-m-rise var(--v7-m-quick) var(--v7-ease-standard) both;}
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-review-grades {animation: v7-m-fade var(--v7-m-quick) var(--v7-ease-standard) both;}
-
-  /* Calendar: a lifted block grows a touch while it is dragged. */
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-cal-block {transition: scale var(--v7-m-quick) var(--v7-ease-standard);}
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-cal-block[data-lifted="true"] {scale: 1.02;}
-
-  /* Emblems stroke in on the compass curve. */
-  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-emblem-draw path {animation-timing-function: var(--v7-ease-draw);}
+/* The sheet may fade in without moving under reduced motion. Its exit is immediate. */
+:where(html[data-v7][data-motion="reduced"]) .v7-sheet[open] {
+  transition: opacity var(--motion-reduced) var(--ease-enter) !important;
+}
+@starting-style {
+  :where(html[data-v7][data-motion="reduced"]) .v7-sheet[open] {opacity: 0;}
 }
 
-@keyframes v7-m-rise {from {opacity: 0; translate: 0 var(--v7-rise-small);}}
+/* Sheets rise and fade in on the sheet spring. The layer manager owns exits. */
+:where(html[data-v7]:not([data-motion="reduced"])) .v7-sheet[open] {
+  transition: opacity var(--motion-quick) var(--ease-enter), translate var(--motion-sheet) var(--spring-sheet), scale var(--motion-sheet) var(--spring-sheet);
+}
+@starting-style {
+  :where(html[data-v7]:not([data-motion="reduced"])) .v7-sheet[open] {opacity: 0; translate: 0 var(--rise);}
+}
+:where(html[data-v7]:not([data-motion="reduced"])) .v7-sheet[open]::backdrop {transition: opacity var(--motion-base) linear;}
+@starting-style {
+  :where(html[data-v7]:not([data-motion="reduced"])) .v7-sheet[open]::backdrop {opacity: 0;}
+}
+@media (min-width: 700px) {
+  @starting-style {
+    :where(html[data-v7]:not([data-motion="reduced"])) .v7-sheet[open] {translate: 0 0; scale: .98;}
+  }
+}
+
+/* List insert: an item added after the list loaded (useEnterMarks) rises in, 30 ms apart, at most six steps. */
+:where(html[data-v7]:not([data-motion="reduced"])) [data-v7-enter] {animation: v7-m-rise var(--motion-base) var(--ease-standard) both;}
+
+/* Check-draw: a task completed here draws its tick (lucide Check, path length ~23). */
+:where(html[data-v7]:not([data-motion="reduced"])) [data-v7-draw] svg path {stroke-dasharray: 24; animation: v7-m-check var(--motion-base) var(--ease-draw) both;}
+:where(html[data-v7]:not([data-motion="reduced"])) .v7-tk-check[aria-checked="true"] > span {transition: background-color var(--motion-instant) var(--ease-standard), border-color var(--motion-instant) var(--ease-standard);}
+
+/* Review: the answer and the grade buttons rise into place when the card is revealed. */
+:where(html[data-v7]:not([data-motion="reduced"])) .v7-review-back {animation: v7-m-rise var(--motion-quick) var(--ease-standard) both;}
+:where(html[data-v7]:not([data-motion="reduced"])) .v7-review-grades {animation: v7-m-fade var(--motion-quick) var(--ease-standard) both;}
+
+/* Calendar: a lifted block grows a touch while it is dragged. */
+:where(html[data-v7]:not([data-motion="reduced"])) .v7-cal-block {transition: scale var(--motion-quick) var(--ease-standard);}
+:where(html[data-v7]:not([data-motion="reduced"])) .v7-cal-block[data-lifted="true"] {scale: 1.02;}
+
+/* Emblems stroke in on the compass curve. */
+:where(html[data-v7]:not([data-motion="reduced"])) .v7-emblem-draw path {animation-timing-function: var(--ease-draw);}
+
+@keyframes v7-m-rise {from {opacity: 0; translate: 0 var(--rise-small);}}
 @keyframes v7-m-fade {from {opacity: 0;}}
 @keyframes v7-m-check {from {stroke-dashoffset: 24;} to {stroke-dashoffset: 0;}}
 
 /* N131 · L-16 theme transition (v7 UX plan r3, `04` §7: "a cross-fade"): a learner-made Day/Night switch cross-fades over
-   the base duration as a View Transition (src/styles/appearance.ts; never under reduced motion or Reduce effects). */
-@media (prefers-reduced-motion: no-preference) {
-  :where(html[data-v7][data-v7-theme-turn]:not([data-v7-reduce-effects]))::view-transition-old(root),
-  :where(html[data-v7][data-v7-theme-turn]:not([data-v7-reduce-effects]))::view-transition-new(root) {animation-duration: var(--v7-m-base); animation-timing-function: linear;}
-}
+ the base duration as a View Transition (src/styles/appearance.ts; never under reduced motion or Reduce effects). */
+:where(html[data-v7][data-v7-theme-turn]:not([data-motion="reduced"]))::view-transition-old(root),
+:where(html[data-v7][data-v7-theme-turn]:not([data-motion="reduced"]))::view-transition-new(root) {animation-duration: var(--motion-base); animation-timing-function: linear;}

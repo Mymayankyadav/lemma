@@ -1,4 +1,5 @@
-import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
+import {retryLazy} from '../../app/lazyModule';
+import {Suspense,useEffect,useMemo,useState} from 'react';
 import {v7Screen} from '../../app/v7Kit';
 import {ChevronLeft,ChevronRight} from 'lucide-react';
 import {getApi} from '../../data';
@@ -160,7 +161,7 @@ export function EntryDialog({entry,onChange,onClose,busy}:{entry:StudyEntryRecor
   </section>
  </Dialog>;
 }
-const TimeLogV7=lazy(()=>import('./v7/TimeLogV7'));
+const TimeLogV7=retryLazy(()=>import('./v7/TimeLogV7'));
 export default function TimeLog(){
  // v7 Time log (PLAN §6.13) behind v7Shell; the v6 log stays for rollback.
  if(v7Screen()==='log')return <Suspense fallback={<div role="status" aria-label="Time log loading" className="min-h-dvh"/>}><TimeLogV7/></Suspense>;
@@ -230,8 +231,7 @@ function TimeLogV6(){
  }
  const editing=rows.find(entry=>entry.id===selected)??null;
  const weekLabel=new Intl.DateTimeFormat('en',{timeZone:'UTC',month:'short',day:'numeric'}).format(new Date(day+'T12:00:00Z'));
- return <section aria-labelledby="time-log-title" className="flex min-w-0 flex-col gap-4 pb-8">
-  <h1 id="time-log-title" className="sr-only">Time log</h1>
+ return <section aria-label="Time log" className="flex min-w-0 flex-col gap-4 pb-8">
   <p className="text-label text-ink-2">Your saved focus time. Add time you studied without the timer, or correct an entry.</p>
   <nav aria-label="Time log week" className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
    <button type="button" aria-label="Previous week" className="flex size-11 items-center justify-center rounded-[8px] text-ink" onClick={()=>setDay(addDays(day,-7))}><ChevronLeft size={22} aria-hidden="true"/></button>

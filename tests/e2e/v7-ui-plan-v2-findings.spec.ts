@@ -70,7 +70,7 @@ test('B3 and L13 restore the deleted task and use the sentence form',async({page
   await expect(row).toBeVisible();
 });
 
-test('B10 announces a capture type and More options follows the learner’s choice',async({page},info)=>{
+test('B10 announces a capture type and Add details follows the learner’s choice',async({page},info)=>{
   await go(page,'/');
   await page.getByRole('button',{name:'Capture',exact:true}).click();
   const capture=page.getByRole('dialog',{name:'Capture'});
@@ -78,7 +78,7 @@ test('B10 announces a capture type and More options follows the learner’s choi
   await expect(capture.locator('[aria-live=polite]')).toHaveText('Adds a time block');
   await frame(page,info,'B10-type-announcement');
   await capture.getByRole('radio',{name:'Task',exact:true}).click();
-  await capture.getByRole('button',{name:'More options'}).click();
+  await capture.getByRole('button',{name:'Add details'}).click();
   await expect(page.getByRole('dialog',{name:'New task'})).toBeVisible();
   await frame(page,info,'B10-chosen-editor');
 });

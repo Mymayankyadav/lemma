@@ -1,4 +1,5 @@
-import {lazy,Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
+import {retryLazy} from '../../app/lazyModule';
+import {Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Link} from 'react-router';
 import {CalendarDays,ChevronRight,Folder,Layers,Moon} from 'lucide-react';
 import {useReviewEstimate} from '../review/v6/estimate';
@@ -10,7 +11,7 @@ import type {CalendarBlockRecord} from '../../data/study/contract';
 import {dayBounds} from '../../lib/effort';
 import {formatTime,formatDuration} from '../../lib/format';
 import TaskSheet from '../tasks/TaskSheet';
-const TodayDue=lazy(()=>import('./TodayDue'));
+const TodayDue=retryLazy(()=>import('./TodayDue'));
 const button='min-h-11 self-start rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-label font-semibold text-ink disabled:opacity-50';
 export function ownerToday(zone:string,now=new Date()):string{
  const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);

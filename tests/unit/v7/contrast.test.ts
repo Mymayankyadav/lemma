@@ -15,10 +15,24 @@ for(const mode of ["day","night","day-hc","night-hc"]){
   for(const bg of ["surface.page","surface.raised","surface.sunken","surface.muted","surface.overlay"])
    expect(c(get("border.default"),get(bg)),bg).toBeGreaterThanOrEqual(3);
   expect(c(get("focus.ring"),get("surface.page"))).toBeGreaterThanOrEqual(3);
+  for(const bg of ["surface.track","surface.lifted","state.hover","state.lifted-hover"]){
+   for(const text of ["text.primary","text.secondary"])expect(c(get(text),get(bg)),text+" on "+bg).toBeGreaterThanOrEqual(4.5);
+   expect(c(get("border.default"),get(bg)),bg).toBeGreaterThanOrEqual(3);
+  }
+  expect(c(get("surface.track"),get("surface.page"))).toBeGreaterThanOrEqual(1.10);
+  expect(c(get("surface.track"),get("surface.raised"))).toBeGreaterThanOrEqual(1.10);
+  if(mode.startsWith("night"))expect(c(get("surface.lifted"),get("surface.overlay"))).toBeGreaterThanOrEqual(1.10);
+
  });
 }
 it("uses one DTCG source with aliased components and 4 modes",()=>{
  for(const [name,value] of Object.entries(tokens.component) as [string,{$value:string}][])
   expect(value.$value,name).toMatch(/^\{role\./);
  expect(tokens.$extensions["lemma.modes"]).toEqual(["day","night","day-hc","night-hc"]);
+});
+
+it("offsets the keyboard focus ring from a filled rose control",()=>{
+ const css=readFileSync("src/ui/v7/tokens.css","utf8");
+ const offset=css.match(/--v7-focus-gap:\s*([\d.]+)px/);
+ expect(Number(offset?.[1])).toBeGreaterThanOrEqual(2);
 });

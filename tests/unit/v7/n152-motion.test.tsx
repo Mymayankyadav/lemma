@@ -3,9 +3,10 @@ import {createRoot,type Root} from 'react-dom/client';
 import {readFileSync} from 'node:fs';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {useAnimatedNumber} from '../../../src/ui/v7/useAnimatedNumber';
-import {installSheetDrag,releaseVelocity} from '../../../src/ui/v7/sheetDrag';
+import {installSheetDrag,releaseDuration,releaseVelocity} from '../../../src/ui/v7/sheetDrag';
 import {REDUCE_EFFECTS_ATTR} from '../../../src/ui/v7/effects';
 import {Sheet} from '../../../src/ui/v7/components';
+import {setSurfaceBeta} from '../../../src/app/surfaceBeta';
 
 // N152 · V20: dismissSheet (the sheet's drag to dismiss) and interpolateNumber (a number that animates) are in use;
 // transitionPresets, which nothing used, is gone.
@@ -80,6 +81,12 @@ describe('V20 · a number that animates (interpolateNumber)',()=>{
  });
 });
 
+it('caps the remainder of an interrupted drag at the sheet release limits',()=>{
+ expect(releaseDuration(320,2000,120,220)).toBe(160);
+ expect(releaseDuration(1,3000,120,220)).toBe(120);
+ expect(releaseDuration(600,0,120,220)).toBe(220);
+});
+
 describe('V20 · drag a bottom sheet down to dismiss (dismissSheet)',()=>{
  let uninstall=()=>{};
  beforeEach(()=>{
@@ -109,6 +116,51 @@ describe('V20 · drag a bottom sheet down to dismiss (dismissSheet)',()=>{
    pointer(from,'pointerup',300+distance,1000+ms);
   });
  }
+ it('keeps a third editor and its discard guard in the second modal and restores its owner',async()=>{
+  setSurfaceBeta(true);
+  function Nested(){
+   const [child,setChild]=useState(false),[editor,setEditor]=useState(false);
+   return <Sheet open title="Sources" onClose={()=>{}}>
+    <button onClick={()=>setChild(true)}>Manage sources</button>
+    <Sheet open={child} onClose={()=>setChild(false)} title="Manage sources">
+     <button onClick={()=>setEditor(true)}>Edit source</button>
+     <Sheet open={editor} onClose={()=>setEditor(false)} dirty title="Edit source">
+      <input aria-label="Source title" defaultValue="Uncommitted title"/>
+     </Sheet>
+    </Sheet>
+   </Sheet>;
+  }
+  async function click(text:string){
+   const button=Array.from(host!.querySelectorAll('button')).find(el=>el.textContent===text)!;
+   await act(async()=>{button.focus();button.click();});
+  }
+  try{
+   await mount(<Nested/>);await click('Manage sources');await click('Edit source');
+   const active=()=>host!.querySelector<HTMLElement>('[data-current-step]')!;
+   expect(host!.querySelectorAll('dialog[open]')).toHaveLength(2);
+   expect(active().querySelector('h2')?.textContent).toBe('Edit source');
+   await act(async()=>active().querySelector<HTMLButtonElement>('[aria-label=Close]')!.click());
+   expect(host!.querySelectorAll('dialog[open]')).toHaveLength(2);
+   expect(active().getAttribute('role')).toBe('alertdialog');
+   expect(document.activeElement?.textContent).toBe('Keep editing');
+   await click('Keep editing');
+   expect(active().querySelector('input')?.value).toBe('Uncommitted title');
+   await act(async()=>active().querySelector<HTMLButtonElement>('[aria-label=Close]')!.click());
+   await click('Discard changes');
+   expect(host!.querySelector('[data-current-step]')).toBeNull();
+   expect(document.activeElement?.textContent).toBe('Edit source');
+  }finally{setSurfaceBeta(false);}
+ });
+ it('opens a restored series of nested sheets in owner order with only two scrims',async()=>{
+  setSurfaceBeta(true);
+  try{
+   await mount(<Sheet open title="Parent" onClose={()=>{}}><Sheet open title="Child" onClose={()=>{}}>
+    <Sheet open title="Leaf" onClose={()=>{}}><p>Visible leaf</p></Sheet>
+   </Sheet></Sheet>);
+   expect(host!.querySelectorAll('dialog[open]')).toHaveLength(2);
+   expect(host!.querySelector('[data-current-step] h2')?.textContent).toBe('Leaf');
+  }finally{setSurfaceBeta(false);}
+ });
  it('pulling the header down 30% of the sheet closes it, through the same path as Escape',async()=>{
   const onClose=vi.fn();
   await mount(<Host onClose={onClose}/>);place();
@@ -155,7 +207,7 @@ describe('V20 · drag a bottom sheet down to dismiss (dismissSheet)',()=>{
 describe('V20 · in use',()=>{
  it('the app installs the sheet drag, the Review hub animates its count, and transitionPresets is gone',()=>{
   expect(readFileSync('src/main.tsx','utf8')).toContain('installSheetDrag()');
-  expect(readFileSync('src/ui/v7/sheetDrag.ts','utf8')).toContain("import {dismissSheet} from './motion';");
+  expect(readFileSync('src/ui/v7/sheetDrag.ts','utf8')).toContain("import {dismissSheet, durations} from './motion';");
   expect(readFileSync('src/ui/v7/useAnimatedNumber.ts','utf8')).toContain("import {interpolateNumber,motionV1} from './motion';");
   const hub=readFileSync('src/features/review/v7/ReviewHubV7.tsx','utf8');
   expect(hub).toContain('const shownCount=useAnimatedNumber(count,!loading&&!failed);');

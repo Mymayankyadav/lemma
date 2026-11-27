@@ -45,6 +45,7 @@ export default function AgendaView({date,zone,clock24h,entries,blocks,dues,proje
  onEdit:(block:CalendarBlockRecord,event?:MouseEvent<HTMLElement>)=>void;onRefresh:()=>void;
 }){
  const notify=useToast();
+ const subjectNames=useMemo(()=>new Map(projects.map(project=>[project.subject.id,project.subject.name])),[projects]);
  const range=useMemo(()=>calendarRange(date,zone,7),[date,zone]);
  const controls=useCalendarOverlaps(range);
  const [resolving,setResolving]=useState<CalendarOverlap|null>(null);
@@ -96,7 +97,7 @@ export default function AgendaView({date,zone,clock24h,entries,blocks,dues,proje
     {nothing&&<p className="text-label text-ink-2">Nothing planned.</p>}
     {group.entries.map((slice,index)=><SavedCard key={slice.entry.id+':'+index} slice={slice} zone={zone} clock24h={clock24h}/>)}
     {group.blocks.map(block=><button key={block.id} type="button" aria-label={'Edit block '+block.title}
-     className={blockCardClass(block)} style={subjectStripe(block.subjectId)}
+     className={blockCardClass(block)} style={subjectStripe(block.subjectId,subjectNames.get(block.subjectId??''))}
      onClick={event=>onEdit(block,event)}><BlockLines block={block} zone={zone} clock24h={clock24h}/></button>)}
     <DueDayItems date={group.day} firstVisible={date} zone={zone} dues={dues} projects={projects}/>
    </section>;

@@ -20,6 +20,7 @@ import type {LemmaNativePlugin} from './bridge';
 import {lemmaNative} from './bridge';
 import {DEVICE_PREFS_CHANGED, checkForUpdate, readDevicePref} from './device';
 import {backStep, closeTopLayer, hasOpenLayer, routeFromUrl, wantsBackHandler} from './links';
+import {topLayerOwnsHistory} from '../ui/v7/layers';
 import {nativeTimerState, replayTimerActions} from './timer';
 import {createPushRegistrar, resetPushRegistration, serverDelivers, syncPushToken} from './push';
 import {whenRootPainted} from './splash';
@@ -304,7 +305,8 @@ export async function startNative(): Promise<void> {
   if (launch?.url) openLink(launch.url);
 
   await App.addListener('backButton', ({canGoBack}) => {
-    const step = backStep({layerOpen: hasOpenLayer(), route: route(), canGoBack});
+    const layerOpen = hasOpenLayer() && !(canGoBack && topLayerOwnsHistory());
+    const step = backStep({layerOpen, route: route(), canGoBack});
     if (step === 'close-layer') closeTopLayer();
     else if (step === 'history-back') window.history.back();
     else if (step === 'home') go('/');

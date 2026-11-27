@@ -1,5 +1,6 @@
 import {expect,test,type Page} from '@playwright/test';
 import {at,NOW} from './v7-scenes';
+import {contrastAt} from './helpers/contrast';
 
 const go=async(page:Page,route:string)=>{
  await page.goto(at(route).replace('#',',v7Room,v7Scratch,v7Ruler#'));
@@ -177,16 +178,15 @@ test('Selected Teaching style is readable in Day with reduced effects',async({pa
  await go(page,'/settings?section=tutor');
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
  await page.locator('html').evaluate(node=>node.setAttribute('data-effects','calm'));
+ await expect(page.locator('html')).toHaveAttribute('data-motion','reduced');
  const teaching=page.getByRole('radiogroup',{name:'Teaching style'});
  const selected=teaching.getByRole('radio',{name:'Socratic',exact:true});
  await expect(selected).toHaveAttribute('aria-checked','true');
- const colors=await selected.evaluate(node=>{
-  const style=getComputedStyle(node);
-  return {foreground:style.color,background:style.backgroundColor};
- });
- expect(contrastRatio(colors.foreground,colors.background)).toBeGreaterThanOrEqual(4.5);
- await teaching.getByRole('radio',{name:'Visual',exact:true}).click();
- await expect(teaching.getByRole('radio',{name:'Visual',exact:true})).toHaveAttribute('aria-checked','true');
+ expect((await contrastAt(selected)).text).toBeGreaterThanOrEqual(4.5);
+ const visual=teaching.getByRole('radio',{name:'Visual',exact:true});
+ await visual.click();
+ await expect(visual).toHaveAttribute('aria-checked','true');
+ expect((await contrastAt(visual)).text).toBeGreaterThanOrEqual(4.5);
 });
 
 test('Settings sliders announce and display their count, not only a unit',async({page})=>{
@@ -203,6 +203,9 @@ test('Settings sliders announce and display their count, not only a unit',async(
   await slider.press('ArrowRight');
   await expect(dialog.locator('output')).toHaveText((initial+1)+' '+unit);
   await page.keyboard.press('Escape');
+  const guard=page.getByRole('dialog',{name:'Discard changes?',exact:true});
+  await guard.getByRole('button',{name:'Discard changes',exact:true}).click();
+  await expect(dialog).toBeHidden();
  }
 });
 

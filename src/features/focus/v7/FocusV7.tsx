@@ -1,9 +1,10 @@
 import {deviceToken} from '../../../data/study/live';
 import {focusedMilliseconds} from '../../../lib/studyTime';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {haptic} from '../../../ui/v7/haptics';
 import {playPhaseChime} from '../../../ui/v7/chime';
 import {useMotionReduced} from '../../../ui/v7/effects';
+import {hasOpenLayer,subscribeLayers} from '../../../ui/v7/layers';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,ChevronDown,CircleAlert,Clock3,Coffee,MoreHorizontal,Pause,Play,SkipForward,Smartphone,Waves} from 'lucide-react';
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
@@ -17,7 +18,7 @@ import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {formatDuration} from '../../../lib/format';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
-import {ImmersiveHeader} from '../../../app/v7/V7Shell';
+import {ImmersiveHeader} from '../../../app/v7/PageHeaders';
 import {DriftCard} from './DriftCard';
 import {timedPhase} from '../../../data/study/phase';
 import {announceFocusChange,focusClock,focusEyebrow,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';
@@ -25,7 +26,7 @@ import {kitSubject} from '../../atlas/v7/model';
 import {clockTime} from '../../home/v7/todayModel';
 import {useToast} from '../../../ui/Toast';
 import {isFlagOn} from '../../../flags';
-import {useDeskLandscape,useWakeLock} from './deskClock';
+import {turnDeskClock,useDeskLandscape,useWakeLock} from './deskClock';
 import './focus.css';
 import {Loader} from '../../../ui/v7/Loader';
 
@@ -122,10 +123,42 @@ export default function FocusV7(){
  };
  // N157 · U4 S16 (flag v7DeskClock): the desk clock in landscape or with one tap; the screen stays awake while it runs;
  // a tap anywhere shows the controls for a while.
- const deskFlag=isFlagOn('v7DeskClock'),landscape=useDeskLandscape(),[deskChosen,setDeskChosen]=useState(false),[deskControls,setDeskControls]=useState(false);
- const desk=deskFlag&&!!entry&&(deskChosen||landscape);
+ const deskFlag=isFlagOn('v7DeskClock'),landscape=useDeskLandscape(),[deskChosen,setDeskChosen]=useState<boolean|null>(null);
+ const [deskLandscape,setDeskLandscape]=useState(landscape),clockSurface=useRef<HTMLElement>(null);
+ useEffect(()=>{
+  if(landscape===deskLandscape)return;
+  if(!deskFlag||!entry||deskChosen!==null||reduced){setDeskLandscape(landscape);return;}
+  const frame=requestAnimationFrame(()=>turnDeskClock(clockSurface.current,()=>setDeskLandscape(landscape),false));
+  return ()=>cancelAnimationFrame(frame);
+ },[deskFlag,landscape,deskLandscape,deskChosen,entry?.id,reduced]);
+ const [deskControls,setDeskControls]=useState(false),[chromeFocused,setChromeFocused]=useState(false),[pointerDown,setPointerDown]=useState(false);
+ const layerOpen=useSyncExternalStore(subscribeLayers,hasOpenLayer,()=>false);
+ const desk=deskFlag&&!!entry&&(deskChosen??deskLandscape);
+ const showChrome=deskControls||chromeFocused||menu||finishing||layerOpen;
+ const holdChrome=menu||finishing||editing||chromeFocused||pointerDown||layerOpen;
  useWakeLock(desk&&entry?.status==='running');
- useEffect(()=>{if(!deskControls)return;const timer=window.setTimeout(()=>setDeskControls(false),4000);return ()=>window.clearTimeout(timer);},[deskControls]);
+ useEffect(()=>{
+  if(!desk||!showChrome||holdChrome)return;
+  const timer=window.setTimeout(()=>setDeskControls(false),4000);
+  return ()=>window.clearTimeout(timer);
+ },[desk,showChrome,holdChrome]);
+ useEffect(()=>{
+  if(!desk)return;
+  const pointers=new Set<number>();
+  const down=(event:PointerEvent)=>{pointers.add(event.pointerId);setPointerDown(true);};
+  const up=(event:PointerEvent)=>{pointers.delete(event.pointerId);setPointerDown(pointers.size>0);};
+  const blur=()=>{pointers.clear();setPointerDown(false);};
+  window.addEventListener('pointerdown',down,true);
+  window.addEventListener('pointerup',up,true);window.addEventListener('pointercancel',up,true);window.addEventListener('blur',blur);
+  return ()=>{
+   window.removeEventListener('pointerdown',down,true);
+   window.removeEventListener('pointerup',up,true);window.removeEventListener('pointercancel',up,true);window.removeEventListener('blur',blur);
+   setPointerDown(false);
+  };
+ },[desk]);
+ function toggleDesk(){
+  turnDeskClock(clockSurface.current,()=>{setDeskControls(true);setDeskChosen(!desk);},reduced);
+ }
  // N123: "Finish" on the Android lock screen pauses the session and opens this screen with ?finish=1 to log it.
  const [params,setParams]=useSearchParams();
  useEffect(()=>{if(params.get('finish')!=='1'||!entry)return;openFinish();const next=new URLSearchParams(params);next.delete('finish');setParams(next,{replace:true});// eslint-disable-line react-hooks/exhaustive-deps
@@ -136,8 +169,8 @@ export default function FocusV7(){
  useEffect(()=>{
   const handler=(event:KeyboardEvent)=>{
    const target=event.target as HTMLElement|null;
-   if(keys.current.finishing||keys.current.editing||target?.closest('input,textarea,select,[contenteditable],dialog'))return;
-   if(event.key===' '){event.preventDefault();void keys.current.pause();}
+   if(hasOpenLayer()||keys.current.finishing||keys.current.editing||target?.closest('input,textarea,select,[contenteditable],dialog'))return;
+   if(event.key===' '&&!target?.closest('button,a[href]')){event.preventDefault();void keys.current.pause();}
    else if(event.key==='b'||event.key==='B')void keys.current.takeBreak();
    else if(event.key==='Escape')navigate('/');
   };
@@ -152,22 +185,25 @@ export default function FocusV7(){
  const word=focusWord(entry),clock=focusClock(entry,now),eyebrow=focusEyebrow(entry),onBreak=word==='Break';
  const offset=clock.progress===null?0:CIRCUMFERENCE*(1-clock.progress),angle=-Math.PI/2+2*Math.PI*(clock.progress??0);
  return <main id="main-content" className={'v7-focus '+subjectClass(subject)} aria-label="Focus" data-word={word}
-  data-desk={desk?'':undefined} data-desk-controls={desk&&deskControls?'':undefined}
-  onClick={desk?event=>{if(!(event.target as HTMLElement).closest('button,a,input,form,[role="dialog"]'))setDeskControls(value=>!value);}:undefined}>
+  data-desk={desk?'':undefined} data-desk-controls={desk&&showChrome?'':undefined}
+  onFocusCapture={event=>{if((event.target as Element).closest('.v7-immersive-header,.v7-focus-bottom')){setChromeFocused(true);setDeskControls(true);}}}
+  onBlurCapture={event=>{if(!(event.relatedTarget instanceof Element)||!event.relatedTarget.closest('.v7-immersive-header,.v7-focus-bottom'))setChromeFocused(false);}}
+  onClick={desk?event=>{if(!(event.target as Element).closest('button,a,input,form,dialog,[role="dialog"]'))setDeskControls(true);}:undefined}>
   {desk&&<p className="v7-sr-only" role="status">Desk clock. Tap anywhere for the controls.</p>}
   <ImmersiveHeader leave={<Link className="v7-icon-button" to="/" aria-label="Minimise"><ChevronDown aria-hidden="true"/></Link>}
    center={project?<span className="v7-focus-subject"><span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{subject==='Other'?project.subject.name:subject}</span></span><span className="v7-meta">{project.title}</span></span>:<span className="v7-meta">Focus</span>}
-   more={<div className="v7-focus-more"><button type="button" className="v7-icon-button" aria-label="Timer details" aria-haspopup="menu" aria-expanded={menu} onClick={()=>setMenu(true)}><MoreHorizontal aria-hidden="true"/></button>
-    {menu&&<ActionSheet open onClose={()=>setMenu(false)} title="Timer" label="Timer details"
-     note={clock.endsAt?'This phase ends at '+clockTime(clock.endsAt,Intl.DateTimeFormat().resolvedOptions().timeZone)+'.':undefined}
-     items={[
-      ...(deskFlag?[{label:desk&&deskChosen?'Leave the desk clock':'Desk clock',hint:'Large digits and the intention; the screen stays awake',icon:<Clock3 aria-hidden="true"/>,onClick:()=>{setMenu(false);setDeskChosen(value=>!value);}}]:[]),
-      ...(entry.mode&&entry.mode!=='open'?[{label:'Skip to the next phase',hint:'End this phase now',disabled:busy,icon:<SkipForward aria-hidden="true"/>,onClick:()=>{void act(phaseChange);}}]:[]),
-      {label:'Take control on this device',hint:'Run the timer here instead of the other device',disabled:busy,icon:<Smartphone aria-hidden="true"/>,onClick:()=>{void act(fresh=>getStudyApi().takeLease(fresh.id,fresh.version));}},
-     ]}/>}</div>}/>
+   more={<div className="v7-focus-more"><button type="button" className="v7-icon-button" aria-label="Timer details" aria-haspopup="menu" aria-expanded={menu}
+    onClick={event=>{event.currentTarget.focus();setDeskControls(true);setMenu(true);}}><MoreHorizontal aria-hidden="true"/></button></div>}/>
+  <ActionSheet open={menu} onClose={()=>setMenu(false)} title="Timer" label="Timer details"
+   note={clock.endsAt?'This phase ends at '+clockTime(clock.endsAt,Intl.DateTimeFormat().resolvedOptions().timeZone)+'.':undefined}
+   items={[
+    ...(deskFlag?[{label:desk?'Leave the desk clock':'Desk clock',hint:'Large digits and the intention; the screen stays awake',icon:<Clock3 aria-hidden="true"/>,onClick:toggleDesk}]:[]),
+    ...(entry.mode&&entry.mode!=='open'?[{label:'Skip to the next phase',hint:'End this phase now',disabled:busy,icon:<SkipForward aria-hidden="true"/>,onClick:()=>{void act(phaseChange);}}]:[]),
+    {label:'Take control on this device',hint:'Run the timer here instead of the other device',disabled:busy,icon:<Smartphone aria-hidden="true"/>,onClick:()=>{void act(fresh=>getStudyApi().takeLease(fresh.id,fresh.version));}},
+   ]}/>
   <h1 className="v7-sr-only">Focus · {word}</h1>
   <DriftCard entryId={entry.id}/>
-  <section className="v7-focus-centre" aria-label="Timer">
+  <section ref={clockSurface} className="v7-focus-centre" aria-label="Timer">
    {/* FO1/KC23: the emblem is centred on the timer, with the kit's Night hero glow; eyebrow, timer and intention are one block. */}
    <div className="v7-focus-emblem" aria-hidden="true" data-still={reduced||onBreak?'true':undefined}>
     {onBreak?<span className="v7-focus-breath" data-still={reduced?'true':undefined}/>:<Emblem subject={subject} seed={entry.projectId??entry.id} size={520} animate={false}/>}

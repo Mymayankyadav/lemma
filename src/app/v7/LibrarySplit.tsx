@@ -1,14 +1,10 @@
-import {lazy,Suspense,useState,type ReactNode} from 'react';
+import {useState,type ReactNode} from 'react';
 import {useLocation} from 'react-router';
 import {useProjects} from '../../data/hooks';
-import {Skeleton} from '../../ui/v7/components';
-import {PathScreen as Path} from './routeScreens';
+import {PathScreen as Path,PathsScreen as Paths,CardsScreen as Cards,CardScreen as Card} from './routeScreens';
 import {useMinWidth} from './useMinWidth';
 import './library-split.css';
 
-const Paths=lazy(()=>import('../../features/projects/v7/PathsV7'));
-const Cards=lazy(()=>import('../../features/cards/v7/CardsV7'));
-const Card=lazy(()=>import('../../features/card/v7/CardV7'));
 export function libraryKind(path:string):'paths'|'cards'|null{
  if(/^\/projects(?:\/new)?$/.test(path)||/^\/p\/[^/]+$/.test(path))return 'paths';
  return /^\/cards(?:\/\d+)?$/.test(path)?'cards':null;
@@ -24,10 +20,10 @@ export default function LibrarySplit({children}:{children:ReactNode}){
  const selected=kind==='paths'?slug:noteNo;
  return <div className="v7-library-split" data-library={kind}>
   <aside className="v7-library-list" aria-label={kind==='paths'?'Path library':'Card library'}>
-   <Suspense fallback={<Skeleton/>}>{kind==='paths'?<Paths embedded selected={slug}/>:<Cards embedded selected={noteNo??undefined} onFirst={setFirstCard}/>}</Suspense>
+   {kind==='paths'?<Paths embedded selected={slug}/>:<Cards embedded selected={noteNo??undefined} onFirst={setFirstCard}/>}
   </aside>
   <div className="v7-library-detail" key={kind+':'+selected}>
-   <Suspense fallback={<main id="main-content"><Skeleton/></main>}>{kind==='paths'&&slug?<Path selectedSlug={slug}/>:kind==='cards'&&noteNo!==null?<Card selectedNo={noteNo}/>:<main id="main-content" className="v7-page"><p>Select {kind==='paths'?'a path':'a card'} to read it here.</p></main>}</Suspense>
+   {kind==='paths'&&slug?<Path selectedSlug={slug}/>:kind==='cards'&&noteNo!==null?<Card selectedNo={noteNo}/>:<main id="main-content" className="v7-page"><p>Select {kind==='paths'?'a path':'a card'} to read it here.</p></main>}
   </div>
  </div>;
 }

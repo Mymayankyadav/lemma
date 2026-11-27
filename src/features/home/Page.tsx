@@ -1,5 +1,6 @@
+import {retryLazy,retryNamed} from '../../app/lazyModule';
 import {TodayScheduler} from '../adaptive/Views';
-import {lazy, Suspense, useEffect, useRef, useState} from 'react';
+import {Suspense, useEffect, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {SectionHeading} from '../../ui/SectionHeading';
 import {Link} from 'react-router';
@@ -26,11 +27,11 @@ import PlannerLaunch from '../planner/Sheet';
 import type {HomeSummary} from '../../data/types';
 
 
-const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
-const ReviewOutlook=lazy(()=>import('./ReviewOutlook').then(module=>({default:module.ReviewOutlook})));
-const TodayFocus=lazy(()=>import('../focus/TodayFocus'));
-const V6TodayPlan=lazy(()=>import('./V6TodayPlan'));
-const V7Today=lazy(()=>import('./v7/V7Today'));
+const GoalDistance=retryNamed(()=>import('./GoalDistance'),module=>module.GoalDistance);
+const ReviewOutlook=retryNamed(()=>import('./ReviewOutlook'),module=>module.ReviewOutlook);
+const TodayFocus=retryLazy(()=>import('../focus/TodayFocus'));
+const V6TodayPlan=retryLazy(()=>import('./V6TodayPlan'));
+const V7Today=retryLazy(()=>import('./v7/V7Today'));
 import {isV7Route} from '../../app/v7Kit';
 
 function TodayHeader({pending}: {pending:number}) {

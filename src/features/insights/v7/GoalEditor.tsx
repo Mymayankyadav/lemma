@@ -53,7 +53,10 @@ export function GoalEditor({goal,onClose,onSaved}: {goal:GoalRecord|null;onClose
     }catch(failure){setError(failure instanceof Error?failure.message:'Could not save the goal.');}
     finally{setBusy(false);}
   }
-  return <Sheet open title={goal?'Edit goal':'Add a goal'} onClose={onClose}
+  const initialDates=goal??goalDates(today,'week',weekStart);
+  const dirty=period!==(goal?.period??'week')||minutes!==(goal?.targetMinutes??300)||subjectId!==(goal?.subjectId??'')
+    ||dates.startDate!==initialDates.startDate||dates.endDate!==initialDates.endDate;
+  return <Sheet open dirty={dirty} title={goal?'Edit goal':'Add a goal'} onClose={onClose}
     footer={<Button variant="primary" loading={busy} onClick={()=>{void save();}}>Save goal</Button>}>
     <div className="v7-form-stack">
       <Segmented label="Goal period" options={['Week','Month','Custom']} value={period[0].toUpperCase()+period.slice(1)}

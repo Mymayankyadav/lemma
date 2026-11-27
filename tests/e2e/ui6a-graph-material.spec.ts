@@ -31,7 +31,7 @@ for(const world of ['graph','graph-night'] as const){
   expect(Number.parseFloat(material.border)).toBeGreaterThanOrEqual(1);
   // Owner-approved v4 overrides the old 1.5px bright night border with a
   // 1px dim --edge hairline; day keeps its original graph-paper material.
-  expect(material.borderColor).toBe(world==='graph'?'rgb(27, 42, 65)':material.edgeColor);
+  expect(material.borderColor).toBe(world==='graph'?'rgb(20, 20, 19)':material.edgeColor);
   if(world==='graph-night')expect(material.border).toBe('1px');
   expect(material.radius).toBe('6px');
   expect(material.shadow).toContain('3px 3px 0px');

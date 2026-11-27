@@ -45,8 +45,10 @@ for(const [name,hash] of Object.entries(expectedShortcuts)){
  if(bytes.toString('hex',0,8)!=='89504e470d0a1a0a'||bytes.readUInt32BE(16)!==96||bytes.readUInt32BE(20)!==96)
   throw Error('Invalid shortcut icon dimensions: '+filename);
 }
-// G0 (v7 UX audit r3): the pre-paint papers follow the build's v7 flag (src/app/paper.ts), as the install colour does.
-const paper=manifest.theme_color==='#F8F5F0'?{day:'#F8F5F0',night:'#091023'}:{day:'#FAFAF6',night:'#13171D'};
+// Every shell uses the same page palette before its styles load.
+const paper={day:'#FAF9F5',night:'#262624'};
+if(![paper.day,paper.night].includes(manifest.theme_color)||manifest.background_color!==manifest.theme_color)
+ throw Error('PWA launch colours do not match the shared palette');
 if(!index.includes('media="(prefers-color-scheme: light)" content="'+paper.day+'"')||
  !index.includes('media="(prefers-color-scheme: dark)" content="'+paper.night+'"')||
  !index.includes("var colors={graph:'"+paper.day+"','graph-night':'"+paper.night+"'}")||index.includes('__PAPER_'))

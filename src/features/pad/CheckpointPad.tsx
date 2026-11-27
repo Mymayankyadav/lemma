@@ -1,4 +1,5 @@
-import {lazy, Suspense, useState, useSyncExternalStore, type ReactNode} from 'react';
+import {retryLazy} from '../../app/lazyModule';
+import {Suspense, useState, useSyncExternalStore, type ReactNode} from 'react';
 import {Link} from 'react-router';
 import {authGeneration, onAccountChange} from '../../data/authBoundary';
 import {getDemoProfile, getMode, type DemoProfile} from '../../data/mode';
@@ -10,8 +11,8 @@ import {currentPadScope} from './padCheckpoint';
 import {usePadRelease} from './usePadRelease';
 import type {AuthorizedPadScope} from './padDraftStore';
 
-const FixtureCheckpointPad = lazy(() => import('./FixtureCheckpointPad'));
-const LiveCheckpointPad = lazy(() => import('./LiveCheckpointPad'));
+const FixtureCheckpointPad = retryLazy(()=>import('./FixtureCheckpointPad'));
+const LiveCheckpointPad = retryLazy(()=>import('./LiveCheckpointPad'));
 
 type Binding = {profile: DemoProfile; scope?: never} | {scope: AuthorizedPadScope; profile?: never};
 type Handoff = {text: string; requestId: string};

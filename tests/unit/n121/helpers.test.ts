@@ -109,7 +109,10 @@ describe('N121 shared v6 helpers',()=>{
   expect(civilRangeLabel(year+'-11-30',year+'-12-06')).toBe('Nov 30 – Dec 6');
   expect(civilDayLabel(year+'-11-09')).toMatch(/^[A-Z][a-z]{2}, Nov 9$/);
   expect(subjectColor(null)).toBeNull();
-  expect(subjectColor('subject-analysis')).toBe(subjectColor('subject-analysis'));
+  expect(subjectColor('subject-analysis')).toBe('var(--subject-sky-stroke)');
+  expect(subjectColor('subject-id','Linear algebra')).toBe('var(--subject-ochre-stroke)');
+  expect(subjectColor('subject-id','Number theory')).toBe('var(--subject-copper-stroke)');
+  expect(subjectColor('custom-id')).toBe(subjectColor('custom-id'));
  });
  it('counts Free time only inside the planning window (B3)',()=>{
   const none:StudyEntryRecord[]=[];

@@ -111,7 +111,8 @@ test('Signed-in task creation recovers a lost acknowledgement using the original
  const editor=page.getByRole('dialog',{name:'New task'});
  await editor.getByLabel('Title',{exact:true}).fill('Owner midnight task');
  await editor.getByRole('button',{name:'Due: None',exact:true}).click();
- await page.getByRole('dialog',{name:'Due',exact:true}).getByRole('radio',{name:'Date & time',exact:true}).check();
+ await page.getByRole('dialog',{name:'Due',exact:true}).getByRole('radio',{name:'Date & time',exact:true}).click();
+ await expect(editor.getByRole('button',{name:'Due: Date & time',exact:true})).toBeFocused();
  await setTimeRuler(editor.getByRole('slider',{name:'Due time',exact:true}),970);
  await editor.getByRole('button',{name:'Save task'}).click();
  await expect(editor.getByRole('alert')).toContainText('Your changes are still here');

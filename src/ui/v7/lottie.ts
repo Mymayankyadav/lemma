@@ -61,11 +61,11 @@ export function roleColours(element: Element, parse: (value: string) => Rgb = cs
   const value = (name: string) => style.getPropertyValue(name).trim();
   const read = (name: string, fallback: string) => parse(value(name) || fallback);
   return {
-    bg: read('--v7-role-surface-muted', '#E9E4DC'),
-    ink: read('--v7-role-text-primary', '#121B31'),
-    muted: read('--v7-role-text-tertiary', '#7A8294'),
+    bg: read('--v7-role-surface-muted', '#F0EEE6'),
+    ink: read('--v7-role-text-primary', '#141413'),
+    muted: read('--v7-role-text-tertiary', '#73726C'),
     paper: parse(value('--v7-il-paper') || value('--v7-role-surface-raised') || '#FFFFFF'),
-    accent: parse(value('--v7-subject') || value('--v7-role-selection-fg') || '#3738AC'),
-    onAccent: read('--v7-role-surface-page', '#F8F5F0'),
+    accent: parse(value('--v7-subject') || value('--v7-role-selection-fg') || '#A8476D'),
+    onAccent: read('--v7-role-surface-page', '#FAF9F5'),
   };
 }

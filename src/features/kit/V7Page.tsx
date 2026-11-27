@@ -1,3 +1,5 @@
+import {motionReduced} from '../../ui/v7/effects';
+import {durations} from '../../ui/v7/motion';
 import {isFlagOn} from '../../flags';
 import {ProficiencyValue,StageStrip,GapBadge,FitMeter,CardBudget,EstimateRange} from '../../ui/v7/AtlasValues';
 import { useEffect, useId, useState, type ReactNode, type CSSProperties } from "react";
@@ -31,7 +33,7 @@ const sectionId=(title:string)=>"kit-"+(kitSections.find(([,name])=>name===title
 function KitNav(){
   return <details className="v7-kit-nav"><summary>Jump to a section</summary><ol>{kitSections.map(([number,title])=><li key={number}>
     <button type="button" onClick={event=>{const target=document.getElementById(sectionId(title));event.currentTarget.closest("details")?.removeAttribute("open");
-      if(!target)return;const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;target.scrollIntoView({behavior:reduce?"auto":"smooth",block:"start"});target.focus({preventScroll:true});}}>
+      if(!target)return;const reduce=motionReduced();target.scrollIntoView({behavior:reduce?"auto":"smooth",block:"start"});target.focus({preventScroll:true});}}>
       <span className="v7-kit-nav-number">{number}</span>{title}</button></li>)}</ol></details>;
 }
 function Section({number,title,description,children}:{number:string;title:string;description:string;children:ReactNode}){
@@ -310,8 +312,8 @@ export default function V7Page(){
       <div className="v7-token-measures">{[1,2,3,4,5,6,8,10,12,16,20].map(step=><div key={step}><i style={{width:`var(--v7-space-${step})`}}/><span>{step*4} px</span></div>)}</div>
       <div className="v7-foundation-examples">{[["xs","xs"],["sm","1"],["md","2"],["lg","3"],["xl","4"]].map(([label,key])=><div key={label}><i className="v7-radius-example" style={{borderRadius:`var(--v7-radius-${key})`}}/><span>radius.{label}</span></div>)}</div>
       <div className="v7-foundation-examples">{[1,2,3].map(level=><div key={level}><i className="v7-elevation-example" style={{boxShadow:`var(--v7-shadow-${level})`}}/><span>Elevation {level}</span></div>)}</div>
-      <p className="v7-meta">Motion: 80 · 120 · 200 · 320 · 600 · 900 ms. Reduced motion removes travel and shimmer.</p>
-      <div className="v7-demo-row">{[["xs",80],["sm",120],["md",200],["lg",320],["xl",600],["emblem",900]].map(([role,ms])=><button key={role} type="button" className="v7-demo-trigger" style={{"--v7-motion-duration":ms+"ms"} as CSSProperties} onClick={event=>{const target=event.currentTarget;target.classList.remove("v7-motion-play");requestAnimationFrame(()=>requestAnimationFrame(()=>target.classList.add("v7-motion-play")));}}>Play {role} · {ms} ms</button>)}</div>
+      <p className="v7-meta">Motion timings in milliseconds. Reduced motion removes travel and keeps loading feedback.</p>
+      <div className="v7-demo-row">{Object.entries({instant:durations.instant,quick:durations.quick,base:durations.base,slow:durations.slow,draw:durations.draw,scenic:durations.scenic}).map(([role,seconds])=><button key={role} type="button" className="v7-demo-trigger" style={{"--v7-motion-duration":seconds+"s"} as CSSProperties} onClick={event=>{const target=event.currentTarget;target.classList.remove("v7-motion-play");requestAnimationFrame(()=>requestAnimationFrame(()=>target.classList.add("v7-motion-play")));}}>Play {role} · {Math.round(seconds*1000)} ms</button>)}</div>
     </>}</Compare>
   </Section>
   <Section number="03" title="Icons and mathematical emblems" description="Nine subjects, stable constructions, three levels of detail. Glyphs are simplified drawings; mathematical symbols use the math font.">

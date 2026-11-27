@@ -12,10 +12,13 @@ test("the new v7 gallery shows Day and Night together, and four contrast modes",
  await expect(pair).toHaveCount(2);
  await expect(pair.nth(0)).toHaveAttribute("data-theme","graph");
  await expect(pair.nth(1)).toHaveAttribute("data-theme","graph-night");
- // 51 with the neutral data colour viz.neutral (Night critique KA4).
- // 52 with the Easy grade colour viz.easy (N220).
- await expect(pair.nth(0).locator(".v7-token-card")).toHaveCount(52);
- await expect(pair.nth(0).locator(".v7-type-card")).toHaveCount(17);
+ // 54 includes the shared track and lifted surface roles.
+ for(const panel of [pair.nth(0),pair.nth(1)]){
+  await expect(panel.locator(".v7-token-card")).toHaveCount(54);
+  await expect(panel.getByText("surface.track",{exact:true})).toBeVisible();
+  await expect(panel.getByText("surface.lifted",{exact:true})).toBeVisible();
+  await expect(panel.locator(".v7-type-card")).toHaveCount(17);
+ }
  await page.getByRole("checkbox",{name:"High contrast comparison"}).check();
  await expect(pair.nth(0)).toHaveAttribute("data-contrast","high");
  await expect(pair.nth(1)).toHaveAttribute("data-contrast","high");

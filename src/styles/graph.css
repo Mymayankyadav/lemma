@@ -9,7 +9,7 @@ html:not([data-v7]):is([data-theme="graph"],[data-theme="graph-night"]){
  --blur-glass:none;--grad-lamp:none;--grad-sheen:none;--e-lit:none;--e-orb:none;
  --graph-button-shadow:2px 2px 0 var(--ink);
 }
-html:not([data-v7])[data-theme="graph-night"]{--graph-button-shadow:2px 2px 0 #05070A}
+html:not([data-v7])[data-theme="graph-night"]{--graph-button-shadow:2px 2px 0 var(--bg-sidebar)}
 html:not([data-v7]):is([data-theme="graph"],[data-theme="graph-night"]) body{
  font-size:14px;line-height:1.45;
 }
@@ -105,10 +105,10 @@ html:not([data-v7]):is([data-theme="graph"],[data-theme="graph-night"]) header .
 /* At night the notebook grid recedes, while paper has a quiet hairline edge. */
 html:not([data-v7])[data-theme="graph-night"]{
  --bg-css:
- linear-gradient(rgba(120,160,220,.075) 1px,transparent 1px) 0 0/60px 60px,
- linear-gradient(90deg,rgba(120,160,220,.075) 1px,transparent 1px) 0 0/60px 60px,
- linear-gradient(rgba(120,160,220,.035) 1px,transparent 1px) 0 0/12px 12px,
- linear-gradient(90deg,rgba(120,160,220,.035) 1px,transparent 1px) 0 0/12px 12px;
+ linear-gradient(var(--border) 1px,transparent 1px) 0 0/60px 60px,
+ linear-gradient(90deg,var(--border) 1px,transparent 1px) 0 0/60px 60px,
+ linear-gradient(color-mix(in srgb,var(--border) 65%,transparent) 1px,transparent 1px) 0 0/12px 12px,
+ linear-gradient(90deg,color-mix(in srgb,var(--border) 65%,transparent) 1px,transparent 1px) 0 0/12px 12px;
 }
 html:not([data-v7])[data-theme="graph-night"] :is(.card,.slab,.tile){
  border:1px solid var(--edge);box-shadow:3px 3px 0 rgba(0,0,0,.55);

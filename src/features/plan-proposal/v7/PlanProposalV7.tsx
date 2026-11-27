@@ -6,7 +6,9 @@ import {useNavigate,useParams} from 'react-router';
 import {Link as LinkIcon,Minus,MoveRight,Pencil,Plus,Unlink} from 'lucide-react';
 import {useApproveProposal,useProject,useProjects,useProposal,useRejectProposal} from '../../../data/hooks';
 import type {CheckpointView} from '../../../data/types';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
+import {useReadingIntent} from '../../../app/v7/readingIntent';
+import {useSurfaceBeta} from '../../../app/surfaceBeta';
 import {Button,Skeleton} from '../../../ui/v7/components';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {subjectClass} from '../../../ui/v7/Subject';
@@ -49,7 +51,7 @@ function PlanMap({title,nodes,existing,adds,changed}:{title:string;nodes:readonl
 /** PLAN §6.10 Plan proposal: what changes first, the whole plan as a path map (before and after side by side on desktop),
  *  sources, the advanced draft editor (#1343) and Reject / Approve in a sticky bar (Reject on the left, V17). */
 export default function PlanProposalV7(){
- const studyRepair=useStudyUi();
+ const studyRepair=useStudyUi(),beta=useSurfaceBeta(),readingIntent=useReadingIntent();
  const {id=''}=useParams(),navigate=useNavigate(),proposal=useProposal(id),projects=useProjects();
  const p=proposal.data,project=useProject(p?.projectSlug??'');
  const approve=useApproveProposal(),reject=useRejectProposal(),wide=useMinWidth(900);
@@ -120,7 +122,7 @@ export default function PlanProposalV7(){
   {/* V17: Reject left, Approve right, as in the Inbox and the kit's rule; Approve keeps the wide column. */}
   <Dock className="v7-learn-bar v7-learn-bar-decide" role="group" aria-label="Plan decision">
    <Button disabled={unavailable} loading={busy&&reject.isPending} onClick={()=>{void decide(false);}}>Reject</Button>
-   <Button variant="primary" disabled={unavailable} loading={busy&&approve.isPending} onClick={()=>{void decide(true);}}>Approve</Button>
+   <Button variant="primary" {...(beta?readingIntent(p.projectSlug):{})} disabled={unavailable} loading={busy&&approve.isPending} onClick={()=>{void decide(true);}}>Approve</Button>
   </Dock>
  </main>;
 }

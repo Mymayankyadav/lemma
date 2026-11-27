@@ -1,6 +1,6 @@
 import {useState, useSyncExternalStore} from 'react';
 import {Link, Navigate, useParams,useSearchParams} from 'react-router';
-import {DetailHeader} from '../../app/v7/V7Shell';
+import {DetailHeader} from '../../app/v7/PageHeaders';
 import {authGeneration, authOwner, onAccountChange} from '../../data/authBoundary';
 import {useCheckpoint, useProject, useSettings} from '../../data/hooks';
 import {getMode} from '../../data/mode';

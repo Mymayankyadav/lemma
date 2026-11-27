@@ -31,10 +31,12 @@ const geometry = (page: Page) => page.evaluate(() => {
     const glyph = range.getBoundingClientRect();
     return {cell: cell.width, x: cell.left + parseFloat(cap.left), y: cell.top + parseFloat(cap.top),
       width: cell.width - parseFloat(cap.left) - parseFloat(cap.right), height: cell.height - parseFloat(cap.top) - parseFloat(cap.bottom),
-      supBottom: sup?.bottom, glyphTop: glyph.top};
+      supBottom: sup?.bottom, glyphTop: glyph.top, glyphBottom: glyph.bottom};
   };
   const rows = [...document.querySelectorAll('.kb .rows > .row')].map(row => row.getBoundingClientRect().width);
-  return {q: key('q'), a: key('a'), z: key('z'), tab: key('Tab'), rows};
+  const dock = document.querySelector('.kb')!.getBoundingClientRect();
+  return {q: key('q'), a: key('a'), z: key('z'), tab: key('Tab'), space: key('Space'), rows,
+    left: dock.left, right: innerWidth - dock.right, bottom: innerHeight - dock.bottom, top: dock.top};
 });
 
 for (const [name, size] of [['portrait', {width: 820, height: 1110}], ['landscape', {width: 1180, height: 760}]] as const) {
@@ -51,6 +53,13 @@ for (const [name, size] of [['portrait', {width: 820, height: 1110}], ['landscap
     await expect(keyboard.getByRole('button', {name: 'New line', exact: true})).toHaveCount(0);
     await expect(keyboard.getByRole('button', {name: '?123', exact: true})).toHaveCount(0);
     const g = await geometry(page);
+    expect(Math.abs(g.left)).toBeLessThan(1);
+    expect(Math.abs(g.right)).toBeLessThan(1);
+    expect(Math.abs(g.bottom)).toBeLessThan(1);
+    expect(g.q.y - g.top).toBeCloseTo(63, -1);
+    expect(g.tab.x).toBeCloseTo(2 * Math.min(5, Math.max(4, size.width * .0056)), 0);
+    expect(g.space.cell / g.q.cell).toBeCloseTo(6.35, 1);
+    expect(size.height - g.space.y - g.space.height).toBeCloseTo(28, -1);
     // iPadOS's stagger: tab 1.25 keys, caps lock 1.55 and shift 2 (A 0.3 and Z 0.75 of a key past Q).
     expect((g.a.x - g.q.x) / g.q.cell).toBeCloseTo(.3, 1);
     expect((g.z.x - g.q.x) / g.q.cell).toBeCloseTo(.75, 1);
@@ -61,9 +70,40 @@ for (const [name, size] of [['portrait', {width: 820, height: 1110}], ['landscap
     expect(g.q.height / g.q.width).toBeGreaterThan(.6);
     expect(g.q.height / g.q.width).toBeLessThan(1.15);
     // The grey secondary character stands above its letter without touching it.
-    for (const key of [g.q, g.a, g.z]) expect(key.supBottom!).toBeLessThanOrEqual(key.glyphTop + 1);
+    for (const key of [g.q, g.a, g.z]) {
+      expect(key.supBottom!).toBeLessThanOrEqual(key.glyphTop + 1);
+      expect(key.glyphBottom).toBeLessThan(key.y + key.height - 3);
+    }
   });
 }
+
+test('the keyboard switch preserves a middle selection and the separate pin keeps Lemma open', async ({page}) => {
+  await page.setViewportSize({width: 820, height: 1180});
+  const {answer, keyboard} = await openKeyboard(page, iPad);
+  await page.keyboard.type('ring');
+  await answer.press('ArrowLeft');
+  await answer.press('Shift+ArrowLeft');
+  await page.getByRole('button', {name: 'Use device keyboard', exact: true}).click();
+  await expect(keyboard).toHaveCount(0);
+  await expect(answer).toHaveAttribute('inputmode', 'text');
+  await expect(answer).not.toHaveAttribute('autocorrect', 'off');
+  await expect(answer).toBeFocused();
+  await expect.poll(() => page.evaluate(() => getSelection()?.toString())).toBe('n');
+  await page.keyboard.type('sin');
+  await expect(answer).toHaveText('rising');
+  await page.getByRole('button', {name: 'Use Lemma keyboard', exact: true}).click();
+  await expect(answer).toHaveAttribute('inputmode', 'none');
+  const pin = keyboard.getByRole('button', {name: 'Keep keyboard open', exact: true});
+  await pin.click();
+  await page.getByRole('log', {name: 'Conversation'}).click({position: {x: 8, y: 8}});
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await expect(answer).toBeFocused();
+  await keyboard.getByRole('button', {name: 'Maths symbols', exact: true}).click();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await pin.click();
+  await page.getByRole('log', {name: 'Conversation'}).click({position: {x: 8, y: 8}});
+  await expect(keyboard).toHaveCount(0);
+});
 
 test('on an iPad the keys type, hold for their grey characters, lock caps, tab to the next □, and hide the keyboard', async ({page}) => {
   await page.setViewportSize({width: 820, height: 1110});

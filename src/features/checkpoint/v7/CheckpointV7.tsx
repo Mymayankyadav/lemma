@@ -16,7 +16,7 @@ import {CalendarClock,Check,ChevronRight,CircleCheck,Copy,MoreHorizontal,BookOpe
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {useCheckpoint,useProject,useSettings} from '../../../data/hooks';
 import type {CheckpointView} from '../../../data/types';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {DetailHeader} from '../../../app/v7/PageHeaders';
 import {Margin} from '../../../app/v7/Margin';
 import {Button,IconButton,Skeleton} from '../../../ui/v7/components';
 import {useOnline} from '../../../ui/v7/savedCopy';
@@ -123,7 +123,7 @@ export default function CheckpointV7(){
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>
     :view.ui==='locked'?<p>{lockedAfter?'Unlocks after '+lockedAfter.title:'Complete the preceding checkpoint'}</p>
     :<Button variant="primary" onPointerDown={()=>warmV7Screen('tutor')} onFocus={()=>warmV7Screen('tutor')} onMouseEnter={()=>warmV7Screen('tutor')} onClick={()=>navigate(tutorHref(slug,code))}>Continue with tutor</Button>}
-   <IconButton label="More checkpoint actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>
+   <IconButton label="More checkpoint actions" aria-haspopup="menu" onClick={event=>{event.currentTarget.focus();setMore(true);}}><MoreHorizontal aria-hidden="true"/></IconButton>
   </Dock>
   <ActionSheet open={more} onClose={()=>setMore(false)} title={view.title} label="Checkpoint actions" items={[
    ...(view.ui!=='done'&&view.ui!=='locked'?[{label:'Demonstrate',hint:'Show your proof; your tutor records it if it holds up.',icon:<CircleCheck aria-hidden="true"/>,onClick:()=>launch('Please assess my proof for checkpoint '+view.code+' and record a demonstration only when supported by evidence.')}]:[]),

@@ -1,59 +1,71 @@
 {
   "$schema": "https://design-tokens.github.io/community-group/format/",
-  "$description": "Lemma Constellation UI Kit 1.0 — role colours are the only styling API; mode aliases come from this source.",
+  "$description": "Lemma warm neutral and rose theme with balanced subject colours. Implementation pending owner review.",
   "raw": {
     "day": {
       "surface.page": {
         "$type": "color",
-        "$value": "#F8F5F0"
+        "$value": "#FAF9F5"
       },
       "surface.sunken": {
         "$type": "color",
-        "$value": "#F0ECE5"
+        "$value": "#FAF9F5"
       },
       "surface.raised": {
         "$type": "color",
-        "$value": "#FEFCF9"
+        "$value": "#FFFFFF"
       },
       "surface.overlay": {
         "$type": "color",
         "$value": "#FFFFFF"
       },
+      "surface.track": {
+        "$type": "color",
+        "$value": "#e8e6dc"
+      },
+      "surface.lifted": {
+        "$type": "color",
+        "$value": "#ffffff"
+      },
+      "state.lifted-hover": {
+        "$type": "color",
+        "$value": "#f0eee6"
+      },
       "surface.muted": {
         "$type": "color",
-        "$value": "#E9E4DC"
+        "$value": "#FAF9F5"
       },
       "surface.muted-hover": {
         "$type": "color",
-        "$value": "#E1DCD2"
+        "$value": "#F0EEE6"
       },
       "border.subtle": {
         "$type": "color",
-        "$value": "#DDD8D0"
+        "$value": "#E8E6DC"
       },
       "border.default": {
         "$type": "color",
-        "$value": "#857F77"
+        "$value": "#73726C"
       },
       "border.strong": {
         "$type": "color",
-        "$value": "#625D55"
+        "$value": "#5E5D59"
       },
       "text.primary": {
         "$type": "color",
-        "$value": "#121B31"
+        "$value": "#141413"
       },
       "text.secondary": {
         "$type": "color",
-        "$value": "#40495C"
+        "$value": "#5E5D59"
       },
       "text.tertiary": {
         "$type": "color",
-        "$value": "#5B6375"
+        "$value": "#73726C"
       },
       "text.disabled": {
         "$type": "color",
-        "$value": "#878C99"
+        "$value": "#73726C"
       },
       "text.on-action": {
         "$type": "color",
@@ -61,381 +73,393 @@
       },
       "action.bg": {
         "$type": "color",
-        "$value": "#4246C2"
+        "$value": "#A8476D"
       },
       "action.hover": {
         "$type": "color",
-        "$value": "#393BAF"
+        "$value": "#8F3A5B"
       },
       "action.pressed": {
         "$type": "color",
-        "$value": "#313498"
+        "$value": "#8F3A5B"
       },
       "selection.subtle": {
         "$type": "color",
-        "$value": "#E2E8FF"
+        "$value": "#F2E7E7"
       },
       "selection.hover": {
         "$type": "color",
-        "$value": "#D5DEFF"
+        "$value": "#EDDDDF"
       },
       "selection.fg": {
         "$type": "color",
-        "$value": "#3738AC"
+        "$value": "#8F3A5B"
       },
       "focus.ring": {
         "$type": "color",
-        "$value": "#4246C2"
+        "$value": "#A8476D"
       },
       "link.fg": {
         "$type": "color",
-        "$value": "#4246C2"
+        "$value": "#A8476D"
       },
       "status.success": {
         "$type": "color",
-        "$value": "#107C40"
+        "$value": "#597A3C"
       },
       "status.success-subtle": {
         "$type": "color",
-        "$value": "#E2F6E6"
+        "$value": "#F7F6F1"
       },
       "status.warning": {
         "$type": "color",
-        "$value": "#9B610E"
+        "$value": "#935F04"
       },
       "status.warning-subtle": {
         "$type": "color",
-        "$value": "#FFF0DF"
+        "$value": "#F4F0E6"
       },
       "status.danger": {
         "$type": "color",
-        "$value": "#9E1D1C"
+        "$value": "#C54435"
       },
       "status.danger-subtle": {
         "$type": "color",
-        "$value": "#FFE9E5"
+        "$value": "#F9F5F1"
       },
       "status.danger-solid": {
         "$type": "color",
-        "$value": "#9E1D1C"
+        "$value": "#C54435"
       },
       "status.danger-hover": {
         "$type": "color",
-        "$value": "#94020D"
+        "$value": "#AA3D30"
       },
       "subject.analysis": {
         "$type": "color",
-        "$value": "#00789C"
+        "$value": "#2B71A6"
       },
       "subject.analysis-subtle": {
         "$type": "color",
-        "$value": "#D9F4FD"
+        "$value": "#E6F2FD"
       },
       "subject.topology": {
         "$type": "color",
-        "$value": "#009C85"
+        "$value": "#007E73"
       },
       "subject.topology-subtle": {
         "$type": "color",
-        "$value": "#DAF6EF"
+        "$value": "#E2F5F2"
       },
       "subject.logic": {
         "$type": "color",
-        "$value": "#417934"
+        "$value": "#598637"
       },
       "subject.logic-subtle": {
         "$type": "color",
-        "$value": "#E4F4E1"
+        "$value": "#E9F4E7"
       },
       "subject.number-theory": {
         "$type": "color",
-        "$value": "#978722"
+        "$value": "#AC7059"
       },
       "subject.number-theory-subtle": {
         "$type": "color",
-        "$value": "#F3EFD9"
+        "$value": "#FDECE6"
       },
       "subject.algebra": {
         "$type": "color",
-        "$value": "#9D5300"
+        "$value": "#866617"
       },
       "subject.algebra-subtle": {
         "$type": "color",
-        "$value": "#FEEADB"
+        "$value": "#F6EFE1"
       },
       "subject.combinatorics": {
         "$type": "color",
-        "$value": "#C86265"
+        "$value": "#4A6103"
       },
       "subject.combinatorics-subtle": {
         "$type": "color",
-        "$value": "#FFE7E6"
+        "$value": "#EDF3E4"
       },
       "subject.geometry": {
         "$type": "color",
-        "$value": "#984780"
+        "$value": "#795E92"
       },
       "subject.geometry-subtle": {
         "$type": "color",
-        "$value": "#FDE7F5"
+        "$value": "#F0EEFD"
       },
       "subject.probability": {
         "$type": "color",
-        "$value": "#9E6EC0"
+        "$value": "#474C9C"
       },
       "subject.probability-subtle": {
         "$type": "color",
-        "$value": "#F5E9FE"
+        "$value": "#ECEFFE"
       },
       "viz.heat1": {
         "$type": "color",
-        "$value": "#7E8CAB"
+        "$value": "#B47D91"
       },
       "viz.heat2": {
         "$type": "color",
-        "$value": "#516494"
+        "$value": "#A4607A"
       },
       "viz.heat3": {
         "$type": "color",
-        "$value": "#2F4275"
+        "$value": "#944463"
       },
       "viz.heat4": {
         "$type": "color",
-        "$value": "#172448"
+        "$value": "#8F3A5B"
       },
       "state.hover": {
         "$type": "color",
-        "$value": "#121B310F"
+        "$value": "#F0EEE6"
       },
       "state.pressed": {
         "$type": "color",
-        "$value": "#121B311F"
+        "$value": "#F2E7E7"
       },
       "viz.neutral": {
         "$type": "color",
-        "$value": "#40495C"
+        "$value": "#5E5D59"
       },
       "viz.easy": {
         "$type": "color",
-        "$value": "#1C64C8"
+        "$value": "#3B74AB"
       }
     },
     "night": {
       "surface.page": {
         "$type": "color",
-        "$value": "#091023"
+        "$value": "#262624"
       },
       "surface.sunken": {
         "$type": "color",
-        "$value": "#050A1B"
+        "$value": "#1F1E1D"
       },
       "surface.raised": {
         "$type": "color",
-        "$value": "#11192C"
+        "$value": "#30302E"
       },
       "surface.overlay": {
         "$type": "color",
-        "$value": "#192135"
+        "$value": "#30302E"
+      },
+      "surface.track": {
+        "$type": "color",
+        "$value": "#45453f"
+      },
+      "surface.lifted": {
+        "$type": "color",
+        "$value": "#393937"
+      },
+      "state.lifted-hover": {
+        "$type": "color",
+        "$value": "#45453f"
       },
       "surface.muted": {
         "$type": "color",
-        "$value": "#1E263B"
+        "$value": "#30302E"
       },
       "surface.muted-hover": {
         "$type": "color",
-        "$value": "#273045"
+        "$value": "#393937"
       },
       "border.subtle": {
         "$type": "color",
-        "$value": "#262D40"
+        "$value": "#3D3D3A"
       },
       "border.default": {
         "$type": "color",
-        "$value": "#687082"
+        "$value": "#9C9A92"
       },
       "border.strong": {
         "$type": "color",
-        "$value": "#8A92A4"
+        "$value": "#C2C0B6"
       },
       "text.primary": {
         "$type": "color",
-        "$value": "#EEF2FA"
+        "$value": "#FAF9F5"
       },
       "text.secondary": {
         "$type": "color",
-        "$value": "#B1B7C6"
+        "$value": "#C2C0B6"
       },
       "text.tertiary": {
         "$type": "color",
-        "$value": "#8B92A2"
+        "$value": "#9C9A92"
       },
       "text.disabled": {
         "$type": "color",
-        "$value": "#676D7C"
+        "$value": "#9C9A92"
       },
       "text.on-action": {
         "$type": "color",
-        "$value": "#FFFFFF"
+        "$value": "#141413"
       },
       "action.bg": {
         "$type": "color",
-        "$value": "#5159D7"
+        "$value": "#D885A2"
       },
       "action.hover": {
         "$type": "color",
-        "$value": "#5862E1"
+        "$value": "#E3A0B8"
       },
       "action.pressed": {
         "$type": "color",
-        "$value": "#4C52D0"
+        "$value": "#E3A0B8"
       },
       "selection.subtle": {
         "$type": "color",
-        "$value": "#232953"
+        "$value": "#423538"
       },
       "selection.hover": {
         "$type": "color",
-        "$value": "#2C3363"
+        "$value": "#4D3B40"
       },
       "selection.fg": {
         "$type": "color",
-        "$value": "#B9C6FF"
+        "$value": "#E3A0B8"
       },
       "focus.ring": {
         "$type": "color",
-        "$value": "#B1BFFF"
+        "$value": "#D885A2"
       },
       "link.fg": {
         "$type": "color",
-        "$value": "#A9B8FF"
+        "$value": "#D885A2"
       },
       "status.success": {
         "$type": "color",
-        "$value": "#75D78D"
+        "$value": "#8BAF78"
       },
       "status.success-subtle": {
         "$type": "color",
-        "$value": "#112917"
+        "$value": "#33362F"
       },
       "status.warning": {
         "$type": "color",
-        "$value": "#FFBF67"
+        "$value": "#E0A84F"
       },
       "status.warning-subtle": {
         "$type": "color",
-        "$value": "#301F07"
+        "$value": "#3C3629"
       },
       "status.danger": {
         "$type": "color",
-        "$value": "#FF8579"
+        "$value": "#F17059"
       },
       "status.danger-subtle": {
         "$type": "color",
-        "$value": "#361A17"
+        "$value": "#2B2824"
       },
       "status.danger-solid": {
         "$type": "color",
-        "$value": "#BA2B28"
+        "$value": "#F17059"
       },
       "status.danger-hover": {
         "$type": "color",
-        "$value": "#AE2523"
+        "$value": "#F28570"
       },
       "subject.analysis": {
         "$type": "color",
-        "$value": "#17A9CB"
+        "$value": "#7BB3ED"
       },
       "subject.analysis-subtle": {
         "$type": "color",
-        "$value": "#082831"
+        "$value": "#323C44"
       },
       "subject.topology": {
         "$type": "color",
-        "$value": "#52D7C1"
+        "$value": "#6AC0B5"
       },
       "subject.topology-subtle": {
         "$type": "color",
-        "$value": "#082A25"
+        "$value": "#2F3E3C"
       },
       "subject.logic": {
         "$type": "color",
-        "$value": "#74A968"
+        "$value": "#9FCF84"
       },
       "subject.logic-subtle": {
         "$type": "color",
-        "$value": "#192916"
+        "$value": "#353D33"
       },
       "subject.number-theory": {
         "$type": "color",
-        "$value": "#CEC06A"
+        "$value": "#F1BAA6"
       },
       "subject.number-theory-subtle": {
         "$type": "color",
-        "$value": "#28240C"
+        "$value": "#443732"
       },
       "subject.algebra": {
         "$type": "color",
-        "$value": "#CE8545"
+        "$value": "#C7AA6E"
       },
       "subject.algebra-subtle": {
         "$type": "color",
-        "$value": "#321F0F"
+        "$value": "#3F3A2F"
       },
       "subject.combinatorics": {
         "$type": "color",
-        "$value": "#FF9D9E"
+        "$value": "#86A657"
       },
       "subject.combinatorics-subtle": {
         "$type": "color",
-        "$value": "#351C1C"
+        "$value": "#383C31"
       },
       "subject.geometry": {
         "$type": "color",
-        "$value": "#C97AAF"
+        "$value": "#C39ED6"
       },
       "subject.geometry-subtle": {
         "$type": "color",
-        "$value": "#311C2A"
+        "$value": "#3A3944"
       },
       "subject.probability": {
         "$type": "color",
-        "$value": "#D5A8F8"
+        "$value": "#8A92B6"
       },
       "subject.probability-subtle": {
         "$type": "color",
-        "$value": "#2A1E33"
+        "$value": "#373A45"
       },
       "viz.heat1": {
         "$type": "color",
-        "$value": "#5560B8"
+        "$value": "#A17584"
       },
       "viz.heat2": {
         "$type": "color",
-        "$value": "#7C86DD"
+        "$value": "#BD889A"
       },
       "viz.heat3": {
         "$type": "color",
-        "$value": "#A9B3F2"
+        "$value": "#DA9AB1"
       },
       "viz.heat4": {
         "$type": "color",
-        "$value": "#D6DDFF"
+        "$value": "#E3A0B8"
       },
       "state.hover": {
         "$type": "color",
-        "$value": "#FFFFFF0F"
+        "$value": "#393937"
       },
       "state.pressed": {
         "$type": "color",
-        "$value": "#FFFFFF1F"
+        "$value": "#423538"
       },
       "viz.neutral": {
         "$type": "color",
-        "$value": "#B1B7C6"
+        "$value": "#C2C0B6"
       },
       "viz.easy": {
         "$type": "color",
-        "$value": "#58A6FF"
+        "$value": "#6A9BCC"
       }
     }
   },
@@ -518,6 +542,87 @@
           {
             "foreground": "text.primary",
             "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "surface.track": {
+      "$type": "color",
+      "$value": "{raw.day.surface.track}",
+      "$description": "Visible progress tracks, busy blocks and loading placeholders.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.track}",
+          "day-hc": "{raw.day.surface.track}",
+          "night-hc": "{raw.night.surface.track}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.track",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.track",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "surface.lifted": {
+      "$type": "color",
+      "$value": "{raw.day.surface.lifted}",
+      "$description": "Popover, child dialog and toast fill above a sheet.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.lifted}",
+          "day-hc": "{raw.day.surface.lifted}",
+          "night-hc": "{raw.night.surface.lifted}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.lifted",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.lifted",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "state.lifted-hover": {
+      "$type": "color",
+      "$value": "{raw.day.state.lifted-hover}",
+      "$description": "Interaction fill inside a lifted surface.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.state.lifted-hover}",
+          "day-hc": "{raw.day.state.lifted-hover}",
+          "night-hc": "{raw.night.state.lifted-hover}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "state.lifted-hover",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "state.lifted-hover",
             "minimum": 4.5,
             "kind": "text"
           }
@@ -2139,70 +2244,6 @@
         "$type": "string",
         "$value": ".08em"
       },
-      "instant": {
-        "$type": "duration",
-        "$value": "80ms"
-      },
-      "fast": {
-        "$type": "duration",
-        "$value": "120ms"
-      },
-      "base": {
-        "$type": "duration",
-        "$value": "200ms"
-      },
-      "slow": {
-        "$type": "duration",
-        "$value": "320ms"
-      },
-      "scenic": {
-        "$type": "duration",
-        "$value": "900ms"
-      },
-      "ease-standard": {
-        "$type": "string",
-        "$value": "cubic-bezier(.2,0,0,1)"
-      },
-      "ease-out": {
-        "$type": "string",
-        "$value": "cubic-bezier(0,0,0,1)"
-      },
-      "ease-in": {
-        "$type": "string",
-        "$value": "cubic-bezier(.3,0,1,1)"
-      },
-      "snappy-stiffness": {
-        "$type": "number",
-        "$value": "520"
-      },
-      "snappy-damping": {
-        "$type": "number",
-        "$value": "38"
-      },
-      "gentle-stiffness": {
-        "$type": "number",
-        "$value": "260"
-      },
-      "gentle-damping": {
-        "$type": "number",
-        "$value": "28"
-      },
-      "lively-stiffness": {
-        "$type": "number",
-        "$value": "400"
-      },
-      "lively-damping": {
-        "$type": "number",
-        "$value": "22"
-      },
-      "skeleton": {
-        "$type": "duration",
-        "$value": "1.6s"
-      },
-      "skeleton-delay": {
-        "$type": "duration",
-        "$value": "300ms"
-      },
       "pressed": {
         "$type": "number",
         "$value": ".98"
@@ -2258,18 +2299,6 @@
       "star-height": {
         "$type": "dimension",
         "$value": "54px"
-      },
-      "long": {
-        "$type": "duration",
-        "$value": "600ms"
-      },
-      "completion": {
-        "$type": "duration",
-        "$value": "300ms"
-      },
-      "pulse": {
-        "$type": "duration",
-        "$value": "2s"
       },
       "toast-max": {
         "$type": "dimension",
@@ -2679,86 +2708,6 @@
         "$value": "{foundation.raw.eyebrow-tracking}",
         "$description": "Shared eyebrow tracking foundation."
       },
-      "instant": {
-        "$type": "duration",
-        "$value": "{foundation.raw.instant}",
-        "$description": "Shared instant foundation."
-      },
-      "fast": {
-        "$type": "duration",
-        "$value": "{foundation.raw.fast}",
-        "$description": "Shared fast foundation."
-      },
-      "base": {
-        "$type": "duration",
-        "$value": "{foundation.raw.base}",
-        "$description": "Shared base foundation."
-      },
-      "slow": {
-        "$type": "duration",
-        "$value": "{foundation.raw.slow}",
-        "$description": "Shared slow foundation."
-      },
-      "scenic": {
-        "$type": "duration",
-        "$value": "{foundation.raw.scenic}",
-        "$description": "Shared scenic foundation."
-      },
-      "ease-standard": {
-        "$type": "string",
-        "$value": "{foundation.raw.ease-standard}",
-        "$description": "Shared ease standard foundation."
-      },
-      "ease-out": {
-        "$type": "string",
-        "$value": "{foundation.raw.ease-out}",
-        "$description": "Shared ease out foundation."
-      },
-      "ease-in": {
-        "$type": "string",
-        "$value": "{foundation.raw.ease-in}",
-        "$description": "Shared ease in foundation."
-      },
-      "snappy-stiffness": {
-        "$type": "number",
-        "$value": "{foundation.raw.snappy-stiffness}",
-        "$description": "Shared snappy stiffness foundation."
-      },
-      "snappy-damping": {
-        "$type": "number",
-        "$value": "{foundation.raw.snappy-damping}",
-        "$description": "Shared snappy damping foundation."
-      },
-      "gentle-stiffness": {
-        "$type": "number",
-        "$value": "{foundation.raw.gentle-stiffness}",
-        "$description": "Shared gentle stiffness foundation."
-      },
-      "gentle-damping": {
-        "$type": "number",
-        "$value": "{foundation.raw.gentle-damping}",
-        "$description": "Shared gentle damping foundation."
-      },
-      "lively-stiffness": {
-        "$type": "number",
-        "$value": "{foundation.raw.lively-stiffness}",
-        "$description": "Shared lively stiffness foundation."
-      },
-      "lively-damping": {
-        "$type": "number",
-        "$value": "{foundation.raw.lively-damping}",
-        "$description": "Shared lively damping foundation."
-      },
-      "skeleton": {
-        "$type": "duration",
-        "$value": "{foundation.raw.skeleton}",
-        "$description": "Shared skeleton foundation."
-      },
-      "skeleton-delay": {
-        "$type": "duration",
-        "$value": "{foundation.raw.skeleton-delay}",
-        "$description": "Shared skeleton delay foundation."
-      },
       "pressed": {
         "$type": "number",
         "$value": "{foundation.raw.pressed}",
@@ -2841,21 +2790,6 @@
         "$value": "{foundation.raw.star-height}",
         "$description": "Shared star height foundation."
       },
-      "long": {
-        "$type": "duration",
-        "$value": "{foundation.raw.long}",
-        "$description": "Shared long foundation."
-      },
-      "completion": {
-        "$type": "duration",
-        "$value": "{foundation.raw.completion}",
-        "$description": "Shared completion foundation."
-      },
-      "pulse": {
-        "$type": "duration",
-        "$value": "{foundation.raw.pulse}",
-        "$description": "Shared pulse foundation."
-      },
       "toast-max": {
         "$type": "dimension",
         "$value": "{foundation.raw.toast-max}",
@@ -2874,10 +2808,10 @@
     },
     "effects": {
       "day": {
-        "backdrop": "rgb(18 27 49 / 40%)",
-        "shadow-1": "0 1px 2px rgb(18 27 49 / 6%)",
-        "shadow-2": "0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%)",
-        "shadow-3": "0 24px 64px rgb(18 27 49 / 18%)"
+        "backdrop": "rgb(20 20 19 / 40%)",
+        "shadow-1": "0 1px 2px rgb(20 20 19 / 6%)",
+        "shadow-2": "0 4px 12px rgb(20 20 19 / 8%),0 12px 32px rgb(20 20 19 / 10%)",
+        "shadow-3": "0 24px 64px rgb(20 20 19 / 18%)"
       },
       "night": {
         "backdrop": "rgb(0 0 0 / 60%)",
@@ -2885,6 +2819,197 @@
         "shadow-2": "inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%)",
         "shadow-3": "0 24px 64px rgb(0 0 0 / 60%)"
       }
+    }
+  },
+  "palette": {
+    "day": {
+      "bg-sidebar": "#f5f4ed",
+      "bg-page": "#faf9f5",
+      "bg-card": "#ffffff",
+      "bg-hover": "#f0eee6",
+      "border": "#e8e6dc",
+      "text-primary": "#141413",
+      "text-secondary": "#5e5d59",
+      "text-muted": "#73726c",
+      "accent": "#a8476d",
+      "accent-hover": "#8f3a5b",
+      "accent-subtle": "rgba(168, 71, 109, 0.10)",
+      "on-accent": "#ffffff",
+      "success": "#597a3c",
+      "warning": "#935f04",
+      "error": "#c54435",
+      "info": "#3b74ab",
+      "progress-track": "#e8e6dc"
+    },
+    "night": {
+      "bg-sidebar": "#1f1e1d",
+      "bg-page": "#262624",
+      "bg-card": "#30302e",
+      "bg-hover": "#393937",
+      "border": "#3d3d3a",
+      "text-primary": "#faf9f5",
+      "text-secondary": "#c2c0b6",
+      "text-muted": "#9c9a92",
+      "accent": "#d885a2",
+      "accent-hover": "#e3a0b8",
+      "accent-subtle": "rgba(216, 133, 162, 0.16)",
+      "on-accent": "#141413",
+      "success": "#8baf78",
+      "warning": "#e0a84f",
+      "error": "#f17059",
+      "info": "#6a9bcc",
+      "progress-track": "#45453f"
+    }
+  },
+  "subjectPalette": {
+    "description": "Each family has a distinct stroke. The shared OKLCH formula is the starting point. Strokes are adjusted for contrast and for separation under protanopia and deuteranopia. Tiles retain their low tint.",
+    "formulaOklch": {
+      "dark": {
+        "stroke": {
+          "L": 0.75,
+          "C": 0.085
+        },
+        "tile": {
+          "L": 0.35,
+          "C": 0.02
+        }
+      },
+      "light": {
+        "stroke": {
+          "L": 0.53,
+          "C": 0.1
+        },
+        "tile": {
+          "L": 0.955,
+          "C": 0.02
+        }
+      }
+    },
+    "reservedHueRange": {
+      "fromDeg": 330,
+      "toDeg": 30,
+      "reason": "Reserved for rose actions and red errors; never used for subjects."
+    },
+    "colors": {
+      "sky": {
+        "hueDeg": 248,
+        "dark": {
+          "stroke": "#7bb3ed",
+          "tile": "#323c44"
+        },
+        "light": {
+          "stroke": "#2b71a6",
+          "tile": "#e6f2fd"
+        }
+      },
+      "ochre": {
+        "hueDeg": 85,
+        "dark": {
+          "stroke": "#c7aa6e",
+          "tile": "#3f3a2f"
+        },
+        "light": {
+          "stroke": "#866617",
+          "tile": "#f6efe1"
+        }
+      },
+      "teal": {
+        "hueDeg": 185,
+        "dark": {
+          "stroke": "#6ac0b5",
+          "tile": "#2f3e3c"
+        },
+        "light": {
+          "stroke": "#007e73",
+          "tile": "#e2f5f2"
+        }
+      },
+      "sage": {
+        "hueDeg": 134,
+        "dark": {
+          "stroke": "#9fcf84",
+          "tile": "#353d33"
+        },
+        "light": {
+          "stroke": "#598637",
+          "tile": "#e9f4e7"
+        }
+      },
+      "lavender": {
+        "hueDeg": 311,
+        "dark": {
+          "stroke": "#c39ed6",
+          "tile": "#3a3944"
+        },
+        "light": {
+          "stroke": "#795e92",
+          "tile": "#f0eefd"
+        }
+      },
+      "copper": {
+        "hueDeg": 41,
+        "dark": {
+          "stroke": "#f1baa6",
+          "tile": "#443732"
+        },
+        "light": {
+          "stroke": "#ac7059",
+          "tile": "#fdece6"
+        }
+      },
+      "periwinkle": {
+        "hueDeg": 276,
+        "dark": {
+          "stroke": "#8a92b6",
+          "tile": "#373a45"
+        },
+        "light": {
+          "stroke": "#474c9c",
+          "tile": "#eceffe"
+        }
+      },
+      "olive": {
+        "hueDeg": 126,
+        "dark": {
+          "stroke": "#86a657",
+          "tile": "#383c31"
+        },
+        "light": {
+          "stroke": "#4a6103",
+          "tile": "#edf3e4"
+        }
+      }
+    },
+    "assignments": {
+      "real-analysis": "sky",
+      "linear-algebra": "ochre",
+      "topology": "teal"
+    },
+    "familyAssignments": {
+      "analysis": "sky",
+      "algebra": "ochre",
+      "topology": "teal",
+      "number-theory": "copper",
+      "geometry": "lavender",
+      "logic": "sage",
+      "probability": "periwinkle",
+      "combinatorics": "olive"
+    }
+  },
+  "emblem": {
+    "tileSizePx": 72,
+    "tileRadiusPx": 10,
+    "viewBox": "0 0 64 64",
+    "strokeWidth": 1.75,
+    "secondaryLineOpacity": 0.5,
+    "fill": "none",
+    "usage": {
+      "emblemLines": "subject stroke",
+      "emblemTile": "subject tile",
+      "subjectChipIcon": "subject stroke",
+      "progressBarFill": "subject stroke",
+      "progressBarTrack": "progress-track",
+      "dueBadge": "neutral"
     }
   }
 }

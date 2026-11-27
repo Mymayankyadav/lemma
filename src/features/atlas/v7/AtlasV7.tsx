@@ -1,7 +1,9 @@
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {reviewHref} from '../../../data/review-target';
-import {useEffect,useMemo,useRef,useState,type KeyboardEvent,type PointerEvent as ReactPointerEvent} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState,type KeyboardEvent,type ReactNode,type RefObject,type PointerEvent as ReactPointerEvent} from 'react';
 import {useMotionReduced} from '../../../ui/v7/effects';
+import {durations} from '../../../ui/v7/motion';
+import {AnimatePresence,motion,useIsPresent} from 'motion/react';
 import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronLeft,ChevronRight,ChevronUp,Crosshair,Eye,EyeOff,Layers2,List,Minus,Plus,Search,X} from 'lucide-react';
 import {useAtlas,useHome} from '../../../data/hooks';
@@ -16,7 +18,7 @@ import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import ConceptPin from '../v6/ConceptPin';
 import AtlasCommands from '../v6/AtlasCommands';
 import AtlasImpactPreview from '../v6/ImpactPreview';
-import AtlasMap,{type AtlasMapHandle} from './AtlasMap';
+import AtlasMap,{type AtlasCamera,type AtlasMapHandle} from './AtlasMap';
 import {computeLayout,layoutInput,type LayoutSource} from './layoutClient';
 import type {LayoutResult} from './layout';
 import {alphabetical,atlasSummary,buildAtlasModel,checkpointName,searchStars,starCounts,stateLabel,type AtlasModel,type StarState} from './model';
@@ -58,14 +60,28 @@ function SubjectTag({model,index}:{model:AtlasModel;index:number}){
  return <span className={'v7-tag '+subjectClass(cluster.subject)}><SubjectMark subject={cluster.subject}/><span>{cluster.name}</span></span>;
 }
 
-function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit,onPreview}:{
+function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit,onPreview,sheetRef,reduced}:{
  model:AtlasModel;index:number;expanded:boolean;onExpand:(open:boolean)=>void;onClose:()=>void;onPick:(index:number)=>void;
- onPin:()=>void;onEdit:()=>void;onPreview:()=>void;
+ onPin:()=>void;onEdit:()=>void;onPreview:()=>void;sheetRef:RefObject<HTMLElement|null>;reduced:boolean;
 }){
  const studyRepair=useStudyUi();
  const star=model.stars[index],checkpoint=star.checkpoints[0];
  const drag=useRef<{y:number;moved:boolean}|null>(null),dragged=useRef(false),[offset,setOffset]=useState(0);
- const sheetRef=useRef<HTMLElement|null>(null);
+ const detentTop=useRef<number|null>(null);
+ const changeDetent=(next:boolean)=>{
+  if(next===expanded)return;
+  detentTop.current=sheetRef.current?.getBoundingClientRect().top??null;
+  onExpand(next);
+ };
+ useLayoutEffect(()=>{
+  const node=sheetRef.current,previous=detentTop.current;detentTop.current=null;
+  if(!node||typeof node.animate!=='function'||previous===null||reduced)return;
+  const dy=previous-node.getBoundingClientRect().top;
+  if(dy)node.animate([{transform:`translateY(${dy}px)`},{transform:'none'}],{
+   duration:durations.slow*1000,easing:getComputedStyle(node).getPropertyValue('--spring-sheet').trim()||'ease-out',
+  });
+ },[expanded,reduced,sheetRef]);
+
  // The map's legend and controls sit above the sheet: tell them how tall it really is.
  useEffect(()=>{
   const node=sheetRef.current,root=node?.closest<HTMLElement>('.v7-atlas');
@@ -74,7 +90,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
   apply();
   const observer=new ResizeObserver(apply);observer.observe(node);
   return ()=>{observer.disconnect();root.style.removeProperty('--v7-atlas-sheet-h');};
- },[]);
+ },[sheetRef]);
  const needs=model.edges.filter(edge=>edge.to===index&&edge.kind==='prereq').map(edge=>edge.from);
  const opens=model.edges.filter(edge=>edge.from===index&&edge.kind==='prereq').map(edge=>edge.to);
  const related=model.neighbours[index].filter(other=>!needs.includes(other)&&!opens.includes(other));
@@ -84,7 +100,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
  const handleUp=(event:ReactPointerEvent<HTMLButtonElement>)=>{
   const state=drag.current;drag.current=null;setOffset(0);dragged.current=!!state?.moved;if(!state?.moved)return;
   const dy=event.clientY-state.y;
-  if(dy<-40)onExpand(true);else if(dy>60&&!expanded)onClose();else if(dy>40)onExpand(false);
+  if(dy<-40)changeDetent(true);else if(dy>60&&!expanded)onClose();else if(dy>40)changeDetent(false);
  };
  const group=(title:string,items:number[])=>items.length>0&&<div className="v7-atlas-neighbours">
   <h3 className="v7-atlas-eyebrow">{title} · {items.length}</h3>
@@ -92,20 +108,25 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
    <StarMark state={model.stars[other].state} subjectClassName={subjectClass(model.clusters.find(c=>c.index===model.stars[other].cluster)?.subject??'Other')}/>
    <span className="v7-atlas-row-name"><FastTex source={model.stars[other].name}/></span><ChevronRight aria-hidden="true"/></button></li>)}</ul>
  </div>;
- return <section ref={sheetRef} className="v7-atlas-sheet" data-expanded={expanded} aria-labelledby="v7-atlas-sheet-title"
+ return <section ref={sheetRef} className="v7-atlas-sheet" data-surface-role="S2" data-expanded={expanded} data-dragging={offset!==0||undefined} aria-labelledby="v7-atlas-sheet-title"
   style={offset?{transform:`translateY(${offset}px)`}:undefined}>
   <div className="v7-atlas-sheet-head">
-   <h2 id="v7-atlas-sheet-title" tabIndex={-1} className="v7-atlas-sheet-title"><FastTex source={star.name}/></h2>
+   <h2 id="v7-atlas-sheet-title" tabIndex={-1} className="v7-atlas-sheet-title">
+    <AnimatePresence initial={false}><InspectorTitle key={star.id} name={star.name} reduced={reduced}/></AnimatePresence>
+   </h2>
    <div className="v7-atlas-sheet-controls">
-    <button type="button" className="v7-icon-button v7-atlas-handle" aria-expanded={expanded} aria-controls="v7-atlas-sheet-more"
+    <button type="button" className="v7-icon-button v7-atlas-handle" aria-expanded={expanded} aria-controls={expanded?`v7-atlas-sheet-more-${star.id}`:undefined}
      aria-label={expanded?'Show less':'Show neighbours and actions'} onPointerDown={handleDown} onPointerMove={handleMove} onPointerUp={handleUp}
      onPointerCancel={()=>{drag.current=null;setOffset(0);}}
-     onClick={()=>{if(dragged.current){dragged.current=false;return;}onExpand(!expanded);}}>
+     onClick={()=>{if(dragged.current){dragged.current=false;return;}changeDetent(!expanded);}}>
      {expanded?<ChevronDown aria-hidden="true"/>:<ChevronUp aria-hidden="true"/>}
     </button>
     <IconButton label="Close details" onClick={onClose}><X aria-hidden="true"/></IconButton>
    </div>
   </div>
+  <div className="v7-atlas-sheet-swap">
+  <AnimatePresence initial={false}>
+  <InspectorContent key={star.id} reduced={reduced}>
   <div className="v7-atlas-sheet-meta"><StateChip state={star.state}/><SubjectTag model={model} index={index}/></div>
   <p className={expanded?"v7-atlas-counts":"v7-sr-only"} data-testid="atlas-counts">{starCounts(model,index)}</p>
   <div className="v7-atlas-actions">
@@ -114,7 +135,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
    {expanded&&checkpoint&&<Link className="v7-button v7-secondary v7-small" to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}
      aria-label={'Open '+checkpointName(checkpoint.code)}>Open checkpoint</Link>}
   </div>
-  {expanded&&<div id="v7-atlas-sheet-more" className="v7-atlas-sheet-more">
+  {expanded&&<div id={`v7-atlas-sheet-more-${star.id}`} className="v7-atlas-sheet-more">
    <ConceptFacets id={star.id}/>
    {group('Needs',needs)}{group('Opens up',opens)}{group('Related',related)}
    {model.neighbours[index].length===0&&<p className="v7-atlas-meta">No connections yet.</p>}
@@ -124,7 +145,22 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
     <Button small onClick={onPreview}>Preview edits</Button>
    </div>
   </div>}
+  </InspectorContent>
+  </AnimatePresence>
+  </div>
  </section>;
+}
+function InspectorTitle({name,reduced}:{name:string;reduced:boolean}){
+ const present=useIsPresent();
+ return <motion.span className="v7-atlas-title-text" data-exiting={!present||undefined} aria-hidden={!present||undefined}
+  initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:reduced?durations.reduced:durations.quick}}><FastTex source={name}/></motion.span>;
+}
+function InspectorContent({children,reduced}:{children:ReactNode;reduced:boolean}){
+ const present=useIsPresent();
+ return <motion.div className="v7-atlas-sheet-content" data-exiting={!present||undefined} inert={!present} aria-hidden={!present||undefined}
+  initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:reduced?durations.reduced:durations.quick}}>
+  {children}
+ </motion.div>;
 }
 
 /** R2 · F12: past this many concepts or links the map becomes a hairball on a phone, so the list is the default. */
@@ -178,6 +214,9 @@ export default function AtlasV7(){
  const [dialog,setDialog]=useState<null|'pin'|'edit'|'preview'|'new'>(null);
  const map=useRef<AtlasMapHandle>(null),searchInput=useRef<HTMLInputElement>(null),searchButton=useRef<HTMLButtonElement>(null);
  const searchResults=useRef<HTMLUListElement>(null),focusResult=useRef<string|null>(null);
+ const inspector=useRef<HTMLElement>(null),neighbourTarget=useRef<string|null>(null);
+ const inspectorHistory=useRef(new Map<string,{id:string;camera:AtlasCamera|null;expanded:boolean}>());
+ const appliedLocation=useRef<string|null>(null);
  const listButton=useRef<HTMLButtonElement>(null),optionToggle=useRef<HTMLButtonElement>(null),returnFocusToList=useRef(false);
  useEffect(()=>{
   if(!model||!mapVisible||layout?.model===model)return;
@@ -197,11 +236,12 @@ export default function AtlasV7(){
   const bySlug=slug?model.stars.findIndex(star=>star.slug===slug):-1;
   return bySlug>=0?bySlug:null;
  },[model,params]);
- const update=(next:{view?:'map'|'list';id?:string|null})=>{
+ const update=(next:{view?:'map'|'list';id?:string|null},neighbour=false)=>{
   const out=new URLSearchParams(params);
   if(next.view)out.set('view',next.view);
   if(next.id!==undefined){out.delete('focus');if(next.id)out.set('id',next.id);else out.delete('id');}
-  setParams(out,{replace:next.view!=='list',state:next.view==='list'?{atlasListFromMap:mapVisible}:location.state});
+  setParams(out,{replace:next.view!=='list'&&!neighbour,state:next.view==='list'?{atlasListFromMap:mapVisible}:
+   neighbour?{...location.state,atlasInspectorNeighbour:true}:location.state});
  };
  const select=(index:number|null,fly=false,openActions=false)=>{
   if(!model)return;
@@ -210,6 +250,32 @@ export default function AtlasV7(){
   update({id:index===null?null:model.stars[index].id});
   if(index!==null&&fly&&mapVisible)map.current?.flyTo(index);
  };
+ const pickNeighbour=(index:number)=>{
+  if(!model||selected===null||index===selected)return;
+  const target=model.stars[index];
+  inspectorHistory.current.set(location.key,{id:model.stars[selected].id,camera:map.current?.camera()??null,expanded});
+  if(inspectorHistory.current.size>30){
+   const oldest=inspectorHistory.current.keys().next().value;
+   if(oldest!==undefined)inspectorHistory.current.delete(oldest);
+  }
+  if(room)rememberRoomItem({id:'concept:'+target.id,group:'Concepts',title:target.name,to:'/atlas?id='+encodeURIComponent(target.id)});
+  neighbourTarget.current=target.id;
+  focusResult.current=target.id;
+  update({id:target.id},true);
+ };
+ useLayoutEffect(()=>{
+  if(appliedLocation.current===location.key||!model||selected===null)return;
+  appliedLocation.current=location.key;
+  const id=model.stars[selected].id,previous=inspectorHistory.current.get(location.key),panel=inspector.current;
+  if(previous?.id===id){
+   setExpanded(previous.expanded);
+   if(mapVisible&&previous.camera)map.current?.restoreCamera(previous.camera);
+   focusResult.current=id;
+  }else if(neighbourTarget.current===id&&mapVisible){
+   map.current?.flyTo(selected,panel?.getBoundingClientRect());
+  }
+  if(neighbourTarget.current===id)neighbourTarget.current=null;
+ },[location.key,mapVisible,model,selected]);
  const closeSearch=()=>{
   setSearching(false);setTerm('');
   requestAnimationFrame(()=>searchButton.current?.focus());
@@ -236,11 +302,13 @@ export default function AtlasV7(){
   else buttons[active<0?(event.key==='ArrowDown'?0:buttons.length-1):Math.min(buttons.length-1,active+(event.key==='ArrowDown'?1:-1))]?.focus();
  };
  useEffect(()=>{if(searching)searchInput.current?.focus();},[searching]);
- useEffect(()=>{
+ useLayoutEffect(()=>{
   if(searching||!focusResult.current||selected===null||model?.stars[selected].id!==focusResult.current)return;
   focusResult.current=null;
-  document.getElementById('v7-atlas-sheet-title')?.focus();
- },[model,searching,selected]);
+  const panel=inspector.current;
+  if(panel)panel.scrollTop=0;
+  panel?.querySelector<HTMLElement>('.v7-atlas-sheet-title')?.focus({preventScroll:true});
+ },[location.key,model,searching,selected]);
  useEffect(()=>{
   if(view!=='list'||selected===null||!model)return;
   document.getElementById('v7-atlas-row-'+model.stars[selected].id)?.scrollIntoView({block:'nearest'});
@@ -249,6 +317,7 @@ export default function AtlasV7(){
  const rows=useMemo(()=>model?alphabetical(model).filter(index=>!highlighted||highlighted.includes(index)):[],[model,highlighted]);
  const listedClusters=useMemo(()=>new Set(rows.map(index=>model?.stars[index].cluster)),[model,rows]);
  const back=()=>{
+  if(location.state?.atlasInspectorNeighbour){navigate(-1);return;}
   if(!mapVisible){
    returnFocusToList.current=true;
    setSearching(false);setTerm('');
@@ -266,7 +335,7 @@ export default function AtlasV7(){
  },[mapVisible,optionsShown]);
  const refetch=async()=>{await query.refetch();};
  const header=<header className="v7-atlas-bar">
-  <IconButton label={mapVisible?'Back':'Back to map'} onClick={back}><ChevronLeft aria-hidden="true"/></IconButton>
+  <IconButton label={mapVisible||location.state?.atlasInspectorNeighbour?'Back':'Back to map'} onClick={back}><ChevronLeft aria-hidden="true"/></IconButton>
   <h1 className="v7-sr-only">Atlas</h1>
   <div className="v7-atlas-option-rail" role="group" aria-label="Atlas options">
    <button type="button" ref={optionToggle} className="v7-icon-button" aria-label={optionsShown?'Hide options':'Show options'}
@@ -327,8 +396,8 @@ export default function AtlasV7(){
 
  const summary=atlasSummary(model);
  const selectedStar=selected===null?null:model.stars[selected];
- const details=selected!==null&&<ConceptSheet key={'concept-sheet:'+model.stars[selected].id} model={model} index={selected} expanded={expanded} onExpand={setExpanded}
-   onClose={()=>select(null)} onPick={index=>select(index,true)}
+ const details=selected!==null&&<ConceptSheet sheetRef={inspector} reduced={reduced} model={model} index={selected} expanded={expanded} onExpand={setExpanded}
+   onClose={()=>select(null)} onPick={pickNeighbour}
    onPin={()=>setDialog('pin')} onEdit={()=>setDialog('edit')} onPreview={()=>setDialog('preview')}/>;
  return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-study-ui={repair?'':undefined} data-view={mapVisible?'map':'list'} data-options={optionsShown||undefined} data-atlas-layer={!mapVisible||selectedStar!==null||layers||dialog!==null||undefined} data-panning={panning||undefined} data-sheet={selectedStar?(expanded?'expanded':'peek'):'closed'}>
   {header}

@@ -1,3 +1,4 @@
+import {Button} from '../../ui/v7/components';
 import {useId, useRef, useState, type KeyboardEvent, type PointerEvent} from 'react';
 import {PAD_SYMBOLS, type PadSymbol, type PadTemplate} from './padEdit';
 import './pad-math-keyboard.css';
@@ -62,14 +63,14 @@ export function PadMathKeyboard(props: Props) {
   return <section aria-label="Math keyboard" className="pad-math-keyboard" data-mode={props.mode}>
     <div className="pad-keyboard-bar">
       <strong>Math keyboard</strong>
-      <button type="button" aria-expanded={expanded} aria-controls={id + '-keys'} disabled={props.composing}
+      <Button aria-expanded={expanded} aria-controls={id + '-keys'} disabled={props.composing}
         onPointerDown={props.keepSelection} onClick={() => props.onShown(!props.shown)}>
         {props.shown ? 'Hide math keyboard' : 'Show math keyboard'}
-      </button>
-      {props.shown && <button type="button" onPointerDown={props.keepSelection} disabled={props.composing}
+      </Button>
+      {props.shown && <Button onPointerDown={props.keepSelection} disabled={props.composing}
         onClick={() => props.onMode(props.mode === 'math' ? 'device' : 'math')}>
         {props.mode === 'math' ? 'Use device keyboard' : 'Use math keyboard'}
-      </button>}
+      </Button>}
     </div>
     <p className="pad-keyboard-mode" role="status">{props.composing ? 'Finish composing before using math keys.'
       : props.nativeKeyboardOpen && props.shown ? 'Device keyboard open. Choose Use math keyboard to switch.'
@@ -78,25 +79,25 @@ export function PadMathKeyboard(props: Props) {
       : 'Native typing is available. Math keys insert at your selection.'}</p>
     <div id={id + '-keys'} hidden={!expanded} className="pad-keyboard-body">
       <div ref={tabs} role="tablist" aria-label="Math key groups" className="pad-keyboard-tabs">
-        {Object.keys(groups).map(name => <button key={name} type="button" role="tab" id={id + '-' + name}
+        {Object.keys(groups).map(name => <Button key={name} type="button" role="tab" id={id + '-' + name}
           aria-selected={name === group} aria-controls={id + '-panel'} tabIndex={name === group ? 0 : -1}
-          onPointerDown={props.keepSelection} onKeyDown={tabKey} onClick={() => setGroup(name)}>{name}</button>)}
+          onPointerDown={props.keepSelection} onKeyDown={tabKey} onClick={() => setGroup(name)}>{name}</Button>)}
       </div>
       <div id={id + '-panel'} role="tabpanel" aria-labelledby={id + '-' + group}>
         <div role="group" aria-label="Math symbols" className="pad-keyboard-grid">
-          {groups[group].map(entry => <button key={entry.label} type="button" aria-label={entry.label}
-            disabled={props.composing} onPointerDown={props.keepSelection} onClick={() => props.onSymbol(entry)}>{entry.glyph}</button>)}
+          {groups[group].map(entry => <Button key={entry.label} type="button" aria-label={entry.label}
+            disabled={props.composing} onPointerDown={props.keepSelection} onClick={() => props.onSymbol(entry)}>{entry.glyph}</Button>)}
         </div>
         <div role="group" aria-label="Math templates" className="pad-keyboard-templates">
-          {templates[group].map(template => <button key={template} type="button" disabled={props.composing}
-            onPointerDown={props.keepSelection} onClick={() => props.onTemplate(template)}>{template}</button>)}
+          {templates[group].map(template => <Button key={template} type="button" disabled={props.composing}
+            onPointerDown={props.keepSelection} onClick={() => props.onTemplate(template)}>{template}</Button>)}
         </div>
       </div>
       <div role="group" aria-label="Text editing keys" className="pad-keyboard-grid pad-keyboard-actions">
-        {actions.map(({action, label, glyph}) => <button key={action} type="button" aria-label={label}
+        {actions.map(({action, label, glyph}) => <Button key={action} type="button" aria-label={label}
           disabled={props.composing || (action === 'undo' && !props.canUndo) || (action === 'redo' && !props.canRedo)
             || (action === 'slot' && !props.hasSlot)}
-          onPointerDown={props.keepSelection} onClick={() => props.onAction(action)}>{glyph}</button>)}
+          onPointerDown={props.keepSelection} onClick={() => props.onAction(action)}>{glyph}</Button>)}
       </div>
     </div>
   </section>;

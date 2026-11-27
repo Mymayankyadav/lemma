@@ -35,11 +35,17 @@ describe('N110 mockup shell',()=>{
    expect(legacy).toContain("import '../ui/v6/"+css+"'");
   }
  });
- it('ports the mockup palette: navy primary in Day, pale blue in Night',()=>{
+ it('uses the shared rose primary in the day and night mockup shells',()=>{
   const css=readFileSync('src/ui/v6/mockup.css','utf8');
-  expect(css).toContain('html[data-v6][data-theme=graph]{');
-  expect(css).toMatch(/--accent:#294c66/);
-  expect(css).toMatch(/--accent:#aacce5/);
+  const palette=readFileSync('src/styles/palette.css','utf8');
+  for(const [theme,accent] of [['graph','#a8476d'],['graph-night','#d885a2']]){
+   const shell=css.split('html[data-v6][data-theme='+theme+']{').slice(1).map(block=>block.split('}')[0]).join('\n');
+   const shared=palette.split('[data-v7][data-theme="'+theme+'"] {')[1]?.split('}')[0];
+   expect(shared).toContain('--accent: '+accent+';');
+   expect(shell).toContain('--link:var(--accent);');
+   expect(shell).toContain('--amber:var(--accent);');
+   expect(shell).not.toMatch(/--accent\s*:/);
+  }
  });
  it('keeps Inbox and Add on destinations, Cards and Inbox; other details use the menu only',()=>{
   for(const route of v6TabRoutes)expect(v6CompactHeader(route),route).toBe(false);

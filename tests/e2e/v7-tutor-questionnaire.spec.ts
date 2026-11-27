@@ -11,19 +11,22 @@ const url = '/lemma/?demo=0&flags=v7Shell,v6Shell,-tutorScratch#/p/logic/cp/CP1/
 const questionnaireId = '77777777-7777-4777-8777-777777777777';
 const turnId = '88888888-8888-4888-8888-888888888881';
 
-async function liveQuestionnaire(page: Page) {
+async function liveQuestionnaire(page: Page, withMath = false) {
   const {owner, cpId, threadId, payload} = await prepareLiveTutor(page);
   const turn: SavedTutorTurn = {id: turnId, threadId, sequence: 1, version: 2, status: 'completed',
     snapshot: {question: 'The converse reverses the hypothesis and conclusion.', selectedContext: []},
     finalReply: {turnId, messageId: 'reply', body: 'Close. A quick check is attached below.',
+      nextQuestion: withMath ? 'Which number divides $6$, $4$ and $0$?' : undefined,
       provenance: {kind: 'connector', reportedHost: 'claude', hostVerified: false}, citations: [], suggestions: []}};
   const thread: TutorThreadView = {head: {threadId, lastSequence: 1, pendingTurnId: null}, turns: [turn], recoveredDrafts: [], canSubmit: true, canConnect: true};
   const server = {
     questionnaire: {id: questionnaireId, turnId, title: 'Quick check', purpose: 'diagnose', state: 'unseen', answers: {}, version: 0,
       questions: [
         {id: 'q1', kind: 'short', prompt: 'In your own words, when is a surjection a quotient map?'},
-        {id: 'q2', kind: 'mcq', prompt: 'Is every continuous surjection a quotient map?', options: ['Yes', 'No']},
-        {id: 'q3', kind: 'msq', prompt: 'Which of these are always quotient maps?', options: ['Open surjections', 'Closed surjections', 'Constant maps']},
+        {id: 'q2', kind: 'mcq', prompt: withMath ? 'Let $D=\\operatorname{diag}(3,12)$. Which group is $\\mathbb{Z}^2/D\\mathbb{Z}^2$?' : 'Is every continuous surjection a quotient map?',
+          options: withMath ? ['$\\mathbb{Z}/36\\mathbb{Z}$', '$\\mathbb{Z}/3\\mathbb{Z} \\oplus \\mathbb{Z}/12\\mathbb{Z}$'] : ['Yes', 'No']},
+        {id: 'q3', kind: 'msq', prompt: withMath ? 'Which Jordan block sizes are possible if $N^3=0$?' : 'Which of these are always quotient maps?',
+          options: withMath ? ['$3,1$', '$2,1,1$', '$4$'] : ['Open surjections', 'Closed surjections', 'Constant maps']},
       ]} as TutorQuestionnaire,
     saves: [] as {expected: number; answers: QuestionnaireAnswers | null; submit: boolean}[],
     failing: false,
@@ -58,6 +61,22 @@ const tutor = (page: Page) => page.getByRole('main', {name: 'Checkpoint tutor'})
 const opener = (page: Page) => tutor(page).getByRole('group', {name: 'Reply actions'}).getByRole('button', {name: /^Open questionnaire: Quick check/});
 const sheet = (page: Page) => page.getByRole('dialog', {name: 'Quick check'});
 const closeSheet = (page: Page) => sheet(page).getByRole('button', {name: 'Close', exact: true}).click();
+
+test('tutor-set math renders in the question banner and in selectable quiz answers', async ({page}) => {
+  await liveQuestionnaire(page, true);
+  await expect(page.locator('.tutor-pinned .katex')).toHaveCount(3);
+  await opener(page).click();
+  const form = sheet(page);
+  await expect(form.locator('.v7-radio-row .katex')).toHaveCount(2);
+  await expect(form.locator('.v7-check-choice .katex')).toHaveCount(3);
+  await form.locator('.v7-radio-row .katex').nth(1).click();
+  const choice = form.locator('.v7-check-choice').first();
+  await choice.scrollIntoViewIfNeeded();
+  const formula = (await choice.locator('.katex').boundingBox())!;
+  await page.mouse.click(formula.x + formula.width / 2, formula.y + formula.height / 2);
+  await expect(form.getByRole('radio').nth(1)).toBeChecked();
+  await expect(form.getByRole('checkbox').first()).toBeChecked();
+});
 
 test('a quick questionnaire opens from the reply row, its colour tracks its state, and every answer is kept', async ({page}) => {
   await page.setViewportSize({width: 393, height: 873});

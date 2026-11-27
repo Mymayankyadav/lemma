@@ -30,7 +30,9 @@ test("V14 · after scrolling, Capture stays and the dock is symmetric",async({pa
 
 for(const scheme of ["dark","light"] as const)test(`V15 · ${scheme==="dark"?"Night":"Day"}: every heat step's numeral is at least 4.5 : 1`,async({page})=>{
  await open(page,"/calendar?view=month&date=2026-11-09",{scheme});
- const days=await page.locator(".v7-mo-grid button[data-tint]:not([data-outside])").evaluateAll(nodes=>nodes.map(node=>{
+ const cells=page.locator(".v7-mo-grid button[data-tint]:not([data-outside])");
+ await expect(cells.and(page.locator(':not([data-tint="0"])')).first()).toBeVisible();
+ const days=await cells.evaluateAll(nodes=>nodes.map(node=>{
   const style=getComputedStyle(node);return {tint:node.getAttribute("data-tint"),ink:style.color,paper:style.backgroundColor};}));
  const tinted=days.filter(day=>day.tint!=="0"&&!/rgba\(0, 0, 0, 0\)/.test(day.paper));
  expect(tinted.length).toBeGreaterThan(0);

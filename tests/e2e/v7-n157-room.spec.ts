@@ -44,10 +44,16 @@ test('Tasks controls fit in 200 px and overdue copy names its parts',async({page
  await open(page,'/tasks',360);
  await expect(page.locator('.v7-tk-row').first()).toBeVisible();
  await expect(page.locator('.v7-hub-title')).toHaveText('Tasks');
- const end=await page.locator('.v7-tk-filters').evaluate(node=>node.getBoundingClientRect().bottom);
- expect(end).toBeLessThanOrEqual(200);
+ const filter=page.getByRole('button',{name:'Filter',exact:true});
+ await expect(filter).toBeVisible();
+ const end=(await filter.boundingBox())!;
+ expect(end.y+end.height).toBeLessThanOrEqual(200);
  await expect(page.locator('.v7-tk-overdue')).not.toContainText('Tasks, deadlines and practice');
  await expect(page.locator('.v7-tk-overdue .v7-meta')).toContainText(/\d+ (task|deadline|practice)/);
+ await filter.click();
+ const sheet=page.getByRole('dialog',{name:'Task filters'});
+ await expect(sheet.getByRole('button',{name:'All paths',exact:true})).toBeVisible();
+ await expect(sheet.getByRole('button',{name:'High priority',exact:true})).toBeVisible();
 });
 
 test('Path tabs follow the header; Plan keeps current and finished checkpoints',async({page})=>{

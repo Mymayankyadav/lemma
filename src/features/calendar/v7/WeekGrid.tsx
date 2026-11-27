@@ -1,11 +1,11 @@
-import {useEffect,useMemo,useRef} from 'react';
-import type {CSSProperties} from 'react';
+import {useLayoutEffect,useMemo,useRef} from 'react';
+import type {CSSProperties,RefObject} from 'react';
 import {Plus} from 'lucide-react';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {calendarRange,shiftDay} from '../model';
 import {dayMinutes,layoutDayIntervals} from '../grid/layout';
 import {dayCapacity} from '../model';
-import {weekCells} from './dayModel';
+import {elapsedMinuteAt,wallMinuteAt,weekCells} from './dayModel';
 import {SessionGaps,type BlockLook,type SuggestedBlock} from './DayGrid';
 import {loggedSessions,sessionCaption} from './loggedSessions';
 import {formatDuration} from '../../../lib/format';
@@ -16,36 +16,50 @@ export const WEEK_HOUR_PX=48;
 const MINUTE=60_000;
 /** PLAN §6.5 Week: the strip is the column header, an hour is 48 px, blocks are bars (two-word titles from a 44 px
  *  block, whole titles from 600 px, V42). */
-export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks,now,lookOf,onDay,onEdit,onOpenEntry,suggested=[]}:{
+export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks,now,lookOf,onDay,onEdit,onOpenEntry,suggested=[],anchor:timeAnchor,pendingId}:{
  weekStart:string;date:string;today:string;zone:string;clock:(instant:string)=>string;entries:StudyEntryRecord[];blocks:CalendarBlockRecord[];now:number;
  lookOf:(block:CalendarBlockRecord)=>BlockLook;onDay:(day:string)=>void;onEdit:(block:CalendarBlockRecord)=>void;
  /** N168: tapping logged study opens its session sheet. */
  onOpenEntry?:(entry:StudyEntryRecord)=>void;
  suggested?:readonly SuggestedBlock[];
+ anchor?:RefObject<number|null>;pendingId?:string;
 }){
  const scroll=useRef<HTMLDivElement>(null);
  const cells=useMemo(()=>weekCells(weekStart),[weekStart]);
- const columns=useMemo(()=>cells.map(cell=>{
-  const range=calendarRange(cell.day,zone);
-  const visible=blocks.filter(block=>block.status!=='cancelled');
-  // N168: one bar per saved session, its pauses and breaks drawn inside.
-  const sessions=loggedSessions(entries,range);
-  const inputs=[...visible.map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt})),...sessions.map(session=>({id:session.id,start:session.start,end:session.end}))]
-   .filter(item=>Date.parse(item.end)>Date.parse(range.start)&&Date.parse(item.start)<Date.parse(range.end));
-  return {cell,range,whole:dayMinutes(range),items:layoutDayIntervals(inputs,range,WEEK_HOUR_PX),sessions:new Map(sessions.map(session=>[session.id,session])),capacity:dayCapacity(cell.day,zone,entries,blocks)};
- }),[cells,zone,blocks,entries]);
- const first=Math.min(360,...columns.flatMap(column=>column.items.map(item=>Math.floor(item.startMinute/60)*60)));
+ const columns=useMemo(()=>{
+  const planned=blocks.filter(block=>block.status!=='cancelled')
+   .map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt}));
+  // Group pauses and breaks once for the week, then place each session in
+  // every civil day it overlaps, including intervals that span midnight.
+  const sessionGroups=loggedSessions(entries,calendarRange(weekStart,zone,7));
+  return cells.map(cell=>{
+   const range=calendarRange(cell.day,zone),start=Date.parse(range.start),end=Date.parse(range.end);
+   // N168: one bar per saved session, its pauses and breaks drawn inside.
+   const within=(item:{start:string;end:string})=>Date.parse(item.end)>start&&Date.parse(item.start)<end;
+   const sessions=sessionGroups.filter(within);
+   const inputs=[...planned.filter(within),
+    ...sessions.map(session=>({id:session.id,start:session.start,end:session.end}))];
+   return {cell,range,whole:dayMinutes(range),items:layoutDayIntervals(inputs,range,WEEK_HOUR_PX),sessions:new Map(sessions.map(session=>[session.id,session])),capacity:dayCapacity(cell.day,zone,entries,blocks)};
+  });
+ },[weekStart,cells,zone,blocks,entries]);
+ const anchor=columns.find(column=>column.cell.day===date)?.range.start??columns[0].range.start;
+ const from=Date.parse(anchor);
+ const openingAnchor=useRef(timeAnchor?.current).current,programmaticScroll=useRef<number|null>(null);
+ const anchored=useMemo(()=>openingAnchor!=null?elapsedMinuteAt(date,zone,from,openingAnchor):null,[date,zone,from,openingAnchor]);
+ const first=Math.min(anchored===null?360:Math.floor(anchored/60)*60,360,...columns.flatMap(column=>column.items.map(item=>Math.floor(item.startMinute/60)*60)));
  const whole=Math.max(...columns.map(column=>column.whole));
  const height=(whole-first)*WEEK_HOUR_PX/60;
- const anchor=columns.find(column=>column.cell.day===date)?.range.start??columns[0].range.start;
  const ticks=Array.from({length:Math.ceil((whole-first)/60)+1},(_,index)=>first+index*60).filter(minute=>minute<whole);
  const byId=useMemo(()=>new Map(blocks.map(block=>[block.id,block])),[blocks]);
- useEffect(()=>{
+ useLayoutEffect(()=>{
   const node=scroll.current;if(!node)return;
-  node.scrollTop=Math.max(0,(480-first)*WEEK_HOUR_PX/60-WEEK_HOUR_PX/2);
-  // Only on navigation.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[weekStart,zone]);
+  const current=timeAnchor?.current;
+  const minute=current==null?450:current===openingAnchor&&anchored!==null?anchored:elapsedMinuteAt(date,zone,from,current);
+  node.scrollTop=Math.max(0,(minute-first)*WEEK_HOUR_PX/60);
+  const applied=node.scrollTop;
+  programmaticScroll.current=applied;
+  if(timeAnchor&&timeAnchor.current==null)timeAnchor.current=wallMinuteAt(from+(first+applied*60/WEEK_HOUR_PX)*MINUTE,zone);
+ },[weekStart,date,zone,from,first,timeAnchor,openingAnchor,anchored]);
  return <section className="v7-wk" aria-label="Week calendar">
   <div className="v7-wk-head" role="group" aria-label="Week">
    <span aria-hidden="true"/>
@@ -54,7 +68,13 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
     <small aria-hidden="true">{cell.initial}</small><span aria-hidden="true">{cell.number}</span><em aria-hidden="true">{loggedCaption(capacity.logged)}</em>
    </button>)}
   </div>
-  <div ref={scroll} className="v7-wk-scroll" role="region" aria-label="Week time grid" tabIndex={0}>
+  <div ref={scroll} className="v7-wk-scroll" role="region" aria-label="Week time grid" tabIndex={0}
+   onScroll={event=>{
+    const scrollTop=event.currentTarget.scrollTop;
+    if(programmaticScroll.current===scrollTop){programmaticScroll.current=null;return;}
+    programmaticScroll.current=null;
+    if(timeAnchor)timeAnchor.current=wallMinuteAt(from+(first+scrollTop*60/WEEK_HOUR_PX)*MINUTE,zone);
+   }}>
    <div className="v7-wk-plane" style={{height}}>
     <div className="v7-wk-gutter" aria-hidden="true">{ticks.map(minute=>{const at=new Date(Date.parse(anchor)+minute*MINUTE).toISOString();
      return <time key={minute} dateTime={at} style={{top:(minute-first)*WEEK_HOUR_PX/60-7}}>{clock(at)}</time>;})}</div>
@@ -73,8 +93,8 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
        const past=Date.parse(item.end)<now&&now>=Date.parse(range.start)&&now<Date.parse(range.end);
        const inner=<>{showWeekGlyph(shown)&&kind!=='busy'&&<span className="v7-wk-glyph" aria-hidden="true"><SubjectGlyph klass={look.subjectClass}/></span>}<span className="v7-wk-title" aria-hidden="true">{label}</span>
         <span className="v7-wk-short" aria-hidden="true">{weekShortTitle(label).map((word,index)=><span key={index}>{word}</span>)}</span></>;
-       return block?<button key={item.id} type="button" data-calendar-block={block.id} data-kind={kind} data-past={past?'true':'false'} aria-label={spoken+'. Enter for details.'}
-        className={'v7-wk-block '+look.subjectClass} style={style} onClick={()=>onEdit(block)}>{inner}</button>
+       return block?<button key={item.id} type="button" data-calendar-block={block.id} data-pending={block.id===pendingId||undefined} aria-busy={block.id===pendingId||undefined} data-kind={kind} data-past={past?'true':'false'} aria-label={spoken+'. Enter for details.'}
+        className={'v7-wk-block '+look.subjectClass} style={style} onClick={()=>{if(block.id!==pendingId)onEdit(block);}}>{inner}</button>
        :session?<button key={item.id} type="button" data-logged-entry={session.entry.id} data-kind={kind} data-past={past?'true':'false'} aria-label={spoken+'. Open for details.'}
         className={'v7-wk-block '+look.subjectClass} style={style} onClick={()=>onOpenEntry?.(session.entry)}>
         <SessionGaps session={session} from={Math.max(Date.parse(range.start),Date.parse(session.start))} height={shown} hourPx={WEEK_HOUR_PX}/>{inner}</button>

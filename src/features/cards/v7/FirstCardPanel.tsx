@@ -14,7 +14,7 @@ import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 const demoPendingKey='lemma.first-use.first-card.pending.v1';
 type Path=FirstStudyCardInput['path'];
 type Pending=FirstStudyCardInput;
-type PanelProps={fallback?:ReactNode;initial?:{front:string;back:string;slug?:string};onCancel?:()=>void;onSaved?:()=>void;reviewEmpty?:boolean};
+type PanelProps={fallback?:ReactNode;initial?:{front:string;back:string;slug?:string};onCancel?:()=>void;onSaved?:()=>void;stayOnSave?:boolean;reviewEmpty?:boolean};
 type StoredDraft=Pending&{rejection?:string};
 const saving=new Set<string>();
 
@@ -38,7 +38,7 @@ export default function FirstCardPanel(props:PanelProps){
  if(!fixture&&(!studyRepair||getMode()!=='live'||!ownerId))return props.fallback??null;
  return <CardPanel key={fixture?'fixture':epoch} {...props} epoch={epoch} ownerId={ownerId}/>;
 }
-function CardPanel({fallback=null,initial,onCancel,onSaved,reviewEmpty=false,ownerId,epoch}:PanelProps&{ownerId:string|null;epoch:number}){
+function CardPanel({fallback=null,initial,onCancel,onSaved,stayOnSave,reviewEmpty=false,ownerId,epoch}:PanelProps&{ownerId:string|null;epoch:number}){
  const navigate=useNavigate(),queryClient=useQueryClient(),heading=useId();
  const api=ownerId?getApi():getFirstCardDemoApi(),projects=useProjects();
  const pendingKey=ownerId?'lemma.study.first-card.v1.'+ownerId:demoPendingKey;
@@ -104,7 +104,8 @@ function CardPanel({fallback=null,initial,onCancel,onSaved,reviewEmpty=false,own
    void queryClient.invalidateQueries({predicate:query=>keys.has(String(query.queryKey[0]))});
    // If the learner navigated away mid-save, leave the recoverable receipt keyed to the draft.
    if(active()){
-    onSaved?.();navigate('/cards/'+receipt.noteNo);
+    onSaved?.();
+    if(!stayOnSave)navigate('/cards/'+receipt.noteNo);
     sessionStorage.removeItem(pendingKey);
     setPending(null);setOpen(false);
    }

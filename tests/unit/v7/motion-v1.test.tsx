@@ -2,8 +2,8 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 import {readFileSync} from 'node:fs'
 import {act, createElement} from 'react'
 import {createRoot} from 'react-dom/client'
-import {motionV1, springEasing, staggerDelay} from '../../../src/ui/v7/motion'
-import {REDUCE_EFFECTS_ATTR, REDUCE_EFFECTS_KEY, applyReduceEffects, bootReduceEffects, motionReduced, useMotionReduced} from '../../../src/ui/v7/effects'
+import {distances, durations, easings, motionV1, springEasing, staggerDelay} from '../../../src/ui/v7/motion'
+import {MOTION_ATTR, REDUCE_EFFECTS_ATTR, REDUCE_EFFECTS_KEY, applyReduceEffects, bootReduceEffects, motionReduced, useMotionReduced} from '../../../src/ui/v7/effects'
 import {useEnterMarks} from '../../../src/ui/v7/useEnterMarks'
 
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true
@@ -22,19 +22,27 @@ const token = (name: string) => css.match(new RegExp('--' + name + ':\\s*([^;]+)
 
 describe('A1 motion tokens', () => {
   it('CSS and motion.ts carry the same values as the plan', () => {
-    expect(token('v7-m-instant')).toBe(motionV1.instant * 1000 + 'ms')
-    expect(token('v7-m-quick')).toBe(motionV1.quick * 1000 + 'ms')
-    expect(token('v7-m-base')).toBe(motionV1.base * 1000 + 'ms')
-    expect(token('v7-m-draw')).toBe(motionV1.draw * 1000 + 'ms')
-    expect(token('v7-ease-draw')?.match(/[\d.]+/g)?.map(Number)).toEqual(motionV1.drawEase)
-    expect(token('v7-stagger')).toBe(motionV1.stagger * 1000 + 'ms')
-    expect(token('v7-rise')).toBe(motionV1.rise + 'px')
+    const roles = {
+      instant: durations.instant, quick: durations.quick, 'quick-exit': durations.quickExit,
+      base: durations.base, 'base-exit': durations.baseExit, layout: durations.layout,
+      slow: durations.slow, sheet: durations.sheet, draw: durations.draw, scenic: durations.scenic,
+      'camera-min': durations.cameraMin, 'camera-max': durations.cameraMax, stagger: durations.stagger,
+      'skeleton-delay': durations.skeletonDelay, reduced: durations.reduced,
+      'progress-delay': durations.progressDelay, 'dismiss-max': durations.dismissMax,
+    };
+    for(const [role,seconds] of Object.entries(roles)) expect(token('motion-'+role)).toBe(seconds*1000+'ms');
+    for(const role of ['standard','enter','exit','draw'] as const)
+      expect(token('ease-'+role)?.match(/[\d.]+/g)?.map(Number)).toEqual(easings[role]);
+    expect(token('rise')).toBe(distances.rise + 'px');
+    expect(token('rise-small')).toBe(distances.riseSmall + 'px');
+    expect(token('nudge')).toBe(distances.nudge + 'px');
+    expect(token('swap-shift')).toBe(distances.swapShift + 'px');
     expect(motionV1.rise).toBeLessThanOrEqual(12)
   })
   it('the sheet spring in CSS is springEasing(380, 36): it settles in 350 ms and never bounces', () => {
     const spring = springEasing(motionV1.sheet.stiffness, motionV1.sheet.damping)
-    expect(token('v7-spring-sheet')).toBe(spring.easing)
-    expect(token('v7-spring-sheet-time')).toBe(spring.ms + 'ms')
+    expect(token('spring-sheet')).toBe(spring.easing)
+    expect(token('motion-sheet')).toBe(spring.ms + 'ms')
     const stops = spring.easing.slice('linear('.length, -1).split(',').map(Number)
     expect(stops[0]).toBe(0)
     expect(stops.at(-1)).toBe(1)
@@ -54,30 +62,35 @@ describe('A1 motion tokens', () => {
 })
 
 describe('A1 every animation is gated', () => {
-  const gate = '@media (prefers-reduced-motion: no-preference) {'
-  const inside = css.slice(css.indexOf(gate), css.indexOf('@keyframes v7-m-rise'))
-  const outside = css.slice(0, css.indexOf(gate))
-  it('animations and transitions start only inside the no-preference block, and every rule there skips Reduce effects', () => {
-    expect(css.indexOf(gate)).toBeGreaterThan(0)
-    expect(outside.replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(/animation:\s*v7-|@starting-style/)
-    const selectors = inside.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map(line => line.trim()).filter(line => line.startsWith(':where(html'))
-    expect(selectors.length).toBeGreaterThan(8)
-    for (const selector of selectors) expect(selector).toContain(':where(html[data-v7]:not([data-v7-reduce-effects]))')
+  const selectors = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]+)\}/g)]
+    .filter(([,selector,declarations]) => selector.includes(':where(html')
+      && /(?:animation(?:-duration)?|transition):/.test(declarations)
+      && !selector.includes('html[data-v7][data-motion="reduced"]'))
+    .map(([,selector]) => selector.trim());
+  it('CSS motion roles share the derived motion gate', () => {
+    expect(selectors.length).toBeGreaterThan(8);
+    for (const selector of selectors) expect(selector).toContain(':not([data-motion="reduced"])');
   })
-  it('Reduce effects stops every animation and blur', () => {
-    expect(outside).toMatch(/\[data-v7-reduce-effects\]\) \*,[\s\S]*animation: none !important;[\s\S]*backdrop-filter: none !important;/)
+  it('the global reduced-motion rule preserves delayed skeleton feedback and caps opacity at 120 ms', () => {
+    expect(css).toMatch(/\[data-motion="reduced"\][\s\S]*:not\(\.v7-skeleton,\[data-motion-opacity\]\)[\s\S]*animation-name: none !important;/)
+    expect(css).toMatch(/\[data-motion-opacity\] \{[\s\S]*transition-property: opacity !important;[\s\S]*transition-duration: var\(--motion-reduced\)/)
+    expect(css).toMatch(/\[data-motion="reduced"\][\s\S]*backdrop-filter: none !important;/)
+    expect(durations.reduced).toBeLessThanOrEqual(.12)
   })
 })
 
 describe('A1 Reduce effects', () => {
   afterEach(() => {
     document.documentElement.removeAttribute(REDUCE_EFFECTS_ATTR)
+    document.documentElement.removeAttribute(MOTION_ATTR)
+    document.documentElement.removeAttribute('data-effects')
     localStorage.clear()
     vi.unstubAllGlobals()
   })
   it('applies now and on the next start', () => {
     applyReduceEffects(true)
     expect(document.documentElement.hasAttribute(REDUCE_EFFECTS_ATTR)).toBe(true)
+    expect(document.documentElement.getAttribute(MOTION_ATTR)).toBe('reduced')
     expect(localStorage.getItem(REDUCE_EFFECTS_KEY)).toBe('1')
     document.documentElement.removeAttribute(REDUCE_EFFECTS_ATTR)
     bootReduceEffects()
@@ -96,6 +109,22 @@ describe('A1 Reduce effects', () => {
     applyReduceEffects(false)
     vi.stubGlobal('matchMedia', (query: string) => ({matches: query.includes('reduce'), media: query, addEventListener() {}, removeEventListener() {}}))
     expect(motionReduced()).toBe(true)
+  })
+  it('switching legacy calm or the OS live changes the derived root attribute', async () => {
+    const media = Object.assign(new window.EventTarget(), {matches:false});
+    vi.stubGlobal('matchMedia', () => media);
+    bootReduceEffects();
+    document.documentElement.dataset.effects = 'calm';
+    await Promise.resolve();
+    expect(document.documentElement.getAttribute(MOTION_ATTR)).toBe('reduced');
+    media.matches = true;
+    media.dispatchEvent(new window.Event('change'));
+    delete document.documentElement.dataset.effects;
+    await Promise.resolve();
+    expect(document.documentElement.getAttribute(MOTION_ATTR)).toBe('reduced');
+    media.matches = false;
+    media.dispatchEvent(new window.Event('change'));
+    expect(document.documentElement.hasAttribute(MOTION_ATTR)).toBe(false);
   })
   it('the hook follows the switch while mounted', async () => {
     vi.stubGlobal('matchMedia', (query: string) => ({matches: false, media: query, addEventListener() {}, removeEventListener() {}}))

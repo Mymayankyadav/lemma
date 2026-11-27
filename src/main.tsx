@@ -11,9 +11,11 @@ import {loadShellFonts} from './app/shellFonts'
 import {markNativeApp} from './platform/native'
 import {markIPad} from './platform/ipad'
 import {bootReduceEffects} from './ui/v7/effects'
+import {bootSurfaceBeta} from './app/surfaceBeta'
 import {installSheetDrag} from './ui/v7/sheetDrag'
 if(isV7Route())setShellRoot('v7')
 bootReduceEffects()
+bootSurfaceBeta()
 // V20: every v7 bottom sheet can be dragged down to dismiss (one delegated listener).
 installSheetDrag()
 const nativeApp=markNativeApp()

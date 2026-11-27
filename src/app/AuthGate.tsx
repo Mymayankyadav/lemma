@@ -9,6 +9,7 @@ import { getMode } from '../data/mode'
 import { Button } from '../ui/Button'
 import { useOnline } from '../ui/v7/savedCopy'
 import { useNotebookSnapshot } from './useNotebookSnapshot'
+import BootReady from './BootReady'
 
 /** Accept only local hash-router destinations; never return to the sign-in loop. */
 function destination(value: string | null | undefined): string | null {
@@ -63,12 +64,12 @@ function ReadyGate({children, owner, returning, confirmed}: {children: ReactNode
   setRestored(true)
  }, [setup.isSuccess, setup.data, setup.dataUpdatedAt, restored, owner, receipt, returning, navigate, target, queryClient])
  if (returning) return children
- if (!online && !restored) return <p role="status" className="p-6 text-ink-2">Connect to finish signing in.</p>
- if (setup.isError) return <section className="p-6 text-ink-2">
+ if (!online && !restored) return <p role="status" className="p-6 text-ink-2"><BootReady/>Connect to finish signing in.</p>
+ if (setup.isError) return <section className="p-6 text-ink-2"><BootReady/>
   <p role="alert">Couldn't finish sign-in. Your study data hasn't loaded.</p>
   <Button className="mt-4" onClick={() => void setup.refetch()}>Try again</Button>
  </section>
- if (!setup.isSuccess || !restored) return <p role="status" className="p-6 text-ink-2">Finishing sign-in…</p>
+ if (!setup.isSuccess || !restored) return <p role="status" className="p-6 text-ink-2"><BootReady/>Finishing sign-in…</p>
  return children
 }
 function LiveGate({children}: {children: ReactNode}) {
@@ -84,8 +85,8 @@ function LiveGate({children}: {children: ReactNode}) {
  const storageChanged=verified && (savedOwner ? savedOwner!==verified : launchOwner===verified)
  const owner=signedOut || storageChanged ? null : verified ?? (returning ? launchOwner : null)
  if (owner && (!auth.isError || returning)) return <ReadyGate key={owner} owner={owner} returning={returning && owner===launchOwner} confirmed={verified===owner}>{children}</ReadyGate>
- if (auth.isPending && online) return <p role="status" className="p-6 text-ink-2">Checking sign-in…</p>
- if (auth.isError && online) return <section className="p-6 text-ink-2">
+ if (auth.isPending && online) return <p role="status" className="p-6 text-ink-2"><BootReady/>Checking sign-in…</p>
+ if (auth.isError && online) return <section className="p-6 text-ink-2"><BootReady/>
   <p role="alert">Couldn't check sign-in.</p>
   <Button className="mt-4" onClick={() => void auth.refetch()}>Try again</Button>
  </section>

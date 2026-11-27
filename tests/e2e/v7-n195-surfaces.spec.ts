@@ -1,3 +1,4 @@
+import {enableSurfaceBeta} from './helpers/surface-preview';
 import {expect,test,type Page,type TestInfo} from '@playwright/test';
 import {writeFile} from 'node:fs/promises';
 import {at,NOW} from './v7-scenes';
@@ -45,13 +46,13 @@ for(const width of [360,390])test(`Capture saves Busy and Study with the chosen 
  }
 });
 
-test('Capture More options carries Busy and clears the parsed study path',async({page})=>{
+test('Capture Add details carries Busy and clears the parsed study path',async({page})=>{
  await page.clock.setFixedTime(NOW);await page.goto(repair('/'));
  await page.getByRole('button',{name:'Capture',exact:true}).click();
  const capture=page.getByRole('dialog',{name:'Capture',exact:true});
  await capture.getByRole('textbox',{name:'What do you want to add?'}).fill('Appointment tomorrow 4pm 25m #real');
  await capture.getByRole('radio',{name:'Busy',exact:true}).click();
- await capture.getByRole('button',{name:'More options'}).click();
+ await capture.getByRole('button',{name:'Add details'}).click();
  const full=page.getByRole('dialog',{name:'New time block'});
  await expect(full.getByRole('radio',{name:'Busy',exact:true})).toHaveAttribute('aria-checked','true');
  await expect(full.getByRole('textbox',{name:'Calendar block title'})).toHaveValue('Appointment');
@@ -71,10 +72,22 @@ for(const width of [360,390])test(`Atlas dialogs contain keyboard focus and rest
   await expect(dialog).toBeVisible();
   expect(await dialog.evaluate(el=>el.matches(':modal'))).toBe(true);
   expect(await dialog.evaluate(el=>el.contains(document.activeElement))).toBe(true);
-  for(const key of ['Tab','Shift+Tab'])for(let i=0;i<12;i++){
-   await page.keyboard.press(key);
-   expect(await dialog.evaluate(el=>el.contains(document.activeElement)),name+' '+key+' step '+i).toBe(true);
-  }
+  const focusChecks=await dialog.evaluateHandle(element=>{
+   const observed:{backward:boolean;inside:boolean}[]=[];
+   const afterTab=(event:KeyboardEvent)=>{
+    if(event.key==='Tab')observed.push({backward:event.shiftKey,inside:element.contains(document.activeElement)});
+   };
+   document.addEventListener('keyup',afterTab,true);
+   return ()=>{
+    document.removeEventListener('keyup',afterTab,true);
+    return observed;
+   };
+  });
+  for(const key of ['Tab','Shift+Tab'])for(let i=0;i<12;i++)await page.keyboard.press(key);
+  const observed=await focusChecks.evaluate(read=>read());
+  await focusChecks.dispose();
+  expect(observed,name+' focus after each Tab and Shift+Tab').toEqual(
+   Array.from({length:24},(_,index)=>({backward:index>=12,inside:true})));
   expect(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
   if(name==='Pin on map')await captureEvidence(page,info,'atlas-pin-'+width+'-large-text');
   await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);
@@ -84,6 +97,7 @@ for(const width of [360,390])test(`Atlas dialogs contain keyboard focus and rest
 });
 
 test('source search opens and focuses the matching source and Back restores the search',async({page},info)=>{
+ await enableSurfaceBeta(page);
  await largePhone(page,360);await page.goto(repair('/'));
  await page.getByRole('button',{name:'Search',exact:true}).click();
  const search=page.getByRole('combobox',{name:'Search',exact:true});

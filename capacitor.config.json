@@ -14,7 +14,7 @@
     "SplashScreen": {
       "launchAutoHide": true,
       "launchShowDuration": 800,
-      "backgroundColor": "#F8F5F0"
+      "backgroundColor": "#FAF9F5"
     },
     "SystemBars": {
       "insetsHandling": "css"

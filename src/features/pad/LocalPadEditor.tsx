@@ -1,3 +1,4 @@
+import {Button} from '../../ui/v7/components';
 import {useDeferredValue, useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent} from 'react';
 import {LOCAL_TUTOR_EXCERPT_LIMIT, previewLocalTutorExcerpt} from '../../data/tutor/local-excerpt';
 import {isFlagOn} from '../../flags';
@@ -245,10 +246,10 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
         current.text === previous.text && current.start === previous.start && current.end === previous.end
           ? applyEquationCandidate(current, selection, candidate) : null, false)}/>}
     {notation && <div className="local-pad-controls" role="group" aria-label="Notation suggestions">
-      <button type="button" onPointerDown={keepSelection} onClick={() => edit(current => {
+      <Button onPointerDown={keepSelection} onClick={() => edit(current => {
         const match = padNotationSuggestion(current);
         return match?.template === notation.template ? applyPadNotation(current, match) : null;
-      }, false)}>{notation.template} slot</button>
+      }, false)}>{notation.template} slot</Button>
     </div>}
     <PadMathKeyboard shown={shown} mode={mode} nativeKeyboardOpen={nativeKeyboardOpen} composing={compositionActive}
       canUndo={history.current.past.length > 0} canRedo={history.current.future.length > 0} hasSlot={!!nextPadSlot(valueSelection)}
@@ -256,21 +257,21 @@ export function LocalPadEditor({value, onEdit, onSendSelection, keyboardPreferen
       onSymbol={symbol => edit(current => insertPadSymbol(current, symbol))}
       onTemplate={template => edit(current => insertPadTemplate(current, template))} onAction={keyboardAction}/>
     {onSendSelection && <div className="local-pad-controls">
-      <button type="button" disabled={compositionActive || selection.kind !== 'preview'}
+      <Button disabled={compositionActive || selection.kind !== 'preview'}
         onPointerDown={keepSelection} onClick={() => {
           const node = field.current;
           if (!node || composing.current) return;
           const reviewed = previewLocalTutorExcerpt(node.value.slice(node.selectionStart, node.selectionEnd));
           if (reviewed.kind === 'preview') onSendSelection(reviewed.text);
-        }}>Send selection to tutor</button>
+        }}>Send selection to tutor</Button>
       {selection.kind === 'too-long' && <p role="status">Select up to {LOCAL_TUTOR_EXCERPT_LIMIT} characters.</p>}
     </div>}
     {suggestions.length > 0 && <div className="local-pad-controls" role="group" aria-label="Local math suggestions">
-      {suggestions.map(({command}) => <button key={command} type="button" onPointerDown={keepSelection}
+      {suggestions.map(({command}) => <Button key={command} type="button" onPointerDown={keepSelection}
         onClick={() => edit(current => {
           const suggestion = padSuggestions(current).find(entry => entry.command === command);
           return suggestion ? applyPadSuggestion(current, suggestion) : null;
-        })}>{command}</button>)}
+        })}>{command}</Button>)}
     </div>}
     <LocalPadPreview source={source}/>
   </section>;

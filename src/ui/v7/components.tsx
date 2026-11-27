@@ -18,7 +18,6 @@ import {
 import {
   Check,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   LoaderCircle,
   Minus,
@@ -31,6 +30,11 @@ import {
 } from "lucide-react";
 import { SubjectMark, subjects, subjectClass, type Subject } from "./Subject";
 import { InfoTip } from "./InfoTip";
+import { Sheet } from "./Sheet";
+import { Picker } from "./Picker";
+import { ChoiceSurface } from "./ChoiceSurface";
+import { handoffLayer } from "./layers";
+export { Sheet } from "./Sheet";
 import "./components.css";
 import "./motion.css";
 export function Button({
@@ -172,7 +176,7 @@ export function Segmented({
   useEffect(() => setMode(menu ? "menu" : "segments"), [menu]);
   const control = (measure: boolean) => (
     <div
-      ref={measure ? box : undefined}
+      ref={measure && !tabs ? box : undefined}
       className={(tabs ? "v7-tabs" : "v7-segmented") + (measure && menu ? " v7-segmented-measure" : "")}
       role={measure && menu ? undefined : tabSemantics ? "tablist" : "radiogroup"}
       aria-label={measure && menu ? undefined : label}
@@ -256,407 +260,8 @@ export function Field({
     </div>
   );
 }
-export function Sheet({
-  open,
-  onClose,
-  title,
-  eyebrow,
-  children,
-  footer,
-  full = false,
-  className,
-  hideTitle = false,
-  focusTitle = false,
-  containFocus = false,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  eyebrow?: string;
-  children: ReactNode;
-  footer?: ReactNode;
-  /** Full height on phones (Search, §6.1 G). */
-  full?: boolean;
-  className?: string;
-  /** The body's first field is the header (SE3); the title stays for assistive technology. */
-  hideTitle?: boolean;
-  focusTitle?: boolean;
-  /** Wrap Tab at the modal boundaries, including when browser chrome would be next. */
-  containFocus?: boolean;
-}) {
-  const ref = useRef<HTMLDialogElement>(null),
-    id = useId(),
-    close = useRef(onClose);
-  close.current = onClose;
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog || !open) return;
-    const trigger = document.activeElement as HTMLElement | null;
-    dialog.showModal();
-    dialog.querySelector<HTMLElement>('[data-v7-autofocus="true"]')?.focus();
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      dialog.close();
-      document.body.style.overflow = previous;
-      trigger?.focus();
-    };
-  }, [open]);
-  return (
-    <dialog
-      ref={ref}
-      className={`v7-sheet${full ? " v7-sheet-full" : ""}${className ? " " + className : ""}`}
-      aria-labelledby={id}
-      onKeyDown={containFocus ? (event) => {
-        const dialog = event.currentTarget;
-        const active = document.activeElement;
-        if (event.key !== "Tab" || event.defaultPrevented || active?.closest("dialog") !== dialog) return;
-        const controls = [...dialog.querySelectorAll<HTMLElement>("button, a[href], input, select, textarea, [tabindex]")]
-          .filter(control => control.tabIndex >= 0 && !control.matches(":disabled")
-            && control.closest("dialog") === dialog && control.getClientRects().length > 0
-            && getComputedStyle(control).visibility === "visible");
-        const radioName = (control: Element | null) =>
-          control instanceof HTMLInputElement && control.type === "radio" ? control.name : "";
-        const sameStop = (control: Element | null, edge: HTMLElement) =>
-          control === edge || (!!radioName(edge) && radioName(control) === radioName(edge));
-        const first = controls[0], last = controls[controls.length - 1];
-        const edge = event.shiftKey ? first : last;
-        if (edge && !sameStop(active, edge) && !(event.shiftKey && active instanceof HTMLElement && active.tabIndex < 0)) return;
-        event.preventDefault();
-        const opposite = event.shiftKey ? last : first;
-        if (opposite) {
-          const checked = radioName(opposite) && controls.find(control => sameStop(control, opposite) && control.matches(":checked"));
-          (checked || opposite).focus();
-        } else dialog.focus();
-      } : undefined}
-      onCancel={(e) => {
-        if (e.target !== e.currentTarget) return;
-        e.preventDefault();
-        close.current();
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          const box = e.currentTarget.getBoundingClientRect();
-          if (
-            e.clientX < box.left ||
-            e.clientX > box.right ||
-            e.clientY < box.top ||
-            e.clientY > box.bottom
-          )
-            close.current();
-        }
-      }}
-    >
-      <div className="v7-grabber" />
-      <header className="v7-sheet-header">
-        <div className="v7-sheet-heading">
-          {eyebrow && <p className="v7-eyebrow">{eyebrow}</p>}
-          <h2 id={id} className={hideTitle ? "v7-sr-only" : "v7-sheet-title"} tabIndex={focusTitle ? -1 : undefined}
-            data-v7-autofocus={focusTitle ? "true" : undefined}>
-            {title}
-          </h2>
-        </div>
-        <IconButton label="Close" onClick={onClose}>
-          <X />
-        </IconButton>
-      </header>
-      <div className="v7-sheet-body">{children}</div>
-      {footer && <footer className="v7-sheet-footer">{footer}</footer>}
-    </dialog>
-  );
-}
-export function Picker({
-  label,
-  value,
-  options,
-  onChange,
-  disabled = false,
-  disabledReason,
-  optional = false,
-  containFocus = false,
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-  disabled?: boolean;
-  disabledReason?: string;
-  optional?: boolean;
-  containFocus?: boolean;
-}) {
-  const [open, setOpen] = useState(false),
-    [query, setQuery] = useState(""),
-    [desktop, setDesktop] = useState(false),
-    id = useId(),
-    ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if(typeof matchMedia!=="function")return;
-    const media = matchMedia("(min-width:700px)");
-    const update = () => {
-      setDesktop(media.matches);
-      setOpen(false);
-    };
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-  useEffect(() => {
-    if (!open || !desktop) return;
-    ref.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
-    const outside = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("click", outside);
-    return () => document.removeEventListener("click", outside);
-  }, [open, desktop]);
-  // R2 · F76: beyond 8 options a picker gains a search field and a filtered list, so long lists stay usable.
-  const searchable = options.length > 8;
-  const shown = searchable && query.trim() ? options.filter((option) => option.toLowerCase().includes(query.trim().toLowerCase())) : options;
-  const search = searchable ? (
-    <input type="search" className="v7-field v7-picker-search" placeholder={"Search " + label.toLowerCase()} aria-label={"Search " + label.toLowerCase()}
-      value={query} onChange={(e) => setQuery(e.target.value)} />
-  ) : null;
-  function choose(option: string) {
-    onChange(option);
-    setQuery("");
-    setOpen(false);
-    ref.current?.querySelector("button")?.focus();
-  }
-  return (
-    <div className="v7-field-group v7-menu-anchor" ref={ref}>
-      <span id={id}>{label}{optional && <span className="v7-field-optional"> · Optional</span>}</span>
-      <button
-        type="button"
-        disabled={disabled || !!disabledReason}
-        title={disabledReason}
-        aria-label={`${label}: ${value}`}
-        aria-haspopup={desktop ? "listbox" : "dialog"}
-        aria-expanded={open}
-        className="v7-field v7-picker"
-        onClick={() => setOpen(!open)}
-      >
-        {value}
-        <ChevronDown aria-hidden="true" />
-      </button>
-      {disabledReason && <p className="v7-disabled-reason">{disabledReason}</p>}
-      {desktop && open ? (
-        <div
-          className="v7-menu"
-          role="listbox"
-          aria-label={label}
-          onKeyDown={(e) => {
-            const buttons = Array.from(
-                e.currentTarget.querySelectorAll<HTMLButtonElement>("button"),
-              ),
-              index = buttons.indexOf(
-                document.activeElement as HTMLButtonElement,
-              );
-            if (e.key === "Escape") {
-              setOpen(false);
-              ref.current?.querySelector("button")?.focus();
-            } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-              e.preventDefault();
-              buttons[
-                (index + (e.key === "ArrowDown" ? 1 : buttons.length - 1)) %
-                  buttons.length
-              ].focus();
-            }
-          }}
-        >
-          {search}
-          {shown.map((option) => (
-            <button
-        type="button"
-              role="option"
-              aria-selected={value === option}
-              key={option}
-              onClick={() => choose(option)}
-            >
-              <Check
-                aria-hidden="true"
-                className={value === option ? "" : "v7-hidden-label"}
-              />
-              {option}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <Sheet
-          open={open && !desktop}
-          onClose={() => setOpen(false)}
-          title={label}
-          containFocus={containFocus}
-        >
-          {search}
-          <div role="radiogroup" aria-label={label}>
-            {shown.length === 0 && <p className="v7-meta">No matches.</p>}
-            {shown.map((option) => (
-              <label className="v7-radio-row" key={option}>
-                <input
-                  type="radio"
-                  name={id}
-                  checked={value === option}
-                  onChange={() => choose(option)}
-                />
-                {option}
-              </label>
-            ))}
-          </div>
-        </Sheet>
-      )}
-    </div>
-  );
-}
-
-function dateString(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-export function DatePicker({
-  value,
-  onChange,
-  label = "Date",
-  today,
-  compact = false,
-  open: controlledOpen,
-  onOpenChange,
-  hideTrigger = false,
-}: {
-  value: string;
-  today?: string;
-  compact?: boolean;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  hideTrigger?: boolean;
-  onChange: (v: string) => void;
-  label?: string;
-}) {
-  const [localOpen, setLocalOpen] = useState(false),
-    [month, setMonth] = useState(() => new Date(value + "T12:00:00"));
-  const open = controlledOpen ?? localOpen;
-  const setOpen = (value: boolean) => {setLocalOpen(value);onOpenChange?.(value);};
-  useEffect(() => {if (open) setMonth(new Date(value + "T12:00:00"));}, [open, value]);
-  const selected = new Date(value + "T12:00:00");
-  const first = new Date(month.getFullYear(), month.getMonth(), 1),
-    count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-  function pick(date: Date) {
-    onChange(dateString(date));
-    setOpen(false);
-  }
-  const currentDay = () => today ? new Date(today + "T12:00:00") : new Date();
-  function shortcut(offset: number) {
-    const date = currentDay();
-    date.setDate(date.getDate() + offset);
-    pick(date);
-  }
-  return (
-    <div className={compact?"v7-date-pill":"v7-field-group"}>
-      {!hideTrigger&&!compact&&<span>{label}</span>}
-      {!hideTrigger&&<button
-        type="button"
-        className="v7-field v7-picker"
-        aria-label={`${label}: ${value}`}
-        aria-haspopup="dialog"
-        onClick={() => {setMonth(new Date(value + "T12:00:00"));setOpen(true);}}
-      >
-        {/* F51: one date format ("Sat 7 Nov"), with Today/Tomorrow/Yesterday in front when it applies. */}
-        {pickerDate(value)}
-        <ChevronDown />
-      </button>}
-      <Sheet open={open} onClose={() => setOpen(false)} title="Choose a date">
-        <div className="v7-wrap">
-          <Button small onClick={() => shortcut(0)}>
-            Today
-          </Button>
-          <Button small onClick={() => shortcut(1)}>
-            Tomorrow
-          </Button>
-          <Button
-            small
-            onClick={() => shortcut((8 - currentDay().getDay()) % 7 || 7)}
-          >
-            Next Monday
-          </Button>
-        </div>
-        <div className="v7-calendar-heading">
-          <IconButton
-            label="Previous month"
-            onClick={() =>
-              setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))
-            }
-          >
-            <ChevronLeft />
-          </IconButton>
-          <h3 aria-live="polite">
-            {month.toLocaleDateString(undefined, {
-              month: "long",
-              year: "numeric",
-            })}
-          </h3>
-          <IconButton
-            label="Next month"
-            onClick={() =>
-              setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))
-            }
-          >
-            <ChevronRight />
-          </IconButton>
-        </div>
-        <div className="v7-calendar" role="group" aria-label="Days of month">
-          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-            <span className="v7-caption" key={d}>
-              {d}
-            </span>
-          ))}
-          {Array.from({ length: first.getDay() }, (_, i) => (
-            <span key={`empty-${i}`} />
-          ))}
-          {Array.from({ length: count }, (_, i) => {
-            const date = new Date(month.getFullYear(), month.getMonth(), i + 1);
-            return (
-              <button
-        type="button"
-                key={i}
-                autoFocus={dateString(date) === dateString(selected)}
-                aria-label={date.toLocaleDateString(undefined, {
-                  dateStyle: "full",
-                })}
-                aria-pressed={dateString(date) === value}
-                onClick={() => pick(date)}
-                onKeyDown={(e) => {
-                  const offset = (
-                    {
-                      ArrowRight: 1,
-                      ArrowLeft: -1,
-                      ArrowDown: 7,
-                      ArrowUp: -7,
-                    } as Record<string, number>
-                  )[e.key];
-                  if (offset) {
-                    e.preventDefault();
-                    const next = new Date(date);
-                    next.setDate(next.getDate() + offset);
-                    if (next.getMonth() === month.getMonth())
-                      (
-                        e.currentTarget.parentElement?.querySelectorAll(
-                          "button",
-                        )[next.getDate() - 1] as HTMLElement
-                      )?.focus();
-                    else
-                      setMonth(
-                        new Date(next.getFullYear(), next.getMonth(), 1),
-                      );
-                  }
-                }}
-              >
-                {i + 1}
-              </button>
-            );
-          })}
-        </div>
-      </Sheet>
-    </div>
-  );
-}
+export { Picker };
+export { DatePicker } from "./DatePicker";
 export function TimePicker({
   start,
   end,
@@ -812,7 +417,7 @@ export function RadioOption({
   onChange,
   disabled = false,
 }: {
-  label: string;
+  label: ReactNode;
   name: string;
   checked: boolean;
   onChange: () => void;
@@ -1061,53 +666,21 @@ export function Menu({
   items: { label: string; icon: ReactNode; onClick: () => void }[];
   defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen),
-    [desktop, setDesktop] = useState(true),
-    interacted = useRef(false),
-    ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if(typeof matchMedia!=="function")return;
-    const media = matchMedia("(min-width:700px)");
-    const update = () => setDesktop(media.matches);
-    update();media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-  useEffect(() => {
-    if (!open) return;
-    if (interacted.current) ref.current?.querySelector<HTMLButtonElement>("[role=menuitem]")?.focus();
-    function outside(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("click", outside);
-    return () => document.removeEventListener("click", outside);
-  }, [open]);
-  const menu = <div className={desktop ? "v7-menu" : "v7-menu-content"} role="menu" aria-label={label}
-    onKeyDown={event => {
-      const buttons=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button"));
-      const index=buttons.indexOf(document.activeElement as HTMLButtonElement);
-      if(event.key==="Escape"){event.preventDefault();setOpen(false);ref.current?.querySelector("button")?.focus();}
-      else if(["ArrowDown","ArrowUp","Home","End"].includes(event.key)){
-        event.preventDefault();const next=event.key==="Home"?0:event.key==="End"?buttons.length-1:(index+(event.key==="ArrowDown"?1:buttons.length-1))%buttons.length;buttons[next]?.focus();
-      }else if(event.key.length===1&&/[a-z0-9]/i.test(event.key)){event.preventDefault();buttons.find(button=>button.textContent?.trim().toLowerCase().startsWith(event.key.toLowerCase()))?.focus();}
-    }}>
-    {items.map(item=><button type="button" role="menuitem" className={/delete|remove/i.test(item.label)?"v7-menu-danger":undefined} key={item.label} onClick={()=>{setOpen(false);ref.current?.querySelector("button")?.focus();item.onClick();}}>{item.icon}{item.label}</button>)}
+  const [open, setOpen] = useState(defaultOpen);
+  const ref = useRef<HTMLDivElement>(null), interacted = useRef(false);
+  return <div className="v7-menu-anchor" ref={ref}>
+    <Button aria-haspopup="menu" aria-expanded={open} onClick={()=>{interacted.current=true;setOpen(!open);}}
+      onKeyDown={event=>{if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();interacted.current=true;setOpen(true);}}}>
+      {label}<ChevronDown aria-hidden="true"/>
+    </Button>
+    <ChoiceSurface title={label} role="menu" anchor={()=>ref.current?.querySelector('button')??null}
+      open={open} onClose={()=>setOpen(false)} autoFocus={interacted.current}>
+      <div className="v7-menu-content" role="group" aria-label={label}>
+        {items.map(item=><button type="button" role="menuitem" className={/delete|remove/i.test(item.label)?'v7-menu-danger':undefined}
+          key={item.label} onClick={()=>handoffLayer(()=>{setOpen(false);item.onClick();})}>{item.icon}{item.label}</button>)}
+      </div>
+    </ChoiceSurface>
   </div>;
-  return (
-    <div className="v7-menu-anchor" ref={ref}>
-      <Button
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onKeyDown={event=>{if(event.key==="ArrowDown"||event.key==="ArrowUp"){event.preventDefault();interacted.current=true;setOpen(true);}}}
-        onClick={() => {
-          interacted.current = true;
-          setOpen(!open);
-        }}
-      >
-        {label}<ChevronDown aria-hidden="true" />
-      </Button>
-      {open && (desktop ? menu : <Sheet open={open} onClose={()=>setOpen(false)} title={label}>{menu}</Sheet>)}
-    </div>
-  );
 }
 export function Toast({
   message,
@@ -1199,9 +772,9 @@ export function Banner({
     </aside>
   );
 }
-export function Skeleton() {
+export function Skeleton({surface="section"}: {surface?: "sheet" | "section"} = {}) {
   return (
-    <div className="v7-skeleton" role="status" aria-label="Loading content">
+    <div className="v7-skeleton" data-loading-surface={surface} onAnimationStart={event=>{if(event.target===event.currentTarget)event.currentTarget.dataset.shownAt=String(performance.now());}} role="status" aria-label="Loading content">
       <span />
       <span />
       <span />

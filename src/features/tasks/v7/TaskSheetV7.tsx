@@ -3,7 +3,7 @@ import {RulerTime} from '../../../ui/v7/RulerTime';
 import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {formatDuration} from '../../../lib/format';
 import {localWallParts} from '../../time-log/local-time';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState,type ComponentType} from 'react';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {getTaskApi} from '../../../data/tasks';
 import {useProjects,useSubjects,useSettings} from '../../../data/hooks';
@@ -11,6 +11,8 @@ import type {TaskDue,TaskPriority,TaskRecord} from '../../../data/tasks/contract
 import {useToast} from '../../../ui/Toast';
 import {CircleX} from 'lucide-react';
 import {Button,DatePicker,Field,Picker,Segmented,Sheet} from '../../../ui/v7/components';
+import {requestLayerClose} from '../../../ui/v7/layers';
+import type {SheetProps} from '../../../ui/v7/Sheet';
 import {taskInput,type CapturedTaskDraft} from '../taskDraft';
 
 const PRIORITY:Record<string,TaskPriority>={Low:'low',Normal:'normal',High:'high'};
@@ -29,7 +31,7 @@ export function dueTimes(current?:string):string[]{
  * picker and the time its own list (no native select, date or time control); ghost Cancel on the left, indigo Save on
  * the right. Validation and saving reuse the v6 sheet's `taskInput` and API calls unchanged.
  */
-export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,onSaved,onConflict}:{onDismiss:()=>void;task?:TaskRecord;initialDraft?:CapturedTaskDraft;initialTitle?:string;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void}){
+export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,onSaved,onConflict,frame:Frame=Sheet}:{frame?:ComponentType<SheetProps>;onDismiss:()=>void;task?:TaskRecord;initialDraft?:CapturedTaskDraft;initialTitle?:string;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void}){
  const repair=useStudyUi();
  const notify=useToast(),subjects=useSubjects(),projects=useProjects(),settings=useSettings(),busy=useRef(false);
  const draft=task?undefined:initialDraft?.values;
@@ -38,6 +40,7 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,on
  const initialInstant=task?.due.kind==='instant'?localWallParts(task.due.at,zone):null;
  const [saving,setSaving]=useState(false),[error,setError]=useState('');
  const [title,setTitle]=useState(task?.title??draft?.title??initialTitle??'');
+ const originalTitle=useRef(title);
  const [estimate,setEstimate]=useState(task?.estimateMinutes==null?draft?.estimate??'':String(task.estimateMinutes));
  const [priority,setPriority]=useState<TaskPriority>(task?.priority??draft?.priority??'normal');
  const [dueKind,setDueKind]=useState<TaskDue['kind']>(task?.due.kind??draft?.dueKind??'none');
@@ -68,7 +71,8 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,on
    const api=getTaskApi();
    const saved=task?await api.updateTask(task.id,task.version,input):await api.createTask(input);
    if(task)notify('Task updated',{tone:'success'});
-   else notify('Task saved',{tone:'success',action:{label:'Undo',onClick:()=>{void api.deleteTask(saved.record.id,saved.record.version).catch(()=>notify('Task changed elsewhere. Open your tasks to check it.',{tone:'danger'}));}}});
+   else notify('Task saved',{tone:'success',undoConflictKey:'task:'+saved.record.id,action:{label:'Undo',onClick:()=>
+    api.deleteTask(saved.record.id,saved.record.version).catch(()=>notify('Task changed elsewhere. Open your tasks to check it.',{tone:'danger'}))}});
    onSaved?.(saved.record);onDismiss();
   }catch(e){
    const failure=e as {code?:string;message?:string};
@@ -77,8 +81,15 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,on
   }finally{busy.current=false;setSaving(false);}
  }
  const titleError=/title/i.test(error)?error:undefined;
- return <Sheet open onClose={onDismiss} eyebrow="Task" title={task?'Edit task':'New task'}
-  footer={<><Button variant="ghost" disabled={saving} onClick={onDismiss}>Cancel</Button><Button variant="primary" loading={saving} onClick={()=>{void save();}}>{task?'Save changes':'Save task'}</Button></>}>
+ const dirty=title!==originalTitle.current||estimate!==(task?.estimateMinutes==null?draft?.estimate??'':String(task.estimateMinutes))||
+  priority!==(task?.priority??draft?.priority??'normal')||dueKind!==(task?.due.kind??draft?.dueKind??'none')||dueEdited.current||
+  subjectId!==(task?.subjectId??draft?.subjectId??'')||projectId!==(task?.projectId??draft?.projectId??'');
+ return <Frame open onClose={onDismiss} dirty={dirty} eyebrow="Task" title={task?'Edit task':'New task'}
+  footer={<><Button variant="ghost" disabled={saving} onClick={event=>{
+   const dialog=event.currentTarget.closest('dialog');
+   if(Frame===Sheet&&dialog)requestLayerClose(dialog,'close');
+   else onDismiss();
+  }}>Cancel</Button><Button variant="primary" loading={saving} onClick={()=>{void save();}}>{task?'Save changes':'Save task'}</Button></>}>
   <form className="v7-form-stack" noValidate onSubmit={event=>{event.preventDefault();void save();}}>
    <Field label="Title" value={title} autoFocus={!task} maxLength={200} error={titleError} onChange={event=>{setTitle(event.target.value);if(titleError)setError('');}}/>
    <div className="v7-task-sentence" aria-label="Task details">
@@ -106,5 +117,5 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,on
    {error&&!titleError&&<p className="v7-error" role="alert"><CircleX aria-hidden="true"/>{error}</p>}
    <button type="submit" hidden/>
   </form>
- </Sheet>;
+ </Frame>;
 }

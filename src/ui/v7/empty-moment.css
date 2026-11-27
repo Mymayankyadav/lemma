@@ -1,7 +1,7 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 @layer v7-components {
 :where(html[data-v7]) .v7-empty-moment {display:grid;justify-items:center;gap:var(--v7-space-2);padding:var(--v7-space-8) var(--v7-space-4);text-align:center;}
-:where(html[data-v7]) .v7-empty-mark {display:grid;place-items:center;width:72px;height:72px;margin-bottom:var(--v7-space-1);border-radius:var(--v7-round);background:var(--v7-role-surface-muted);color:var(--v7-subject,var(--v7-role-text-secondary));}
+:where(html[data-v7]) .v7-empty-mark {display:grid;place-items:center;width:72px;height:72px;margin-bottom:var(--v7-space-1);border-radius:var(--v7-round);background:var(--v7-role-surface-track);color:var(--v7-subject,var(--v7-role-text-secondary));}
 :where(html[data-v7]) .v7-empty-mark > svg {width:40px;height:40px;}
 :where(html[data-v7]) .v7-empty-mark > svg.v7-emblem {width:56px;height:56px;}
 :where(html[data-v7]) .v7-empty-title {margin:0;font:600 var(--v7-type-reading)/1.35 var(--v7-sans);color:var(--v7-role-text-primary);}

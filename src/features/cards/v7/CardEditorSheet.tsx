@@ -1,7 +1,8 @@
-import {useMemo,useRef,useState} from 'react';
+import {useMemo,useRef,useState,type ComponentType} from 'react';
 import {useProject,useProjects,useSettings} from '../../../data/hooks';
 import type {CardDetail,NoteKind,NoteType} from '../../../data/types';
 import {Button,Picker,Sheet} from '../../../ui/v7/components';
+import type {SheetProps} from '../../../ui/v7/Sheet';
 import {MathText} from '../../../ui/MathText';
 import {cardTypeText,noteKindText} from '../../../lib/labels';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
@@ -22,7 +23,7 @@ function CheckpointPicker({slug,value,onChange}:{slug:string;value:string;onChan
 }
 
 /** The full-height editor keeps a live preview beside the fields on desktop and below them on phones. */
-export function CardEditorSheet({open,onClose,initial,draft,busy,onSubmit,submitLabel,submitError,lockPath=false}:{open:boolean;onClose:()=>void;initial?:CardDetail['note'];draft?:{front:string;back:string;projectSlug:string};submitError?:string;busy:boolean;onSubmit:(value:EditorValue)=>void;
+export function CardEditorSheet({open,onClose,initial,draft,busy,onSubmit,submitLabel,submitError,lockPath=false,frame:Frame=Sheet}:{frame?:ComponentType<SheetProps>;open:boolean;onClose:()=>void;initial?:CardDetail['note'];draft?:{front:string;back:string;projectSlug:string};submitError?:string;busy:boolean;onSubmit:(value:EditorValue)=>void;
  /** The Inbox edits a proposal before approving it: "Save and approve", with the path fixed. */
  submitLabel?:string;lockPath?:boolean}){
  const projects=useProjects(),settings=useSettings(),wide=useMinWidth(700);
@@ -33,6 +34,9 @@ export function CardEditorSheet({open,onClose,initial,draft,busy,onSubmit,submit
  const target=useRef<'front'|'back'>('front'),frontRef=useRef<HTMLTextAreaElement>(null),backRef=useRef<HTMLTextAreaElement>(null);
  const paths=useMemo(()=>(projects.data??[]).filter(row=>!row.system&&row.status!=='archived'),[projects.data]);
  const keys=useMemo(()=>editorKeys(settings.data?.macros??''),[settings.data?.macros]);
+ const dirty=front!==(initial?.front??draft?.front??'')||back!==(initial?.back??draft?.back??'')||
+  type!==(initial?.type??'basic')||kind!==(initial?.kind??'other')||slug!==(initial?.projectSlug??draft?.projectSlug??'')||
+  checkpoint!==(initial?.checkpointCode??'');
  const creating=!initial&&!lockPath,pathTitle=paths.find(row=>row.slug===slug)?.title??'';
  function key(text:string){
   const field=target.current==='front'?frontRef.current:backRef.current;
@@ -58,7 +62,7 @@ export function CardEditorSheet({open,onClose,initial,draft,busy,onSubmit,submit
   {front.trim()&&back.trim()&&<hr/>}
   {back.trim()&&<div className="v7-editor-back"><MathText source={back}/></div>}
  </section>:null;
- return <Sheet open={open} onClose={onClose} full title={lockPath?'Edit proposed card':creating?'New card':'Edit card'}
+ return <Frame open={open} onClose={onClose} dirty={dirty} full title={lockPath?'Edit proposed card':creating?'New card':'Edit card'}
   footer={<Button variant="primary" loading={busy} onClick={submit}>{submitLabel??(creating?'Create card':'Save changes')}</Button>}>
   <div className="v7-editor">
    {wide&&preview?<div className="v7-editor-split">{write}{preview}</div>:<>{write}{preview}</>}
@@ -72,5 +76,5 @@ export function CardEditorSheet({open,onClose,initial,draft,busy,onSubmit,submit
    </div>
    {(error||submitError)&&<p role="alert" className="v7-error">{error||submitError}</p>}
   </div>
- </Sheet>;
+ </Frame>;
 }

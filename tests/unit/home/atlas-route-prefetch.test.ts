@@ -10,10 +10,10 @@ describe('FIX-507c Atlas route-aware prefetch',()=>{
   // with an actual extreme cold-navigation browser test of every route.
   // Keep Today, Paths and Atlas eager; Cards is preloaded asynchronously
   // on Paths mount before the timed D6 transition.
-  for(const n of [0,1,13])
-   expect(routes,'screen '+n+' remains eager').toContain('import Page'+n+' from ')
-  for(const n of Array.from({length:18},(_,i)=>i).filter(n=>![0,1,13].includes(n)))
-   expect(routes,'screen '+n+' is code-split').toContain('const Page'+n+'=lazy(()=>import(')
+  for(const feature of ['home','projects','atlas'])
+   expect(routes,feature+' remains eager').toMatch(new RegExp("import \\w+ from '\\.\\./features/"+feature+"/Page'"))
+  const split=routes.match(/createLazyModule\(\(\)=>import\('\.\.\/features\/.+?\/Page'\)\)/g)??[]
+  expect(split).toHaveLength(15)
   const browser=readFileSync('tests/e2e/fix-632-direct-routes.spec.ts','utf8')
   expect(browser).toContain('QA3_ROUTES')
   expect(browser).toContain('demo=extreme')

@@ -1,0 +1,23 @@
+.source-card {border-color:var(--v7-role-border-subtle,var(--border));background:var(--v7-role-surface-raised,var(--bg-card));}
+.source-reader {border-color:var(--v7-role-border-subtle,var(--border));background:var(--v7-role-surface-sunken,var(--bg-sidebar));}
+.source-control {border-color:var(--v7-role-border-default,var(--text-muted));background:var(--v7-role-surface-raised,var(--bg-card));}
+.source-edge {border-color:var(--v7-role-border-subtle,var(--border));}
+.source-text-primary {color:var(--v7-role-text-primary,var(--text-primary));}
+.source-text-secondary {color:var(--v7-role-text-secondary,var(--text-secondary));}
+.source-accent {color:var(--v7-role-link-fg,var(--accent));}
+.source-warning {color:var(--v7-role-status-warning,var(--warning));}
+.source-check-dot {background:var(--v7-role-status-warning,var(--warning));}
+.source-success {color:var(--v7-role-status-success,var(--success));}
+.source-danger {color:var(--v7-role-status-danger,var(--error));}
+.source-track {background:var(--v7-role-surface-track,var(--progress-track));}
+.source-meter-fill {background:var(--v7-role-text-secondary,var(--text-secondary));}
+.source-drop-edge {border-color:var(--v7-role-border-default,var(--text-muted));}
+
+[data-source-surface] .source-card {border-radius:var(--v7-radius-3);}
+[data-source-surface] .v7-button.source-danger {border-color:currentColor;}
+[data-source-surface] .v7-button.source-drop-edge {border-style:dashed;}
+[data-source-surface] .v7-button.source-group-toggle > span:first-child {width:100%;justify-content:space-between;}
+
+/* Both the native reader and the kit variant need the same 44 px touch targets.
+   An absolute minimum also holds when the shell sets a smaller root font size. */
+[data-source-transcription] button {min-width:44px;min-height:44px;}

@@ -24,7 +24,7 @@ vi.mock('../../../src/features/project/Page',()=>({default:()=>null}));
 vi.mock('../../../src/features/project/useProjectInsight',()=>({useProjectInsight:()=>({data:{checkpointEvents:[]}})}));
 vi.mock('../../../src/ui/Sheet',()=>({Sheet:({children}:{children:ReactNode})=><section>{children}</section>}));
 vi.mock('../../../src/ui/Toast',()=>({useToast:()=>vi.fn()}));
-vi.mock('../../../src/app/v7/V7Shell',()=>({DetailHeader:({title}:{title:string})=><header>{title}</header>}));
+vi.mock('../../../src/app/v7/PageHeaders',()=>({DetailHeader:({title}:{title:string})=><header>{title}</header>}));
 vi.mock('../../../src/app/v7/Margin',()=>({Margin:()=>null}));
 vi.mock('../../../src/features/project/SourcesPanel',()=>({SourcesPanel:()=>null}));
 vi.mock('../../../src/features/project/ProjectSwitcher',()=>({ProjectSwitcher:()=>null,default:()=>null}));
@@ -82,7 +82,14 @@ describe('N171 gated scheduler views over the demo fixture',()=>{
  for(const [label,Component] of [['v6',V6Project],['v7',V7Path]] as const){
   it(label+' plan shows checkpoint disposition, date, steps and project rechecks',()=>{
    mount(<Component/>);expect(host.textContent).toContain('prune:approved');expect(host.textContent).toContain('2026-11-16');
-   expect(host.textContent).toContain('Step 1: Deferred');expect(host.textContent).toContain('Due rechecks');
+   expect(host.textContent).toContain('Step 1: Deferred');
+   if(label==='v7'){
+    const disclosure=Array.from(host.querySelectorAll<HTMLButtonElement>('button[aria-expanded]')).find(button=>button.textContent==='Rechecks');
+    expect(disclosure?.getAttribute('aria-expanded')).toBe('false');
+    expect(host.textContent).not.toContain('Due rechecks');
+    act(()=>disclosure!.click());
+   }
+   expect(host.textContent).toContain('Due rechecks');
    expect(host.textContent).toContain('Explain the key hypothesis');expect(host.textContent).not.toContain('Future check');
   });
   it(label+' plan is unchanged with flags off',()=>{

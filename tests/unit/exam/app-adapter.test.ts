@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {createCommandRunner, type Envelope} from '../../../src/data/exam/commands'
 import {createDemoExamApi} from '../../../src/data/exam/demo'
 import {selectSitting} from '../../../src/data/exam/contract'
@@ -6,6 +6,7 @@ import {planExam} from '../../../supabase/functions/_shared/exam/plan'
 
 const change={resource:'exam_sittings', operation:'pause',target:{id:'sitting'},expectedVersion:2} as const
 
+beforeEach(()=>sessionStorage.clear())
 afterEach(()=>vi.restoreAllMocks())
 
 describe('app exam commands',()=>{

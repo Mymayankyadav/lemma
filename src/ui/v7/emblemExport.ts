@@ -1,4 +1,4 @@
-import {emblemKind, emblemStrokes, emblemTier, type EmblemKind, type EmblemStroke, type EmblemTier} from './emblem';
+import {EMBLEM_VIEW_BOX, emblemFrame, emblemTransform, emblemKind, emblemStrokes, emblemTier, type EmblemKind, type EmblemStroke, type EmblemTier} from './emblem';
 
 /**
  * N137 · G1 the emblem exporter (v7 UX plan r3, `04` §3.2 generator 2): one generator, three outputs, so an emblem
@@ -12,10 +12,10 @@ import {emblemKind, emblemStrokes, emblemTier, type EmblemKind, type EmblemStrok
  */
 export interface EmblemSpec {subject: string; seed: string; kind?: EmblemKind; size?: number; tier?: EmblemTier; colour?: string}
 
-const resolve = ({subject, seed, kind = emblemKind(subject), size = 96, tier = emblemTier(size), colour = '#121B31'}: EmblemSpec) =>
+const resolve = ({subject, seed, kind = emblemKind(subject), size = 96, tier = emblemTier(size), colour = '#141413'}: EmblemSpec) =>
   ({subject, seed, kind, size, tier, colour, strokes: emblemStrokes(subject, seed, kind, tier)});
-/** The component's coordinate frame: glyphs have a margin so round caps are not cut; tiles and heroes are clipped. */
-export const emblemViewBox = (tier: EmblemTier) => tier === 'glyph' ? '-12 -12 224 224' : '0 0 200 200';
+/** Every rendered emblem uses the same 64-unit frame; the glyph transform retains its cap margin. */
+export const emblemViewBox = (_tier: EmblemTier) => EMBLEM_VIEW_BOX;
 const escape = (value: string) => value.replace(/[<>&"]/g, c => ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'})[c]!);
 
 /** The emblem as a standalone SVG document. Strokes keep their pixel width at any size, as in the component. */
@@ -25,7 +25,7 @@ export function emblemSvg(spec: EmblemSpec): string {
   const paths = strokes.map(stroke => `<path d="${stroke.d}" stroke-width="${stroke.width}" opacity="${stroke.opacity}" vector-effect="non-scaling-stroke"/>`).join('');
   const clip = glyph ? '' : '<defs><clipPath id="c"><circle cx="100" cy="100" r="98"/></clipPath></defs>';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${emblemViewBox(tier)}" fill="none">${clip}` +
-    `<g${glyph ? '' : ' clip-path="url(#c)"'} stroke="${escape(colour)}" stroke-linecap="round" stroke-linejoin="round">${paths}</g></svg>\n`;
+    `<g transform="${emblemTransform(tier)}"${glyph ? '' : ' clip-path="url(#c)"'} stroke="${escape(colour)}" stroke-linecap="round" stroke-linejoin="round">${paths}</g></svg>\n`;
 }
 
 /** Endpoint-parameterised SVG arc to its length (sampled; the generator's arcs are circles and ellipses). */
@@ -103,8 +103,8 @@ export async function emblemPng(spec: EmblemSpec & {background?: string}): Promi
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas is unavailable');
   if (spec.background) {ctx.fillStyle = spec.background; ctx.fillRect(0, 0, size, size);}
-  const [vx, vy, vw] = emblemViewBox(tier).split(' ').map(Number), scale = size / vw;
-  ctx.setTransform(scale, 0, 0, scale, -vx * scale, -vy * scale);
+  const frame = emblemFrame(tier), scale = size / 64 * frame.scale;
+  ctx.setTransform(scale, 0, 0, scale, frame.offset * scale, frame.offset * scale);
   if (tier !== 'glyph') {ctx.beginPath(); ctx.arc(100, 100, 98, 0, Math.PI * 2); ctx.clip();}
   ctx.strokeStyle = colour; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (const stroke of strokes) {

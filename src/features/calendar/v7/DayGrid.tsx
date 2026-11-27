@@ -1,11 +1,14 @@
-import {useEffect,useMemo,useRef,useState,type CSSProperties,type KeyboardEvent,type MouseEvent,type PointerEvent} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState,type CSSProperties,type KeyboardEvent,type MouseEvent,type PointerEvent,type RefObject} from 'react';
 import {fromEdge} from '../../../ui/v7/edges';
-import {Check} from 'lucide-react';
+import {Check,MoveVertical} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {haptic} from '../../../ui/v7/haptics';
+import {useMotionReduced} from '../../../ui/v7/effects';
+import {durations,easings} from '../../../ui/v7/motion';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
-import {calendarRange} from '../model';
+import {calendarRange,dayKey} from '../model';
+import {elapsedMinuteAt,wallMinuteAt} from './dayModel';
 import {dayMinutes,layoutDayIntervals,moveInterval,resizeInterval,snapDragMinutes,type GridItem} from '../grid/layout';
 
 // This grid is also lazy-loaded by Today; it owns its presentation at either entry.
@@ -20,7 +23,7 @@ const MINUTE=60_000;
 export interface BlockLook{subjectClass:string;path:string;}
 /** N220: `lastY` is the pointer now and `scroll0` the grid's scroll when the drag began, so the block follows the finger
  *  while the grid scrolls under it; `frame` drives the edge auto-scroll. */
-type Drag={id:string;pointerId:number;y:number;lastY:number;scroll0:number;delta:number;mode:'move'|'resize';lifted:boolean;touch:boolean;lastStep:number;timer:number|null;frame:number|null};
+type Drag={id:string;pointerId:number;y:number;lastY:number;scroll0:number;delta:number;mode:'move'|'resize';lifted:boolean;lastStep:number;frame:number|null};
 /** Edge auto-scroll: within this many pixels of the grid's top or bottom, scroll up to this many pixels a frame. */
 const EDGE_ZONE=56,EDGE_SPEED=9;
 type Props={
@@ -41,6 +44,9 @@ type Props={
  draft?:{start:string;minutes:number}|null;
  /** Owner-selected elapsed minute of this local day, including 23/25-hour DST days. */
  scrubTo?:number|null;
+ anchor?:RefObject<number|null>;
+ pendingId?:string;
+ rollback?:{block:CalendarBlockRecord;startsAt:string;endsAt:string}|null;
 };
 export interface SuggestedBlock{id:string;title:string;start:string;end:string;onAccept?:()=>void;busy?:boolean}
 /** PLAN §6.5. An hour is 64 px, so 15 minutes is 16 px; the gutter is 44 px. */
@@ -55,11 +61,12 @@ export function openingScroll(input:{sameDay:boolean;nowY:number;viewport:number
  const target=input.sameDay?input.nowY-input.viewport/3:(input.firstBlockTop??input.windowTop)-HOUR_PX/2;
  return Math.max(0,target);
 }
-export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onOpenEntry,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf,scrubTo=null}:Props){
+export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onOpenEntry,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf,scrubTo=null,anchor,pendingId,rollback}:Props){
  // Room's one-tap suggestions need room for a full touch target without covering the next suggested interval.
  const HOUR_PX=isFlagOn('v7Room')||suggested.some(item=>item.onAccept)?96:64;
  const scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),suppress=useRef(false),swipe=useRef<{x:number;y:number}|null>(null);
  const [preview,setPreview]=useState<{id:string;delta:number;mode:'move'|'resize';lifted:boolean}|null>(null);
+ const [movingByTap,setMovingByTap]=useState<string|null>(null),reduced=useMotionReduced();
  const range=useMemo(()=>calendarRange(date,zone),[date,zone]);
  const from=Date.parse(range.start),until=Date.parse(range.end),whole=dayMinutes(range);
  const visible=useMemo(()=>blocks.filter(block=>block.status!=='cancelled'),[blocks]);
@@ -69,22 +76,41 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  const sessionById=useMemo(()=>new Map(sessions.map(session=>[session.id,session])),[sessions]);
  const inputs=useMemo(()=>[...visible.map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt})),...sessions.map(session=>({id:session.id,start:session.start,end:session.end}))],[visible,sessions]);
  const items=useMemo(()=>layoutDayIntervals(inputs,range,HOUR_PX),[inputs,range,HOUR_PX]);
- const first=Math.min(360,...items.map(item=>Math.floor(item.startMinute/60)*60),scrubTo===null?360:Math.floor(scrubTo/60)*60);
+ const openingAnchor=useRef(anchor?.current);
+ const anchored=openingAnchor.current!=null?elapsedMinuteAt(date,zone,from,openingAnchor.current):null;
+ const programmaticScroll=useRef<number|null>(null);
+ const first=Math.min(anchored===null?360:Math.floor(anchored/60)*60,360,...items.map(item=>Math.floor(item.startMinute/60)*60),scrubTo===null?360:Math.floor(scrubTo/60)*60);
  const height=(whole-first)*HOUR_PX/60;
  const ticks=Array.from({length:Math.ceil((whole-first)/60)+1},(_,index)=>first+index*60).filter(minute=>minute<whole);
  const sameDay=now>=from&&now<until,nowY=(now-from)/(60*MINUTE)*HOUR_PX-first/60*HOUR_PX;
- useEffect(()=>{
+ useLayoutEffect(()=>{
   const node=scroll.current;if(!node)return;
-  node.scrollTop=openingScroll({sameDay,nowY,viewport:node.clientHeight||480,firstBlockTop:items.length?items[0].top-first*HOUR_PX/60:null,windowTop:(480-first)*HOUR_PX/60});
-  // Only on navigation: clock ticks must not steal the reader's scroll.
+  node.scrollTop=anchor?.current!=null?Math.max(0,(elapsedMinuteAt(date,zone,from,anchor.current)-first)*HOUR_PX/60):openingScroll({sameDay,nowY,viewport:node.clientHeight||480,
+   firstBlockTop:items.length?items[0].top-first*HOUR_PX/60:null,windowTop:(480-first)*HOUR_PX/60});
+  programmaticScroll.current=node.scrollTop;
+  if(anchor&&anchor.current==null)anchor.current=wallMinuteAt(from+(first+node.scrollTop*60/HOUR_PX)*MINUTE,zone);
+  // Clock ticks must not steal the reader's scroll.
   // eslint-disable-next-line react-hooks/exhaustive-deps
- },[date,zone]);
+ },[date,zone,first,HOUR_PX,anchor]);
+ useLayoutEffect(()=>{
+  if(reduced||!rollback)return;
+  const node=[...(scroll.current?.querySelectorAll<HTMLElement>('[data-block-id]')??[])].find(card=>card.dataset.blockId===rollback.block.id);
+  if(!node||typeof node.animate!=='function')return;
+  const before=Date.parse(rollback.block.startsAt),after=Date.parse(rollback.startsAt);
+  const targetDay=dayKey(new Date(after),zone),targetMinute=wallMinuteAt(after,zone);
+  const rollbackStart=targetDay===date?after:from+elapsedMinuteAt(date,zone,from,targetMinute)*MINUTE;
+  const start=Math.max(from,Math.min(until,rollbackStart)),offset=(start-Math.max(from,before))*HOUR_PX/(60*MINUTE);
+  const oldHeight=Math.min(until,rollbackStart+Date.parse(rollback.endsAt)-after)-start;
+  const newHeight=Math.min(until,Date.parse(rollback.block.endsAt))-Math.max(from,before);
+  node.animate([{transform:`translateY(${offset}px)`,height:`${Math.max(15,oldHeight*HOUR_PX/(60*MINUTE))}px`},
+   {transform:'none',height:`${Math.max(15,newHeight*HOUR_PX/(60*MINUTE))}px`}],
+   {duration:durations.base*1000,easing:`cubic-bezier(${easings.standard.join(',')})`});
+ },[rollback,reduced,date,zone,from,until,HOUR_PX]);
  useEffect(()=>{
   const node=scroll.current;if(!node||scrubTo===null)return;
   node.scrollTop=Math.max(0,(scrubTo-first)*HOUR_PX/60-node.clientHeight/3);
  },[scrubTo,first,HOUR_PX]);
  useEffect(()=>()=>{
-  if(drag.current?.timer)window.clearTimeout(drag.current.timer);
   if(drag.current?.frame!=null)cancelAnimationFrame(drag.current.frame);
  },[]);
  const draftTop=draft?(Date.parse(draft.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60:null;
@@ -101,30 +127,32 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  function createAt(event:MouseEvent<HTMLDivElement>){
   if(event.target!==event.currentTarget||busy||suppress.current)return;
   const bounds=event.currentTarget.getBoundingClientRect();
-  onCreate(new Date(from+quarterHour(first+(event.clientY-bounds.top)*60/HOUR_PX,whole)*MINUTE).toISOString());
+  const start=from+quarterHour(first+(event.clientY-bounds.top)*60/HOUR_PX,whole)*MINUTE;
+  const block=movingByTap?blockOf(movingByTap):undefined;
+  if(block){
+   setMovingByTap(null);
+   onAdjust(block,{startsAt:new Date(start).toISOString(),endsAt:new Date(start+Date.parse(block.endsAt)-Date.parse(block.startsAt)).toISOString()});
+  }else onCreate(new Date(start).toISOString());
  }
  function blockOf(id:string){return byId.get(id);}
  function lift(active:Drag){
   active.lifted=true;haptic('snap');
   setPreview({id:active.id,delta:0,mode:active.mode,lifted:true});
  }
- const blockTouchMove=(event:TouchEvent)=>{if(drag.current?.lifted&&event.cancelable)event.preventDefault();};
  function startDrag(event:PointerEvent<HTMLElement>,block:CalendarBlockRecord,mode:'move'|'resize'){
-  if(busy||event.button!==0||fromEdge(event.clientX))return;
-  const touch=event.pointerType==='touch',target=event.target as HTMLElement;
-  // The bottom handle resizes at once; the body lifts after 300 ms of holding (PLAN §6.5).
+  if(busy||drag.current||event.button!==0||fromEdge(event.clientX))return;
+  const target=event.target as Element,handle=target.closest('[data-grid-move]');
+  if(event.pointerType==='touch'&&!handle&&!target.closest('[data-grid-resize]'))return;
+  if(event.pointerType==='touch')swipe.current=null;
   event.currentTarget.setPointerCapture?.(event.pointerId);
-  const active:Drag={id:block.id,pointerId:event.pointerId,y:event.clientY,lastY:event.clientY,scroll0:scroll.current?.scrollTop??0,delta:0,mode,lifted:false,touch,lastStep:0,timer:null,frame:null};
+  const active:Drag={id:block.id,pointerId:event.pointerId,y:event.clientY,lastY:event.clientY,scroll0:scroll.current?.scrollTop??0,delta:0,mode,lifted:false,lastStep:0,frame:null};
   drag.current=active;
-  if(target.closest('[data-grid-resize]'))lift(active);
-  else if(touch)active.timer=window.setTimeout(()=>{if(drag.current===active)lift(active);},300);
-  window.addEventListener('touchmove',blockTouchMove,{passive:false});
+  if(handle||target.closest('[data-grid-resize]'))lift(active);
  }
  function moveDrag(event:PointerEvent<HTMLElement>){
   const active=drag.current;if(!active||event.pointerId!==active.pointerId)return;
   const dy=event.clientY-active.y;
   if(!active.lifted){
-   if(active.touch){if(Math.abs(dy)>8&&active.timer){window.clearTimeout(active.timer);active.timer=null;drag.current=null;}return;}
    if(Math.abs(dy)<7)return;
    lift(active);
   }
@@ -156,27 +184,24 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  }
  function endDrag(event:PointerEvent<HTMLElement>){
   const active=drag.current;if(!active||event.pointerId!==active.pointerId)return;
-  if(active.timer)window.clearTimeout(active.timer);
   if(active.frame!==null){cancelAnimationFrame(active.frame);active.frame=null;}
-  window.removeEventListener('touchmove',blockTouchMove);
   if(active.lifted){
    const node=scroll.current;
    active.delta=snapDragMinutes(event.clientY-active.y+(node?node.scrollTop-active.scroll0:0),HOUR_PX);
   }
   drag.current=null;setPreview(null);
   if(!active.lifted)return;
-  suppress.current=true;window.setTimeout(()=>{suppress.current=false;},0);
   const block=blockOf(active.id);if(!block)return;
   const strip=document.elementFromPoint(event.clientX,event.clientY)?.closest<HTMLElement>('[data-strip-day]');
-  if(strip?.dataset.stripDay&&active.mode==='move'&&strip.dataset.stripDay!==date){onDropDay(block,strip.dataset.stripDay,active.delta);return;}
-  if(!active.delta)return;
+  const droppedDay=active.mode==='move'&&strip?.dataset.stripDay!==date?strip?.dataset.stripDay:undefined;
+  if(!active.delta&&!droppedDay)return;
+  suppress.current=true;window.setTimeout(()=>{suppress.current=false;},0);setMovingByTap(null);
+  if(droppedDay){onDropDay(block,droppedDay,active.delta);return;}
   const result=active.mode==='move'?moveInterval(block.startsAt,block.endsAt,active.delta):resizeInterval(block.startsAt,block.endsAt,active.delta);
   onAdjust(block,{startsAt:result.start,endsAt:result.end});
  }
  function cancelDrag(){
-  if(drag.current?.timer)window.clearTimeout(drag.current.timer);
   if(drag.current?.frame!=null)cancelAnimationFrame(drag.current.frame);
-  window.removeEventListener('touchmove',blockTouchMove);
   drag.current=null;setPreview(null);
  }
  function keyAdjust(event:KeyboardEvent<HTMLButtonElement>,block:CalendarBlockRecord){
@@ -206,12 +231,18 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   </>;
   const mark=block&&enterOf?enterOf(block.id):{};
   return <div key={item.id} className={'v7-cal-block '+look.subjectClass} data-kind={kind} data-size={size} data-compact={compact?'true':undefined} data-tiny={tiny?'true':undefined} data-past={past?'true':'false'} data-lifted={moving&&preview.lifted?'true':'false'}
+   data-pending={block&&block.id===pendingId?true:undefined} data-block-id={block?.id}
    data-v7-enter={mark['data-v7-enter']} style={mark.style?{...lane,...mark.style}:lane}>
-   {block?<button type="button" data-calendar-block={block.id}
+   {block?<><button type="button" data-calendar-block={block.id} aria-busy={block.id===pendingId||undefined}
     aria-label={block.title+', '+(kind==='busy'?'Busy':done?'Completed study':'Planned study')+(look.path?', '+look.path:'')+', '+range+'. Enter for details; Alt+Up/Down to move, Alt+Shift+Up/Down to resize.'}
-    onClick={()=>{if(suppress.current){suppress.current=false;return;}onEdit(block);}}
-    onPointerDown={event=>startDrag(event,block,'move')} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={cancelDrag}
+    onClick={()=>{if(suppress.current){suppress.current=false;return;}if(block.id!==pendingId)onEdit(block);}}
+    onPointerDown={event=>startDrag(event,block,(event.target as Element).closest('[data-grid-resize]')?'resize':'move')} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={cancelDrag}
     onKeyDown={event=>keyAdjust(event,block)}>{body}<span data-grid-resize="" aria-hidden="true"/></button>
+   <button type="button" className="v7-cal-move" data-grid-move="" aria-label={'Move '+block.title}
+    aria-pressed={movingByTap===block.id} disabled={busy}
+    onClick={()=>{if(!suppress.current)setMovingByTap(current=>current===block.id?null:block.id);}}
+    onPointerDown={event=>startDrag(event,block,'move')} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={cancelDrag}
+    onKeyDown={event=>keyAdjust(event,block)}><MoveVertical aria-hidden="true"/></button></>
    :session?<button type="button" data-logged-entry={session.entry.id}
     aria-label={label+', Logged study, '+sessionCaption(session,formatDuration)+(look.path?', '+look.path:'')+', '+range+'. Open for details.'}
     onClick={()=>{if(suppress.current){suppress.current=false;return;}onOpenEntry?.(session.entry);}}>
@@ -220,9 +251,21 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   </div>;
  }
  const ghosts=suggested.filter(item=>Date.parse(item.start)>=from&&Date.parse(item.end)<=until&&Date.parse(item.start)>=from+first*MINUTE);
- return <section className="v7-cal-grid" aria-label="Day calendar" data-day-minutes={whole}>
+ return <section className="v7-cal-grid" aria-label="Day calendar" data-day-minutes={whole}
+  onKeyDown={event=>{if(event.key==='Escape'&&movingByTap){event.stopPropagation();setMovingByTap(null);}}}>
+  {movingByTap&&<p className="v7-cal-move-hint v7-meta" role="status">Choose a time for {blockOf(movingByTap)?.title}.</p>}
   <div ref={scroll} role="region" aria-label="Day time grid" tabIndex={0} className="v7-cal-scroll"
-   onTouchStart={event=>{const t=event.touches[0];swipe.current=fromEdge(t.clientX)?null:{x:t.clientX,y:t.clientY};}}
+   onScroll={event=>{
+    const scrollTop=event.currentTarget.scrollTop;
+    if(programmaticScroll.current===scrollTop){programmaticScroll.current=null;return;}
+    programmaticScroll.current=null;
+    if(anchor)anchor.current=wallMinuteAt(from+(first+scrollTop*60/HOUR_PX)*MINUTE,zone);
+   }}
+   onTouchStart={event=>{
+    const t=event.touches[0];
+    swipe.current=fromEdge(t.clientX)?null:{x:t.clientX,y:t.clientY};
+    if((event.target as Element).closest('[data-grid-move],[data-grid-resize]'))swipe.current=null;
+   }}
    onTouchEnd={event=>{const start=swipe.current,t=event.changedTouches[0];swipe.current=null;
     if(!start||drag.current?.lifted)return;const dx=t.clientX-start.x,dy=t.clientY-start.y;
     if(Math.abs(dx)>80&&Math.abs(dx)>Math.abs(dy)*2)onSwipe(dx<0?1:-1);}}>

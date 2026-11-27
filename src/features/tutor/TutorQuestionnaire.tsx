@@ -2,6 +2,7 @@ import {useEffect, useId, useRef, useState} from 'react';
 import {ClipboardList} from 'lucide-react';
 import {Button, Checkbox, IconButton, RadioOption, Sheet} from '../../ui/v7/components';
 import {MathText} from '../../ui/MathText';
+import {Tex} from '../../ui/Tex';
 import {
   answered, questionnaireComplete, type QuestionnaireAnswer, type QuestionnaireAnswers, type QuestionnaireState,
   type TutorQuestionnaire,
@@ -195,7 +196,7 @@ function QuestionnaireSheet({questionnaire, api, backup, onChange, onClose}: {
     : status === 'conflict' ? 'Answered on another device too. Check your answers and submit again.'
     : 'Answers save as you go. You can come back to it later.';
 
-  return <Sheet open onClose={() => void close()} title={questionnaire.title}>
+  return <Sheet open onClose={() => void close()} title={<Tex source={questionnaire.title}/>}>
     <form className="tutor-questionnaire" onSubmit={event => {event.preventDefault(); if (complete && !submitted) void save(true);}}>
       <p className="tutor-questionnaire-note" role="status">{note}</p>
       {backupFailed && (!submitted || unsent) && <p className="tutor-questionnaire-note" role="alert">
@@ -211,12 +212,12 @@ function QuestionnaireSheet({questionnaire, api, backup, onChange, onClose}: {
               {question.kind === 'short' && <textarea className="v7-field" rows={2} maxLength={2000} aria-label={'Answer to question ' + (at + 1)}
                 value={typeof value === 'string' ? value : ''} onChange={event => answer(question.id, event.target.value || undefined)}/>}
               {question.kind === 'mcq' && question.options.map((option, index) => <RadioOption key={index} name={name + question.id}
-                label={option} checked={value === index} onChange={() => answer(question.id, index)}/>)}
+                label={<Tex source={option}/>} checked={value === index} onChange={() => answer(question.id, index)}/>)}
               {question.kind === 'msq' && <>
                 <small>Choose all that apply.</small>
                 {question.options.map((option, index) => {
                   const chosen = Array.isArray(value) ? value : [];
-                  return <Checkbox key={index} label={option} checked={chosen.includes(index)} onChange={on => {
+                  return <Checkbox key={index} label={<Tex source={option}/>} checked={chosen.includes(index)} onChange={on => {
                     const next = on ? [...chosen, index].sort((a, b) => a - b) : chosen.filter(item => item !== index);
                     answer(question.id, next.length ? next : undefined);
                   }}/>;

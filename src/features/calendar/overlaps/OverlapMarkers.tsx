@@ -1,5 +1,7 @@
 // N75: read-only owner acknowledgement pages plus explicit audited commands.
 import {useEffect,useMemo,useState} from 'react';
+import {Button} from '../../../ui/v7/components';
+import './overlap-markers.css';
 import {getOverlapApi} from '../../../data/overlap-acknowledgements';
 import type {OverlapAcknowledgement} from '../../../data/overlap-acknowledgements/contract';
 import type {StudyRange} from '../../../data/study/contract';
@@ -53,8 +55,8 @@ export function useCalendarOverlaps(range:StudyRange){
  return {records,phase,error,busy,reload,acknowledge};
 }
 export type OverlapControls=ReturnType<typeof useCalendarOverlaps>;
-export function OverlapMarkers({windows,controls,zone,compact=false,clock24h=true}:{
- windows:CalendarOverlap[];controls:OverlapControls;zone:string;compact?:boolean;clock24h?:boolean;
+export function OverlapMarkers({windows,controls,zone,compact=false,clock24h=true,v7=false}:{
+ windows:CalendarOverlap[];controls:OverlapControls;zone:string;compact?:boolean;clock24h?:boolean;v7?:boolean;
 }){
  const fmt=useMemo(()=>new Intl.DateTimeFormat('en',{
   timeZone:zone,hour:'numeric',minute:'2-digit',hourCycle:clock24h?'h23':'h12'
@@ -62,6 +64,8 @@ export function OverlapMarkers({windows,controls,zone,compact=false,clock24h=tru
  const day=useMemo(()=>new Intl.DateTimeFormat('en',{timeZone:zone,weekday:'short',month:'short',day:'numeric'}),[zone]);
  if(!windows.length)return null;
  const time=(instant:string)=>fmt.format(new Date(instant));
+ const Control=v7?Button:'button';
+ const controlClass=v7?undefined:'min-h-11 rounded-ctl border border-edge px-2 disabled:opacity-50';
  return <section aria-label="Calendar overlap conflicts"
   className={'flex min-w-0 flex-col gap-2 '+(compact?'text-caption':'text-label')}>
   {controls.phase==='error'&&<p role="alert">{controls.error}
@@ -73,7 +77,7 @@ export function OverlapMarkers({windows,controls,zone,compact=false,clock24h=tru
    const canWrite=controls.phase==='ready'&&controls.busy===null;
    const label=row.names.join(' and ');
    return <article key={row.key} data-overlap={row.key}
-    className="rounded-ctl border border-amber bg-amber-tint p-2 text-ink">
+    className={v7?'v7-overlap-marker':'rounded-ctl border border-amber bg-amber-tint p-2 text-ink'}>
     <p className="font-semibold">{current?'Overlap acknowledged':'Overlap conflict'} · {day.format(new Date(row.startsAt))} ·
      {' '}{time(row.startsAt)}–{time(row.endsAt)}</p>
     <p className="break-words">{label}</p>
@@ -82,17 +86,17 @@ export function OverlapMarkers({windows,controls,zone,compact=false,clock24h=tru
        p.kind===current.attributedTo?.kind&&p.id===current.attributedTo?.id)]||'one of them')}
     </p>:
     <div className="mt-2 flex flex-wrap gap-2">
-     <button type="button" disabled={!canWrite}
+     <Control type="button" disabled={!canWrite}
       aria-label={'Keep both for '+label}
       onClick={()=>void controls.acknowledge(row,'keep_both')}
-      className="min-h-11 rounded-ctl border border-edge px-2 disabled:opacity-50">
-      Keep both</button>
-     {row.participants.map((participant,i)=><button type="button"
+      className={controlClass}>
+      Keep both</Control>
+     {row.participants.map((participant,i)=><Control type="button"
        key={participant.kind+participant.id} disabled={!canWrite}
        aria-label={'Count this time toward '+row.names[i]}
        onClick={()=>void controls.acknowledge(row,'attribute_to',i)}
-       className="min-h-11 rounded-ctl border border-edge px-2 disabled:opacity-50">
-       Count this time toward {row.names[i]}</button>)}
+       className={controlClass}>
+       Count this time toward {row.names[i]}</Control>)}
     </div>}
     </article>;
   })}

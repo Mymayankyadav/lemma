@@ -1,3 +1,4 @@
+import {civilTimeParts} from '../../lib/calendar';
 import type {CapturedTaskDraft} from '../../features/tasks/taskDraft';
 /** PLAN §6.1 F. The local, rule-based capture recogniser. No network, no model: dates, times, lengths, "#path" and "front :: back". */
 export type CaptureKind='task'|'block'|'card'|'thought';
@@ -17,22 +18,22 @@ const monthNames=['January','February','March','April','May','June','July','Augu
 const pad=(n:number)=>String(n).padStart(2,'0');
 /** Civil date parts of an instant in a zone. */
 export function civil(now:Date,zone:string):{y:number;m:number;d:number;weekday:number}{
- const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'}).formatToParts(now);
- const pick=(type:string)=>parts.find(part=>part.type===type)?.value??'';
- return {y:Number(pick('year')),m:Number(pick('month')),d:Number(pick('day')),weekday:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(pick('weekday'))};
+ const {year:y,month:m,day:d}=civilTimeParts(now.getTime(),zone);
+ return {y,m,d,weekday:new Date(Date.UTC(y,m-1,d)).getUTCDay()};
 }
 const keyOf=(y:number,m:number,d:number)=>y+'-'+pad(m)+'-'+pad(d);
 export function addDays(date:string,days:number):string{
  const [y,m,d]=date.split('-').map(Number);return new Date(Date.UTC(y,m-1,d+days)).toISOString().slice(0,10);
 }
 interface Hit{start:number;end:number;token:CaptureToken;date?:string;time?:string;minutes?:number;path?:CapturePath}
+const dateLabel=new Intl.DateTimeFormat('en',{timeZone:'UTC',weekday:'short',day:'numeric',month:'short'});
 const label=(date:string,today:string)=>{
  if(date===today)return 'Today';if(date===addDays(today,1))return 'Tomorrow';
- const [y,m,d]=date.split('-').map(Number);return new Intl.DateTimeFormat('en',{timeZone:'UTC',weekday:'short',day:'numeric',month:'short'}).format(new Date(Date.UTC(y,m-1,d)));
+ const [y,m,d]=date.split('-').map(Number);return dateLabel.format(new Date(Date.UTC(y,m-1,d)));
 };
 /** Recognised parts become tokens. A token the owner removed (its id is in `ignore`) goes back into the title. */
 export function parseCapture(text:string,context:CaptureContext,ignore:ReadonlySet<string>=new Set(),forced:CaptureKind|null=null):CaptureParse{
- const today=(()=>{const c=civil(context.now,context.zone);return keyOf(c.y,c.m,c.d);})(),todayWeekday=civil(context.now,context.zone).weekday;
+ const local=civil(context.now,context.zone),today=keyOf(local.y,local.m,local.d),todayWeekday=local.weekday;
  const hits:Hit[]=[];
  const add=(match:RegExpExecArray,extend:number,build:(raw:string)=>Omit<Hit,'start'|'end'|'token'>&{type:CaptureToken['type'];label:string})=>{
   const start=match.index-extend,raw=text.slice(start,match.index+match[0].length),made=build(match[0]);
@@ -100,12 +101,10 @@ export function parseCapture(text:string,context:CaptureContext,ignore:ReadonlyS
 }
 /** The default start when no time was given: the next free half hour for today, otherwise 09:00. */
 export function defaultStart(date:string|null,time:string|null,context:{now:Date;zone:string}):{date:string;time:string}{
- const c=civil(context.now,context.zone),today=keyOf(c.y,c.m,c.d),day=date??today;
+ const local=civilTimeParts(context.now.getTime(),context.zone),today=keyOf(local.year,local.month,local.day),day=date??today;
  if(time)return {date:day,time};
  if(day!==today)return {date:day,time:'09:00'};
- const parts=new Intl.DateTimeFormat('en-GB',{timeZone:context.zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(context.now);
- const hour=Number(parts.find(part=>part.type==='hour')?.value),minute=Number(parts.find(part=>part.type==='minute')?.value);
- const total=Math.ceil((hour*60+minute+1)/30)*30;
+ const total=Math.ceil((local.hour*60+local.minute+1)/30)*30;
  return total>=1440?{date:addDays(today,1),time:'09:00'}:{date:today,time:pad(Math.floor(total/60))+':'+pad(total%60)};
 }
 export {monthNames};

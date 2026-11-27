@@ -123,13 +123,13 @@ test('UI-6a auto-switches graph worlds with OS theme and respects a manual choic
  await expect(themeMetas).toHaveCount(2);
  await expect(themeMetas.nth(0)).toHaveAttribute('media','(prefers-color-scheme: light)');
  await expect(themeMetas.nth(1)).toHaveAttribute('media','(prefers-color-scheme: dark)');
- await expect(themeMetas.nth(0)).toHaveAttribute('content','#13171D');
- await expect(themeMetas.nth(1)).toHaveAttribute('content','#13171D');
+ await expect(themeMetas.nth(0)).toHaveAttribute('content','#262624');
+ await expect(themeMetas.nth(1)).toHaveAttribute('content','#262624');
  await page.getByRole('radio',{name:/^Day /}).click();
  await page.emulateMedia({colorScheme:'light'});
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
  await page.emulateMedia({colorScheme:'dark'});
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
- await expect(themeMetas.nth(0)).toHaveAttribute('content','#FAFAF6');
- await expect(themeMetas.nth(1)).toHaveAttribute('content','#FAFAF6');
+ await expect(themeMetas.nth(0)).toHaveAttribute('content',/^#faf9f5$/i);
+ await expect(themeMetas.nth(1)).toHaveAttribute('content',/^#faf9f5$/i);
 });

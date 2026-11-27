@@ -1,6 +1,7 @@
 import './math.css';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
+import {Sheet} from './v7/Sheet';
 import {renderMarkdown} from '../lib/render';
 export interface MathTextProps {
  source:string; variant?:'card'|'answer'|'body'; cloze?:{ord:number;revealed:boolean};
@@ -48,33 +49,24 @@ export function MathText({source,variant='body',cloze,className='',interactiveMa
   }
   return ()=>{for(const button of buttons)button.remove()};
  },[html,interactiveMath]);
+ const kit=typeof document!=='undefined'&&document.documentElement.hasAttribute('data-v7');
  useEffect(()=>{
-  if(!mathHtml)return;
+  if(!mathHtml||kit)return;
   const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.stopPropagation();setMathHtml(null)}};
   document.addEventListener('keydown',key);
   const old=document.body.style.overflow;document.body.style.overflow='hidden';
   return ()=>{document.removeEventListener('keydown',key);document.body.style.overflow=old};
- },[mathHtml]);
+ },[mathHtml,kit]);
  const distance=(touches:React.TouchList)=>Math.hypot(
   touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY
  );
  const zoomTo=(value:number)=>setZoom(Math.max(1,Math.min(4,value)));
- return <>
-  <div ref={root} className={'lemma-math prose-invert min-w-0 max-w-none wrap-break-word '+variants[variant]+' '+className}
-   dangerouslySetInnerHTML={{__html:html}}/>
-  {interactiveMath&&shortened.largest>8&&!expanded&&
-   <button type="button" className="mt-2 min-h-11 text-label font-semibold text-amber" onClick={()=>setExpanded(true)}>
-    Show all {shortened.largest} lines
-   </button>}
-  {interactiveMath&&shortened.largest>8&&expanded&&
-   <button type="button" className="mt-2 min-h-11 text-label font-semibold text-amber" onClick={()=>setExpanded(false)}>Show first 8 lines</button>}
-  {interactiveMath&&mathHtml&&createPortal(
-   <div role="dialog" aria-modal="true" aria-label="Full screen maths" className="lemma-math-modal">
+ const inspection=mathHtml&&<>
     <div className="lemma-math-modal-toolbar">
      <span className="text-label text-ink-2">Maths · pinch or zoom to inspect</span>
      <button type="button" aria-label="Zoom out" className="lemma-math-modal-button" onClick={()=>zoomTo(zoom-.25)}>−</button>
      <button type="button" aria-label="Zoom in" className="lemma-math-modal-button" onClick={()=>zoomTo(zoom+.25)}>+</button>
-     <button type="button" aria-label="Close maths" className="lemma-math-modal-button" onClick={()=>setMathHtml(null)}>×</button>
+     {!kit&&<button type="button" aria-label="Close maths" className="lemma-math-modal-button" onClick={()=>setMathHtml(null)}>×</button>}
     </div>
     <div className="lemma-math-modal-content" onTouchStart={e=>{
       if(e.touches.length===2)touch.current={distance:distance(e.touches),zoom};
@@ -86,7 +78,19 @@ export function MathText({source,variant='body',cloze,className='',interactiveMa
      <div className="lemma-math-modal-formula" style={{transform:'scale('+zoom+')'}}
       dangerouslySetInnerHTML={{__html:mathHtml}}/>
     </div>
-   </div>,document.body)}
+ </>;
+ return <>
+  <div ref={root} className={'lemma-math prose-invert min-w-0 max-w-none wrap-break-word '+variants[variant]+' '+className}
+   dangerouslySetInnerHTML={{__html:html}}/>
+  {interactiveMath&&shortened.largest>8&&!expanded&&
+   <button type="button" className="mt-2 min-h-11 text-label font-semibold text-amber" onClick={()=>setExpanded(true)}>
+    Show all {shortened.largest} lines
+   </button>}
+  {interactiveMath&&shortened.largest>8&&expanded&&
+   <button type="button" className="mt-2 min-h-11 text-label font-semibold text-amber" onClick={()=>setExpanded(false)}>Show first 8 lines</button>}
+  {mathHtml && (kit ? <Sheet open full title="Full screen maths" closeLabel="Close maths" onClose={()=>setMathHtml(null)}
+    className="v7-math-full">{inspection}</Sheet> : createPortal(
+    <div role="dialog" aria-modal="true" aria-label="Full screen maths" className="lemma-math-modal">{inspection}</div>,document.body))}
  </>;
 }
 export default MathText;

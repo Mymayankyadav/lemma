@@ -23,7 +23,7 @@ describe('FIX #507 cold Today goal-summary entry',()=>{
   expect(page).toContain('shouldUseFastGoals(projects)')
   expect(page).toContain('<FastGoalDistance projects={projects}/>')
   expect(page).toContain('<GoalDistance projects={projects} variant="metro"/>')
-  expect(page).toMatch(/lazy\(\(\)\s*=>\s*import\(['"]\.\/GoalDistance['"]\)/)
+  expect(page).toMatch(/retryNamed\(\(\)\s*=>\s*import\(['"]\.\/GoalDistance['"]\)/)
  })
  it('large desks retain a real labelled Goal card, Metro summary and accessible Show all control',()=>{
   const fast=readFileSync('src/features/home/FastGoalDistance.tsx','utf8')

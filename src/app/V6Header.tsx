@@ -1,10 +1,11 @@
-import {lazy,Suspense,useEffect,useRef,useState} from 'react';
+import {retryLazy} from './lazyModule';
+import {Suspense,useEffect,useRef,useState} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {ArrowLeft,Ellipsis,Inbox,Plus} from 'lucide-react';
 import {useHome} from '../data/hooks';
 import {plainMath} from '../lib/plain-math';
 import {useV6RouteSubtitle,useV6RouteTitle} from './v6Title';
-const TaskSheet=lazy(()=>import('../features/tasks/TaskSheet'));
+const TaskSheet=retryLazy(()=>import('../features/tasks/TaskSheet'));
 
 /** N13's shared v6 title and actions; the legacy page headers stay unchanged when the flag is off. */
 export function v6PageTitle(pathname:string){

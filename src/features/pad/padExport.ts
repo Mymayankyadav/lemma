@@ -29,8 +29,8 @@ export function makePadFile(edit: PadEdit, strokes: PadStrokes, format: Format):
   const contents = '<!doctype html><html lang="en"><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width, initial-scale=1"><title>Lemma Pad</title>'
     + '<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;">'
-    + '<style>body{font:1rem system-ui;margin:2rem;color:#111;background:white}'
-    + 'pre{white-space:pre-wrap;overflow-wrap:anywhere}svg{width:100%;max-width:640px;border:1px solid #aaa}</style>'
+    + '<style>body{font:1rem system-ui;margin:2rem;color:#141413;background:#faf9f5}'
+    + 'pre{white-space:pre-wrap;overflow-wrap:anywhere}svg{width:100%;max-width:640px;border:1px solid #e8e6dc}</style>'
     + '<main><h1>Lemma Pad</h1><h2>Notes</h2><pre>\n' + escapeText(notes.text) + '</pre>'
     + '<h2>Ink</h2><svg role="img" aria-label="Exported Pad ink" xmlns="http://www.w3.org/2000/svg" viewBox="' + viewBox
     + '"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">'

@@ -23,10 +23,11 @@ describe('AN3 · no gesture starts within 24 dp of a screen edge', () => {
   });
   it('the Inbox and review swipes, task swipes and calendar drags and swipes check it', () => {
     expect(source('src/features/proposals/v7/InboxV7.tsx')).toContain("closest('button,a')||fromEdge(event.clientX))return;");
-    expect(source('src/features/review-run/v7/ReviewRoundV7.tsx')).toContain("closest('a,button')||fromEdge(event.clientX))return;");
+    const review = source('src/features/review-run/v7/ReviewRoundV7.tsx');
+    expect(review).toMatch(/const down\s*=\s*\([^\n]*\)\s*=>\s*\{\s*if\s*\([^;]+closest\('a,button'\)\s*\|\|\s*fromEdge\(event\.clientX\)\)\s*return;/);
     expect(source('src/features/tasks/v7/TasksV7.tsx')).toContain("closest('button,a,[role=menu]')||fromEdge(event.clientX))return;");
     const grid = source('src/features/calendar/v7/DayGrid.tsx');
-    expect(grid).toContain('if(busy||event.button!==0||fromEdge(event.clientX))return;');
+    expect(grid).toMatch(/function startDrag\([^\n]*\)\s*\{\s*if\s*\(busy\s*\|\|[^;]+event\.button\s*!==\s*0\s*\|\|\s*fromEdge\(event\.clientX\)\)\s*return;/);
     expect(grid).toContain('swipe.current=fromEdge(t.clientX)?null:{x:t.clientX,y:t.clientY};');
   });
 });
@@ -37,9 +38,10 @@ describe('AN3 · the header ℓ is the sync light', () => {
     expect(syncState(true, 2, 0)).toBe('syncing');
     expect(syncState(true, 0, 1)).toBe('syncing');
     expect(syncState(false, 3, 1)).toBe('offline');
-    expect(source('src/app/v7/V7Shell.tsx')).toContain('<SyncMark><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span></SyncMark>');
+    expect(source('src/app/v7/PageHeaders.tsx')).toContain('<SyncMark><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span></SyncMark>');
     const css = source('src/app/v7/shell.css');
-    expect(css).toContain('.v7-sync-mark[data-sync="syncing"]::after {opacity:1;transition-delay:300ms;}');
+    expect(css).toContain('.v7-sync-mark[data-sync="syncing"]::after {opacity:1;transition-delay:var(--motion-skeleton-delay);}');
+    expect(source('src/ui/v7/motion.css')).toContain('--motion-skeleton-delay: 300ms;');
     expect(css).toContain('.v7-sync-mark[data-sync="offline"] svg path {fill:none;');
   });
   it('announces going offline, and only that', async () => {
@@ -80,7 +82,7 @@ describe('AW3 · one quiet check a day for a newer APK', () => {
   });
   it('runs from the app\'s start, puts a dot on Settings, names the version, and the privacy page says so', () => {
     expect(source('src/platform/start.ts')).toContain('void App.getInfo().then(info => checkForUpdate(info.version)).catch(() => undefined);');
-    expect(source('src/app/v7/V7Shell.tsx')).toContain('{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}');
+    expect(source('src/app/v7/PageHeaders.tsx')).toContain('{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}');
     expect(source('src/features/settings/v7/PhoneSettings.tsx')).toContain("hint={update?'Lemma 2.0.'+update+' is available':'Opens the newest release'}");
     expect(source('public/privacy.html')).toContain('Once a day the app asks GitHub’s public releases feed');
   });

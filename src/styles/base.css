@@ -3,7 +3,7 @@ html { color-scheme: light dark; }
 body { margin: 0; min-width: 320px; min-height: 100vh; font-family: var(--font-ui); color: var(--ink); background: var(--obsidian); font-variant-numeric: tabular-nums; }
 button, input, textarea, select { font: inherit; }
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+@media (prefers-reduced-motion: reduce) { :where(html:not([data-v7])) *, :where(html:not([data-v7])) *::before, :where(html:not([data-v7])) *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
 
 /* Responsive density without changing the shell's shared route contract. */
 #main-content:not(.w-full) { padding-left: var(--gutter); padding-right: var(--gutter); }
@@ -17,5 +17,17 @@ body:has(nav[aria-label="Main navigation"]) .lemma-lab-fab { bottom: calc(var(--
 .clip-1 { display:block; min-width:0; max-width:100%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .wrap { min-width:0; white-space:normal; overflow-wrap:anywhere; }
 .math-block { min-width:0; max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin; }
-:where(html[data-v7]) .lemma-route-loading {background:transparent;color:var(--v7-role-text-primary,inherit);}
-:where(html[data-v7]) .lemma-route-loading > [aria-hidden] {animation:none;background:var(--v7-role-surface-muted,var(--fill-1));}
+
+.lemma-route-error {display:grid;align-content:start;gap:1rem;padding:clamp(24px,5vw,56px);color:var(--v7-role-text-primary,var(--ink));}
+.lemma-route-error h1 {font:400 var(--v7-type-title,2rem)/1.15 var(--v7-serif,serif);overflow-wrap:anywhere;}
+.lemma-route-error > div {display:flex;align-items:center;flex-wrap:wrap;gap:1rem;}
+.lemma-route-fallback {padding:clamp(24px,5vw,56px);}
+.lemma-route-skeleton {display:grid;gap:1rem;}
+.lemma-route-skeleton > span {display:block;height:5rem;border-radius:var(--v7-radius-2,8px);background:var(--v7-role-surface-track,var(--progress-track));}
+.lemma-route-skeleton > span:first-child {width:40%;height:2rem;}
+.lemma-route-skeleton[data-shape="calendar"] > span:nth-child(2) {height:3rem;}
+.lemma-route-skeleton[data-shape="calendar"] > span:nth-child(3),.lemma-route-skeleton[data-shape="atlas"] > span:nth-child(2) {height:min(52dvh,30rem);}
+.lemma-route-skeleton[data-shape="calendar"] > span:nth-child(4),.lemma-route-skeleton[data-shape="atlas"] > span:nth-child(n+3) {display:none;}
+.lemma-route-skeleton[data-shape="list"] > span:nth-child(n+2) {height:3.5rem;}
+
+.ui-sheet-scrim {background:var(--v7-backdrop,rgb(20 20 19 / 40%));}

@@ -65,7 +65,11 @@ test('Search opens precise Settings destinations and restores the query, active 
   await page.keyboard.press('Tab');
   expect(await dialog.evaluate(node=>node.contains(document.activeElement)||document.activeElement===document.body)).toBe(true);
  }
- await page.keyboard.press('Escape');
+ await input.focus();
+ await input.press('Escape');
+ await expect(input).toHaveValue('');
+ await expect(input).toBeFocused();
+ await input.press('Escape');
  await expect(dialog).toBeHidden();
  await expect(opener).toBeFocused();
  await opener.press('Enter');

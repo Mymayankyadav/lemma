@@ -97,8 +97,10 @@ test.describe('on an iPad', () => {
   test('C5 · small links have a 44 pt hit area and the Path\'s rows are 44 pt tall', async ({page}) => {
     await asIPad(page);
     await open(page, '#/');
-    const link = page.locator('.v7-card-heading > a').first();
+    const link = page.getByRole('region', {name: 'Today', exact: true}).getByRole('link', {name: /planned.*done/});
     await expect(link).toBeVisible();
+    await link.scrollIntoViewIfNeeded();
+    await expect(link).toBeInViewport();
     const hit = await link.evaluate(node => {
       const rect = node.getBoundingClientRect(), x = rect.left + rect.width / 2;
       return [rect.top + rect.height / 2 - 20, rect.top + rect.height / 2 + 20].map(y => node.contains(document.elementFromPoint(x, y)));
@@ -130,12 +132,16 @@ test.describe('on an iPad', () => {
       const rail = (await box(page, '.v7-dock')).width;
       const hub = await box(page, '.v7-hub-bar .v7-hub-row');
       expect(hub.width).toBeGreaterThan((size.width - rail) * .9);
-      for (const hash of ['#/p/real-analysis', '#/p/real-analysis/cp/CP4', '#/today/close']) {
+      for (const [hash, name] of [['#/p/real-analysis', 'Path'], ['#/p/real-analysis/cp/CP4', 'Checkpoint'], ['#/today/close', 'Close the day']]) {
         await open(page, hash);
-        const main = await box(page, 'main');
-        expect(main.width, hash).toBeGreaterThan(size.width * .95);
+        const pageSurface=page.getByRole('main',{name,exact:true});
+        await expect(pageSurface).toBeVisible();
+        const {width,left}=await pageSurface.evaluate(node=>{
+          const rect=node.getBoundingClientRect();
+          return {width:rect.width,left:rect.left+parseFloat(getComputedStyle(node).paddingLeft)};
+        });
+        expect(width, hash).toBeGreaterThan(size.width * .95);
         // The content starts at the page margin (24 or 32 pt), not in a centred phone column.
-        const left = await page.locator('main').first().evaluate(node => node.getBoundingClientRect().left + parseFloat(getComputedStyle(node).paddingLeft));
         expect(left, hash).toBeLessThanOrEqual(40);
       }
       // Close the day's button bar spans the screen.

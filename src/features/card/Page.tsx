@@ -1,9 +1,10 @@
+import {retryLazy} from '../../app/lazyModule';
 import {MathPreview} from '../../ui/MathPreview';
 import {isFlagOn} from '../../flags';
 import CardVariants from './v6/CardVariants';
 import {getApi} from "../../data";
 import {useQuery} from "@tanstack/react-query";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { v7Screen } from "../../app/v7Kit";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -37,7 +38,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { Sparkline } from "../../ui/charts/Sparkline";
 import { useToast } from "../../ui/Toast";
-const reviewInk = ['var(--ink-2)', 'var(--danger)', 'var(--late)', 'var(--early)', 'var(--link)'] as const;
+const reviewInk = ['var(--ink-2)', 'var(--danger)', 'var(--late)', 'var(--early)', 'var(--easy)'] as const;
 function next(due: string | null) {
   if (!due) return "New";
   const days = Math.ceil((Date.parse(due) - Date.now()) / 86400000);
@@ -47,7 +48,7 @@ function age(at: string) {
   const days = Math.floor((Date.now() - Date.parse(at)) / 86400000);
   return days <= 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
 }
-const CardV7 = lazy(() => import('./v7/CardV7'));
+const CardV7 = retryLazy(()=>import('./v7/CardV7'));
 export default function Page() {
   // v7 Card detail (PLAN §6.11) behind v7Shell; v6 and legacy stay for rollback.
   if (v7Screen() === 'card') return <Suspense fallback={<div role="status" aria-label="Card loading" className="min-h-dvh"/>}><CardV7/></Suspense>;

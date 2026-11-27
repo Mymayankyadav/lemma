@@ -1,3 +1,5 @@
+import {Button,Picker} from '../../../ui/v7/components';
+import '../section-controls.css';
 // N77: v6 activity presets; all writes remain in the N55 mode-aware PresetApi.
 // No raw table DML, owner fields, or settings mutations.
 import {useEffect,useState,type FormEvent} from 'react';
@@ -8,12 +10,13 @@ type Draft={
  label:string;mode:PresetMode;focusMinutes:string;breakMinutes:string;
  longBreakMinutes:string;cycles:string;
 };
+const presetModes={pomodoro:'Pomodoro',flowtime:'Flowtime',open:'Open'};
 const defaults:Draft={
  label:'',mode:'pomodoro',focusMinutes:'25',breakMinutes:'5',
  longBreakMinutes:'15',cycles:'4',
 };
-const field='min-h-11 w-full rounded-ctl border border-edge bg-well px-3 py-2 text-body text-ink';
-const action='min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold disabled:opacity-50';
+const field='min-h-11 w-full rounded-ctl border settings-section-field px-3 py-2 text-body settings-section-text';
+const action='min-h-11 rounded-ctl border settings-section-button px-3 py-2 text-label font-semibold disabled:opacity-50';
 const initial=(row?:PresetRecord):Draft=>row?{
  label:row.label,mode:row.mode,focusMinutes:String(row.focusMinutes),
  breakMinutes:String(row.breakMinutes),longBreakMinutes:String(row.longBreakMinutes),
@@ -61,7 +64,7 @@ export async function loadActivityPresets():Promise<PresetRecord[]>{
  }
  throw Error('Activity preset paging limit exceeded');
 }
-export default function Activities(){
+export default function Activities({v7=false}:{v7?:boolean}={}){
  const [items,setItems]=useState<PresetRecord[]>([]);
  const [loading,setLoading]=useState(true);
  const [busy,setBusy]=useState(false);
@@ -114,27 +117,29 @@ export default function Activities(){
  const change=(key:keyof Draft,value:string)=>setDraft(prev=>({...prev,[key]:value}));
  const active=items.filter(x=>x.archivedAt===null);
  const archived=items.filter(x=>x.archivedAt!==null);
+ const Control=v7?Button:'button';
  return <section aria-label="Activities" className="space-y-4">
   <h2 className="text-title-s font-semibold">Activities</h2>
-  <p className="text-label text-ink-2">Save focus modes and timing for future study sessions. Archiving keeps past sessions intact.</p>
+  <p className="text-label settings-section-meta">Save focus modes and timing for future study sessions. Archiving keeps past sessions intact.</p>
   {loading?<p role="status">Loading activities…</p>:null}
-  {error?<p role="alert" className="text-label text-again">{error}</p>:null}
-  {notice?<p role="status" className="text-label text-ink-2">{notice}</p>:null}
+  {error?<p role="alert" className="text-label settings-section-error">{error}</p>:null}
+  {notice?<p role="status" className="text-label settings-section-meta">{notice}</p>:null}
   <form aria-label={editing?'Edit activity':'Create activity'} noValidate
-   onSubmit={submit} className="space-y-3 rounded-slab border border-edge p-4">
+   onSubmit={submit} className="space-y-3 rounded-slab border settings-section-card p-4">
    <h3 className="text-body font-semibold">{editing?'Edit activity':'New activity'}</h3>
    <label className="block text-label">Name
     <input className={field} aria-label="Activity name" maxLength={120}
      value={draft.label} onChange={event=>change('label',event.target.value)}/>
    </label>
-   <label className="block text-label">Mode
+   {v7?<Picker label="Activity mode" value={presetModes[draft.mode]} options={Object.values(presetModes)}
+    onChange={value=>change('mode',value.toLowerCase() as PresetMode)}/>:<label className="block text-label">Mode
     <select className={field} aria-label="Activity mode" value={draft.mode}
      onChange={event=>change('mode',event.target.value)}>
      <option value="pomodoro">Pomodoro</option>
      <option value="flowtime">Flowtime</option>
      <option value="open">Open</option>
     </select>
-   </label>
+   </label>}
    <div className="grid grid-cols-2 gap-3">
     {([
      ['focusMinutes','Focus minutes',480],
@@ -148,27 +153,27 @@ export default function Activities(){
     </label>)}
    </div>
    <div className="flex flex-wrap gap-2">
-    <button className={action} type="submit" disabled={busy}>
+    <Control className={action} type="submit" disabled={busy}>
      {editing?'Save activity':'Create activity'}
-    </button>
-    {editing&&<button className={action} type="button"
+    </Control>
+    {editing&&<Control className={action} type="button"
      onClick={()=>{setEditing(null);setDraft(initial());setError('')}}
-     disabled={busy}>Cancel editing</button>}
+     disabled={busy}>Cancel editing</Control>}
    </div>
   </form>
   {!loading&&<section aria-label="Active activities" className="space-y-2">
    <h3 className="text-body font-semibold">Active ({active.length})</h3>
-   {!active.length&&<p className="text-label text-ink-2">No active activities yet.</p>}
-   {active.map(row=><article key={row.id} className="rounded-slab border border-edge p-4">
+   {!active.length&&<p className="text-label settings-section-meta">No active activities yet.</p>}
+   {active.map(row=><article key={row.id} className="rounded-slab border settings-section-card p-4">
     <h4 className="text-body font-semibold">{row.label}</h4>
-    <p className="mt-1 text-label text-ink-2">{row.mode} · {row.focusMinutes} min focus · {row.breakMinutes} min break · {row.cycles} cycles</p>
+    <p className="mt-1 text-label settings-section-meta">{row.mode} · {row.focusMinutes} min focus · {row.breakMinutes} min break · {row.cycles} cycles</p>
     <div className="mt-3 flex flex-wrap items-end gap-2">
-     <button type="button" className={action} disabled={busy}
+     <Control type="button" className={action} disabled={busy}
       onClick={()=>{setEditing(row.id);setDraft(initial(row));setError('')}}
-      aria-label={'Edit '+row.label}>Edit</button>
-     <button type="button" className={action} disabled={busy}
+      aria-label={'Edit '+row.label}>Edit</Control>
+     <Control type="button" className={action} disabled={busy}
       onClick={()=>void run(()=>getPresetApi().archivePreset(row.id,row.version),'Activity archived')}
-      aria-label={'Archive '+row.label}>Archive</button>
+      aria-label={'Archive '+row.label}>Archive</Control>
      {/* N220 (Owner report): the order field and its Save sit together on their own line, instead of wrapping apart;
          the input's own label names the activity, which the card already shows. */}
      <div className="activity-order flex basis-full items-center gap-2">
@@ -178,7 +183,7 @@ export default function Activities(){
         value={positions[row.id]??String(row.position)}
         onChange={event=>setPositions(prev=>({...prev,[row.id]:event.target.value}))}/>
       </label>
-      <button type="button" className={action} disabled={busy}
+      <Control type="button" className={action} disabled={busy}
        aria-label={'Save order '+row.label}
        onClick={()=>{
         const raw=positions[row.id];
@@ -186,19 +191,19 @@ export default function Activities(){
          Number(raw)>2147483647){setError('Order must be a non-negative integer');return}
         void run(()=>getPresetApi().reorderPreset(row.id,row.version,Number(raw)),
          'Activity order saved');
-       }}>Save order</button>
+       }}>Save order</Control>
      </div>
     </div>
    </article>)}
   </section>}
   {!loading&&<section aria-label="Archived activities" className="space-y-2">
    <h3 className="text-body font-semibold">Archived ({archived.length})</h3>
-   {archived.map(row=><article key={row.id} className="rounded-slab border border-edge p-4">
+   {archived.map(row=><article key={row.id} className="rounded-slab border settings-section-card p-4">
     <h4 className="text-label font-semibold">{row.label}</h4>
-    <button type="button" className={action+' mt-2'} disabled={busy}
+    <Control type="button" className={action+' mt-2'} disabled={busy}
      aria-label={'Restore '+row.label}
      onClick={()=>void run(()=>getPresetApi().restorePreset(row.id,row.version),
-      'Activity restored')}>Restore</button>
+      'Activity restored')}>Restore</Control>
    </article>)}
   </section>}
  </section>;

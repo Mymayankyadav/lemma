@@ -1,4 +1,5 @@
-import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {retryLazy,retryNamed} from '../../app/lazyModule';
+import {Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate} from 'react-router';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {Plus,Search} from 'lucide-react';
@@ -21,8 +22,8 @@ import {isFlagOn} from '../../flags';
 import V6Cards from './v6/V6Cards';
 import {v7Screen} from '../../app/v7Kit';
 
-const Editor=lazy(()=>import('./Editor').then(module=>({default:module.Editor})));
-const CardsV7=lazy(()=>import('./v7/CardsV7'));
+const Editor=retryNamed(()=>import('./Editor'),module=>module.Editor);
+const CardsV7=retryLazy(()=>import('./v7/CardsV7'));
 const ROW_HEIGHT=92,OVERSCAN=6;
 function relative(due:string|null){
  if(!due)return 'New';

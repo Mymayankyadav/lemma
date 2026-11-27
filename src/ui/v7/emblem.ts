@@ -1,8 +1,8 @@
 /**
- * Emblem system v3 (N166, after release plan R2 and audit F27): one mathematical object per subject family, drawn at
+ * Emblem system: balanced warm-theme line art: one mathematical object per subject family, drawn at
  * three tiers from the same seed, as a geometer would draw it in a notebook — ink lines only, no fills or gradients.
- *  - hero  (164–520 px): the rich version, at most 160 strokes, one focal stroke at full weight, the rest at 40–60%.
- *    Depth is drawn, not shaded: hidden lines are removed (a small depth buffer), nearer lines sit at 60%, farther at 40%.
+ *  - hero  (164–520 px): the rich version, at most 160 strokes, one focal stroke at full weight, helper lines at 50%.
+ *    Depth is drawn by removing hidden lines; visible helpers share 50% opacity.
  *  - tile  (40–159 px, path and plan cards): at most 24 strokes, the focal stroke plus simplified context.
  *  - glyph (16–39 px, subject marks in chips and lists): 1–3 strokes, a silhouette rather than a shrunken tile, and
  *    one that no other family shares.
@@ -17,8 +17,16 @@ export type EmblemStroke = {d: string; opacity: number; width: number; focal?: t
 
 /** Maximum strokes per tier (the spec's budget; tests and the design lint hold every screen to it). */
 export const TIER_LIMIT: Record<EmblemTier, number> = {hero: 160, tile: 24, glyph: 3};
-/** Stroke rule: 1 px at tile, 1.25 px at hero, 1.7 px (1.6 at tile) for the focal stroke; glyph strokes 1.25 px. */
-export const TIER_WIDTH: Record<EmblemTier, {base: number; focal: number}> = {hero: {base: 1.25, focal: 1.7}, tile: {base: 1, focal: 1.6}, glyph: {base: 1.25, focal: 1.25}};
+/** One 1.75px line weight for every subject and tier; hierarchy comes from opacity. */
+export const TIER_WIDTH: Record<EmblemTier, {base: number; focal: number}> = {hero: {base: 1.75, focal: 1.75}, tile: {base: 1.75, focal: 1.75}, glyph: {base: 1.75, focal: 1.75}};
+
+/** Public 64-unit frame; construction coordinates stay at 200 units to preserve every family's geometry. */
+export const EMBLEM_VIEW_BOX = "0 0 64 64";
+export const emblemFrame = (tier: EmblemTier) => ({scale: 64 / (tier === "glyph" ? 224 : 200), offset: tier === "glyph" ? 12 : 0});
+export function emblemTransform(tier: EmblemTier): string {
+  const {scale, offset} = emblemFrame(tier);
+  return `scale(${scale}) translate(${offset} ${offset})`;
+}
 
 /** The tier a rendered size uses. */
 export function emblemTier(size: number): EmblemTier {
@@ -90,7 +98,6 @@ function runs(points: readonly P[], visible: readonly boolean[], minRun = 2): st
   return d;
 }
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const clampOpacity = (o: number) => Math.min(0.6, Math.max(0.4, +o.toFixed(3)));
 function seeded(h: number) {let x = h || 1; return () => {x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296;};}
 const pick = <T,>(h: number, items: readonly T[], salt = 0): T => items[(h >>> salt) % items.length];
 
@@ -137,7 +144,7 @@ function alignToViewer(from: V3): (v: V3) => V3 {
   return (v) => {const kv = cross(k, v), kd = dot(k, v); return [v[0] * c + kv[0] * s + k[0] * kd * (1 - c), v[1] * c + kv[1] * s + k[1] * kd * (1 - c), v[2] * c + kv[2] * s + k[2] * kd * (1 - c)];};
 }
 
-/** A context stroke with its own opacity (clamped to the 40–60% rule). */
+/** Construction helpers. Historical depth hints are normalized to 50% at output. */
 type Ctx = {d: string; o: number};
 
 /** The mathematical construction for a family, at a tier. Deterministic, bounded, in drawing order. */
@@ -238,8 +245,7 @@ export function emblemStrokes(subject: string, seed: string, kind: EmblemKind = 
     for (const half of [pts, pts.slice().reverse()]) {const start = hull.length; for (const p of half) {while (hull.length >= start + 2 && turnSign(hull[hull.length - 2], hull[hull.length - 1], p) <= 1e-9) hull.pop(); hull.push(p);} hull.pop();}
     focal = path(hull, true);
   } else if (kind === "torus-knot") {
-    // A (2, q) torus knot as a tube in plan, with true over- and under-crossings: the seed picks q (3 or 5) and the turn.
-    // The tube is drawn as lines along it (spaced as a cylinder foreshortens) and rings across it; focal: the core.
+    // A single (2, q) knot line with true over- and under-crossings; no parallel tube outlines.
     // In the plane the (2, q) torus knot is the two-circle epicycle w = e^{i(q−2)t} − 2e^{−2it} (q = 3: the classic
     // trefoil), lifted by sin(qt) so the crossings alternate.
     const q = glyph ? 3 : pick(h, [3, 3, 5, 3]), N = glyph ? 360 : 540;
@@ -249,8 +255,7 @@ export function emblemStrokes(subject: string, seed: string, kind: EmblemKind = 
       const t = i / N * Math.PI * 2, u = Math.cos((q - 2) * t) - 2 * Math.cos(2 * t), v = Math.sin((q - 2) * t) + 2 * Math.sin(2 * t);
       core.push([100 + scale * (u * st + v * ct), 100 - scale * (u * ct - v * st), 30 * Math.sin(q * t)]);
     }
-    const normals: P[] = core.map((_, i) => {const n = core[(i + 1) % N], b = core[(i - 1 + N) % N], dx = n[0] - b[0], dy = n[1] - b[1], l = Math.hypot(dx, dy) || 1; return [-dy / l, dx / l];});
-    const tube = glyph ? 0 : hero ? 9 : 8, gap = glyph ? 11 : 3.2, reach = (tube || 0) + gap;
+    const reach = 11;
     // Spatial hash of core samples for the crossing test.
     const grid = new Map<number, number[]>(), cellOf = (x: number, y: number) => Math.floor(x / 12) * 1000 + Math.floor(y / 12);
     core.forEach(([x, y], i) => {const k = cellOf(x, y); (grid.get(k) ?? grid.set(k, []).get(k)!).push(i);});
@@ -262,21 +267,12 @@ export function emblemStrokes(subject: string, seed: string, kind: EmblemKind = 
       }
       return false;
     };
-    const along = (offset: number) => {const pts: P[] = [], vis: boolean[] = []; for (let i = 0; i <= N; i++) {const k = i % N, x = core[k][0] + normals[k][0] * offset, y = core[k][1] + normals[k][1] * offset; pts.push([x, y]); vis.push(!hidden(x, y, k));} return runs(pts, vis);};
-    if (hero) {
-      // Rings across the tube first (faint), then the lines along it, edges strongest.
-      const rings = 96;
-      let ringPaths = "";
-      for (let r = 0; r < rings; r++) {
-        const k = Math.round(r * N / rings), pts: P[] = [], vis: boolean[] = [];
-        for (let u = 0; u <= 8; u++) {const o = -tube + 2 * tube * u / 8, x = core[k][0] + normals[k][0] * o, y = core[k][1] + normals[k][1] * o; pts.push([x, y]); vis.push(!hidden(x, y, k));}
-        ringPaths += runs(pts, vis);
-        if (r % 8 === 7) {add(ringPaths, 0.4); ringPaths = "";}
-      }
-      for (const th of [-60, -35, -12, 12, 35, 60]) add(along(tube * Math.sin(th * Math.PI / 180)), 0.45);
-      add(along(-tube), 0.6); add(along(tube), 0.6);
-    } else if (tile) {add(along(-tube), 0.6); add(along(tube), 0.6);}
-    focal = along(0);
+    const pts: P[] = [], visible: boolean[] = [];
+    for (let i = 0; i <= N; i++) {
+      const k = i % N, [x, y] = core[k];
+      pts.push([x, y]); visible.push(!hidden(x, y, k));
+    }
+    focal = runs(pts, visible);
   } else if (kind === "multiplication-circle") {
     // The times-k table mod n on a circle: chord i → k·i. Its envelope is the epicycloid with k − 1 cusps (k = 2: the
     // cardioid). Hero and tile let the envelope emerge from chords; the glyph draws the envelope itself.
@@ -429,7 +425,7 @@ export function emblemStrokes(subject: string, seed: string, kind: EmblemKind = 
   }
 
   const limit = TIER_LIMIT[tier] - 1, kept = context.slice(0, limit);
-  const strokes: EmblemStroke[] = kept.map(({d, o}) => ({d, width: w.base, opacity: glyph ? 1 : clampOpacity(o)}));
+  const strokes: EmblemStroke[] = kept.map(({d}) => ({d, width: w.base, opacity: glyph ? 1 : 0.5}));
   if (focal) strokes.push({d: focal, width: w.focal, opacity: 1, focal: true});
   if (cache.size >= 256) cache.delete(cache.keys().next().value!);
   cache.set(key, strokes);

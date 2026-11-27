@@ -1,11 +1,12 @@
+import {retryNamed} from '../../../app/lazyModule';
 import {isFlagOn} from '../../../flags';
 import {cardMode,cardModes,type CardMode} from '../../../data/exam/contract';
 import {InfoTip} from '../../../ui/v7/InfoTip';
 import {RulerTime} from '../../../ui/v7/RulerTime';
 import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {WeekdayCapacity} from '../../adaptive/WeekdayCapacity';
-import {lazy,Suspense,useState,type ReactNode} from 'react';
-import {Check,ChevronRight} from 'lucide-react';
+import {Suspense,useLayoutEffect,useRef,useState,type KeyboardEvent,type MouseEvent,type ReactNode} from 'react';
+import {Check,ChevronLeft,ChevronRight} from 'lucide-react';
 import {useUpdateSettings} from '../../../data/hooks';
 import {usePlanRelease} from '../../../data/usePlanRelease';
 import {requestedAlgorithm, type SchedulingAlgorithm} from '../../../../supabase/functions/_shared/agenda/contract';
@@ -14,6 +15,7 @@ import type {FocusDefaultsPrefs,NotifyPrefs,PlanningPrefs,ReviewBudgetPrefs,Sett
 import {notifyUndo} from '../../../data/notify';
 import {useToast} from '../../../ui/Toast';
 import {Button,Field,Sheet,Slider,Stepper,Switch} from '../../../ui/v7/components';
+import {requestLayerClose} from '../../../ui/v7/layers';
 import {formatDuration,zoneLongName} from '../../../lib/format';
 import {validateFocusValues,validateReviewBudgetValues} from '../v6/Focus';
 import {validatePlanningValues} from '../v6/Planning';
@@ -22,8 +24,8 @@ import {requestNotificationPermission} from '../../../platform/permissions';
 import {requestTestNotice,serverDelivers} from '../../../platform/push';
 import {reminderKindRows} from './reminderKinds';
 // N123: phone-only rows load only inside the Android app.
-const PhoneReminders=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneReminders})));
-const PhonePlanning=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhonePlanning})));
+const PhoneReminders=retryNamed(()=>import('./PhoneSettings'),module=>module.PhoneReminders);
+const PhonePlanning=retryNamed(()=>import('./PhoneSettings'),module=>module.PhonePlanning);
 
 /**
  * Release plan R1 · F03: Settings as grouped lists. A row shows its label and current value with a chevron, or an inline
@@ -63,44 +65,94 @@ export function useSaveSettings(){
  return {busy:update.isPending,save:async(patch:SettingsPatch,undo?:SettingsPatch,message='Saved')=>{
   try{
    await update.mutateAsync(patch);
-   notify(message,{tone:'success',...(undo?{action:{label:'Undo',onClick:()=>{void update.mutateAsync(undo).catch(()=>notify('We couldn’t undo that change. Try again.',{tone:'danger'}));}}}:{})});
+   notify(message,{tone:'success',...(undo?{action:{label:'Undo',onClick:()=>update.mutateAsync(undo).catch(()=>{notify('We couldn’t undo that change. Try again.',{tone:'danger'});})}}:{})});
    return true;
   }catch{notify('We couldn’t save that change. Try again.',{tone:'danger'});return false;}
  }};
 }
 
-/** Pick sheet (F17): a list with a ✓ on the current choice; choosing closes the sheet. */
+/** Immediate choices apply on activation. Arrow keys move the radio focus without committing. */
 export function PickSheet<T extends string|number>({title,eyebrow,options,value,onPick,onClose}:{title:string;eyebrow?:string;options:{value:T;label:string;hint?:string}[];value:T;onPick:(value:T)=>void;onClose:()=>void}){
+ const [focused,setFocused]=useState(value);
+ const move=(event:KeyboardEvent<HTMLDivElement>)=>{
+  const current=options.findIndex(option=>option.value===focused), last=options.length-1;
+  const next=event.key==='Home'?0:event.key==='End'?last:
+   event.key==='ArrowDown'||event.key==='ArrowRight'?(current+1)%options.length:
+   event.key==='ArrowUp'||event.key==='ArrowLeft'?(current+last)%options.length:-1;
+  if(next<0||!options[next])return;
+  event.preventDefault();
+  event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus();
+ };
  return <Sheet open onClose={onClose} title={title} eyebrow={eyebrow}>
-  <div className="v7-pick-list" role="radiogroup" aria-label={title}>
+  <div className="v7-pick-list" role="radiogroup" aria-label={title} onKeyDown={move}>
    {options.map(option=><button key={String(option.value)} type="button" role="radio" aria-checked={option.value===value} className="v7-pick-row"
+    tabIndex={option.value===focused?0:-1} onFocus={()=>setFocused(option.value)}
+    data-v7-autofocus={option.value===value?'true':undefined}
     onClick={()=>{onClose();if(option.value!==value)onPick(option.value);}}>
     <span className="v7-set-text"><span className="v7-set-label">{option.label}</span>{option.hint&&<small>{option.hint}</small>}</span>
     {option.value===value&&<Check aria-hidden="true"/>}</button>)}
   </div>
  </Sheet>;
 }
+
+type SaveResult=boolean|void|Promise<boolean|void>;
+type NumberEditor={title:string;value:number;min:number;max:number;unit:string|((n:number)=>string);step?:number;onSave:(value:number)=>SaveResult};
 const CLOCK=/^(?:[01]\d|2[0-3]):[0-5]\d$/;
-/** Form sheet for one 24-hour time (F51: the app's own field, not a native time input). */
-export function TimeSheet({title,eyebrow,value,onSave,onClose,hint}:{title:string;eyebrow?:string;value:string;onSave:(value:string)=>void;onClose:()=>void;hint?:string}){
- const [draft,setDraft]=useState(value);
- return <Sheet open onClose={onClose} title={title} eyebrow={eyebrow}
-  footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={()=>{onClose();if(draft!==value)onSave(draft);}}>Save</Button></>}>
+
+export function requestSettingsClose(event: MouseEvent<HTMLButtonElement>) {
+ const dialog=event.currentTarget.closest('dialog');
+ if(dialog)requestLayerClose(dialog,'close');
+}
+
+export function SettingsSaveButtons({changed,busy,onSave,cancel=requestSettingsClose}:{
+ changed:boolean;busy:boolean;onSave:()=>void;cancel?:(event:MouseEvent<HTMLButtonElement>)=>void
+}){
+ return <><Button variant="ghost" disabled={busy} onClick={cancel}>Cancel</Button>
+  <Button variant="primary" loading={busy} disabled={!changed} onClick={onSave}>Save</Button></>;
+}
+
+function useStagedSettingsSave<T>(draft:T,onSave:(value:T)=>SaveResult,onClose:()=>void){
+ const [saving,setSaving]=useState(false);
+ const pending=useRef(false);
+ const notify=useToast();
+ return {saving,saveDraft:async()=>{
+  if(pending.current)return;
+  pending.current=true;
+  setSaving(true);
+  try{if(await onSave(draft)!==false)onClose();}
+  catch{notify('We couldn’t save that change. Try again.',{tone:'danger'});}
+  finally{pending.current=false;setSaving(false);}
+ }};
+}
+
+/** Forms hold their draft until a successful save. Every dismissal follows the layer's dirty guard. */
+export function TimeSheet({title,eyebrow,value,onSave,onClose,hint}:{title:string;eyebrow?:string;value:string;onSave:(value:string)=>SaveResult;onClose:()=>void;hint?:string}){
+ const [draft,setDraft]=useState(value),dirty=draft!==value;
+ const {saving,saveDraft}=useStagedSettingsSave(draft,onSave,onClose);
+ return <Sheet open onClose={()=>{if(!saving)onClose();}} title={title} eyebrow={eyebrow} dirty={dirty&&!saving}
+  footer={<SettingsSaveButtons changed={dirty&&CLOCK.test(draft)} busy={saving} onSave={()=>void saveDraft()}/>}>
   <RulerTime label={title} value={draft} onChange={setDraft}/>
   {hint&&<p className="v7-meta">{hint}</p>}
  </Sheet>;
 }
-/** Form sheet for one whole number, with the shared stepper (F14) and a typed field for large jumps. */
-export function NumberSheet({title,eyebrow,value,min,max,unit,step=1,onSave,onClose}:{title:string;eyebrow?:string;value:number;min:number;max:number;unit:string|((n:number)=>string);step?:number;onSave:(value:number)=>void;onClose:()=>void}){
- const [draft,setDraft]=useState(value);
- return <Sheet open onClose={onClose} title={title} eyebrow={eyebrow} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={()=>{onClose();if(draft!==value)onSave(draft);}}>Save</Button></>}>
-  <div className="v7-form-stack"><RulerSlider label={title} value={draft} min={min} max={max} step={step} onChange={setDraft} format={value=>typeof unit==='string'?value+' '+unit:unit(value)} tickFormat={String}/></div>
+
+function NumberFields({title,min,max,unit,step=1,draft,onChange}:NumberEditor&{draft:number;onChange:(value:number)=>void}){
+ return <div className="v7-form-stack"><RulerSlider label={title} value={draft} min={min} max={max} step={step}
+  onChange={onChange} format={value=>typeof unit==='string'?value+' '+unit:unit(value)} tickFormat={String}/></div>;
+}
+
+export function NumberSheet(props:NumberEditor&{eyebrow?:string;onClose:()=>void}){
+ const [draft,setDraft]=useState(props.value),dirty=draft!==props.value;
+ const {saving,saveDraft}=useStagedSettingsSave(draft,props.onSave,props.onClose);
+ return <Sheet open onClose={()=>{if(!saving)props.onClose();}} title={props.title} eyebrow={props.eyebrow} dirty={dirty&&!saving}
+  footer={<SettingsSaveButtons changed={dirty} busy={saving} onSave={()=>void saveDraft()}/>}>
+  <NumberFields {...props} draft={draft} onChange={setDraft}/>
  </Sheet>;
 }
 
 type Open=null|{kind:'pick';title:string;options:{value:string|number;label:string;hint?:string}[];value:string|number;onPick:(value:never)=>void}
- |{kind:'time';title:string;value:string;onSave:(value:string)=>void;hint?:string}
- |{kind:'number';title:string;value:number;min:number;max:number;unit:string|((n:number)=>string);onSave:(value:number)=>void}
+ |{kind:'time';title:string;value:string;onSave:(value:string)=>SaveResult;hint?:string}
+ |({kind:'number'}&NumberEditor)
  |{kind:'recall'};
 function useEditor(eyebrow:string){
  const [open,setOpen]=useState<Open>(null),close=()=>setOpen(null);
@@ -119,27 +171,30 @@ export function StudyLists({settings,onAdvanced}:{settings:Settings;onAdvanced:(
  const retention=Math.round(settings.desiredRetention*100);
  const focus:FocusDefaultsPrefs={mode:'pomodoro',focus_minutes:25,break_minutes:5,long_break_minutes:15,cycles:4,flowtime_break_ratio:0.2,long_session_guard_minutes:120,...settings.focusDefaults};
  const budget:ReviewBudgetPrefs={cards:20,minutes:20,reserve_in_plans:true,...settings.reviewBudget};
- const focusWith=(patch:Partial<FocusDefaultsPrefs>)=>{
+ const focusWith=(patch:Partial<FocusDefaultsPrefs>,message?:string)=>{
   const next={...focus,...patch};
   const valid=validateFocusValues({mode:next.mode,focusMinutes:String(next.focus_minutes),breakMinutes:String(next.break_minutes),longBreakMinutes:String(next.long_break_minutes),cycles:String(next.cycles),flowtimeBreakRatio:String(next.flowtime_break_ratio),longSessionGuardMinutes:String(next.long_session_guard_minutes)});
-  void save({focusDefaults:valid},{focusDefaults:focus});
+  return save({focusDefaults:valid},{focusDefaults:focus},message);
  };
  const budgetWith=(patch:Partial<ReviewBudgetPrefs>)=>{
   const next={...budget,...patch};
   const valid=validateReviewBudgetValues({cards:String(next.cards),minutes:String(next.minutes),reserveInPlans:String(next.reserve_in_plans)});
-  void save({reviewBudget:valid},{reviewBudget:budget});
+  return save({reviewBudget:valid},{reviewBudget:budget});
  };
  const modeWord={pomodoro:'Pomodoro',flowtime:'Flowtime',open:'Open'} as const;
  const attention={drift_prompt:false,urge_prompt:false,...settings.attention};
+ const recallDraft=recall??retention, recallDirty=recallDraft!==retention;
+ const recallSave=useStagedSettingsSave(recallDraft,value=>save({desiredRetention:value/100},{desiredRetention:settings.desiredRetention}),editor.close);
+
  return <div className="v7-settings-body">
   <Group title="Memory">
    <ValueRow label="Target recall" value={retention+'%'} onOpen={()=>{setRecall(retention);editor.setOpen({kind:'recall'});}}/>
-   <ValueRow label="New cards a day" value={String(settings.newPerDay)} onOpen={()=>editor.setOpen({kind:'number',title:'New cards a day',value:settings.newPerDay,min:0,max:60,unit:n=>n+(n===1?' card':' cards'),onSave:value=>{void save({newPerDay:value},{newPerDay:settings.newPerDay});}})}/>
+   <ValueRow label="New cards a day" value={String(settings.newPerDay)} onOpen={()=>editor.setOpen({kind:'number',title:'New cards a day',value:settings.newPerDay,min:0,max:60,unit:n=>n+(n===1?' card':' cards'),onSave:value=>save({newPerDay:value},{newPerDay:settings.newPerDay})})}/>
   </Group>
   <Group title="Focus">
    <ValueRow label="Default mode" value={modeWord[focus.mode]} onOpen={()=>editor.setOpen({kind:'pick',title:'Default mode',value:focus.mode,options:[
     {value:'pomodoro',label:'Pomodoro',hint:'Fixed focus and break lengths'},{value:'flowtime',label:'Flowtime',hint:'Focus as long as it flows; breaks scale with it'},{value:'open',label:'Open',hint:'A stopwatch, no breaks'}],
-    onPick:((value:FocusDefaultsPrefs['mode'])=>focusWith({mode:value})) as (value:never)=>void})}/>
+    onPick:((value:FocusDefaultsPrefs['mode'])=>focusWith({mode:value},'Default mode set to '+modeWord[value])) as (value:never)=>void})}/>
    <ValueRow label="Focus" value={formatDuration(focus.focus_minutes)} onOpen={()=>editor.setOpen({kind:'number',title:'Focus length',value:focus.focus_minutes,min:1,max:480,unit:'min',onSave:value=>focusWith({focus_minutes:value})})}/>
    <ValueRow label="Break" value={formatDuration(focus.break_minutes)} onOpen={()=>editor.setOpen({kind:'number',title:'Break length',value:focus.break_minutes,min:1,max:180,unit:'min',onSave:value=>focusWith({break_minutes:value})})}/>
    <ValueRow label="Long break" value={formatDuration(focus.long_break_minutes)+' after '+focus.cycles} onOpen={()=>editor.setOpen({kind:'number',title:'Long break length',value:focus.long_break_minutes,min:1,max:240,unit:'min',onSave:value=>focusWith({long_break_minutes:value})})}/>
@@ -154,9 +209,9 @@ export function StudyLists({settings,onAdvanced}:{settings:Settings;onAdvanced:(
   <Group title="More">
    <ValueRow label="Advanced" value="" onOpen={onAdvanced}/>
   </Group>
-  {editor.open?.kind==='recall'?<Sheet open onClose={editor.close} eyebrow="Study and review" title="Target recall"
-   footer={<><Button variant="ghost" onClick={editor.close}>Cancel</Button><Button variant="primary" onClick={()=>{const next=recall??retention;editor.close();if(next!==retention)void save({desiredRetention:next/100},{desiredRetention:settings.desiredRetention});}}>Save</Button></>}>
-   <div className="v7-form-stack"><Slider label="Target recall" value={recall??retention} min={80} max={97} onChange={setRecall}/>
+  {editor.open?.kind==='recall'?<Sheet open onClose={()=>{if(!recallSave.saving)editor.close();}} eyebrow="Study and review" title="Target recall" dirty={recallDirty&&!recallSave.saving}
+   footer={<SettingsSaveButtons changed={recallDirty} busy={recallSave.saving} onSave={()=>void recallSave.saveDraft()}/>}>
+   <div className="v7-form-stack"><Slider label="Target recall" value={recallDraft} min={80} max={97} onChange={setRecall}/>
     <p className="v7-set-note">{(recall??retention)+'% · '+recallWords(recall??retention)}</p></div>
   </Sheet>:editor.sheet}
  </div>;
@@ -170,12 +225,12 @@ export function PlanningLists({settings,capacityRequested,onCapacityOpen}:{setti
  const algorithm=requestedAlgorithm(settings.schedulingAlgorithm,agendaReleased);
  const [advanced,setAdvanced]=useState(false);
  const planning:PlanningPrefs={window_start:'08:00',window_end:'22:00',gap_minutes:10,max_consecutive_minutes:120,daily_minimum_minutes:20,daily_intention:true,...settings.planning};
- const withPlanning=(patch:Partial<PlanningPrefs>)=>{
+ const withPlanning=(patch:Partial<PlanningPrefs>,message?:string)=>{
   const next={...planning,...patch};
   try{
    const valid=validatePlanningValues({windowStart:next.window_start,windowEnd:next.window_end,gapMinutes:String(next.gap_minutes),maxConsecutiveMinutes:String(next.max_consecutive_minutes),dailyMinimumMinutes:String(next.daily_minimum_minutes),dailyIntention:String(next.daily_intention)});
-   void save({planning:{...next,...valid}},{planning});
-  }catch{notify('The day has to end after it starts. Nothing was changed.',{tone:'danger'});}
+   return save({planning:{...next,...valid}},{planning},message);
+  }catch{notify('The day has to end after it starts. Nothing was changed.',{tone:'danger'});return false;}
  };
  const minimums=[0,10,15,20,30,45,60,90,120,180];
  return <div className="v7-settings-body">
@@ -184,7 +239,7 @@ export function PlanningLists({settings,capacityRequested,onCapacityOpen}:{setti
    <ValueRow label="Scheduling algorithm" value={algorithm==='new'?'New':'Legacy'} onOpen={()=>editor.setOpen({
     kind:'pick',title:'Scheduling algorithm',value:algorithm,
     options:[{value:'new',label:'New',hint:'Uses available time, commitments and study history'},{value:'legacy',label:'Legacy',hint:'Uses the native v3 scheduler'}],
-    onPick:(value:SchedulingAlgorithm)=>{void save({schedulingAlgorithm:value},{schedulingAlgorithm:settings.schedulingAlgorithm??null});},
+    onPick:(value:SchedulingAlgorithm)=>{void save({schedulingAlgorithm:value},{schedulingAlgorithm:settings.schedulingAlgorithm??null},'Scheduling algorithm set to '+(value==='new'?'New':'Legacy'));},
    })}/>
   </Group>}
   {isFlagOn('examMode')&&<Group title="Exam prep">
@@ -194,27 +249,61 @@ export function PlanningLists({settings,capacityRequested,onCapacityOpen}:{setti
   </Group>}
   <Group title="Your day">
    <ValueRow label="Daily minimum" value={planning.daily_minimum_minutes?formatDuration(planning.daily_minimum_minutes):'None'} onOpen={()=>editor.setOpen({kind:'pick',title:'Daily minimum',value:planning.daily_minimum_minutes,
-    options:[...new Set([...minimums,planning.daily_minimum_minutes])].sort((a,b)=>a-b).map(n=>({value:n,label:n?formatDuration(n):'None'})),onPick:((value:number)=>withPlanning({daily_minimum_minutes:value})) as (value:never)=>void})}/>
+    options:[...new Set([...minimums,planning.daily_minimum_minutes])].sort((a,b)=>a-b).map(n=>({value:n,label:n?formatDuration(n):'None'})),onPick:((value:number)=>withPlanning({daily_minimum_minutes:value},value?'Daily minimum set to '+formatDuration(value):'Daily minimum cleared')) as (value:never)=>void})}/>
    <ValueRow label="Day starts" value={planning.window_start} onOpen={()=>editor.setOpen({kind:'time',title:'Day starts',value:planning.window_start,onSave:value=>withPlanning({window_start:value})})}/>
    <ValueRow label="Day ends" value={planning.window_end} onOpen={()=>editor.setOpen({kind:'time',title:'Day ends',value:planning.window_end,onSave:value=>withPlanning({window_end:value})})}/>
    <SwitchRow label="Ask for an intention each morning" checked={planning.daily_intention} disabled={busy} onChange={value=>withPlanning({daily_intention:value})}/>
   </Group>
   <Group title="Calendar">
-   <ValueRow label="Week starts on" value={weekdays[settings.weekStart??1]} onOpen={()=>editor.setOpen({kind:'pick',title:'Week starts on',value:settings.weekStart??1,options:weekdays.map((label,value)=>({value,label})),onPick:((value:number)=>{void save({weekStart:value},{weekStart:settings.weekStart??1});}) as (value:never)=>void})}/>
-   <ValueRow label="Time display" value={(settings.clock24h??true)?'24-hour':'12-hour'} onOpen={()=>editor.setOpen({kind:'pick',title:'Time display',value:(settings.clock24h??true)?'24':'12',options:[{value:'24',label:'24-hour',hint:'17:30'},{value:'12',label:'12-hour',hint:'5:30 pm'}],onPick:((value:string)=>{void save({clock24h:value==='24'},{clock24h:settings.clock24h??true});}) as (value:never)=>void})}/>
+   <ValueRow label="Week starts on" value={weekdays[settings.weekStart??1]} onOpen={()=>editor.setOpen({kind:'pick',title:'Week starts on',value:settings.weekStart??1,options:weekdays.map((label,value)=>({value,label})),onPick:((value:number)=>{void save({weekStart:value},{weekStart:settings.weekStart??1},'Week starts on '+weekdays[value]);}) as (value:never)=>void})}/>
+   <ValueRow label="Time display" value={(settings.clock24h??true)?'24-hour':'12-hour'} onOpen={()=>editor.setOpen({kind:'pick',title:'Time display',value:(settings.clock24h??true)?'24':'12',options:[{value:'24',label:'24-hour',hint:'17:30'},{value:'12',label:'12-hour',hint:'5:30 pm'}],onPick:((value:string)=>{void save({clock24h:value==='24'},{clock24h:settings.clock24h??true},'Time display set to '+value+'-hour');}) as (value:never)=>void})}/>
   </Group>
   {isNative()&&<Suspense fallback={null}><PhonePlanning/></Suspense>}
   <Group title="More">
    <ValueRow label="Advanced" value="" onOpen={()=>setAdvanced(true)}/>
   </Group>
-  {advanced&&<Sheet open onClose={()=>setAdvanced(false)} eyebrow="Planning" title="Advanced">
-   <ul className="v7-settings-card v7-set-list">
-    <ValueRow label="Gap between blocks" value={formatDuration(planning.gap_minutes)||'None'} onOpen={()=>{setAdvanced(false);editor.setOpen({kind:'number',title:'Gap between blocks',value:planning.gap_minutes,min:0,max:120,unit:'min',onSave:value=>withPlanning({gap_minutes:value})});}}/>
-    <ValueRow label="Longest stretch" value={formatDuration(planning.max_consecutive_minutes)} onOpen={()=>{setAdvanced(false);editor.setOpen({kind:'number',title:'Longest stretch of study',value:planning.max_consecutive_minutes,min:15,max:600,unit:'min',onSave:value=>withPlanning({max_consecutive_minutes:value})});}}/>
-   </ul>
-  </Sheet>}
+  <PlanningAdvanced open={advanced} onClose={()=>setAdvanced(false)} editors={[
+   {title:'Gap between blocks',value:planning.gap_minutes,min:0,max:120,unit:'min',onSave:value=>withPlanning({gap_minutes:value})},
+   {title:'Longest stretch of study',rowLabel:'Longest stretch',value:planning.max_consecutive_minutes,min:15,max:600,unit:'min',onSave:value=>withPlanning({max_consecutive_minutes:value})},
+  ]}/>
   {editor.sheet}
  </div>;
+}
+
+function PlanningAdvanced({open,onClose,editors}:{open:boolean;onClose:()=>void;editors:readonly (NumberEditor&{rowLabel?:string})[]}){
+ const [step,setStep]=useState<string|null>(null),[draft,setDraft]=useState(0);
+ const editor=editors.find(item=>item.title===step), dirty=!!editor&&draft!==editor.value;
+ const rows=useRef(new Map<string,HTMLButtonElement>()), returnTo=useRef<string|null>(null);
+ const fields=useRef<HTMLDivElement|null>(null);
+ const goBack=()=>{returnTo.current=step;setStep(null);};
+ const {saving,saveDraft}=useStagedSettingsSave(draft,value=>editor?.onSave(value),goBack);
+ const close=()=>{if(!saving){if(editor)goBack();else onClose();}};
+ useLayoutEffect(()=>{
+  if(step!==null){
+   fields.current?.querySelector<HTMLElement>('input,[role="slider"]')?.focus({preventScroll:true});
+  }else if(returnTo.current!==null){
+   const row=rows.current.get(returnTo.current);
+   returnTo.current=null;
+   row?.focus({preventScroll:true});
+  }
+ },[step]);
+ return <Sheet open={open} title={editor?.title??'Advanced'} eyebrow="Planning" focusTitle onClose={close} dirty={dirty&&!saving}
+  footer={editor&&<SettingsSaveButtons changed={dirty} busy={saving} onSave={()=>void saveDraft()}/>}>
+  <div className="v7-settings-step">
+   <ul className="v7-settings-card v7-set-list" hidden={!!editor}>
+    {editors.map(item=><li key={item.title}><button type="button" className="v7-set-row"
+     ref={node=>{if(node)rows.current.set(item.title,node);else rows.current.delete(item.title);}}
+     onClick={()=>{setDraft(item.value);setStep(item.title);}}>
+     <span className="v7-set-label">{item.rowLabel??item.title}</span>
+     <span className="v7-set-value">{item.value?formatDuration(item.value):'None'}</span><ChevronRight aria-hidden="true"/>
+    </button></li>)}
+   </ul>
+   {editor&&<div ref={fields} className="v7-form-stack">
+    <Button small variant="ghost" disabled={saving} onClick={requestSettingsClose}><ChevronLeft aria-hidden="true"/>Back to Advanced</Button>
+    <NumberFields {...editor} draft={draft} onChange={setDraft}/>
+   </div>}
+  </div>
+ </Sheet>;
 }
 
 const scheduleWord={off:'Off',live:'As things happen',daily:'Daily summary',weekly:'Weekly digest'} as const;
@@ -222,7 +311,7 @@ const scheduleWord={off:'Off',live:'As things happen',daily:'Daily summary',week
 export function ReminderLists({settings}:{settings:Settings}){
  const {save,busy}=useSaveSettings(),editor=useEditor('Reminders');
  const value:NotifyPrefs=settings.notify??{};
- const put=(patch:NotifyPrefs)=>{void save({notify:patch},{notify:notifyUndo(value,patch)});};
+ const put=(patch:NotifyPrefs)=>save({notify:patch},{notify:notifyUndo(value,patch)});
  const app=isNative(),server=app&&serverDelivers(),rows=reminderKindRows(app,server),notify=useToast();
  const sendTest=()=>{void requestTestNotice().then(()=>notify('Test reminder sent. It should arrive in a few seconds.'),error=>notify(error instanceof Error&&error.message?error.message:'Could not send a test reminder.',{tone:'danger'}));};
  const mode=value.mode??'off',quiet={start:'22:00',end:'07:00',...value.quiet},digest={weekday:0 as NotifyPrefs extends {digest?:{weekday:infer W}}?W:number,time:'09:00',...value.digest};

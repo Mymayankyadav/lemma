@@ -16,7 +16,7 @@ const RES = join(root, 'android', 'app', 'src', 'main', 'res');
 export const ANDROID_COLOURS = {
   day: [
     ['lemma_paper', 'surface.page', 'the page: window and splash background'],
-    ['lemma_ink', 'action.bg', 'the brand indigo: notification accent'],
+    ['lemma_ink', 'action.bg', 'the rose accent: notification accent'],
     ['colorPrimary', 'action.bg', 'theme primary'],
     ['colorPrimaryDark', 'text.primary', 'theme primary dark (status bar on old Android)'],
     ['colorAccent', 'action.bg', 'theme accent'],
@@ -25,7 +25,7 @@ export const ANDROID_COLOURS = {
   ],
   night: [
     ['lemma_paper', 'surface.page', 'the Night page'],
-    ['lemma_ink', 'action.bg', 'the Night brand indigo'],
+    ['lemma_ink', 'action.bg', 'the Night rose accent'],
     ['lemma_tint', 'selection.subtle', 'the Night shortcut background'],
     ['lemma_tint_ink', 'selection.fg', 'the Night shortcut glyph'],
   ],

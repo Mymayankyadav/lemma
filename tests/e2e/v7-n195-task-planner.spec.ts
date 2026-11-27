@@ -37,7 +37,7 @@ for(const expanded of [false,true]){
   await field.fill(original);
   await page.getByRole('radio',{name:'Task',exact:true}).click();
   if(expanded){
-   const more=page.getByRole('button',{name:'More options'});
+   const more=page.getByRole('button',{name:'Add details'});
    await more.click();
    let dialog=page.getByRole('dialog',{name:'New task'});
    await expect(dialog.getByLabel('Title',{exact:true})).toHaveValue('Review lemma');
@@ -89,7 +89,8 @@ for(const [width,scale] of [[360,130],[390,130],[390,100]]){
   expect(Math.max(...bounds.heights)-Math.min(...bounds.heights)).toBeLessThanOrEqual(1);
   expect(bounds.center).toBe(true);
   await due.click();
-  await page.getByRole('dialog',{name:'Due',exact:true}).getByRole('radio',{name:'Date & time',exact:true}).check();
+  await page.getByRole('dialog',{name:'Due',exact:true}).getByRole('radio',{name:'Date & time',exact:true}).click();
+  await expect(editor.getByRole('button',{name:'Due: Date & time',exact:true})).toBeFocused();
   await editor.getByRole('button',{name:/^Due date:/}).click();
   const calendar=page.getByRole('dialog',{name:'Choose a date'});
   await expect(calendar.getByRole('button',{name:'Today',exact:true})).toBeVisible();

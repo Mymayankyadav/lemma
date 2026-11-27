@@ -193,15 +193,19 @@
    other strip icon, and the next words take what is left between ⇒ and Draw symbol. */
 .lemma-tutor .kb .strip[data-words] > .tutor-quick-math {flex: none; margin: 0; padding: 0;}
 .lemma-tutor .kb .strip[data-words] > .tutor-quick-math > .sbtn {flex: none; width: max(var(--v7-touch), 10.4vw);}
-.lemma-tutor .kb .strip .writing-aid-words button {font: 400 1.15rem/1.1 var(--v7-sans); padding-inline: 4px;}
-.lemma-tutor .kb .strip .writing-aid-words button[data-length="mid"] {font-size: .97rem;}
-.lemma-tutor .kb .strip .writing-aid-words button[data-length="long"] {font-size: .85rem;}
-.lemma-tutor .kb .strip .writing-aid-words button[data-length="xlong"] {font-size: .75rem;}
-.lemma-tutor .kb .strip .writing-aid-words button.preferred {font-weight: 400; background: transparent;}
-.lemma-tutor .kb .strip .writing-aid-words button {white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-/* One line, as Gboard: long words get a smaller size above, and anything longer still ends in an ellipsis. */
-.lemma-tutor .kb .strip .writing-aid-words .writing-aid-word-label {display: block; overflow: hidden; text-overflow: ellipsis;
-  white-space: nowrap; overflow-wrap: normal; -webkit-line-clamp: none;}
+.lemma-tutor .kb .strip .writing-aid-words button {display: flex; align-items: center; justify-content: center; font: 400 1.15rem/1.1 var(--v7-sans); padding-inline: 4px;
+  color: var(--v7-role-text-primary); white-space: nowrap; overflow: hidden;}
+.lemma-tutor .kb .strip .writing-aid-words button.preferred {font-weight: 400; background: transparent; color: var(--v7-role-text-primary);}
+.lemma-tutor .kb .strip .writing-aid-word-label[data-length="mid"] {--word-scale: .92; font-size: 1rem;}
+.lemma-tutor .kb .strip .writing-aid-word-label[data-length="long"] {--word-scale: .9; font-size: .95rem;}
+.lemma-tutor .kb .strip .writing-aid-word-label[data-length="xlong"] {--word-scale: .88; font-size: .9rem;}
+.lemma-tutor .kb .strip .preferred .writing-aid-word-label[data-length="xlong"] {--word-scale: .8;}
+/* Flex clips just the first fragment on overflow. Both ends stay readable without measuring text on each tap. */
+.lemma-tutor .kb .strip .writing-aid-words .writing-aid-word-label {display: inline-flex; flex: none; width: max-content;
+  max-width: calc(100% / var(--word-scale, 1)); transform: scaleX(var(--word-scale, 1));
+  line-height: 1.15; white-space: nowrap; overflow-wrap: normal; -webkit-line-clamp: none;}
+.lemma-tutor .kb .strip .writing-aid-word-label > :first-child {min-width: 0; overflow: hidden; text-align: start; text-overflow: ellipsis;}
+.lemma-tutor .kb .strip .writing-aid-word-label > :nth-child(2) {flex: none;}
 /* Hide keyboard: in the strip in a browser; in the Android app, in the band under the keys where Gboard draws its ⌄
    (centred 44 px from the left edge and 25 px above the screen's bottom on the Owner's phone). */
 .lemma-tutor .kb {position: relative;}
@@ -427,8 +431,21 @@
      about two-thirds as tall as wide, as iPadOS's are; portrait caps are about 54 pt square. */
   .lemma-tutor .kb[data-keyboard-layout="ipad"] {--cell: clamp(44px, max(7dvh, 5.4vw), 64px);}
 }
-.lemma-tutor .kb[data-keyboard-layout="ipad"] {padding: 0 3px max(6px, var(--v7-safe-bottom, env(safe-area-inset-bottom)));}
-.lemma-tutor .kb .rows[data-layout="ipad"] {padding: 2px 0 0; --ip-gap: 5px; --ip-corner: calc(var(--ip-gap) + var(--cell) * .14);}
+/* The dock paints to the window edges. Only the caps take the native inset, including the home-indicator band. */
+.lemma-tutor .keyboard-composer:has(> .kb[data-keyboard-layout="ipad"]) {align-self: stretch; padding-bottom: 0;}
+.lemma-tutor .kb[data-keyboard-layout="ipad"] {
+  --ip-gap: clamp(4px, .56vw, 5px);
+  margin-left: calc(-1 * max(var(--v7-page-margin), env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(var(--v7-page-margin), env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px)));
+  padding: 0 max(var(--ip-gap), env(safe-area-inset-right, 0px)) max(23px, var(--v7-safe-bottom, 0px)) max(var(--ip-gap), env(safe-area-inset-left, 0px));
+  border-start-start-radius: 20px; border-start-end-radius: 20px;
+}
+.lemma-tutor .kb[data-keyboard-layout="ipad"] > .strip {height: max(56px, var(--v7-touch)); min-height: 0; margin-bottom: 0;}
+.lemma-tutor .kb .rows[data-layout="ipad"] {padding: 2px 0 0; --ip-corner: calc(var(--ip-gap) + var(--cell) * .14);}
+@media (min-width: 600px) and (max-height: 559px) and (orientation: landscape) {
+  .lemma-tutor.v7-page[data-tutor-composer]:has(.kb[data-keyboard-layout="ipad"]) {display: flex;}
+  .lemma-tutor .kb[data-keyboard-layout="ipad"] {padding-bottom: max(6px, var(--v7-safe-bottom, 0px));}
+}
 .lemma-tutor .kb .rows[data-layout="ipad"] .k {--capl: var(--ip-gap); --capr: var(--ip-gap); font: 400 min(25px, 2.9vw + 1px, var(--cell) * .42)/1 var(--v7-sans);}
 .lemma-tutor .kb .rows[data-layout="ipad"] .k::before {
   top: var(--ip-gap); bottom: var(--ip-gap); border-radius: 8px;
@@ -441,7 +458,10 @@
   top: calc(var(--ip-gap) + var(--cell) * .08); left: var(--capl); right: var(--capr); text-align: center;
   font: 400 min(14px, var(--cell) * .24)/1 var(--v7-sans); color: var(--v7-role-text-tertiary);
 }
-.lemma-tutor .kb .rows[data-layout="ipad"] .k.dual .kl {padding-top: calc(var(--cell) * .36);}
+.lemma-tutor .kb .rows[data-layout="ipad"] .k.dual .kl {
+  top: calc(var(--cell) * .42); bottom: calc(var(--ip-gap) + var(--cell) * .07); padding: 0;
+  font-size: min(22px, var(--cell) * .35);
+}
 /* Modifier symbols: tab, caps lock, the left shift and the maths key at the bottom left; delete, return, the right shift,
    .?123 and hide at the bottom right; the left .?123 at the bottom centre. */
 .lemma-tutor .kb .rows[data-layout="ipad"] .k.fn svg {width: min(22px, var(--cell) * .38); height: min(22px, var(--cell) * .38);}

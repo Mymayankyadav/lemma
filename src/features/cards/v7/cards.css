@@ -62,7 +62,7 @@
  :where(html[data-v7]) .v7-editor-key-edge {position:relative;min-width:0;}
  :where(html[data-v7]) .v7-editor-key-edge::after {content:"";position:absolute;inset:0 0 0 auto;width:var(--v7-space-3);pointer-events:none;background:linear-gradient(to right,transparent,var(--v7-role-surface-overlay));}
  :where(html[data-v7]) .v7-editor-keys {display:flex;gap:var(--v7-space-1);overflow-x:auto;padding:var(--v7-space-1) var(--v7-space-4) var(--v7-space-1) var(--v7-space-1);scrollbar-width:thin;}
- :where(html[data-v7]) .v7-editor-key {flex:none;min-width:var(--v7-touch);min-height:var(--v7-touch);padding:0 var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:500 var(--v7-type-supporting)/1 var(--v7-sans);cursor:pointer;}
+ :where(html[data-v7]) .v7-editor-key {flex:none;min-width:var(--v7-touch);min-height:var(--v7-touch);padding:0 var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);font:500 var(--v7-type-supporting)/1 var(--v7-sans);cursor:pointer;}
  :where(html[data-v7]) .v7-editor-preview {padding:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
  :where(html[data-v7]) .v7-editor-front {font:400 1.375rem/1.45 var(--v7-serif);overflow-wrap:anywhere;}
  :where(html[data-v7]) .v7-editor-back {font:400 1.125rem/1.6 var(--v7-serif);overflow-wrap:anywhere;}

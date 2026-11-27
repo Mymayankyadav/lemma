@@ -6,12 +6,21 @@ export function setShellRoot(shell:EffectiveShell, root:Element=document.documen
   root.removeAttribute('data-v7');
   if (shell === 'v6') root.setAttribute('data-v6', '');
   if (shell === 'v7') root.setAttribute('data-v7', '');
+  if (shell === 'v7') {
+    if (root.hasAttribute('data-legacy-default-calm')) {
+      root.removeAttribute('data-effects');
+      root.removeAttribute('data-legacy-default-calm');
+    }
+  } else if (!root.hasAttribute('data-effects')) {
+    root.setAttribute('data-effects', 'calm');
+    root.setAttribute('data-legacy-default-calm', '');
+  }
   if (root === document.documentElement) syncThemeColour(root);
 }
 
 /** v7 page colours (src/ui/v7/tokens.css), used for the browser and installed-window chrome while v7 is the shell. */
-export const V7_PAGE_COLOUR = {day: '#F8F5F0', night: '#091023'} as const;
-const V6_PAGE_COLOUR = {day: '#FAFAF6', night: '#13171D'} as const;
+export const V7_PAGE_COLOUR = {day: '#FAF9F5', night: '#262624'} as const;
+const V6_PAGE_COLOUR = {day: '#FAF9F5', night: '#262624'} as const;
 
 /** Keep `<meta name="theme-color">` on the current shell's page colour (release plan R2 §3: no flash of the old grey). */
 export function syncThemeColour(root: Element = document.documentElement): void {

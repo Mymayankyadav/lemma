@@ -1,19 +1,35 @@
-import {useEffect,useState} from 'react';
+import {useState} from 'react';
 import {FileText} from 'lucide-react';
-import {useLocation} from 'react-router';
+import {useSearchParams} from 'react-router';
+import {createLazyModule} from '../../../app/lazyModule';
+import LazyOverlay from '../../../app/v7/LazyOverlay';
 import {useSourceTranscriptionStats} from '../../../data/hooks';
 import type {Source} from '../../../data/types';
 import {Button,Sheet} from '../../../ui/v7/components';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
+import {handoffLayer} from '../../../ui/v7/layers';
 import {SourceTranscriptionView} from '../SourceTranscriptionView';
-import {SourcesPanel} from '../SourcesPanel';
+
+const managerModule=createLazyModule(()=>import('../SourcesPanel'));
+const sourcesManager={read:()=>managerModule.read().then(module=>({default:module.V7SourcesManager}))};
 
 export default function SourcesV7({projectId,sources,focusSourceId}: {projectId:string;sources:Source[];focusSourceId?:string|null}) {
-  const stats=useSourceTranscriptionStats(projectId),location=useLocation();
-  const [selected,setSelected]=useState<string|null>(focusSourceId??null);
+  const stats=useSourceTranscriptionStats(projectId);
+  const [params,setParams]=useSearchParams();
+  const [selected,setSelected]=useState<string|null>(null);
   const [manageSource,setManageSource]=useState<string|null>();
-  useEffect(()=>{if(focusSourceId)setSelected(focusSourceId);},[focusSourceId,location.key]);
-  const source=sources.find(item=>item.id===selected);
+  const [readerDirty,setReaderDirty]=useState(false);
+  const source=sources.find(item=>item.id===(focusSourceId??selected));
+  const followsUrl=!!source&&source.id===focusSourceId;
+  const historyEntry=followsUrl&&typeof window!=='undefined'&&window.history.state?.idx>0;
+  function closeReader(){
+    setSelected(null);setReaderDirty(false);
+    if(followsUrl){
+      const next=new URLSearchParams(params);
+      next.delete('source');
+      setParams(next,{replace:true});
+    }
+  }
   return <>
     {!sources.length?<EmptyMoment title="No sources yet" action={{label:'Add source',onClick:()=>setManageSource(null)}}/>:
       <section aria-label="Sources" className="v7-path-source-list">
@@ -33,13 +49,15 @@ export default function SourcesV7({projectId,sources,focusSourceId}: {projectId:
         })}</ul>
         <Button small onClick={()=>setManageSource(null)}>Manage sources</Button>
       </section>}
-    {source&&<Sheet key={source.id} open title={source.title} focusTitle onClose={()=>setSelected(null)}>
+    {source&&<Sheet key={source.id} open title={source.title} focusTitle historyEntry={historyEntry} dirty={readerDirty} onClose={closeReader}>
         <p className="v7-meta">{source.short}{source.pageCount!=null?' · '+source.pageCount+' pages':''}</p>
-        <SourceTranscriptionView source={source} stat={stats.data?.find(row=>row.sourceId===source.id)} initiallyOpen/>
-        <Button small onClick={()=>{setManageSource(source.id);setSelected(null);}}>Manage this source</Button>
+        <SourceTranscriptionView source={source} stat={stats.data?.find(row=>row.sourceId===source.id)} initiallyOpen v7 onDirtyChange={setReaderDirty}/>
+        <Button small onClick={()=>{
+          if(readerDirty){setManageSource(source.id);return;}
+          handoffLayer(()=>{setManageSource(source.id);closeReader();});
+        }}>Manage this source</Button>
     </Sheet>}
-    {manageSource!==undefined&&<Sheet open title="Manage sources" onClose={()=>setManageSource(undefined)}>
-      <SourcesPanel projectId={projectId} sources={sources} focusSourceId={manageSource}/>
-    </Sheet>}
+    {manageSource!==undefined&&<LazyOverlay title="Manage sources" onClose={()=>setManageSource(undefined)}
+      source={sourcesManager} bodyProps={{projectId,sources,focusSourceId:manageSource}}/>}
   </>;
 }

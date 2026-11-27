@@ -373,7 +373,7 @@ test('Send submits the keys tapped while a drawing was still being read', async 
   expect(sent).toEqual(['abcxy']);
 });
 
-test('Escape and the Keys toggle settle a drawing before the keys close', async () => {
+test('Escape and switching to the device keyboard settle a drawing before the keys close', async () => {
   vi.useFakeTimers();
   await mount();
   await draw([10, 10], [60, 60]);
@@ -385,8 +385,9 @@ test('Escape and the Keys toggle settle a drawing before the keys close', async 
   expect(rows()).toBeTruthy();
   await draw([10, 10], [60, 60]);
   await read({'less-than': .95, 'x-other': .05});
-  await act(async () => button('Keys').click());
+  await act(async () => button('Use device keyboard').click());
   expect(host.querySelector('.kb .rows')).toBeNull();
+  expect(field().inputMode).toBe('text');
   expect(field().value).toBe('a<');
 });
 

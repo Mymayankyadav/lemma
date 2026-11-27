@@ -1,5 +1,6 @@
 import {lazy,Suspense,useLayoutEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {useMotionReduced} from './v7/effects';
+import {distances,durations,easings} from './v7/motion';
 import {AnimatePresence,motion,useIsPresent,useReducedMotion} from 'motion/react';
 import {CircleAlert,CircleCheck,Info,X} from 'lucide-react';
 
@@ -15,69 +16,158 @@ function ToastText({source}:{source:string}){
  </Suspense>;
 }
 
-export interface ToastOptions{action?:{label:string;onClick:()=>void};tone?:'normal'|'success'|'danger';
- /** N121 A7: how long the toast stays (default 4 s), e.g. the length of an Undo window. */
- duration?:number}
+export interface ToastOptions{action?:{label:string;onClick:()=>unknown};tone?:'normal'|'success'|'danger';
+ /** N121 A7: how long a toast stays (default 4 s), e.g. the length of an Undo window. */
+ duration?:number;
+ /** An Undo for this entity supersedes older inverses that cannot be replayed together. */
+ undoConflictKey?:string;
+ /** A deferred write settles when its undo window expires or another notification replaces it. */
+ onExpire?:()=>void}
 export interface ToastProps extends ToastOptions{message:string;id:number}
+type UndoEntry={id:number;message:string;options:ToastOptions};
+type PauseReason='pointer'|'focus'|'details';
+type ToastClock={
+ duration:number; remaining:number; deadline:number|null; timer?:ReturnType<typeof setTimeout>;
+ paused:Set<PauseReason>; undo?:UndoEntry[]; onExpire?:()=>void; updatedAt:number;
+};
+const DEFAULT_DURATION=4000,UNDO_GROUP_WINDOW=1000;
 let counter=0;
 let snapshot:ToastProps[]=[];
 const listeners=new Set<()=>void>();
-const timeouts=new Map<number,ReturnType<typeof setTimeout>>();
+const clocks=new Map<number,ToastClock>();
 const notify=()=>{for(const listener of listeners)listener()};
 function subscribe(fn:()=>void){listeners.add(fn);return()=>{listeners.delete(fn)}}
 function current(){return snapshot}
-function pauseToast(id:number){
- const timer=timeouts.get(id);
- if(timer!==undefined)clearTimeout(timer);
- timeouts.delete(id);
+function stop(clock:ToastClock){
+ clearTimeout(clock.timer);
+ if(clock.deadline!==null)clock.remaining=Math.max(0,clock.deadline-Date.now());
+ clock.deadline=null;
 }
-function dismiss(id:number){pauseToast(id);snapshot=snapshot.filter(item=>item.id!==id);notify()}
-function resumeToast(id:number){
- pauseToast(id);
- const item=snapshot.find(entry=>entry.id===id);
- if(item)timeouts.set(id,setTimeout(()=>dismiss(id),item.duration??4000));
+function forget(id:number){
+ const clock=clocks.get(id);
+ if(clock)stop(clock);
+ clocks.delete(id);
+ return clock;
+}
+function settle(clock:ToastClock|undefined){
+ if(clock?.undo){
+  for(const entry of clock.undo)entry.options.onExpire?.();
+ }else clock?.onExpire?.();
+}
+function dismiss(id:number,settled=false){
+ const clock=forget(id);
+ if(!clock)return;
+ snapshot=snapshot.filter(item=>item.id!==id);notify();
+ if(settled)settle(clock);
+}
+function schedule(id:number,clock:ToastClock){
+ if(clock.paused.size)return;
+ clock.deadline=Date.now()+clock.remaining;
+ clock.timer=setTimeout(()=>dismiss(id,true),clock.remaining);
+}
+function holdToast(id:number,reason:PauseReason,hold:boolean){
+ const clock=clocks.get(id);
+ if(!clock||clock.paused.has(reason)===hold)return;
+ if(hold){stop(clock);clock.paused.add(reason);}
+ else{clock.paused.delete(reason);schedule(id,clock);}
+ snapshot=[...snapshot];notify();
+}
+function refreshClock(id:number,clock:ToastClock,duration:number,updatedAt:number){
+ stop(clock);clock.duration=duration;clock.remaining=duration;clock.updatedAt=updatedAt;schedule(id,clock);
 }
 const v7Root=()=>typeof document!=='undefined'&&document.documentElement.hasAttribute('data-v7');
-/**
- * Release plan R0 · F13: an identical message already on screen is refreshed rather than stacked; under v7 at most one
- * toast shows (a new one replaces the old), v6 keeps its three-deep stack.
- */
+function withUndo(id:number,entries:UndoEntry[]):ToastProps{
+ const latest=entries.at(-1)!;
+ if(entries.length===1)return {id,message:latest.message,...latest.options};
+ return {id,message:entries.length+' changes',...latest.options,action:{label:'Undo',onClick:async()=>{
+  // Roll back the newest change first. One failed undo must not discard the others.
+  for(const entry of [...entries].reverse()){
+   try{await entry.options.action?.onClick();}
+   catch{toast('Could not undo a change',{tone:'danger'});}
+  }
+ }}};
+}
+function dismissUndo(id:number,entryId:number){
+ const clock=clocks.get(id);
+ if(!clock?.undo)return;
+ const remaining=clock.undo.filter(entry=>entry.id!==entryId);
+ if(remaining.length===clock.undo.length)return;
+ if(!remaining.length){dismiss(id);return;}
+ clock.undo=remaining;
+ snapshot=snapshot.map(item=>item.id===id?withUndo(id,remaining):item);notify();
+}
+/** v7 keeps one visible toast and combines undo actions that arrive in quick succession. */
 export function toast(message:string,options:ToastOptions={}){
- const same=snapshot.find(item=>item.message===message&&item.tone===options.tone&&item.action?.label===options.action?.label);
- if(same){
-  snapshot=snapshot.map(item=>item.id===same.id?{...item,...options}:item);
-  notify();resumeToast(same.id);
-  return ()=>dismiss(same.id);
+ const v7=v7Root(),now=Date.now(),duration=options.duration??DEFAULT_DURATION;
+ const latest=snapshot.at(-1),active=latest?clocks.get(latest.id):undefined;
+ const undo=v7&&options.action?.label==='Undo'?{id:++counter,message,options}:undefined;
+ if(undo&&latest&&active?.undo&&now-active.updatedAt<=UNDO_GROUP_WINDOW){
+  const entries=active.undo;
+  const conflicts=(entry:UndoEntry)=>!!options.undoConflictKey&&entry.options.undoConflictKey===options.undoConflictKey;
+  const compatible=entries.filter(entry=>!conflicts(entry));
+  if(compatible.length){
+   active.undo=[...compatible,undo];
+   snapshot=[withUndo(latest.id,active.undo)];
+   refreshClock(latest.id,active,Math.max(duration,active.duration),now);notify();
+   for(const entry of entries)if(conflicts(entry))entry.options.onExpire?.();
+   return ()=>dismissUndo(latest.id,undo.id);
+  }
  }
- const id=++counter;
- for(const item of v7Root()?snapshot:snapshot.slice(0,-2))pauseToast(item.id);
- snapshot=[...(v7Root()?[]:snapshot.slice(-2)),{id,message,...options}];
- notify();
- resumeToast(id);
- return ()=>dismiss(id);
+ const same=undo?undefined:snapshot.find(item=>item.message===message&&item.tone===options.tone&&item.action?.label===options.action?.label);
+ if(same&&!options.onExpire){
+  snapshot=snapshot.map(item=>item.id===same.id?{...item,...options}:item);
+  const clock=clocks.get(same.id);
+  if(clock)refreshClock(same.id,clock,duration,now);
+  notify();return ()=>dismiss(same.id);
+ }
+ const id=undo?.id??++counter;
+ const replaced=(v7?snapshot:snapshot.slice(0,-2)).map(item=>forget(item.id));
+ snapshot=[...(v7?[]:snapshot.slice(-2)),{id,message,...options}];
+ const clock:ToastClock={duration,remaining:duration,deadline:null,paused:new Set(),undo:undo?[undo]:undefined,onExpire:options.onExpire,updatedAt:now};
+ clocks.set(id,clock);schedule(id,clock);notify();
+ replaced.forEach(settle);
+ return undo?()=>dismissUndo(id,undo.id):()=>dismiss(id);
 }
 /** F13: errors do not follow you to another screen; the v7 shell clears them on navigation. */
 export function clearToasts(match:(item:ToastProps)=>boolean=()=>true){
- const gone=snapshot.filter(match);
- if(!gone.length)return;
- for(const item of gone)pauseToast(item.id);
- snapshot=snapshot.filter(item=>!match(item));notify();
+ const next=snapshot.filter(item=>{
+  if(!match(item))return true;
+  forget(item.id);return false;
+ });
+ if(next.length!==snapshot.length){snapshot=next;notify();}
 }
 export function useToast(){return toast}
 /** F40: the v7 toast is an ink pill (Day) or raised navy pill (Night) with an icon, the message, a bold indigo action and
  * a countdown hairline for the undo window. */
 function V7ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
  const Icon=item.tone==='danger'?CircleAlert:item.tone==='success'?CircleCheck:Info;
- const present=useIsPresent();
- return <motion.div role={item.tone==='danger'?'alert':'status'} className="v7-app-toast" data-tone={item.tone??'normal'}
+ const present=useIsPresent(),countdown=useRef<HTMLSpanElement>(null);
+ const clock=clocks.get(item.id),deadline=clock?.deadline??null,remaining=clock?.remaining??0,total=clock?.duration??1;
+ useLayoutEffect(()=>{
+  const line=countdown.current;
+  if(!line)return;
+  const start=performance.now();
+  const left=deadline===null?remaining:Math.max(0,deadline-Date.now());
+  const scale='scaleX('+Math.min(1,left/Math.max(1,total))+')';
+  line.style.transform=scale;
+  if(deadline===null||!left||typeof line.animate!=='function')return;
+  const motion=line.animate([{transform:scale},{transform:'scaleX(0)'}],{duration:left,fill:'forwards'});
+  // A busy first paint must not move the countdown past the Undo deadline.
+  if(typeof line.ownerDocument.timeline?.currentTime==='number')motion.startTime=start;
+  return ()=>motion.cancel();
+ },[deadline,remaining,total,reduce]);
+ return <motion.div role={item.tone==='danger'?'alert':'status'} className="v7-app-toast" data-surface-role="S6" data-v7-lifted="" data-tone={item.tone??'normal'}
   inert={!present} aria-hidden={present?undefined:true}
-  initial={{opacity:0,y:reduce?0:12}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:reduce?0.15:0.2}}
-  onPointerEnter={()=>pauseToast(item.id)} onPointerLeave={()=>resumeToast(item.id)} onFocus={()=>pauseToast(item.id)}>
+  initial={{opacity:0,y:reduce?0:distances.riseSmall}} animate={{opacity:1,y:0,transition:{duration:reduce?durations.reduced:durations.quick,ease:easings.enter}}}
+  exit={{opacity:0,transition:{duration:reduce?0:durations.quickExit,ease:easings.exit}}}
+  onPointerEnter={()=>holdToast(item.id,'pointer',true)} onPointerLeave={()=>holdToast(item.id,'pointer',false)}
+  onFocus={()=>holdToast(item.id,'focus',true)}
+  onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))holdToast(item.id,'focus',false);}}>
   <Icon className="v7-app-toast-icon" aria-hidden="true"/>
   <span className="v7-app-toast-text"><ToastText source={item.message}/></span>
-  {item.action&&<button type="button" className="v7-app-toast-action" onClick={()=>{item.action?.onClick();dismiss(item.id)}}><ToastText source={item.action.label}/></button>}
-  <button type="button" aria-label="Dismiss notification" className="v7-app-toast-close" onClick={()=>dismiss(item.id)}><X aria-hidden="true"/></button>
-  {item.action&&!reduce&&<span className="v7-app-toast-countdown" aria-hidden="true" style={{animationDuration:(item.duration??4000)+'ms'}}/>}
+  {item.action&&<button type="button" className="v7-app-toast-action" onClick={()=>{dismiss(item.id);item.action?.onClick();}}><ToastText source={item.action.label}/></button>}
+  <button type="button" aria-label="Dismiss notification" className="v7-app-toast-close" onClick={()=>dismiss(item.id,true)}><X aria-hidden="true"/></button>
+  {item.action&&!reduce&&<span ref={countdown} className="v7-app-toast-countdown" aria-hidden="true"/>}
  </motion.div>;
 }
 function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
@@ -103,8 +193,8 @@ function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
   aria-expanded={expanded} aria-controls={messageId}
   className="flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1 text-amber" onClick={()=>{
    // A user reading expanded details must not lose them to the 4-second timer.
-   if(expanded){setExpanded(false);resumeToast(item.id)}
-   else{pauseToast(item.id);setExpanded(true)}
+   if(expanded){setExpanded(false);holdToast(item.id,'details',false)}
+   else{holdToast(item.id,'details',true);setExpanded(true)}
   }}>{expanded?'Less':'More'}</button>}
  {item.action&&<button className="flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1 font-semibold text-amber" onClick={()=>{item.action?.onClick();dismiss(item.id)}}><ToastText source={item.action.label}/></button>}
  <button type="button" aria-label="Dismiss notification" className="flex size-11 shrink-0 items-center justify-center" onClick={()=>dismiss(item.id)}><X size={16}/></button>

@@ -46,7 +46,7 @@
  :where(html[data-v7]) .v7-rc-art {justify-self:center;}
  :where(html[data-v7]) .v7-rc-title {margin:0;font:400 var(--v7-type-title)/1.1 var(--v7-serif);letter-spacing:-.015em;}
  :where(html[data-v7]) .v7-rc-tiles {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,5.5rem),1fr));gap:var(--v7-space-2);text-align:left;}
- :where(html[data-v7]) .v7-rc-bar {display:flex;gap:2px;height:28px;border-radius:var(--v7-radius-1);overflow:hidden;margin:0;padding:0;list-style:none;background:var(--v7-role-surface-muted);}
+ :where(html[data-v7]) .v7-rc-bar {display:flex;gap:2px;height:28px;border-radius:var(--v7-radius-1);overflow:hidden;margin:0;padding:0;list-style:none;background:var(--v7-role-surface-track);}
  :where(html[data-v7]) .v7-rc-bar li {display:grid;place-items:center;min-width:0;background:var(--v7-grade);color:var(--v7-role-surface-page);font:600 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-rc-bar [data-grade="again"],:where(html[data-v7]) .v7-rc-legend [data-grade="again"] {--v7-grade:var(--v7-role-status-danger);}
  :where(html[data-v7]) .v7-rc-bar [data-grade="hard"],:where(html[data-v7]) .v7-rc-legend [data-grade="hard"] {--v7-grade:var(--v7-role-status-warning);}

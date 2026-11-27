@@ -8,13 +8,18 @@ test('Q.E.D. checks new session cards instead of reusing an exhausted round',asy
  await expect(page).toHaveURL(/#\/review\/run\?session=/);
 
  // The fixed demo has due session reviews but no new session cards.
- for(let i=0;i<12&&!page.url().includes('/review/done');i++){
-  await page.getByRole('button',{name:'Sure',exact:true}).click();
+ const confidence=page.getByRole('button',{name:'Sure',exact:true});
+ const statistics=page.getByRole('region',{name:'Review statistics'});
+ for(let i=0;i<12;i++){
+  // The last grade saves before the lazy Q.E.D. route commits.
+  await expect(confidence.or(statistics)).toBeVisible();
+  if(await statistics.isVisible())break;
+  await confidence.click();
   await page.getByRole('button',{name:'Grade Good'}).click();
  }
  await expect(page).toHaveURL(/#\/review\/done$/);
  await page.getByRole('button',{name:'Review new cards from this session'}).click();
  await expect(page.getByRole('status').getByText('No new cards are due from this session.')).toBeVisible();
  await expect(page).toHaveURL(/#\/review\/done$/);
- await expect(page.getByRole('region',{name:'Review statistics'})).toBeVisible();
+ await expect(statistics).toBeVisible();
 });

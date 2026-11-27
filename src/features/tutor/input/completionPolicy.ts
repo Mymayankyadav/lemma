@@ -26,9 +26,11 @@ function inputTail(edit: PadEdit): {start: number; text: string} {
   return {start, text: edit.text.slice(start, edit.start)};
 }
 
-export function wordAtCaret(edit: PadEdit): string | undefined {
+export function wordAtCaret(edit: PadEdit, wholeSpelling = false): string | undefined {
   if (edit.start !== edit.end || TOKEN_AFTER.test(edit.text.slice(edit.end, edit.end + 2))) return;
-  const word = inputTail(edit).text.match(/\p{L}[\p{L}\p{M}'’\p{Pd}]{0,23}$/u)?.[0];
+  // The literal key can echo a long spelling. Prediction policy keeps its bounded 24-letter input.
+  const word = wholeSpelling ? edit.text.slice(0, edit.start).match(/\p{L}[\p{L}\p{M}'’\p{Pd}]*$/u)?.[0]
+    : inputTail(edit).text.match(/\p{L}[\p{L}\p{M}'’\p{Pd}]{0,23}$/u)?.[0];
   const start = edit.start - (word?.length ?? 0);
   if (word && !TOKEN_BEFORE.test(edit.text.slice(Math.max(0, start - 2), start))) return word;
 }

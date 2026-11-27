@@ -18,7 +18,7 @@ export default function BlockSheetActions({blocks,date,zone,ready,onRefresh,show
 }) {
  const [selected,setSelected]=useState<CalendarBlockRecord|null|undefined>(undefined);
  const [params,setParams]=useSearchParams(),location=useLocation();
- const draft=params.get('new')==='block'?readCalendarBlockDraft(location.state):undefined;
+ const draft=params.get('new')==='block'||params.has('edit')?readCalendarBlockDraft(location.state):undefined;
  // N121: open once per URL request. A refresh after saving must not reopen a dialog
  // while the router is still removing ?new=block or ?edit= from the URL.
  const handled=useRef<string|null>(null);

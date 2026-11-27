@@ -59,6 +59,7 @@ export function drawStarMark(ctx:CanvasRenderingContext2D,state:StarState,cx:num
 export class AtlasScene{
  strongEdges=false;
  labelCluster:number|null=null;
+ labelOpacity=1;
  highlighted:ReadonlySet<number>|null=null;
  camera:Camera={x:0,y:0,k:1};
  selected:number|null=null;
@@ -132,6 +133,23 @@ export class AtlasScene{
  }
  /** Camera centred on one star, close enough to read its neighbourhood. */
  focusCamera(index:number,k=Math.max(this.camera.k,1.4)):Camera{return {x:this.layout.x[index],y:this.layout.y[index],k:Math.min(MAX_ZOOM,k)};}
+ /** Pan only far enough to keep the selected point clear of the inspector and controls. */
+ revealCamera(index:number,sheet:Insets):Camera{
+  const [x,y]=this.toScreen(this.layout.x[index],this.layout.y[index]);
+  const margin=this.labelMargin,padding=32;
+  const left=Math.min(this.width/2,margin.left+padding),right=Math.max(left,this.width-margin.right-padding);
+  const top=Math.min(this.height/2,margin.top+padding),bottom=Math.max(top,this.height-padding);
+  let keepX=Math.max(left,Math.min(right,x)),keepY=Math.max(top,Math.min(bottom,y));
+  const edges={left:sheet.left-padding,right:sheet.right+padding,top:sheet.top-padding,bottom:sheet.bottom+padding};
+  if(keepX>edges.left&&keepX<edges.right&&keepY>edges.top&&keepY<edges.bottom){
+   const options=[
+    {x:edges.left,y:keepY},{x:edges.right,y:keepY},{x:keepX,y:edges.top},{x:keepX,y:edges.bottom},
+   ].filter(point=>point.x>=left&&point.x<=right&&point.y>=top&&point.y<=bottom)
+    .sort((a,b)=>Math.hypot(x-a.x,y-a.y)-Math.hypot(x-b.x,y-b.y));
+   if(options[0]){keepX=options[0].x;keepY=options[0].y;}
+  }
+  return {x:this.camera.x+(x-keepX)/this.camera.k,y:this.camera.y+(y-keepY)/this.camera.k,k:this.camera.k};
+ }
  /** U3: frame one subject with room for every concept label, instead of fitting the whole sky on a phone. */
  clusterCamera(cluster:number):Camera{
   const members=this.model.stars.map((star,i)=>star.cluster===cluster?i:-1).filter(i=>i>=0);
@@ -253,7 +271,7 @@ export class AtlasScene{
   }
   ctx.globalAlpha=1;
   if(selected!==null&&visible.includes(selected))this.drawSelection(selected,scale);
-  this.drawLabels(visible,scale);
+  if(this.labelOpacity>0)this.drawLabels(visible,scale);
  }
  private drawSky(){
   const {ctx,palette,camera}=this;
@@ -315,6 +333,7 @@ export class AtlasScene{
    if(packed){const alpha=ctx.globalAlpha;ctx.globalAlpha=alpha*.25;ctx.strokeStyle=colour;ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(Math.max(x,Math.min(x+w,sx)),y);ctx.stroke();ctx.globalAlpha=alpha;}
    placed.push([x-2,y-size/2-2,w+4,size+4]);ctx.strokeStyle=palette.sky;ctx.lineWidth=4;ctx.lineJoin='round';ctx.strokeText(text,x,y);ctx.fillStyle=colour;ctx.fillText(text,x,y);
   };
+  ctx.globalAlpha=this.labelOpacity;
   if(this.selected!==null&&visible.includes(this.selected))label(this.selected,16,600,palette.text,true);
   // Constellation names in wide capitals, above each cluster.
   ctx.font='600 12px '+palette.sans;
@@ -324,14 +343,14 @@ export class AtlasScene{
    const [sx,sy]=this.toScreen(cx,cy-(this.extent[cluster]??0)-18),text=info.name.toUpperCase();
    ctx.font='600 12px '+palette.sans;const w=ctx.measureText(text).width;
    if(sx+w/2<0||sx-w/2>this.width||sy<0||sy>this.height)return;
-   ctx.globalAlpha=1;ctx.fillStyle=palette.textSecondary;ctx.textAlign='center';ctx.fillText(text,sx,sy);placed.push([sx-w/2,sy-8,w,16]);
+   ctx.globalAlpha=this.labelOpacity;ctx.fillStyle=palette.textSecondary;ctx.textAlign='center';ctx.fillText(text,sx,sy);placed.push([sx-w/2,sy-8,w,16]);
   });
   if('letterSpacing' in ctx)ctx.letterSpacing='0px';
   ctx.textAlign='left';
   const dim=this.selected!==null;
   const candidates=(this.labelCluster!==null?visible.filter(i=>model.stars[i].cluster===this.labelCluster):camera.k<FAR_ZOOM?visible.filter(i=>this.topLabels.has(i)):visible)
    .filter(i=>i!==this.selected).sort((a,b)=>model.stars[b].radius-model.stars[a].radius||a-b).slice(0,220);
-  for(const i of candidates){ctx.globalAlpha=this.highlighted&&!this.highlighted.has(i)?.2:dim&&!this.neighbourSet.has(i)?.4:1;label(i,13,500,palette.textSecondary,this.labelCluster!==null);}
+  for(const i of candidates){ctx.globalAlpha=this.labelOpacity*(this.highlighted&&!this.highlighted.has(i)?.2:dim&&!this.neighbourSet.has(i)?.4:1);label(i,13,500,palette.textSecondary,this.labelCluster!==null);}
   ctx.globalAlpha=1;
  }
 }

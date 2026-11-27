@@ -1,46 +1,40 @@
-import {lazy,Suspense} from "react";
-import RouteError, {RouteFallback} from "./RouteError";
-import {isFlagOn} from "../flags";
-import {TodayScreen,PathScreen,CheckpointScreen,SettingsScreen} from "./v7/routeScreens";
-// N150 (bug #1375): keeps an E pressed on the Inbox before its code has loaded (a few hundred bytes, no dependencies).
-import "../features/proposals/v7/inboxEarlyKeys";
-import Page0 from '../features/home/Page'
-import Page1 from '../features/projects/Page'
-const Page2=lazy(()=>import('../features/new-project/Page'))
-const Page3=lazy(()=>import('../features/project/Page'))
-const Page4=lazy(()=>import('../features/checkpoint/Page'))
-const Page5=lazy(()=>import('../features/session/Page'))
-const Page6=lazy(()=>import('../features/proposals/Page'))
-const Page7=lazy(()=>import('../features/plan-proposal/Page'))
-const Page8=lazy(()=>import('../features/review/Page'))
-const Page9=lazy(()=>import('../features/review-run/Page'))
-const Page10=lazy(()=>import('../features/review-done/Page'))
-const Page11=lazy(()=>import('../features/cards/Page'))
-const Page12=lazy(()=>import('../features/card/Page'))
-import Page13 from '../features/atlas/Page'
-const Page14=lazy(()=>import('../features/insights/Page'))
-const Page15=lazy(()=>import('../features/settings/Page'))
-const Page16=lazy(()=>import('../features/sign-in/Page'))
-const Page17=lazy(()=>import('../features/kit/Page'))
+import {isFlagOn} from '../flags';
+import {createLazyModule} from './lazyModule';
+import {eagerRoute,lazyRoute} from './lazyRoute';
+import {v7Modules} from './v7/routeScreens';
+import {libraryChunk} from './v7/libraryChunk';
+// N150 (bug #1375): keeps an E pressed on the Inbox before its code has loaded.
+import '../features/proposals/v7/inboxEarlyKeys';
+import HomePage from '../features/home/Page';
+import ProjectsPage from '../features/projects/Page';
+import AtlasPage from '../features/atlas/Page';
+
 const v7=isFlagOn('v7Shell');
+const split=v7&&isFlagOn('v7Room');
+const prepareLibrary=(screen:'paths'|'path'|'cards'|'card')=>split
+ ?()=>Promise.all([libraryChunk.read(),v7Modules[screen].read()])
+ :undefined;
+const preparePaths=prepareLibrary('paths'),preparePath=prepareLibrary('path');
+const prepareCards=prepareLibrary('cards'),prepareCard=prepareLibrary('card');
+
 /** The canonical route inventory from design.md §6. */
-export const screenRoutes = [
- {path: '/', element: <Suspense fallback={<RouteFallback/>}>{v7?<TodayScreen />:<Page0 />}</Suspense>, errorElement: <RouteError/> },
- {path: '/projects', element: <Suspense fallback={<RouteFallback/>}><Page1 /></Suspense>, errorElement: <RouteError/> },
- {path: '/projects/new', element: <Suspense fallback={<RouteFallback/>}><Page2 /></Suspense>, errorElement: <RouteError/> },
- {path: '/p/:slug', element: <Suspense fallback={<RouteFallback/>}>{v7?<PathScreen />:<Page3 />}</Suspense>, errorElement: <RouteError/> },
- {path: '/p/:slug/cp/:code', element: <Suspense fallback={<RouteFallback/>}>{v7?<CheckpointScreen />:<Page4 />}</Suspense>, errorElement: <RouteError/> },
- {path: '/s/:slug/:n', element: <Suspense fallback={<RouteFallback/>}><Page5 /></Suspense>, errorElement: <RouteError/> },
- {path: '/proposals', element: <Suspense fallback={<RouteFallback/>}><Page6 /></Suspense>, errorElement: <RouteError/> },
- {path: '/proposals/:id', element: <Suspense fallback={<RouteFallback/>}><Page7 /></Suspense>, errorElement: <RouteError/> },
- {path: '/review', element: <Suspense fallback={<RouteFallback/>}><Page8 /></Suspense>, errorElement: <RouteError/> },
- {path: '/review/run', element: <Suspense fallback={<RouteFallback/>}><Page9 /></Suspense>, errorElement: <RouteError/> },
- {path: '/review/done', element: <Suspense fallback={<RouteFallback/>}><Page10 /></Suspense>, errorElement: <RouteError/> },
- {path: '/cards', element: <Suspense fallback={<RouteFallback/>}><Page11 /></Suspense>, errorElement: <RouteError/> },
- {path: '/cards/:no', element: <Suspense fallback={<RouteFallback/>}><Page12 /></Suspense>, errorElement: <RouteError/> },
- {path: '/atlas', element: <Suspense fallback={<RouteFallback/>}><Page13 /></Suspense>, errorElement: <RouteError/> },
- {path: '/insights', element: <Suspense fallback={<RouteFallback/>}><Page14 /></Suspense>, errorElement: <RouteError/> },
- {path: '/settings', element: <Suspense fallback={<RouteFallback/>}>{v7?<SettingsScreen />:<Page15 />}</Suspense>, errorElement: <RouteError/> },
- {path: '/sign-in', element: <Suspense fallback={<RouteFallback/>}><Page16 /></Suspense>, errorElement: <RouteError/> },
- {path: '/kit', element: <Suspense fallback={<RouteFallback/>}><Page17 /></Suspense>, errorElement: <RouteError/> },
-]
+export const screenRoutes=[
+ v7?lazyRoute('/',v7Modules.today):eagerRoute('/',HomePage),
+ v7?lazyRoute('/projects',v7Modules.paths,preparePath):eagerRoute('/projects',ProjectsPage),
+ lazyRoute('/projects/new',v7?v7Modules.paths:createLazyModule(()=>import('../features/new-project/Page')),preparePath),
+ lazyRoute('/p/:slug',v7?v7Modules.path:createLazyModule(()=>import('../features/project/Page')),preparePaths),
+ lazyRoute('/p/:slug/cp/:code',v7?v7Modules.checkpoint:createLazyModule(()=>import('../features/checkpoint/Page'))),
+ lazyRoute('/s/:slug/:n',v7?v7Modules.session:createLazyModule(()=>import('../features/session/Page'))),
+ lazyRoute('/proposals',v7?v7Modules.inbox:createLazyModule(()=>import('../features/proposals/Page'))),
+ lazyRoute('/proposals/:id',v7?v7Modules.proposal:createLazyModule(()=>import('../features/plan-proposal/Page'))),
+ lazyRoute('/review',v7?v7Modules.review:createLazyModule(()=>import('../features/review/Page'))),
+ lazyRoute('/review/run',createLazyModule(()=>import('../features/review-run/Page')),v7?v7Modules.reviewRun.read:undefined),
+ lazyRoute('/review/done',v7?v7Modules.reviewDone:createLazyModule(()=>import('../features/review-done/Page'))),
+ lazyRoute('/cards',v7?v7Modules.cards:createLazyModule(()=>import('../features/cards/Page')),prepareCard),
+ lazyRoute('/cards/:no',v7?v7Modules.card:createLazyModule(()=>import('../features/card/Page')),prepareCards),
+ v7?lazyRoute('/atlas',v7Modules.atlas):eagerRoute('/atlas',AtlasPage),
+ lazyRoute('/insights',v7?v7Modules.progress:createLazyModule(()=>import('../features/insights/Page'))),
+ lazyRoute('/settings',v7?v7Modules.settings:createLazyModule(()=>import('../features/settings/Page'))),
+ lazyRoute('/sign-in',v7?v7Modules.signIn:createLazyModule(()=>import('../features/sign-in/Page'))),
+ lazyRoute('/kit',v7?v7Modules.kit:createLazyModule(()=>import('../features/kit/Page'))),
+];

@@ -1,3 +1,4 @@
+import {enableSurfaceBeta} from './helpers/surface-preview';
 import {expect,test} from '@playwright/test';
 import {at,NOW} from './v7-scenes';
 
@@ -35,7 +36,9 @@ for(const [width,height,scale] of [[320,640,100],[390,844,160],[844,390,100],[39
  });
 }
 
-test('Atlas editor retains every operation and searches targets inside a nested sheet',async({page})=>{
+test('Atlas editor retains every operation and searches targets in the same phone sheet',async({page})=>{
+ await enableSurfaceBeta(page);
+ await page.setViewportSize({width:390,height:844});
  await page.goto(at('/atlas?view=list'));
  await page.locator('.v7-atlas-subject li button').filter({hasText:'Compactness'}).first().click();
  await page.getByRole('button',{name:'Edit concept',exact:true}).click();
@@ -43,12 +46,15 @@ test('Atlas editor retains every operation and searches targets inside a nested 
  const actionPicker=editor.getByRole('button',{name:/^Action:/});
  await actionPicker.click();
  const actionSheet=page.getByRole('dialog',{name:'Action',exact:true});
- const close=actionSheet.getByRole('button',{name:'Close',exact:true});
- await expect(close).toBeFocused();
- await page.keyboard.press('Shift+Tab');
- await expect(actionSheet.getByRole('radio',{checked:true})).toBeFocused();
+ await expect(page.locator('dialog[open]')).toHaveCount(1);
+ const step=actionSheet.getByRole('group',{name:'Action',exact:true});
+ const back=step.getByRole('button',{name:'Back',exact:true});
+ const selected=step.getByRole('radio',{checked:true});
+ await expect(selected).toBeFocused();
  await page.keyboard.press('Tab');
- await expect(close).toBeFocused();
+ await expect(back).toBeFocused();
+ await page.keyboard.press('Shift+Tab');
+ await expect(selected).toBeFocused();
  await page.keyboard.press('Escape');
  await expect(actionPicker).toBeFocused();
  for(const action of ['Change parent','Add link','Remove link','Merge into another concept','Edit name or description']){

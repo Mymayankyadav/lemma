@@ -3,7 +3,7 @@
  * `SplashScreen.hide()`, or for `launchShowDuration` (800 ms, the cap); the app used to call hide as soon as its native
  * layer started, which could be before React had drawn anything into the page.
  *
- * `index.html` ships a static web splash inside #root (N131 · L-20: the ℓ on the page colour, with its <style>), which
+ * `index.html` ships a static web splash alongside #root (N131 · L-20: the ℓ on the page colour, with its <style>), which
  * React's first commit replaces. That placeholder is not the app's first paint, so it does not count.
  */
 const placeholder = (node: Element) => node.classList.contains('lemma-splash') || node.tagName === 'STYLE';

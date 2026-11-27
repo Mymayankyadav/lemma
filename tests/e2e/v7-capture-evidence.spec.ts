@@ -3,7 +3,7 @@ import {at,NOW} from './v7-scenes';
 
 test.beforeEach(async({page})=>{await page.clock.setFixedTime(NOW);});
 
-test('Desk clock hides Focus chrome and reveals controls on a tap',async({page})=>{
+test('Desk clock enlarges the dial and keeps keyboard focus in the controls',async({page})=>{
   await page.goto(at('/').replace('#',',v7DeskClock,focusOrbit#'));
   await page.getByRole('button',{name:/^(Start now|Start focus)$/}).first().click();
   const focus=page.getByRole('main',{name:'Focus'});
@@ -15,7 +15,8 @@ test('Desk clock hides Focus chrome and reveals controls on a tap',async({page})
   await page.getByRole('menuitem',{name:'Desk clock',exact:true}).click();
   await expect(focus).toHaveAttribute('data-desk','');
   await expect(thought).toBeHidden();
-  await expect(focus.locator('.v7-immersive-header')).toHaveCSS('opacity','0');
+  await expect(focus.getByRole('button',{name:'Timer details',exact:true})).toBeFocused();
+  await expect(focus.locator('.v7-immersive-header')).toHaveCSS('opacity','1');
   expect((await dial.boundingBox())!.width).toBeGreaterThan(normalWidth);
   await focus.click({position:{x:6,y:140}});
   await expect(focus.locator('.v7-immersive-header')).toHaveCSS('opacity','1');

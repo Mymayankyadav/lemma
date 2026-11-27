@@ -17,12 +17,13 @@
 :where(html[data-v7] input:not([type="checkbox"],[type="radio"],[type="range"]),html[data-v7] textarea) {max-width:100%;min-width:0;}
 :where(html[data-v7]) body {
   background-color:var(--v7-role-surface-page);
-  background-image:linear-gradient(to right,color-mix(in srgb,var(--v7-role-border-subtle) 35%,transparent) var(--v7-hairline),transparent var(--v7-hairline)),linear-gradient(to bottom,color-mix(in srgb,var(--v7-role-border-subtle) 35%,transparent) var(--v7-hairline),transparent var(--v7-hairline));
+  background-image:linear-gradient(to right,var(--v7-role-border-subtle) var(--v7-hairline),transparent var(--v7-hairline)),linear-gradient(to bottom,var(--v7-role-border-subtle) var(--v7-hairline),transparent var(--v7-hairline));
   background-size:var(--v7-space-6) var(--v7-space-6);
 }
-:where(html[data-v7])[data-theme="graph-night"] body,
+/* The paper texture is still when OS reduced motion is enabled. Reduce effects also removes decoration. */
+:where(html[data-v7])[data-v7-reduce-effects] body,
 :where(html[data-v7])[data-contrast="high"] body {background-image:none;}
-/* B6: every focusable element in v7 (textareas and links included) shows the lavender focus.ring, never the legacy amber or coral. */
+/* Every focusable element uses the palette's accent focus ring. */
 :where(html[data-v7]) :focus-visible {outline-color:var(--v7-role-focus-ring);}
 :where(html[data-v7]) :is(button,input,select,textarea,a,summary,[tabindex]):focus-visible {outline:var(--v7-focus-width) solid var(--v7-role-focus-ring);outline-offset:var(--v7-focus-gap);box-shadow:0 0 0 var(--v7-focus-gap) var(--v7-role-surface-page);}
 :where(html[data-v7]) :is(button,input,select) {font-family:var(--v7-sans);}
@@ -84,7 +85,7 @@
 :where(html[data-v7]) .v7-subject-8 {--v7-subject:var(--v7-role-subject-combinatorics);--v7-subject-subtle:var(--v7-role-subject-combinatorics-subtle);}
 :where(html[data-v7]) .v7-tag {border-radius:var(--v7-round);display:inline-flex;align-items:center;gap:var(--v7-space-2);min-height:var(--v7-chip);padding:var(--v7-space-1) var(--v7-space-3);background:var(--v7-subject-subtle);color:var(--v7-role-text-primary);font:500 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
 :where(html[data-v7]) .v7-badge {border-radius:var(--v7-radius-1);display:inline-flex;align-items:center;gap:var(--v7-helper-gap);min-height:var(--v7-space-6);padding:var(--v7-space-1) var(--v7-space-2);font:600 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);max-width:100%;width:fit-content;}
-:where(html[data-v7]) .v7-tone-info {--v7-tone:var(--v7-role-text-secondary);--v7-tone-bg:var(--v7-role-surface-muted);}
+:where(html[data-v7]) .v7-tone-info {--v7-tone:var(--info);--v7-tone-bg:color-mix(in srgb,var(--info) 8%,var(--v7-role-surface-page));}
 :where(html[data-v7]) .v7-tone-success {--v7-tone:var(--v7-role-status-success);--v7-tone-bg:var(--v7-role-status-success-subtle);}
 :where(html[data-v7]) .v7-tone-warning {--v7-tone:var(--v7-role-status-warning);--v7-tone-bg:var(--v7-role-status-warning-subtle);}
 :where(html[data-v7]) .v7-tone-danger {--v7-tone:var(--v7-role-status-danger);--v7-tone-bg:var(--v7-role-status-danger-subtle);}
@@ -93,12 +94,12 @@
 /* V36: the invisible hit area is the touch size tall (44 px, 48 in the app), centred, whatever the badge's border. */
 :where(html[data-v7]) .v7-badge-action::after {content:"";position:absolute;left:-4px;right:-4px;top:50%;height:max(100%,var(--v7-touch));transform:translateY(-50%);}
 :where(html[data-v7]) .v7-live-chip svg {width:14px;height:14px;flex:none;}
-:where(html[data-v7]) .v7-proof-conjecture,:where(html[data-v7]) .v7-proof-progress {background:var(--v7-role-surface-muted);color:var(--v7-role-text-secondary);}
+:where(html[data-v7]) .v7-proof-conjecture,:where(html[data-v7]) .v7-proof-progress {background:var(--v7-role-surface-track);color:var(--v7-role-text-secondary);}
 :where(html[data-v7]) .v7-proof-progress {color:var(--v7-role-text-primary);}
 :where(html[data-v7]) .v7-proof-demonstrated {background:var(--v7-role-status-success-subtle);color:var(--v7-role-status-success);}
 :where(html[data-v7]) .v7-proof-review {background:var(--v7-role-status-warning-subtle);color:var(--v7-role-status-warning);}
 :where(html[data-v7]) .v7-proof-symbol {font-family:var(--v7-glyph);font-size:var(--v7-type-body);}
-:where(html[data-v7]) :is(.v7-filter-chip,.v7-toggle-button,.v7-state-button) {position:relative;display:inline-grid;grid-auto-flow:column;align-items:center;justify-content:center;gap:var(--v7-space-2);min-height:var(--v7-button);padding:var(--v7-space-2) var(--v7-space-4);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);cursor:pointer;transition:background var(--v7-fast),transform var(--v7-fast);}
+:where(html[data-v7]) :is(.v7-filter-chip,.v7-toggle-button,.v7-state-button) {position:relative;display:inline-grid;grid-auto-flow:column;align-items:center;justify-content:center;gap:var(--v7-space-2);min-height:var(--v7-button);padding:var(--v7-space-2) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);cursor:pointer;transition:background var(--motion-instant),transform var(--motion-instant);}
 :where(html[data-v7]) :is(.v7-filter-chip,.v7-toggle-button,.v7-state-button)::after {content:"";position:absolute;inset:calc((var(--v7-button) - var(--v7-touch)) / 2) 0;min-height:var(--v7-touch);}
 :where(html[data-v7]) .v7-filter-chip {min-height:var(--v7-small);padding:var(--v7-space-1) var(--v7-space-3);border-color:var(--v7-role-border-default);border-radius:var(--v7-round);background:transparent;color:var(--v7-role-text-secondary);}
 :where(html[data-v7]) .v7-filter-chip::after {inset:calc((var(--v7-small) - var(--v7-touch)) / 2) 0;}
@@ -109,13 +110,13 @@
 :where(html[data-v7]) .v7-state-button > [aria-hidden="true"] {visibility:hidden;}
 :where(html[data-v7]) .v7-action-primary {background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
 :where(html[data-v7]) .v7-action-tertiary,:where(html[data-v7]) .v7-action-danger {background:transparent;margin-inline:calc(-1 * var(--v7-space-4));color:var(--v7-role-link-fg);}
-:where(html[data-v7]) .v7-action-danger {color:var(--v7-role-status-danger);}
+:where(html[data-v7]) .v7-action-danger {border-color:var(--v7-role-status-danger);margin-inline:0;color:var(--v7-role-status-danger);}
 :where(html[data-v7]) .v7-action-confirm {background:var(--v7-role-status-danger-solid);color:var(--v7-role-text-on-action);}
 
 :where(html[data-v7]) .v7-action-primary:not(:disabled):active {background:var(--v7-role-action-pressed);}
 :where(html[data-v7]) :is(.v7-state-button,.v7-filter-chip,.v7-toggle-button):disabled {background:transparent;color:var(--v7-role-text-disabled);border:var(--v7-hairline) solid var(--v7-role-border-subtle);cursor:not-allowed;}
 :where(html[data-v7]) .v7-state-button[aria-busy="true"] {cursor:progress;}
-:where(html[data-v7]) .v7-state-button[aria-busy="true"]:disabled {background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);border-color:transparent;}
+:where(html[data-v7]) .v7-state-button[aria-busy="true"]:disabled {background:var(--v7-role-surface-track);color:var(--v7-role-text-primary);border-color:transparent;}
 :where(html[data-v7]) .v7-action-primary[aria-busy="true"]:disabled {background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
 :where(html[data-v7]) .v7-action-tertiary[aria-busy="true"]:disabled {background:transparent;color:var(--v7-role-link-fg);}
 :where(html[data-v7]) .v7-action-confirm[aria-busy="true"]:disabled {background:var(--v7-role-status-danger-solid);color:var(--v7-role-text-on-action);}
@@ -125,7 +126,7 @@
 :where(html[data-v7]) .v7-optional {font-weight:400;color:var(--v7-role-text-secondary);}
 :where(html[data-v7]) .v7-field-frame {display:flex;align-items:center;position:relative;}
 :where(html[data-v7]) .v7-field-frame input {width:100%;min-width:0;min-height:var(--v7-field);padding:var(--v7-space-2) var(--v7-space-4);background:var(--v7-role-surface-sunken);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);color:var(--v7-role-text-primary);font-size:var(--v7-type-body);}
-:where(html[data-v7]) .v7-field-frame input::placeholder {color:var(--v7-role-text-tertiary);opacity:1;}
+:where(html[data-v7]) .v7-field-frame input::placeholder {color:var(--v7-role-text-secondary);opacity:1;}
 :where(html[data-v7]) .v7-form-field.v7-is-readonly input {border:0;background:transparent;padding-inline:0;}
 :where(html[data-v7]) .v7-field-frame input:disabled {background:transparent;border-color:var(--v7-role-border-subtle);color:var(--v7-role-text-disabled);}
 :where(html[data-v7]) .v7-form-field:has(input:disabled) label {color:var(--v7-role-text-disabled);}
@@ -180,7 +181,7 @@
 :where(html[data-v7]) .v7-mastery {display:grid;gap:var(--v7-space-2);padding-block:var(--v7-space-2);}
 :where(html[data-v7]) .v7-mastery-caption {display:flex;justify-content:space-between;gap:var(--v7-space-3);flex-wrap:wrap;font-size:var(--v7-type-supporting);color:var(--v7-role-text-secondary);}
 :where(html[data-v7]) .v7-mastery-caption > span:first-child {display:flex;align-items:center;gap:var(--v7-space-2);}
-:where(html[data-v7]) .v7-mastery-track {height:var(--v7-meter);position:relative;border-radius:var(--v7-round);background:var(--v7-role-border-subtle);}
+:where(html[data-v7]) .v7-mastery-track {height:var(--v7-meter);position:relative;border-radius:var(--v7-round);background:var(--progress-track);}
 :where(html[data-v7]) .v7-mastery-track > span {display:block;height:100%;border-radius:var(--v7-round);background:var(--v7-subject);}
 :where(html[data-v7]) .v7-mastery-end {color:var(--v7-subject);font:600 var(--v7-type-body)/1 var(--v7-glyph);}
 :where(html[data-v7]) .v7-constellation {position:relative;}
@@ -222,7 +223,6 @@
 @keyframes v7-star-pulse {50%{opacity:.6;}}
 @keyframes v7-qed-in {from{opacity:0;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0)}}
 @media(min-width:700px){:where(html[data-v7]) .v7-split {grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--v7-space-6);}}
-@media(prefers-reduced-motion:reduce){:where(html[data-v7]) *,:where(html[data-v7]) *::before,:where(html[data-v7]) *::after {animation:none!important;transition:opacity var(--v7-fast)!important;}}
 @media(prefers-reduced-transparency:reduce){:where(html[data-v7]) body {background-image:none;}:where(html[data-v7]) .v7-hero-specimen::before {display:none;}}
 :where(html[data-v7]) [data-contrast="high"] .v7-hero-specimen::before {display:none;}
 :where(html[data-v7])[data-effects="reduced"] body {background-image:none;}

@@ -8,7 +8,7 @@ const fixture=vi.hoisted(()=>({
  navigate:vi.fn(),queryClient:{invalidateQueries:vi.fn()},resumeRun:vi.fn(),getRun:vi.fn(),openStudyTarget:vi.fn(),targetFromLink:vi.fn(),
 }));
 vi.mock('../../../src/data/StudyUiRelease',()=>({useStudyUi:()=>fixture.released}));
-vi.mock('../../../src/data/authBoundary',()=>({authOwner:()=>null,onAccountChange:()=>()=>{}}));
+vi.mock('../../../src/data/authBoundary',()=>({authOwner:()=>null,authGeneration:()=>0,onAccountChange:()=>()=>{}}));
 vi.mock('../../../src/data/mode',()=>({getMode:()=>'live'}));
 vi.mock('react-router',()=>({useNavigate:()=>fixture.navigate,useSearchParams:()=>[new URLSearchParams(fixture.link)]}));
 vi.mock('@tanstack/react-query',()=>({useQuery:()=>({data:null,isPending:false}),
@@ -19,7 +19,7 @@ vi.mock('../../../src/features/review-run/v7/scopedRound',()=>({openStudyTarget:
  targetFromLink:fixture.targetFromLink,skipChangedStudyItem:vi.fn()}));
 vi.mock('../../../src/features/review-run/v6/adapter',()=>({getRun:fixture.getRun,resumeRun:fixture.resumeRun,
  advanceGrade:vi.fn(),advanceSkip:vi.fn(),cardVersion:vi.fn(),lastGraded:()=>null,pauseRun:vi.fn(),undoLast:vi.fn(),unpauseRun:vi.fn()}));
-vi.mock('../../../src/app/v7/V7Shell',()=>({ImmersiveHeader:()=>null}));
+vi.mock('../../../src/app/v7/PageHeaders',()=>({ImmersiveHeader:()=>null}));
 vi.mock('../../../src/ui/v7/components',()=>({Button:({children,onClick}:{children:React.ReactNode;onClick:()=>void})=><button onClick={onClick}>{children}</button>}));
 
 let root:Root,host:HTMLDivElement;

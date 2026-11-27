@@ -1,6 +1,7 @@
 /**
  * N123 · N0 App Links, notification taps, shortcuts and the Android back button. Pure helpers, unit-tested.
  */
+import {dismissTopLayer, hasOpenLayer as hasRegisteredLayer} from '../ui/v7/layers';
 import {APP_ORIGIN, APP_PATH, AUTH_CALLBACK} from './device';
 
 /** The in-app route for a URL the app was opened with, or null when it is not Lemma's (never navigates elsewhere). */
@@ -40,6 +41,7 @@ export function backStep({layerOpen, route, canGoBack}: {layerOpen: boolean; rou
 
 /** Close the top layer the way Escape would: a native <dialog> gets `cancel`, a v6 role="dialog" panel gets Escape. */
 export function closeTopLayer(doc: Document = document): boolean {
+  if (dismissTopLayer('back', doc)) return true;
   const dialogs = Array.from(doc.querySelectorAll<HTMLDialogElement>('dialog[open]'));
   const top = dialogs[dialogs.length - 1];
   if (top) {
@@ -63,5 +65,5 @@ export function wantsBackHandler({layerOpen, route}: {layerOpen: boolean; route:
 }
 
 export function hasOpenLayer(doc: Document = document): boolean {
-  return !!doc.querySelector('dialog[open],[role="dialog"][aria-modal="true"],[role="menu"]');
+  return hasRegisteredLayer(doc) || !!doc.querySelector('dialog[open],[role="dialog"][aria-modal="true"],[role="menu"]');
 }
