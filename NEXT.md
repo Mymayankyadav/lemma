@@ -14,6 +14,29 @@ Tests: Real-model equation-mode inputs, worker dispatch counts over 13 strokes a
 Scope: TutorComposer readSymbol, tutor input ink session and assist, TutorEquationPanel and equation recognizer cache probes, associated tests and docs/current/N257.md.
 Not: Model, ranking, thresholds, palm or Pencil policy, production telemetry, deployment headers, thread counts, typing or theme settings.
 
+## N256 Skip expired neural typing requests
+
+Stage: Harden · Status: in progress · Needs: — · Assigned: chat-473926#m4vq
+Done = A count result reaching the neural client late does not dispatch the draft; a queued edit expiring before its graph starts does not consume a new prefill. A live edit still scores and existing cached-prefix/epoch rules and expiry accounting hold.
+Tests: tests/unit/tutor/neural-worker-cache.test.ts and existing tutor writing-assistance entry-point regressions.
+Scope: src/features/tutor/writingAid/decoder/{neuralClient,neural.worker}.ts, tests/unit/tutor/neural-worker-cache.test.ts, docs/current/N256.md and this item.
+Not: Changing model choice or consent, inference deadline, ranking thresholds, training, N253, formula recognition, or qualifying hardware latency.
+
+## N255 Make Appearance paper and sky choices control the screen background
+
+Stage: Harden · Status: done · Needs: — · Assigned: chat-780461#y85j
+Done = Settings > Appearance visibly changes the background for the active theme. Plain paper and clear sky have no pattern; the chosen textures persist across reloads and theme switches. Accessibility overrides still hide decoration.
+Scope: v7 background styles, Appearance regression tests and docs/current/N255.md.
+Not: Changes to tutor input, Atlas graph data, drawing canvases or the palette.
+
+## N258 Reduce dictionary cold start for tutor typing
+
+Stage: Harden · Status: in progress · Needs: — · Assigned: chat-473926#m4vq
+Done = Validate the model without allocating a fresh buffer view for each history or rescanning every edge across several independent passes. Retain strict structural and probability validation, exact ranking and model identity; measure the first usable count reply through the tutor.
+Tests: tests/unit/tutor/ngram-load-validation.test.ts, existing expansion, spatial and exhaustive ordering tests, and the ABBA cold-editor probe.
+Scope: src/features/tutor/writingAid/decoder/kn.ts, scripts/typeahead/measure-cold-keyboard.mjs, the regression test, docs/current/N258.md, its diagnostic receipt and this item.
+Not: Changing weights, model selection, thresholds, ranking, predictions, persistent data or the N253 right-context logic. No physical-device speed claim.
+
 ## N259 Package the same-origin pthread entry for isolated equation readers
 
 Stage: Harden · Status: done · Needs: — · Assigned: chat-816327#gm8s

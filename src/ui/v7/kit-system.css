@@ -17,8 +17,10 @@
 :where(html[data-v7] input:not([type="checkbox"],[type="radio"],[type="range"]),html[data-v7] textarea) {max-width:100%;min-width:0;}
 :where(html[data-v7]) body {
   background-color:var(--v7-role-surface-page);
-  background-image:linear-gradient(to right,var(--v7-role-border-subtle) var(--v7-hairline),transparent var(--v7-hairline)),linear-gradient(to bottom,var(--v7-role-border-subtle) var(--v7-hairline),transparent var(--v7-hairline));
-  background-size:var(--v7-space-6) var(--v7-space-6);
+  /* Settings supplies a texture; without a choice the released 24px graph is the default. */
+  --v7-default-grid:linear-gradient(to right,var(--v7-role-border-subtle) var(--v7-hairline),transparent var(--v7-hairline)),linear-gradient(to bottom,var(--v7-role-border-subtle) var(--v7-hairline),transparent var(--v7-hairline));
+  background-image:var(--v7-paper-image,var(--v7-default-grid));
+  background-size:var(--v7-paper-size,var(--v7-space-6) var(--v7-space-6));
 }
 /* The paper texture is still when OS reduced motion is enabled. Reduce effects also removes decoration. */
 :where(html[data-v7])[data-v7-reduce-effects] body,

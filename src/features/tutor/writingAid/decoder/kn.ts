@@ -79,16 +79,19 @@ function parseExtended(bytes: Uint8Array, view: DataView): NgramModel {
     const probability = bytes[7] === 51
       ? Float32Array.from(section(Uint16Array, edges), code => code === 65535 ? 0 : 2 ** (-code / 2048))
       : section(Float32Array, edges);
-    if (start[0] !== 0 || start[count] !== edges ||
-        history.some(value => value >= size) || next.some(value => value >= size) ||
-        backoff.some(value => !(value >= 0 && Number.isFinite(value))) ||
-        probability.some(value => !(value >= 0 && value <= 1))) throw new Error('Invalid n-gram table');
+    if (start[0] !== 0 || start[count] !== edges) throw new Error('Invalid n-gram table');
+    // Validate in place in one pass. The shipping model has 407k rows: allocating a subarray
+    // per row and walking the same 2.5M edges three times delays the first count suggestion.
     for (let row = 0; row < count; row++) {
-      if (start[row] > start[row + 1] || row > 0 && compareHistory(history, row - 1, width, history.subarray(row * width, (row + 1) * width)) >= 0) {
+      const from = start[row], to = start[row + 1], offset = row * width;
+      if (from > to || to > edges || row > 0 && compareHistory(history, row - 1, width, history, offset) >= 0) {
         throw new Error('Unsorted n-gram history');
       }
-      for (let edge = start[row] + 1; edge < start[row + 1]; edge++) {
-        if (next[edge - 1] >= next[edge]) throw new Error('Unsorted n-gram continuation');
+      for (let i = 0; i < width; i++) if (history[offset + i] >= size) throw new Error('Invalid n-gram table');
+      if (!(backoff[row] >= 0 && Number.isFinite(backoff[row]))) throw new Error('Invalid n-gram table');
+      for (let edge = from; edge < to; edge++) {
+        if (next[edge] >= size || !(probability[edge] >= 0 && probability[edge] <= 1)) throw new Error('Invalid n-gram table');
+        if (edge > from && next[edge - 1] >= next[edge]) throw new Error('Unsorted n-gram continuation');
       }
     }
     rows.push({history, start, backoff, next, probability});
@@ -102,8 +105,8 @@ function parseExtended(bytes: Uint8Array, view: DataView): NgramModel {
     triKey: new Uint32Array(), triStart: new Uint32Array(), triBow: new Int8Array(), triNext: new Uint16Array(), triQ: new Uint8Array()};
 }
 
-function compareHistory(stored: Uint16Array, row: number, width: number, target: ArrayLike<number>): number {
-  const offset = row * width, targetOffset = target.length - width;
+function compareHistory(stored: Uint16Array, row: number, width: number, target: ArrayLike<number>, targetOffset = target.length - width): number {
+  const offset = row * width;
   for (let index = 0; index < width; index++) {
     const difference = stored[offset + index] - target[targetOffset + index];
     if (difference) return difference;
