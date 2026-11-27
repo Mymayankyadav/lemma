@@ -200,3 +200,35 @@ test('distinguishes stale and late arrivals from a delivered neural score', asyn
   })});
   client.close();
 });
+
+test('does not start a graph on an expired edit queued while another prefill was running', async () => {
+  const decoder = await worker(), pending = delayedPrefill();
+  let now = 100;
+  vi.spyOn(Date, 'now').mockImplementation(() => now);
+  decoder.suggest(1, 'Use ', 'turn', 160);
+  await vi.waitFor(() => expect(ort.prefill).toHaveBeenCalledTimes(1));
+  decoder.suggest(2, 'Edited ', 'turn', 170);
+  now = 180;
+  pending.finish();
+  expect((await decoder.reply(2)).timing?.late).toBe(true);
+  expect(ort.prefill).toHaveBeenCalledTimes(1);
+  decoder.suggest(3, 'New ', 'turn', 240);
+  expect((await decoder.reply(3)).timing?.late).toBe(false);
+  expect(ort.prefill).toHaveBeenCalledTimes(2);
+  decoder.reset();
+});
+
+test('does not send draft text to the graph worker after the edit budget expired', async () => {
+  const sent = vi.fn();
+  vi.stubGlobal('Worker', class {postMessage = sent; terminate() {}});
+  const client = (await createNeuralClient(true, true))!;
+  sent.mockClear(); // Ignore model preparation, which has no draft.
+  const mark = vi.spyOn(performance, 'mark');
+  const now = Date.now();
+  expect(await client.predict({epoch: 'turn', prefix: 'def', words: ['definition'], startedAt: now - 100,
+    deadline: now - 40, ghost: false, prompt: {question: '', aids: '', draft: 'State the def'}})).toBeUndefined();
+  expect(sent).not.toHaveBeenCalled();
+  expect(mark).toHaveBeenCalledWith('lemma.typeahead.neural.coverage', {detail: {expiredBeforeDispatch: true, strictTrial: true,
+    late: true, attempted: 0, scored: 0, matchedPending: false, arrivedBeforeDeadline: false, hasContinuation: false}});
+  client.close();
+});

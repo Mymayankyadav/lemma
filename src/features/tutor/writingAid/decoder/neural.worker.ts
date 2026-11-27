@@ -228,6 +228,9 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   provider = active?.provider;
   if (!active || latest || !sameGeneration()) return {id, timing: timing()};
   if (epoch !== request.epoch) {epoch = request.epoch; dispose(cached); cached = undefined; wordScores.clear();}
+  // A request can expire behind cold startup or the previous non-interruptible graph.
+  // Keep already-started same-epoch prefill reusable, but never start another graph for a dead slate.
+  if (!current()) return {id, timing: timing()};
   const stable = neuralWordPrompt(prompt, prefix);
   // Leave room for complete candidate words before absolute-position rollover.
   const ids = promptIds(active.tokenizer, stable, active.manifest.context - 36);
