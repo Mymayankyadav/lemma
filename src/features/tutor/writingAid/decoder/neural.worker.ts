@@ -155,7 +155,12 @@ function logSoftmax(logits: Float32Array): Float32Array {
   return logits.map(value => value - total);
 }
 
-async function infer(model: ActiveModel, ids: readonly number[], prior?: State): Promise<State> {
+// Ordinary deadline expiry is not a graph failure: retain the last committed exact-prefix cache.
+class ExpiredSlate {
+  constructor(readonly reply: NeuralReply) {}
+}
+
+async function infer(model: ActiveModel, ids: readonly number[], prior?: State, beforeRun?: () => void): Promise<State> {
   const remaining = prior ? ids.slice(prior.ids.length) : ids;
   const feeds: Record<string, Tensor> = {};
   if (prior) for (let layer = 0; layer < model.manifest.layers; layer++) {
@@ -168,6 +173,7 @@ async function infer(model: ActiveModel, ids: readonly number[], prior?: State):
   feeds.input_ids = new model.runtime.Tensor('int64', BigInt64Array.from(remaining, BigInt), [1, remaining.length]);
   let tensors: InferenceSession.ReturnType | undefined;
   try {
+    beforeRun?.(); // Tokenization, trie traversal and even feed construction may have consumed the budget.
     tensors = await (prior ? model.incremental : model.prefill).run(feeds);
     const {logits: output, ...attention} = tensors;
     const logits = await output.getData();
@@ -186,16 +192,19 @@ function dispose(state?: State): void {
 }
 
 async function stateFor(model: ActiveModel, ids: readonly number[], current: () => boolean,
-  prior: State | undefined, dropStale?: () => void): Promise<State> {
+  prior: State | undefined, dropStale?: () => void, beforeRun?: () => void): Promise<State> {
   let state = prior;
   if (!state || state.ids.length > ids.length || !state.ids.every((id, index) => ids[index] === id)) {
-    dropStale?.();
-    return infer(model, ids); // Earlier edits and rollover prefill absolute positions.
+    return infer(model, ids, undefined, () => {
+      beforeRun?.(); // Do not evict a useful prefix for an edit that expired while its tokens were prepared.
+      dropStale?.();
+      beforeRun?.(); // Disposing old GPU tensors can itself take time.
+    }); // Earlier edits and rollover prefill absolute positions.
   }
   let owned = false;
   try {
     for (let end = state.ids.length + 1; end <= ids.length && current(); end++) {
-      const updated = await infer(model, ids.slice(0, end), state);
+      const updated = await infer(model, ids.slice(0, end), state, beforeRun);
       if (owned) dispose(state);
       state = updated;
       owned = true;
@@ -224,6 +233,7 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   const sameGeneration = () => generation === currentGeneration;
   const sameEpoch = () => sameGeneration() && epoch === request.epoch && (!latest || latest.epoch === epoch);
   const current = () => !latest && sameGeneration() && Date.now() <= request.deadline;
+  const beforeRun = () => {if (!current()) throw new ExpiredSlate({id, timing: timing()});};
   const active = await prepare(request.trial, request.strictTrial, request.installedExperiment);
   provider = active?.provider;
   if (!active || latest || !sameGeneration()) return {id, timing: timing()};
@@ -235,7 +245,7 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   // Leave room for complete candidate words before absolute-position rollover.
   const ids = promptIds(active.tokenizer, stable, active.manifest.context - 36);
   reusedPrefix = Boolean(cached?.ids.every((token, index) => token === ids[index]));
-  const state = await stateFor(active, ids, current, cached, () => {dispose(cached); cached = undefined;});
+  const state = await stateFor(active, ids, current, cached, () => {dispose(cached); cached = undefined;}, beforeRun);
   // One completed prefix can warm the next edit even after this slate's
   // deadline. stateFor checks the exact tokens again before reusing it.
   if (!sameEpoch()) {
@@ -288,7 +298,7 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
         const affordable = () => current() && Date.now() + graphMs + ghostTime + 2 <= request.deadline;
         async function branch(token: number) {
           const start = performance.now();
-          const state = await infer(active!, [...parent.ids, token], parent);
+          const state = await infer(active!, [...parent.ids, token], parent, beforeRun);
           const elapsed = performance.now() - start;
           graphMs = graphMs ? .7 * graphMs + .3 * elapsed : elapsed;
           return state;
@@ -318,7 +328,7 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
   if (evaluateGhost && current()) {
     const ghostIds = promptIds(active.tokenizer, prompt, active.manifest.context - 16);
     const context = prefix ? 'prefix' : 'boundary';
-    let text = '', score = 0, stateAt = await infer(active, ghostIds);
+    let text = '', score = 0, stateAt = await infer(active, ghostIds, undefined, beforeRun);
     try {
       while (current() && stateAt.ids.length < active.manifest.context && text.length < 32) {
         let best = 0;
@@ -335,7 +345,7 @@ async function suggest(request: NeuralRequest): Promise<NeuralReply> {
             break;
           }
         }
-        const updated = await infer(active, [...stateAt.ids, best], stateAt);
+        const updated = await infer(active, [...stateAt.ids, best], stateAt, beforeRun);
         if (stateAt !== cached) dispose(stateAt);
         stateAt = updated;
       }
@@ -356,7 +366,10 @@ async function drain() {
       const request = latest;
       latest = undefined;
       try {scope.postMessage(await suggest(request));}
-      catch {dispose(cached); cached = undefined; scope.postMessage({id: request.id});}
+      catch (error) {
+        if (error instanceof ExpiredSlate) scope.postMessage(error.reply);
+        else {dispose(cached); cached = undefined; scope.postMessage({id: request.id});}
+      }
     }
   } finally {
     running = false;
