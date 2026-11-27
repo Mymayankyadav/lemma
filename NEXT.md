@@ -29,6 +29,14 @@ Done = Settings > Appearance visibly changes the background for the active theme
 Scope: v7 background styles, Appearance regression tests and docs/current/N255.md.
 Not: Changes to tutor input, Atlas graph data, drawing canvases or the palette.
 
+## N258 Reduce dictionary cold start for tutor typing
+
+Stage: Harden · Status: in progress · Needs: — · Assigned: chat-473926#m4vq
+Done = Validate the model without allocating a fresh buffer view for each history or rescanning every edge across several independent passes. Retain strict structural and probability validation, exact ranking and model identity; measure the first usable count reply through the tutor.
+Tests: tests/unit/tutor/ngram-load-validation.test.ts, existing expansion, spatial and exhaustive ordering tests, and the ABBA cold-editor probe.
+Scope: src/features/tutor/writingAid/decoder/kn.ts, scripts/typeahead/measure-cold-keyboard.mjs, the regression test, docs/current/N258.md, its diagnostic receipt and this item.
+Not: Changing weights, model selection, thresholds, ranking, predictions, persistent data or the N253 right-context logic. No physical-device speed claim.
+
 ## N254 Warm Lemma palette, tutor keyboard, motion and surface ownership
 
 Stage: Harden · Status: in progress · Needs: N252 · Assigned: chat-568402#d4nw

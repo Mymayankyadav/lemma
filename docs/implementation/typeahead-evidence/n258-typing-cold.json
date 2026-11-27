@@ -1,0 +1,289 @@
+{
+  "scope": "Desktop headless Chromium 153.0.8010.12, shared host, 393x873 CSS px, fresh browser contexts, no CPU throttling, local flag-enabled production Vite previews, service workers blocked, no optional neural weights. Existing N256 deadline changes on both arms did not run: no neural installed.",
+  "base": "1dfe10cf2b063f803abdff70576df8d223e85a0f",
+  "order": "A B B A, repeated 6 times",
+  "arms": [
+    "unmodified dictionary reader",
+    "one-pass dictionary reader"
+  ],
+  "assetSha256": "c97bacd0de80f08a66f65a76c610c8fa6076daaf70f328f4eb8be684e7ef9ba8",
+  "request": "Open tutor, focus Your answer, type def before readiness. Captured current edit revision 3 on all 24 observations. readyMs from worker constructor to preloaded, elapsedMs from surviving request to count reply, computeMs worker compute only.",
+  "samples": [
+    {
+      "arm": 0,
+      "readyMs": 754.2,
+      "elapsedMs": 719.9,
+      "computeMs": 64.7,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 705.4,
+      "elapsedMs": 687.3,
+      "computeMs": 52.2,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 723.9,
+      "elapsedMs": 619.1,
+      "computeMs": 67.6,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 865.4,
+      "elapsedMs": 873,
+      "computeMs": 75.6,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 696.2,
+      "elapsedMs": 668.6,
+      "computeMs": 70.7,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 506.6,
+      "elapsedMs": 509.6,
+      "computeMs": 63.8,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 566.3,
+      "elapsedMs": 538.4,
+      "computeMs": 62.9,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 861,
+      "elapsedMs": 823.3,
+      "computeMs": 58.4,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 998.9,
+      "elapsedMs": 1003.7,
+      "computeMs": 75.4,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 558,
+      "elapsedMs": 535.4,
+      "computeMs": 55.3,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 591.7,
+      "elapsedMs": 576,
+      "computeMs": 59,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 744.7,
+      "elapsedMs": 692.7,
+      "computeMs": 62,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 612.4,
+      "elapsedMs": 628.1,
+      "computeMs": 88.1,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 529,
+      "elapsedMs": 521.1,
+      "computeMs": 59.3,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 852.8,
+      "elapsedMs": 847.5,
+      "computeMs": 83.6,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 1060.9,
+      "elapsedMs": 986.1,
+      "computeMs": 81.6,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 655.3,
+      "elapsedMs": 642.8,
+      "computeMs": 72.2,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 757.2,
+      "elapsedMs": 768.2,
+      "computeMs": 94.5,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 865.3,
+      "elapsedMs": 912,
+      "computeMs": 142.5,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 1169.3,
+      "elapsedMs": 1112.9,
+      "computeMs": 69.6,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 711,
+      "elapsedMs": 683.1,
+      "computeMs": 59.4,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 620.8,
+      "elapsedMs": 585.4,
+      "computeMs": 57,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 1,
+      "readyMs": 1150.7,
+      "elapsedMs": 1135.7,
+      "computeMs": 63.5,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    },
+    {
+      "arm": 0,
+      "readyMs": 636.9,
+      "elapsedMs": 613.1,
+      "computeMs": 61.9,
+      "requests": 1,
+      "dropped": 2,
+      "timeouts": 0,
+      "failures": 0
+    }
+  ],
+  "parseMicrobenchmark": {
+    "base": [
+      192.64,
+      217.67,
+      161.67,
+      128.52,
+      158.36,
+      174.98,
+      155.61,
+      126.4,
+      127.61,
+      128.22,
+      138.4,
+      142.99,
+      171.2,
+      161.76,
+      139.91
+    ],
+    "after": [
+      116.11,
+      93.93,
+      55.9,
+      83.08,
+      72.58,
+      55.28,
+      58.1,
+      76.9,
+      68.72,
+      53.76,
+      56.25,
+      63.98,
+      54.73,
+      54.93,
+      63.08
+    ]
+  }
+}
