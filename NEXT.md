@@ -236,6 +236,14 @@ Done = The Owner's November screenshots are fixed in one PR. Headings use one ty
 Tests: updated e2e for the Calendar header, block sheet, charts, Atlas rail, Path goal and Inbox-only reminders; new unit tests for tap correction and the typed time field; the v7 kit check and lint.
 Scope: src/ui/v7/**; src/app/v7/**; src/features/{atlas,calendar,home,insights,pad,practice,project,review-run,ritual,focus,settings,tutor}/**; src/platform/{bridge,haptics}.ts; android/app/src/main/java/io/github/mymayankyadav/lemma/LemmaNativePlugin.java; tests/**; docs/current/N220.md.
 
+## N217 Rank-sensitive Scribe replay measurement
+
+Stage: Build · Status: open · Needs: — · Assigned: chat-917642#x8q2
+Done = Reproduce actual baseline display order on synthetic math-writing examples and report candidate recall, Top-1, Top-3, MRR@3, exact random expectations and pool-size slices. Mechanically verify safety filtering, suppression, deterministic controls and rank-shuffle detection without claiming human results.
+Tests: actual baseline visible parity; finite six-candidate chance and smaller pools; blocked/suppressed cases; deterministic synthetic replay.
+Scope: a development-only replay script, tests, protocol and N217 documentation.
+Not: product behavior, policy or flags; learner data; logging, collection or upload; training, APKs, performance or release claims.
+
 ## N201 Open the checkpoint tutor chat from the study path
 
 Owner task: "I want exactly this page as chatbot in lemma app when I click on continue with tutor. You can us le already existing contracts to make this page work as it was intended usage. Remove ugly pad and shit"
