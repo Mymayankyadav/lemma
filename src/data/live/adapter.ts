@@ -931,18 +931,42 @@ export class LiveAdapter implements LemmaApi {
     commentsNextCursor:commentsPage.nextCursor}
  }
  async createNote(...args: Parameters<LemmaApi['createNote']>): ReturnType<LemmaApi['createNote']> {
-  const [input]=args,db=liveClient(),uid=await owner(db)
+  const [input]=args,db=liveClient(),generation=authGeneration(),uid=await owner(db)
+  const checkAccount=()=>{
+   if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))
+    throw new LemmaError('auth','The note account changed. Reopen the card creator.')
+  }
+  checkAccount()
   const project=checked(await db.from('projects').select('*').eq('user_id',uid).eq('slug',input.projectSlug).single()) as Row
   let checkpointId:string|null=null
   if(input.checkpointCode){
     const cp=checked(await db.from('checkpoints').select('id').eq('user_id',uid).eq('project_id',project.id).eq('code',input.checkpointCode).single()) as Row
     checkpointId=cp.id
   }
+  checkAccount()
   const note=checked(await db.from('notes').insert({user_id:uid,project_id:project.id,checkpoint_id:checkpointId,
     front:input.front,back:input.back,type:input.type,kind:input.kind,origin:'user'}).select('*').single()) as Row
+  checkAccount()
   const cardRows=noteOrds(input.front,input.type).map(ord=>({user_id:uid,note_id:note.id,ord}))
-  const {error}=await db.from('cards').insert(cardRows)
-  if(error){await db.from('notes').delete().eq('user_id',uid).eq('id',note.id);fail(error)}
+  try {
+   const {error}=await db.from('cards').insert(cardRows)
+   if(error)throw error
+  } catch(error) {
+   // A failed acknowledgement does not mean the insert rolled back. Never
+   // delete this already-visible note: another client may have graded a card.
+   checkAccount()
+   let saved:Row[]=[]
+   try {
+    saved=checked(await db.from('cards').select('ord').eq('user_id',uid).eq('note_id',note.id)) as Row[]
+   } catch {
+    // Reconciliation can also be offline. Preserve the note and original error.
+   }
+   checkAccount()
+   if(cardRows.length>0&&cardRows.every(card=>saved.some(row=>row.ord===card.ord)))
+    return {noteNo:Number(note.no)}
+   fail(error)
+  }
+  checkAccount()
   return {noteNo:Number(note.no)}
  }
  async updateNote(...args: Parameters<LemmaApi['updateNote']>): ReturnType<LemmaApi['updateNote']> {
