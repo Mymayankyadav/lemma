@@ -1,0 +1,10 @@
+[
+  ["phone-p", "screen", "today", "shots/phone-p/today.png"],
+  ["phone-l", "screen", "task-editor-more", "shots/phone-l/task-editor-more.png"],
+  ["ipad-p", "screen", "calendar-week", "shots/ipad-p/calendar-week.png"],
+  ["ipad-l", "screen", "path-exam-sitting", "shots/ipad-l/path-exam-sitting.png"],
+  ["desktop", "screen", "paths", "shots/desktop/paths.png"],
+  ["phone-p", "keyboard", "01-abc", "keyboard/phone-p/01-abc.kb.png"],
+  ["ipad-p", "keyboard", "01-abc", "keyboard/ipad-p/01-abc.kb.png"],
+  ["phone-p", "motion", "sheet-capture-open", "motion/strips/phone-p-sheet-capture-open.png"]
+]

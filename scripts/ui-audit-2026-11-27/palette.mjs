@@ -1,4 +1,5 @@
-import {chromium,newCtx,openHash,SCRATCH} from './lib.mjs';
+import {imageMode} from './evidence.mjs';
+import {launchBrowser,newCtx,openHash,SCRATCH} from './lib.mjs';
 import {measure} from './metrics.mjs';
 import {mkdirSync,writeFileSync} from 'node:fs';
 const out=`${SCRATCH}/palette`;mkdirSync(out,{recursive:true});
@@ -37,7 +38,7 @@ const scenes=[['today','/',[]],['paths','/projects',[]],['calendar-day','/calend
  ['path-plan','/p/real-analysis',[]],['capture-sheet','/',['click:Capture','fill:Read Rudin chapter 4']],['tasks','/tasks',[]],['cards','/cards',[]]];
 // node palette.mjs [--dev=phone-p,ipad-l] [--scenes=today,paths]
 const arg=n=>process.argv.find(a=>a.startsWith('--'+n+'='))?.split('=')[1].split(',');
-const b=await chromium.launch();const rows={};
+const b=await launchBrowser();const rows={};
 for(const dev of arg('dev')??['phone-p','ipad-l']){
  for(const [id,hash,steps] of scenes){
   if(arg('scenes')&&!arg('scenes').includes(id))continue;
@@ -52,7 +53,7 @@ for(const dev of arg('dev')??['phone-p','ipad-l']){
      if(k==='fill')await p.locator('textarea').first().fill(v).catch(()=>{});
      if(k==='wait')await p.waitForTimeout(+v);await p.waitForTimeout(400);}
     await p.waitForTimeout(500);
-    await p.screenshot({path:`${out}/${dev}-${id}-${variant}.png`,animations:'disabled'});
+    if(imageMode==='all')await p.screenshot({path:`${out}/${dev}-${id}-${variant}.png`,animations:'disabled'});
     const m=await p.evaluate(measure);
     (rows[`${dev}|${id}`]??={})[variant]={textMedian:m.text.median,textFail:m.text.fail,textMin:m.text.minRatio,surface:m.layers.medianSurface,border:m.layers.medianBorder,weak:m.layers.weakSeparation,pageBg:m.pageBg,pink:m.pinkEdgeCount,
       worst:m.text.worst.slice(0,3).map(w=>`${w.fg} on ${w.bg} ${w.ratio}`)};

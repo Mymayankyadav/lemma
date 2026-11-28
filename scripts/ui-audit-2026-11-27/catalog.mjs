@@ -16,7 +16,7 @@ export const scenes=[
  {id:'capture-task-typed',group:'Capture & drawers',hash:'/',steps:cap('fill:Read Rudin chapter 4 tomorrow 5pm')},
  {id:'capture-time-block',group:'Capture & drawers',hash:'/',steps:cap('click:Time block')},
  {id:'capture-block-busy',group:'Capture & drawers',hash:'/',steps:cap('click:Time block','click:Busy')},
- {id:'capture-card',group:'Capture & drawers',hash:'/',steps:cap('click:Card','fill:What is a compact set?')},
+ {id:'capture-card',group:'Capture & drawers',hash:'/',steps:cap('clickx:Card','fill:What is a compact set?')},
  {id:'capture-thought',group:'Capture & drawers',hash:'/',steps:cap('click:Thought','fill:Is every closed bounded set compact in a metric space?')},
  {id:'task-editor',group:'Capture & drawers',hash:'/',steps:cap('fill:Work through Rudin 4','click:Add details')},
  {id:'task-editor-due',group:'Capture & drawers',hash:'/',steps:cap('click:Add details','click:Due: None')},
@@ -25,10 +25,10 @@ export const scenes=[
  {id:'task-editor-priority',group:'Capture & drawers',hash:'/',steps:cap('click:Add details','click:More options','click:Priority')},
  {id:'task-editor-subject',group:'Capture & drawers',hash:'/',steps:cap('click:Add details','click:More options','click:Subject')},
  {id:'block-editor',group:'Capture & drawers',hash:'/',steps:cap('click:Time block','click:Add details')},
- {id:'card-editor-from-capture',group:'Capture & drawers',hash:'/',steps:cap('click:Card','click:Add details')},
+ {id:'card-editor-from-capture',group:'Capture & drawers',hash:'/',steps:cap('clickx:Card','click:Add details')},
  {id:'thought-editor',group:'Capture & drawers',hash:'/',steps:cap('click:Thought','click:Add details')},
- {id:'search-sheet',group:'Capture & drawers',hash:'/',steps:['click:Search']},
- {id:'search-query',group:'Capture & drawers',hash:'/',steps:['click:Search','fill:compact']},
+ {id:'search-sheet',group:'Capture & drawers',hash:'/',steps:['search']},
+ {id:'search-query',group:'Capture & drawers',hash:'/',steps:['search','fill:compact']},
  // ───────── Paths
  {id:'paths',group:'Paths',hash:'/projects'},
  {id:'paths-search',group:'Paths',hash:'/projects',steps:['fill:topo']},
@@ -42,7 +42,7 @@ export const scenes=[
  {id:'path-sessions',group:'Path detail',hash:'/p/real-analysis',steps:['clickx:Sessions']},
  {id:'path-sources',group:'Path detail',hash:'/p/real-analysis',steps:['clickx:Sources']},
  {id:'path-cards',group:'Path detail',hash:'/p/real-analysis',steps:['clickx:Cards']},
- {id:'path-exam',group:'Path detail',hash:'/p/real-analysis',steps:['clickx:Exam']},
+ {id:'path-exam',group:'Path detail',hash:'/p/linear-algebra',steps:['clickx:Exam']},
  {id:'path-actions-menu',group:'Path detail',hash:'/p/real-analysis',steps:['click:More path actions']},
  {id:'path-plan-estimates',group:'Path detail',hash:'/p/real-analysis',steps:['click:Plan estimates']},
  {id:'path-goal',group:'Path detail',hash:'/p/real-analysis',steps:['click:Prove the main theorems']},
@@ -85,7 +85,7 @@ export const scenes=[
  {id:'calendar-week',group:'Calendar & Tasks',hash:`/calendar?view=week&date=${D}`},
  {id:'calendar-month',group:'Calendar & Tasks',hash:`/calendar?view=month&date=${D}`},
  {id:'calendar-agenda',group:'Calendar & Tasks',hash:`/calendar?view=agenda&date=${D}`},
- {id:'calendar-view-menu',group:'Calendar & Tasks',hash:`/calendar?view=day&date=${D}`,steps:['click:Calendar view']},
+ {id:'calendar-view-menu',group:'Calendar & Tasks',hash:`/calendar?view=day&date=${D}`,steps:['calendarChoices']},
  {id:'calendar-actions-menu',group:'Calendar & Tasks',hash:`/calendar?view=day&date=${D}`,steps:['click:Calendar actions']},
  {id:'calendar-browse-day',group:'Calendar & Tasks',hash:`/calendar?view=day&date=${D}`,steps:['click:Browse day']},
  {id:'calendar-block-open',group:'Calendar & Tasks',hash:`/calendar?view=day&date=${D}`,steps:['click:Solve analysis problems, Planned']},
@@ -94,8 +94,8 @@ export const scenes=[
  {id:'calendar-block-sheet',group:'Calendar & Tasks',hash:`/calendar?view=day&date=${D}&new=block`},
  {id:'calendar-planner',group:'Calendar & Tasks',hash:`/calendar?view=day&date=${D}&plan=1`},
  {id:'tasks-todo',group:'Calendar & Tasks',hash:'/tasks'},
- {id:'tasks-doing',group:'Calendar & Tasks',hash:'/tasks',steps:['click:Doing']},
- {id:'tasks-done',group:'Calendar & Tasks',hash:'/tasks',steps:['click:Done']},
+ {id:'tasks-doing',group:'Calendar & Tasks',hash:'/tasks',steps:['taskColumn:Doing']},
+ {id:'tasks-done',group:'Calendar & Tasks',hash:'/tasks',steps:['taskColumn:Done']},
  {id:'tasks-filter',group:'Calendar & Tasks',hash:'/tasks',steps:['click:Filter']},
  {id:'tasks-new',group:'Calendar & Tasks',hash:'/tasks?new=1'},
  {id:'tasks-new-due-picker',group:'Calendar & Tasks',hash:'/tasks?new=1',steps:['click:Due:']},
@@ -190,3 +190,83 @@ export const scenes=[
  {id:'progress-range-day',group:'Deep links',hash:'/insights?range=day'},
  {id:'today-quick-direct',group:'Deep links',hash:'/?quick=1'},
 ];
+
+// Non-route surfaces and flows that require a populated fixture, a gesture, or more than one action.
+const add=(group,id,hash,steps=[],extra={})=>scenes.push({group,id,hash,steps,...extra});
+const exam='/p/linear-algebra?tab=exam&examSitting=demo-exam-project-linear';
+const setup=['click:More path actions','click:Prepare for an exam'];
+add('Exam','exam-setup','/p/real-analysis',setup);
+add('Exam','exam-setup-blueprint','/p/real-analysis',[...setup,'clickx:Add row']);
+add('Exam','exam-setup-calendar','/p/real-analysis',[...setup,'click:Block time in Calendar']);
+const row='click:Write the matrix of a linear transformation';
+for(const [id,action] of [['details',null],['defer','Defer…'],['skip','Skip…'],['edit','Edit row'],['review','Review this topic']])
+ add('Exam','exam-row-'+id,exam,[row,...(action?['clickx:'+action]:[])]);
+add('Exam','exam-time-left',exam,['clickx:Add time']);
+add('Exam','path-card-ideas','/p/linear-algebra?tab=cards&cards=ideas');
+const pad='/pad?path=real-analysis&checkpoint=CP4';
+add('Pad','pad-checkpoint-address','/pad/project-analysis-cp-4?path=real-analysis&checkpoint=CP4');
+add('Pad','pad-missing-checkpoint','/pad/not-in-demo?path=real-analysis&checkpoint=CP99');
+add('Pad','pad-drawing',pad,['clickx:Draw']);
+add('Pad','pad-math-keyboard',pad,['clickx:Use math keyboard']);
+for(const [id,actions] of [
+ ['paused',['advance:60000','clickx:Pause']],['resumed',['advance:60000','clickx:Pause','advance:60000','click:Resume']],
+ ['break',['advance:60000','clickx:Take a break']],['timer-menu',['click:Timer details']],
+ ['desk-clock',['click:Timer details','click:Desk clock']],['finish',['clickx:Finish']],
+ ['intention',['click:Intention:']],
+])add('Focus & ritual','focus-'+id,'/',['click:Start now',...actions]);
+add('Focus & ritual','day-closed','/today/close',['click:Close the day'],{expect:'main[aria-label="Day closed"]'});
+add('Entry & errors','welcome-create-path','/welcome',['click:Skip this step']);
+add('Entry & errors','welcome-study-day','/welcome',['click:Skip this step','click:Skip this step']);
+add('Inbox','inbox-plans-list','/proposals?view=list&tab=plan');
+add('Progress','progress-range-week','/insights?range=7');
+add('Progress','progress-range-quarter','/insights?range=90');
+add('Progress','progress-details','/insights',['click:Progress actions','clickx:Progress details']);
+add('Calendar & Tasks','task-edit','/tasks',['click:More actions for Work on eigenvectors','clickx:Edit']);
+add('Calendar & Tasks','block-delete-confirm','/calendar?view=day&date='+D,['click:Solve analysis problems, Planned','clickx:Delete']);
+for(const name of ['Date','Path','Task'])add('Calendar & Tasks','block-pick-'+name.toLowerCase(),'/calendar?view=day&new=block&date='+D,[...(name==='Task'?['clickx:More']:[]),'click:'+name+':']);
+add('Cards & Atlas','card-actions','/cards/1',['click:More card actions']);
+add('Cards & Atlas','card-edit','/cards/1',['click:Edit card']);
+add('Cards & Atlas','card-delete-confirm','/cards/1',['click:More card actions','click:Delete card']);
+add('Cards & Atlas','atlas-expanded','/atlas',['click:Search concepts','fill:compact','click:Compactness','click:Show less','click:Show neighbours and actions']);
+add('Review','practice-record','/practice',['tapCss:button[aria-label^="Practice "]']);
+add('Review','practice-manage','/practice',['tapCss:button[aria-label^="Manage "]']);
+add('Path detail','checkpoint-actions','/p/real-analysis/cp/CP4',['click:More checkpoint actions']);
+add('Capture & drawers','capture-first-card','/',[...cap('clickx:Card','click:Add details')],{demo:'first-use'});
+add('Capture & drawers','capture-discard','/',cap('fill:An unfinished task','press:Escape'));
+add('Capture & drawers','search-no-results','/',['search','fill:zzzzunknown']);
+const tutor='/p/real-analysis/cp/CP4/tutor';
+const scratch=['click:Write a question','focus:[aria-label="Your answer"]','clickx:Scratch'];
+add('Tutor','tutor-scratch',tutor,scratch);
+add('Tutor','tutor-fullscreen-paper',tutor,[...scratch,'clickx:Full screen']);
+for(const [id,hash] of [['welcome','/'],['planning','/settings?section=planning'],['reminders','/settings?section=reminders'],['account','/settings?section=data']])
+ add('Android app','android-'+id,hash,[],{devices:['phone-s','tablet-s-p','tablet-s-l'],native:id==='welcome'?'welcome':'app'});
+
+add('Settings','settings-delete-confirm','/settings?section=data',['clickx:Delete…']);
+add('Settings','settings-edit-subject','/settings?section=subjects',['tapCss:.v7-subject-rows button']);
+add('Local account fixture','account-delete-form','/settings?section=data',['clickx:Delete…'],{account:true,expect:'dialog[open] input:not(:disabled)'});
+add('Local account fixture','account-pad-library','/pad',[],{account:true});
+add('Local account fixture','account-tutor','/p/logic/cp/CP1/tutor',[],{account:true});
+add('Pad','pad-import-preview',pad,['padBackup'],{expect:'[aria-label="Review Pad replacement"]'});
+add('Pad','pad-dirty-leave',pad,['fill:Unsaved notes','click:Return to checkpoint'],{expect:'dialog[open]'});
+add('Review','review-completed-round','/review',['click:Start review','finishReview']);
+add('Review','review-paused-round','/review',['click:Start review','clickx:Leave']);
+add('Focus & ritual','focus-log-session','/',['click:Start now','advance:120000','clickx:Finish'],{expect:'dialog[open]'});
+add('Focus & ritual','focus-discard-confirm','/',['click:Start now','advance:120000','clickx:Finish','clickx:Discard session']);
+add('Tutor','tutor-attachment-menu',tutor,['click:Write a question','click:Attach context']);
+add('Tutor','tutor-eraser-choices',tutor,[...scratch,'click:Eraser type']);
+add('Cards & Atlas','atlas-edit-concept','/atlas',['click:Search concepts','fill:compact','click:Compactness','click:Edit concept']);
+
+add('Entry & errors','route-chunk-error','/insights',[],{chunkError:true,expect:'main.lemma-route-error'});
+add('Entry & errors','route-error-return','/insights',['click:Back to Today'],{chunkError:true,expect:'main[aria-label="Today"]'});
+
+const sources='/p/real-analysis?tab=sources';
+add('Path detail','source-reader',sources,['click:rudin 1 of'],{expect:'dialog[open]'});
+add('Path detail','source-manager',sources,['click:Manage sources'],{expect:'dialog[open]'});
+add('Path detail','source-reader-to-manager',sources,['click:rudin 1 of','click:Manage this source'],{expect:'dialog[open]'});
+add('Tutor','tutor-equation-consent',tutor,[...scratch,'draw','click:Recognize equation'],{expect:'dialog[open]'});
+
+for(const state of ['unseen','complete'])
+ add('Local account fixture','tutor-questionnaire-'+state,'/p/logic/cp/CP1/tutor',['click:Open questionnaire'],{account:state,expect:'dialog[open]'});
+const examChat='/p/linear-algebra/tutor?exam=demo-exam-project-linear';
+add('Exam','exam-session-actions',examChat,['click:Session actions']);
+add('Exam','exam-connection',examChat,['click:Session actions','clickx:Connection'],{expect:'dialog[open]'});

@@ -1,9 +1,14 @@
 import os
-import json,collections
+import json,collections,statistics
+from pathlib import Path
 S=os.environ.get('AUDIT_OUT','artifacts/ui-audit-2026-11-27')+'/audit'
-devs=['phone-p','phone-s','phone-l','ipad-p','ipad-l']
+devs=sorted(f.stem for f in Path(S).glob('*.json'))
+if not devs:raise SystemExit('No capture reports in '+S)
+def median(values):
+    vals=[v for v in values if v is not None]
+    return statistics.median(vals) if vals else None
 D={d:json.load(open(f'{S}/{d}.json')) for d in devs}
-ids=[k for k in D['phone-p'] if k not in('close-day-1','close-day-2','close-day-3')]
+ids=set().union(*(d.keys() for d in D.values()))
 print('scenes',len(ids),{d:len(D[d]) for d in devs})
 # errors / step failures
 for d in devs:
@@ -15,7 +20,6 @@ for d in devs:
     n=[k for k,v in D[d].items() if v.get('metrics',{}).get('focus') and v['metrics']['focus']['focusVisible'] and v['metrics']['focus'].get('outline')]
     kinds=collections.Counter(D[d][k]['metrics']['focus']['el'].split('.')[0] for k in n)
     print(d,len(n),'of',len(D[d]),dict(kinds))
-print(' sample phone-p:',[ (k,D['phone-p'][k]['metrics']['focus']['el']) for k in D['phone-p'] if D['phone-p'][k].get('metrics',{}).get('focus',{}).get('focusVisible')][:60])
 # pink edges
 print('\n== scenes with pink border/outline elements, per device')
 for d in devs:
@@ -35,7 +39,7 @@ for d in devs:
 print('\n== text contrast fails (<4.5 normal/<3 large)')
 for d in devs:
     ms=[(k,v['metrics']['text']) for k,v in D[d].items() if v.get('metrics')]
-    print(d,'scenes with fails',sum(1 for k,t in ms if t['fail']),'total fails',sum(t['fail'] for k,t in ms),'of',sum(t['count'] for k,t in ms),'| median-of-medians',sorted(t['median'] for k,t in ms if t['median'])[len(ms)//2],'| tiny<12px',sum(t['tiny'] for k,t in ms))
+    print(d,'scenes with fails',sum(1 for k,t in ms if t['fail']),'total fails',sum(t['fail'] for k,t in ms),'of',sum(t['count'] for k,t in ms),'| median-of-medians',median(t['median'] for k,t in ms),'| tiny<12px',sum(t['tiny'] for k,t in ms))
 allw=collections.Counter()
 for d in devs:
     for k,v in D[d].items():
@@ -45,7 +49,7 @@ print('worst combos',allw.most_common(12))
 print('\n== layer separation')
 for d in devs:
     ms=[v['metrics']['layers'] for v in D[d].values() if v.get('metrics')]
-    print(d,'median surface ratio',sorted(m['medianSurface'] for m in ms if m['medianSurface'])[len(ms)//2],'median border',sorted(m['medianBorder'] for m in ms if m['medianBorder'])[len(ms)//2],'weak elems',sum(m['weakSeparation'] for m in ms))
+    print(d,'median surface ratio',median(m['medianSurface'] for m in ms),'median border',median(m['medianBorder'] for m in ms),'weak elems',sum(m['weakSeparation'] for m in ms))
 # end clear
 print('\n== content hidden behind fixed bar at end of scroll (clearance<8px)')
 for d in devs:

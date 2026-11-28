@@ -1,115 +1,202 @@
-// Control sweep + route crawl: finds screens and states nobody listed.
-//   node scripts/ui-audit-2026-11-27/sweep.mjs <device|a,b|phones|tablets|all> [scene-id ...] [--max=12] [--strict]
-// For each page in catalog.mjs (one per distinct route + query, unless scene ids are given) it
-//   1. lists every distinct interactive control (role + element + v7 class + name with digits folded),
-//   2. clicks each one on a fresh copy of the page and records what happened:
-//        route   the hash changed (the target is queued and crawled, see below),
-//        overlay a dialog / menu / listbox / popover / toast appeared,
-//        state   aria-expanded / pressed / checked / selected / current changed,
-//        inline  the page grew, shrank or gained text (an expansion, a revealed form),
-//        none    nothing visible changed (a dead control, or one that needs data the demo lacks),
-//   3. screenshots every route / overlay / state / inline result, so a menu or confirm dialog nobody catalogued is captured,
-//   4. crawls the routes it discovered (and every <a href="#/…"> on the page) that catalog.mjs does not contain.
-// Controls are never confirmed (the script only clicks once and reloads), and the data is the demo fixture, so the
-// sweep cannot change anything. With --strict the exit code is 1 when it found a route the catalogue lacks.
-import {chromium,newCtx,openHash,SCRATCH,pickDevices,applyInsets} from './lib.mjs';
-import {scenes} from './catalog.mjs';
+// Explore distinct rendered screens to a fixed point. Every branch replays its path in a new demo context.
+import {createHash} from 'node:crypto';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-const args=process.argv.slice(2);
-const flag=(n,d)=>args.find(a=>a.startsWith('--'+n+'='))?.split('=')[1]??d;
-const strict=args.includes('--strict'),MAX=+flag('max',12);
-const pos=args.filter(a=>!a.startsWith('--'));
-const devList=pickDevices(pos[0]);
-if(devList.length>1){let bad=0;for(const d of devList){const r=spawnSync(process.execPath,[process.argv[1],d,...args.slice(1)],{stdio:'inherit',env:process.env});bad|=r.status?1:0;}process.exit(bad);}
-const dev=devList[0],ids=pos.slice(1);
-const out=`${SCRATCH}/sweep/${dev}`;mkdirSync(out,{recursive:true});
+import {pathToFileURL} from 'node:url';
+import {BASE,SCRATCH,applyInsets,launchBrowser,newCtx,pickDevices,profile} from './lib.mjs';
+import {uploadFixture} from './fixtures.mjs';
+import {openScene,applies} from './scene.mjs';
+import {scenes} from './catalog.mjs';
+import {traceAction,settle,startTrace} from './trace.mjs';
+import {wantsImage} from './evidence.mjs';
 
-/** A route's identity for "have we seen this screen": ids and numbers folded, query keys kept. */
-const norm=h=>{const [path,q='']=h.replace(/^#/,'').split('?');
- const p=path.replace(/\/(proposal-\d+|[0-9a-f-]{20,}|\d+|CP\d+)(?=\/|$)/gi,'/:id').replace(/\/p\/[^/]+/,'/p/:slug').replace(/\/s\/[^/]+/,'/s/:slug');
- const keys=[...new URLSearchParams(q).keys()].filter(k=>!['date','run','id','edit','path','checkpoint'].includes(k)).sort();return p+(keys.length?'?'+keys.join('&'):'');};
-const known=new Set(scenes.map(s=>norm(s.hash)));
-const knownPaths=new Set([...known].map(k=>k.split('?')[0]));
-const pages=ids.length?scenes.filter(s=>ids.includes(s.id)||ids.includes(s.group)):[...new Map(scenes.filter(s=>!s.steps&&!s.demo).map(s=>[s.hash,s])).values()];
+const dataParams=new Set(['date','id','run','edit','path','checkpoint','task','len','exam','examSitting','source','idea','question','block']);
+export function routeKey(hash) {
+  const [path,query='']=hash.replace(/^#/,'').split('?');
+  const pattern=path.replace(/^(\/p|\/s)\/[^/]+/,'$1/:slug').replace(/\/cp\/[^/]+/,'/cp/:code')
+    .replace(/^(\/cards|\/pad|\/proposals)\/[^/]+/,'$1/:id').replace(/^(\/s\/:slug)\/[^/]+/,'$1/:n');
+  const params=new URLSearchParams(query);
+  for(const key of dataParams)if(params.has(key))params.set(key,':value');
+  params.sort();
+  return pattern+(params.size?'?'+params:'');
+}
 
-const probe=()=>{
- const vis=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>6&&r.height>6&&s.visibility!=='hidden'&&s.display!=='none'&&!e.closest('[inert],[aria-hidden=true],.v7-sr-only');};
- const els=[...document.querySelectorAll('button,a[href],[role=tab],[role=radio],[role=switch],[role=checkbox],[role=menuitem],[role=menuitemradio],[role=option],summary,input:not([type=hidden]),select,textarea,[role=button],[tabindex="0"]')].filter(vis);
- const seen=new Set(),list=[];
- for(const e of els){
-  const name=(e.getAttribute('aria-label')||e.textContent||e.getAttribute('placeholder')||'').trim().replace(/\s+/g,' ').slice(0,60);
-  const sig=[e.getAttribute('role')||e.tagName.toLowerCase(),[...e.classList].filter(c=>/^v7-|^k$/.test(c)).slice(0,2).join('.'),name.replace(/\d+/g,'#').slice(0,30)].join('|');
-  if(seen.has(sig))continue;seen.add(sig);e.setAttribute('data-sweep',String(list.length));list.push({i:list.length,sig,name,kind:e.getAttribute('role')||e.tagName.toLowerCase(),
-   href:e.getAttribute('href')});
- }
- return list;
-};
-const snapshot=()=>({hash:location.hash,text:document.body.innerText.length,height:document.documentElement.scrollHeight,
- overlays:document.querySelectorAll('[role=dialog],[role=menu],[role=listbox],[role=tooltip],[popover]:popover-open,.v7-toast,.v7-app-toast,[role=status]:not(:empty)').length,
- aria:[...document.querySelectorAll('[aria-expanded],[aria-pressed],[aria-checked],[aria-selected],[aria-current]')].map(e=>['aria-expanded','aria-pressed','aria-checked','aria-selected','aria-current'].map(a=>e.getAttribute(a)).join('')).join('|')});
-const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'control';
-
-const b=await chromium.launch();
-const report={device:dev,max:MAX,pages:{},discovered:{},crawled:{}};
-const toCrawl=new Map();
-// a route is new when its path + query keys are not in the catalogue (a bare path that is catalogued with a query is not new)
-const note=(h,from)=>{const k=norm(h);if(!known.has(k)&&!(k===k.split('?')[0]&&knownPaths.has(k))&&!toCrawl.has(k))toCrawl.set(k,{hash:h.replace(/^#/,''),from});};
-
-for(const sc of pages){
- const ctx=await newCtx(b,dev);const p=await ctx.newPage();await applyInsets(ctx,p,dev);
- const rows=[];mkdirSync(`${out}/${sc.id}`,{recursive:true});
- p.on('popup',pp=>pp.close().catch(()=>{}));
- try{
-  await openHash(p,sc.hash,{demo:sc.demo??'1'});
-  const list=await p.evaluate(probe);
-  for(const a of await p.evaluate(()=>[...document.querySelectorAll('a[href^="#/"]')].map(a=>a.getAttribute('href').slice(1))))note(a,sc.id);
-  for(const c of list.slice(0,MAX)){
-   const row={sig:c.sig,name:c.name,kind:c.kind};
-   try{
-    if(rows.length){await p.goto('about:blank');await openHash(p,sc.hash,{demo:sc.demo??'1'});await p.evaluate(probe);}   // a clean copy of the page for every control
-    const before=await p.evaluate(snapshot);
-    await p.locator(`[data-sweep="${c.i}"]`).first().scrollIntoViewIfNeeded({timeout:2500});
-    await p.locator(`[data-sweep="${c.i}"]`).first().click({timeout:3000,noWaitAfter:true});
-    await p.waitForTimeout(550);
-    const after=await p.evaluate(snapshot);
-    const effect=after.hash!==before.hash?'route':after.overlays>before.overlays?'overlay':after.aria!==before.aria?'state'
-     :Math.abs(after.text-before.text)>40||Math.abs(after.height-before.height)>20?'inline':'none';
-    row.effect=effect;
-    if(effect==='route'){row.route=after.hash;note(after.hash,sc.id+' › '+c.name);}
-    if(effect!=='none'&&!(effect==='route'&&known.has(norm(after.hash)))){row.shot=`${sc.id}/${String(c.i).padStart(2,'0')}-${slug(c.name||c.kind)}-${effect}.png`;await p.screenshot({path:`${out}/${row.shot}`,animations:'disabled'});}
-   }catch(e){row.effect='error';row.error=String(e.message).split('\n')[0].slice(0,100);}
-   rows.push(row);
+// Serializable browser probe. A replay finds the same named element in the same group, even when another row moves.
+function inspect() {
+  const visible=e=>e.checkVisibility({visibilityProperty:true})&&e.getBoundingClientRect().width>0&&
+    !e.closest('[inert],[aria-hidden=true],.v7-sr-only,[data-layer-exit]');
+  const name=e=>(e.getAttribute('aria-label')||
+    (e.getAttribute('aria-labelledby')||'').split(/\s+/).map(id=>document.getElementById(id)?.textContent).filter(Boolean).join(' ')||
+    e.labels?.[0]?.innerText||e.getAttribute('placeholder')||e.innerText||e.getAttribute('title')||'').trim().replace(/\s+/g,' ');
+  const layerSelector='dialog[open],[role=dialog],[role=menu],[role=listbox],[data-layer-active],[data-surface-role=step],[popover]:popover-open';
+  const layers=[...document.querySelectorAll(layerSelector)].filter(visible);
+  const top=layers.at(-1);
+  const root=top??document;
+  const role=e=>e.getAttribute('role')||e.localName;
+  const label=e=>e.getAttribute('aria-label')||e.querySelector('h1,h2,h3')?.textContent||role(e);
+  const descriptor=e=>[role(e),e.getAttribute('type'),[...e.classList].filter(c=>!['active','selected'].includes(c)).join('.')].join('.');
+  const fold=s=>s.replace(/\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December)\b/gi,'@').replace(/\d+/g,'#');
+  const selector='a[href],button,summary,select,input:not([type=hidden]),textarea,[contenteditable=true],[role=button],[role=tab],[role=radio],[role=switch],[role=checkbox],[role=menuitem],[role=menuitemradio],[role=option],[tabindex="0"]';
+  for(const old of document.querySelectorAll('[data-audit-control]'))old.removeAttribute('data-audit-control');
+  const actions=[],shapes=new Set(),counts=new Map();
+  let elementIndex=0;
+  // Dates and changing counts are fixture data. Preserve numbered wizard steps even when Next keeps its label.
+  const copy=[...new Set([...root.querySelectorAll('legend,p,[aria-current=step],[role=alert]')]
+    .filter(e=>visible(e)&&!e.closest('.v7-app-toast,[role=timer],[contenteditable=true]')).map(e=>{
+      const text=e.innerText?.trim()??'';
+      return text?fold(text)+' '+(text.match(/\bstep\s+\d+/ig)??[]).join(' '):'';
+    }).filter(Boolean))];
+  const headings=[...root.querySelectorAll('h1,h2,[role=tabpanel],main[aria-label],form[aria-label]')].filter(visible).map(e=>fold(label(e)===role(e)?name(e):label(e)));
+  for(const e of root.querySelectorAll(selector)){
+    if(!visible(e)||e.matches(':disabled,[aria-disabled=true]'))continue;
+    const owner=e.closest('section[aria-label],[role=group],[role=radiogroup],[role=tablist],form,nav');
+    const text=name(e), href=e.getAttribute('href'), type=e.getAttribute('type')??'text';
+    const stableHref=href?.replace(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/gi,':id');
+    const base=[role(e),text,stableHref,owner?.getAttribute('aria-label')??'',descriptor(e)];
+    const id=JSON.stringify(base), occurrence=counts.get(id)??0;counts.set(id,occurrence+1);
+    const key=JSON.stringify([...base,occurrence]);
+    const index=elementIndex++;e.dataset.auditControl=String(index);
+    const push=(kind,value)=>actions.push({key,kind,value,index,name:text||role(e),href});
+    // One material example for an editable field. Preserve the control's identity and the submitted state.
+    if(e instanceof HTMLSelectElement){for(const option of e.options)if(!option.disabled&&option.value!==e.value)push('select',option.value);}
+    else if(e.matches('textarea,[contenteditable=true],input:not([type=checkbox],[type=radio],[type=button],[type=submit],[type=reset],[type=file],[type=color],[type=range])')){
+      if(!e.readOnly&&!(e.value??e.textContent))push('fill',({email:'audit@example.invalid',date:'2026-11-10',time:'10:30','datetime-local':'2026-11-10T10:30',number:e.min||'1',url:'https://example.invalid'})[type]??(type==='search'?'compact':'Study compact sets'));
+      push('focus');
+    } else if(type==='file'&&e.localName==='input')push('file',e.accept);
+    else if(href&&(!e.href?.startsWith(location.origin+location.pathname)||!new URL(e.href).hash.startsWith('#/')))push('link');
+    else push('click');
+    const payload=e.matches('[data-typeahead-insert]')||e.closest('.sugg,.local-pad-preview');
+    const selected=['aria-selected','aria-checked','aria-pressed','aria-expanded','aria-current'].filter(a=>e.hasAttribute(a)&&!['false','none'].includes(e.getAttribute(a)));
+    // Do not enumerate all combinations of per-row checkboxes, counter values or calendar dates.
+    shapes.add([descriptor(e),payload?'suggestion':fold(text).slice(0,80),selected.join(),e.matches('input,textarea')&&e.value?'filled':''].join('|'));
   }
-  report.pages[sc.id]={hash:sc.hash,controls:list.length,clicked:rows.length,skipped:Math.max(0,list.length-MAX),rows};
-  console.log(dev.padEnd(12),sc.id.padEnd(26),'controls',String(list.length).padStart(3),'effects',JSON.stringify(rows.reduce((m,r)=>(m[r.effect]=(m[r.effect]||0)+1,m),{})));
- }catch(e){report.pages[sc.id]={error:String(e.message).split('\n')[0]};console.log(dev,sc.id,'ERROR',report.pages[sc.id].error);}
- await ctx.close();
- writeFileSync(`${out}.json`,JSON.stringify(report,null,1));
+  if(top)actions.push({kind:'escape',key:'escape',name:'Escape'});
+  const main=document.querySelector('main:not([inert])');
+  const modes=main?[...main.attributes].filter(a=>a.name.startsWith('data-')&&/view|mode|state|sheet|revealed|layout|status|step/.test(a.name)).map(a=>[a.name,a.value]):[];
+  return {hash:location.hash,copy,theme:document.documentElement.dataset.theme,modes,layers:layers.map(e=>[role(e),fold(label(e))]),headings:[...new Set(headings)],
+    shapes:[...shapes].sort(),actions};
 }
-
-// Crawl: every route the sweep reached or linked that the catalogue lacks, two levels deep.
-let depth=0;const done=new Set();
-while(toCrawl.size&&depth<2){
- const batch=[...toCrawl.entries()].filter(([k])=>!done.has(k));toCrawl.clear();
- for(const [k,info] of batch){
-  done.add(k);const ctx=await newCtx(b,dev);const p=await ctx.newPage();await applyInsets(ctx,p,dev);
+const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0,24);
+function stateKey(view,seed){
+  return digest([seed.demo??'1',seed.native??'',!!seed.account,!!seed.chunkError,routeKey(view.hash),view.modes,view.layers,view.headings,view.copy,view.shapes]);
+}
+async function activate(page,action,current){
+  if(action.kind==='escape')return page.keyboard.press('Escape');
+  const live=current.actions.find(a=>a.key===action.key&&a.kind===action.kind&&a.value===action.value);
+  if(!live)throw new Error('Could not replay '+action.name);
+  let loc=page.locator('[data-audit-control="'+live.index+'"]');
+  if(await loc.evaluate(e=>e.matches('input[type=radio],input[type=checkbox]')&&e.labels?.length>0)){
+    const label=await loc.evaluateHandle(e=>e.labels[0]);try{return await label.asElement().click();}finally{await label.dispose();}
+  }
+  if(action.kind==='file')return loc.setInputFiles(uploadFixture(action.value));
+  if(action.kind==='select')return loc.selectOption(action.value);
+  if(action.kind==='fill')return loc.fill(action.value);
+  if(action.kind==='focus')return loc.focus();
+  return await page.evaluate(()=>navigator.maxTouchPoints>0)?loc.tap({timeout:3500}):loc.click({timeout:3500});
+}
+export async function crawl(browser,dev,seeds,{maxControls=Infinity,maxStates=Infinity,onState=()=>{}}={}){
+  const report={device:dev,profile,roots:{},states:{},edges:[],discovered:{},errors:[],deferred:0};
+  const known=new Set(scenes.map(s=>routeKey(s.hash)));
+  const queue=[],seen=new Set();
+  async function replay(seed,path){
+    const ctx=await newCtx(browser,dev);
+    try{
+      // All writes stay inside isolated local demo storage, including confirm and save flows.
+      await ctx.route('**/*',route=>{
+        const req=route.request(),url=new URL(req.url());
+        const foreign=url.origin!==new URL(BASE).origin;
+        if(!['GET','HEAD'].includes(req.method())||foreign||(req.isNavigationRequest()&&url.searchParams.get('demo')==='0'))return route.abort();
+        return route.continue();
+      });
+      await ctx.addInitScript(startTrace);
+      const page=await ctx.newPage(),uploads=[];
+      page.on('filechooser',chooser=>{
+        uploads.push((async()=>{
+          const fixture=uploadFixture(await chooser.element().getAttribute('accept')??'');
+          await chooser.setFiles(fixture??[]);
+        })().catch(e=>e));
+      });
+      await applyInsets(ctx,page,dev);
+      await openScene(page,seed);await settle(page);
+      for(const action of path){
+        await activate(page,action,await page.evaluate(inspect));await settle(page);
+      }
+      return {ctx,page,uploads,view:await page.evaluate(inspect)};
+    }catch(e){await ctx.close();throw e;}
+  }
+  function enqueue(seed,path,view){
+    const key=stateKey(view,seed);
+    if(!seen.has(key)){
+      seen.add(key);
+      queue.push({seed,path,key});
+      report.states[key]={scene:seed.id,via:path.map(a=>[a.kind,a.name,a.value]),hash:view.hash,layers:view.layers,controls:view.actions.length};
+      if(!known.has(routeKey(view.hash)))report.discovered[routeKey(view.hash)]={hash:view.hash,from:seed.id};
+    }
+    return key;
+  }
+  const reason=e=>e.message.split('\n')[0];
+  for(const seed of seeds){
+    let session;
+    try{session=await replay(seed,[]);report.roots[seed.id]=enqueue(seed,[],session.view);}
+    catch(e){report.errors.push({scene:seed.id,error:reason(e)});}
+    finally{await session?.ctx.close();}
+  }
+  let cursor=0;
+  while(cursor<queue.length&&cursor<maxStates){
+    const {seed,path,key}=queue[cursor++];
+    let session;
+    try{
+      session=await replay(seed,path);
+      if(stateKey(session.view,seed)!==key)throw new Error('Screen changed during replay');
+      const actions=session.view.actions;
+      report.deferred+=Math.max(0,actions.length-maxControls);
+      for(const action of actions.slice(0,maxControls)){
+        const edge={from:key,action:action.name,kind:action.kind,value:action.value};
+        report.edges.push(edge);
+        if(action.kind==='link'||(action.kind==='file'&&!uploadFixture(action.value))){edge.boundary=action.href??'system file chooser';continue;}
+        try{
+          session??=await replay(seed,path);
+          if(stateKey(session.view,seed)!==key)throw new Error('Screen changed during replay');
+          edge.motion=await traceAction(session.page,()=>activate(session.page,action,session.view),true);
+          for(const pending of session.uploads.splice(0)){const error=await pending;if(error)throw error;}
+          const next=await session.page.evaluate(inspect);
+          // Only queue local demo screens. The address and active layer both distinguish consecutive dialogs.
+          if(next.theme==='graph'){edge.boundary='Day appearance';continue;}
+          edge.to=enqueue(seed,[...path,action],next);
+          if(edge.to!==key&&wantsImage(dev,'sweep',edge.to)){
+            const dir=SCRATCH+'/sweep/'+dev;mkdirSync(dir,{recursive:true});
+            await session.page.screenshot({path:dir+'/'+edge.to+'.png',animations:'disabled'});
+          }
+        }catch(e){edge.error=reason(e);report.errors.push({scene:seed.id,from:key,action:action.name,error:edge.error});}
+        finally{await session?.ctx.close();session=null;}
+      }
+    }catch(e){report.errors.push({scene:seed.id,from:key,error:reason(e)});}
+    finally{await session?.ctx.close();}
+    onState(report,cursor);
+  }
+  report.deferred+=queue.length-cursor;
+  report.summary={visited:cursor,states:seen.size,edges:report.edges.length,errors:report.errors.length,
+    deferred:report.deferred,complete:report.deferred===0&&report.errors.length===0};
+  return report;
+}
+async function main(){
+  const args=process.argv.slice(2),pos=args.filter(a=>!a.startsWith('--'));
+  const devices=pickDevices(pos[0]);
+  if(devices.length>1){
+    for(const d of devices){const r=spawnSync(process.execPath,[process.argv[1],d,...args.slice(1)],{stdio:'inherit'});if(r.status!==0)process.exitCode=1;}
+    return;
+  }
+  function limit(name){const arg=args.find(a=>a.startsWith('--'+name+'='));if(!arg)return Infinity;const n=Number(arg.split('=')[1]);if(!Number.isInteger(n)||n<1)throw new Error('Invalid '+name);return n;}
+  const ids=pos.slice(1);const device=devices[0];
+  const seeds=scenes.filter(s=>applies(s,device)&&!s.loading&&(!ids.length||ids.includes(s.id)||ids.includes(s.group)));
+  if(!seeds.length)throw new Error('No sweep scenes selected');
+  mkdirSync(SCRATCH+'/sweep',{recursive:true});
+  const file=SCRATCH+'/sweep/'+device+'.json',browser=await launchBrowser();
   try{
-   await openHash(p,info.hash);const file=`crawl/${slug(k)}.png`;mkdirSync(`${out}/crawl`,{recursive:true});
-   await p.screenshot({path:`${out}/${file}`,animations:'disabled'});
-   report.discovered[k]={hash:info.hash,from:info.from,shot:file,h1:await p.evaluate(()=>document.querySelector('h1')?.textContent?.trim()??null)};
-   for(const a of await p.evaluate(()=>[...document.querySelectorAll('a[href^="#/"]')].map(a=>a.getAttribute('href').slice(1))))note(a,k);
-  }catch(e){report.discovered[k]={hash:info.hash,from:info.from,error:String(e.message).split('\n')[0]};}
-  await ctx.close();
- }
- depth++;
+    const result=await crawl(browser,device,seeds,{maxControls:limit('max'),maxStates:limit('max-states'),
+      onState:(_,n)=>{if(n%25===0)console.log(device,n,'screens explored');}});
+    writeFileSync(file,JSON.stringify(result));console.log(device,result.summary);
+    if(!result.summary.complete||(args.includes('--strict')&&Object.keys(result.discovered).length))process.exitCode=1;
+  }finally{await browser.close();}
 }
-report.summary={pages:Object.keys(report.pages).length,
- controlsClicked:Object.values(report.pages).reduce((n,x)=>n+(x.clicked||0),0),
- byEffect:Object.values(report.pages).flatMap(x=>x.rows??[]).reduce((m,r)=>(m[r.effect]=(m[r.effect]||0)+1,m),{}),
- routesNotInCatalogue:Object.keys(report.discovered)};
-writeFileSync(`${out}.json`,JSON.stringify(report,null,1));
-console.log(dev,'sweep done',JSON.stringify(report.summary));
-if(report.summary.routesNotInCatalogue.length)console.log('NOT IN CATALOGUE:',report.summary.routesNotInCatalogue.join(', '));
-await b.close();
-process.exit(strict&&report.summary.routesNotInCatalogue.length?1:0);
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)await main();

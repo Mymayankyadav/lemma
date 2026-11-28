@@ -1,36 +1,39 @@
 // Keyboard audit: the tutor's on-screen keyboard (every layer and key state) and the Pad's maths keyboard, plus the
 // hardware-keyboard states (Tab focus ring on every stop, shortcuts) on every screen the catalogue lists.
 //   node scripts/ui-audit-2026-11-27/keyboard.mjs <device|a,b|phones|tablets|all> [tutor|pad|hardware ...]
-// Output: <AUDIT_OUT>/keyboard/<device>/<state>.png (viewport) + <state>.kb.png (keyboard crop) + <device>.json.
-// The layout follows the device: iPad user agents at >= 600 px get the iPadOS layout (data-layout="ipad"), everything
-// else Gboard's; the script records which one it saw. Each state is tried independently: a missing control is logged
-// as `missing`, never aborts the run, so a renamed key shows up in the report instead of silently shrinking coverage.
-import {chromium,newCtx,openHash,SCRATCH,DEVICES,pickDevices,applyInsets} from './lib.mjs';
+// Reports always include per-state measurements; evidence.mjs chooses the saved images.
+import {launchBrowser,newCtx,openHash,SCRATCH,DEVICES,pickDevices,applyInsets} from './lib.mjs';
 import {mkdirSync,writeFileSync,existsSync,readFileSync} from 'node:fs';
+import {wantsImage,imageMode} from './evidence.mjs';
+import {startTrace} from './trace.mjs';
+import {applies,openScene} from './scene.mjs';
+import {scenes} from './catalog.mjs';
+import {focusCycle} from './focus.mjs';
 import {spawnSync} from 'node:child_process';
 const [,,devArg,...parts]=process.argv;
 const devList=pickDevices(devArg);
-if(devList.length>1){for(const d of devList)spawnSync(process.execPath,[process.argv[1],d,...parts],{stdio:'inherit',env:process.env});process.exit(0);}
+if(devList.length>1){for(const d of devList){const r=spawnSync(process.execPath,[process.argv[1],d,...parts],{stdio:'inherit'});if(r.status!==0)process.exitCode=1;}process.exit(process.exitCode??0);}
 const dev=devList[0],want=n=>!parts.length||parts.includes(n);
 const dir=`${SCRATCH}/keyboard/${dev}`;mkdirSync(dir,{recursive:true});
 const jsonFile=`${SCRATCH}/keyboard/${dev}.json`;
 // Running one part (tutor | pad | hardware) merges into the device's earlier report instead of replacing it.
 const prior=parts.length&&existsSync(jsonFile)?JSON.parse(readFileSync(jsonFile,'utf8')):null;
-const report=prior?{...prior,missing:prior.missing.filter(m=>!parts.some(x=>m.startsWith(x)))}:{device:dev,viewport:DEVICES[dev].viewport,states:{},missing:[]};
-const b=await chromium.launch();
+const report=prior?{...prior,missing:prior.missing.filter(m=>!parts.some(x=>m.startsWith(x+': ')))}:{device:dev,viewport:DEVICES[dev].viewport,states:{},missing:[]};
+const b=await launchBrowser();
+const tracing=new WeakSet();
 
 async function newPage(){
  const ctx=await newCtx(b,dev);const p=await ctx.newPage();await applyInsets(ctx,p,dev);return {ctx,p};
 }
 /** Screenshot the page and the keyboard, and measure the keyboard. */
 async function shot(p,name,kbSel){
- await p.waitForTimeout(350);
- await p.screenshot({path:`${dir}/${name}.png`,animations:'disabled'});
+ if(tracing.has(p)){(report.transitions??={})[name]=await p.evaluate(()=>window.__endAuditTrace?.());await p.evaluate(startTrace);}
+ if(imageMode==='all')await p.screenshot({path:`${dir}/${name}.png`,animations:'disabled'});
  const kb=kbSel?p.locator(kbSel).first():null;
  let facts=null;
  if(kb&&await kb.isVisible().catch(()=>false)){
   const r=await kb.boundingBox();
-  if(r)await p.screenshot({path:`${dir}/${name}.kb.png`,clip:{x:Math.max(0,r.x),y:Math.max(0,r.y),width:Math.min(r.width,p.viewportSize().width),height:r.height},animations:'disabled'}).catch(()=>{});
+  if(r&&wantsImage(dev,'keyboard',name))await kb.screenshot({path:`${dir}/${name}.kb.png`,scale:imageMode==='compact'?'css':'device',animations:'disabled'});
   facts=await p.evaluate(sel=>{
    const k=document.querySelector(sel);if(!k)return null;const kr=k.getBoundingClientRect();
    const keys=[...k.querySelectorAll('.k, .cats button')].filter(e=>e.getBoundingClientRect().width>0);
@@ -46,22 +49,25 @@ async function shot(p,name,kbSel){
  }
  report.states[name]=facts??{keyboardVisible:false};
 }
-async function step(name,fn){try{await fn();}catch(e){report.missing.push(name+': '+String(e.message).split('\n')[0].slice(0,110));}}
+let part='tutor';
+async function measureKeys(p){await p.evaluate(startTrace);tracing.add(p);}
+async function step(name,fn){try{await fn();}catch(e){report.missing.push(part+': '+name+': '+String(e.message).split('\n')[0].slice(0,110));}}
 
 if(want('tutor')){
  const {ctx,p}=await newPage();
  try{
   await openHash(p,'/p/real-analysis/cp/CP4/tutor');
+  await measureKeys(p);
   await p.getByRole('button',{name:'Write a question',exact:true}).click({timeout:5000});
   const field=p.getByRole('textbox',{name:'Your answer',exact:true});await field.focus();
   const KB='.kb';const kb=p.getByRole('group',{name:'Answer keyboard',exact:true});
-  const shown=await kb.isVisible({timeout:4000}).catch(()=>false);
+  const shown=await kb.waitFor({state:'visible',timeout:4000}).then(()=>true,()=>false);
   report.keyboardShown=shown;
   await shot(p,'00-composer-focused',KB);
   if(shown){
    const isIPad=await p.locator('.kb .rows[data-layout="ipad"]').count()>0;report.layout=isIPad?'ipad':'gboard';
    await step('abc rest',()=>shot(p,'01-abc',KB));
-   const shiftLabel=isIPad?'Shift':'Shift';
+   const shiftLabel='Shift';
    await step('shift once',async()=>{await kb.getByRole('button',{name:shiftLabel,exact:true}).first().click({timeout:2500});await shot(p,'02-abc-shift-once',KB);});
    await step('caps locked',async()=>{
     if(isIPad){await kb.getByRole('button',{name:'Caps lock',exact:true}).click({timeout:2500});}
@@ -107,19 +113,20 @@ if(want('tutor')){
 }
 
 if(want('pad')){
+ part='pad';
  // Lemma Pad: the maths keyboard (section "Math keyboard") sits below the editor, so each state scrolls it into view.
  const {ctx,p}=await newPage();const PK='.pad-math-keyboard';
  const padShot=async name=>{await p.locator(PK).first().scrollIntoViewIfNeeded().catch(()=>{});await shot(p,name,PK);};
  try{
-  await openHash(p,'/pad?path=real-analysis');
+  await openHash(p,'/pad?path=real-analysis');await measureKeys(p);
   await step('pad checkpoint',async()=>{await p.getByRole('button',{name:/^Checkpoint:/}).first().click({timeout:3000});
    await p.getByRole('radio',{name:/CP4/}).or(p.getByRole('option',{name:/CP4/})).first().click({timeout:3000});await p.waitForTimeout(700);});
   await padShot('pad-00-editor');
   await step('pad focus',async()=>{await p.getByRole('textbox').first().click({timeout:2500});await padShot('pad-01-focused');});
   await step('pad math keyboard on',async()=>{await p.getByRole('button',{name:'Use math keyboard',exact:true}).click({timeout:2500});await padShot('pad-02-math-on');});
-  for(const c of ['Symbols','Numbers','Algebra','Calculus','Geometry'])
+  for(const c of await p.getByRole('tablist',{name:'Math key groups'}).getByRole('tab').allTextContents())
    await step('pad category '+c,async()=>{await p.getByRole('tab',{name:c,exact:true}).click({timeout:2000});await padShot(`pad-03-${c.toLowerCase()}`);});
-  await step('pad template',async()=>{await p.getByRole('button',{name:'Fraction',exact:true}).first().click({timeout:2000});await padShot('pad-04-template-inserted');});
+  await step('pad template',async()=>{await p.getByRole('tab',{name:'Symbols',exact:true}).click();await p.getByRole('button',{name:'Fraction',exact:true}).first().click({timeout:2000});await padShot('pad-04-template-inserted');});
   await step('pad cursor/edit keys',async()=>{const k=p.getByRole('button',{name:'Backspace',exact:true});const r=await k.boundingBox();await p.mouse.move(r.x+r.width/2,r.y+r.height/2);await p.mouse.down();await p.waitForTimeout(260);await padShot('pad-05-backspace-held');await p.mouse.up();});
   await step('pad hide math keyboard',async()=>{await p.getByRole('button',{name:'Hide math keyboard',exact:true}).click({timeout:2000});await shot(p,'pad-06-hidden',null);});
   await step('pad ink tools',async()=>{await p.getByRole('button',{name:'Draw',exact:true}).click({timeout:2000});await shot(p,'pad-07-draw-mode',null);await p.getByRole('button',{name:'Scroll',exact:true}).click({timeout:1500}).catch(()=>{});});
@@ -129,24 +136,17 @@ if(want('pad')){
 
 if(want('hardware')){
  // Hardware keyboard: Tab through every stop of each screen and record the focus ring; then shortcuts.
- const screens=[['today','/'],['paths','/projects'],['path','/p/real-analysis'],['calendar','/calendar?view=day&date=2026-11-09'],['tasks','/tasks'],['review','/review'],['cards','/cards'],['progress','/insights'],['settings','/settings'],['appearance','/settings?section=appearance']];
  report.hardware={};
- for(const [id,hash] of screens){
-  const {ctx,p}=await newPage();const rows=[];
+ const ids=process.env.AUDIT_SCENES?.split(',').filter(Boolean)??[];
+ for(const sc of scenes.filter(s=>applies(s,dev)&&!s.loading&&(!ids.length||ids.includes(s.id)))){
+  const {ctx,p}=await newPage();
   try{
-   await openHash(p,hash);
-   for(let i=0;i<24;i++){
-    await p.keyboard.press('Tab');await p.waitForTimeout(90);
-    const f=await p.evaluate(()=>{const e=document.activeElement;if(!e||e===document.body)return null;const s=getComputedStyle(e),r=e.getBoundingClientRect();
-     return {el:e.tagName.toLowerCase()+'.'+[...e.classList].slice(0,2).join('.'),name:(e.getAttribute('aria-label')||e.textContent||'').trim().slice(0,30),
-      ring:s.outlineStyle==='none'?null:`${s.outlineWidth} ${s.outlineStyle} ${s.outlineColor}`,gap:s.outlineOffset,shadow:s.boxShadow==='none'?null:s.boxShadow.slice(0,50),
-      visible:r.width>0&&r.bottom>0&&r.top<innerHeight,tabindex:e.getAttribute('tabindex')}});
-    if(f)rows.push(f);
-   }
-   report.hardware[id]={stops:rows.length,noVisibleRing:rows.filter(r=>!r.ring&&!r.shadow).map(r=>r.el+' “'+r.name+'”'),offscreen:rows.filter(r=>!r.visible).length,distinctRings:[...new Set(rows.map(r=>r.ring+'|'+r.gap))]};
-   await p.screenshot({path:`${dir}/hw-${id}-tab24.png`,animations:'disabled'});
-  }catch(e){report.hardware[id]={error:String(e.message).split('\n')[0]};}
-  await ctx.close();
+   await openScene(p,sc);
+   const rows=await focusCycle(p);
+   report.hardware[sc.id]={stops:rows.length,noVisibleRing:rows.filter(r=>!r.ring&&!r.shadow).map(r=>r.name),
+    offscreen:rows.filter(r=>!r.visible).length,distinctRings:[...new Set(rows.map(r=>r.ring+'|'+r.gap))]};
+  }catch(e){report.hardware[sc.id]={error:e.message.split('\n')[0]};report.missing.push('hardware: '+sc.id+': '+e.message.split('\n')[0]);}
+  finally{await ctx.close();}
  }
  // shortcuts: Ctrl/⌘ K search, Escape closes a sheet, arrow keys inside a radiogroup, Enter on a focused chip
  const {ctx,p}=await newPage();report.shortcuts={};
@@ -167,3 +167,4 @@ if(want('hardware')){
 writeFileSync(`${SCRATCH}/keyboard/${dev}.json`,JSON.stringify(report,null,1));
 console.log(dev.padEnd(12),'states',Object.keys(report.states).length,'missing',report.missing.length,report.layout?'layout '+report.layout:'');
 await b.close();
+if(report.missing.length)process.exitCode=1;
